@@ -1,0 +1,7 @@
+BUILD*
+build
+*.kdev4
+build-sam.stamp
+src/base/memorymanager/MemMgrConfiguration.h
+src/settings/SettingsConf.h
+resources

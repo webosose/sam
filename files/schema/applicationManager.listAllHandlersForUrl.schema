@@ -1,0 +1,10 @@
+{
+    "id": "applicationManager.listAllHandlersForUrl",
+    "type": "object",
+    "properties": {
+        "url": {
+            "type": "string",
+            "description": "The url for getting handler application by verb."
+        }
+    }
+}

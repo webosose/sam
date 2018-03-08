@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.getHandlerForExtension",
+    "type": "object",
+    "properties": {
+        "extension": {
+            "type": "string",
+            "description": "The extension for getting handler application."
+        }
+    },
+    "required": [
+        "extension"
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "id": "applicationManager.moveLaunchPoint",
+    "type": "object",
+    "properties": {
+        "launchPointId": {
+            "type": "string",
+            "description": "ID of launch point to be updated"
+        },
+        "position": {
+            "type": "number",
+            "description": "This field means the position where to put on launcher"
+        }
+    },
+    "required": [
+        "launchPointId",
+        "position"
+    ]
+}

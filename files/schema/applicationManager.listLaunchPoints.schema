@@ -1,0 +1,10 @@
+{
+    "id": "applicationManager.listLaunchPoints",
+    "type": "object",
+    "properties": {
+        "subscribe": {
+            "type": "boolean",
+            "description": "listLaunchPoints support subscription to notify when launch points are updated, i.e., an app is installed or removed"
+        }
+    }
+}

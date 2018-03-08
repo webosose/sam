@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.getAppBasePath",
+    "type": "object",
+    "properties": {
+        "appId": {
+            "type": "string",
+            "description": "Get application base path for a given application ID."
+        }
+    },
+    "required": [
+        "appId"
+    ]
+}

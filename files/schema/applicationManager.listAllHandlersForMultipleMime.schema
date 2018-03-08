@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.listAllHandlersForMultipleMime",
+    "type": "object",
+    "properties": {
+        "mimes": {
+            "type": "array",
+            "description": "The mimes type for getting handler application."
+        }
+    },
+    "required": [
+        "mimes"
+    ]
+}

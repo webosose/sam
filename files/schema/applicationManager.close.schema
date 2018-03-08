@@ -1,0 +1,18 @@
+{
+    "id": "applicationManager.close",
+    "type": "object",
+    "properties": {
+        "processId": {
+            "type": "string",
+            "description": "ProcessID of application to be closed."
+        },
+        "tryToMakeScreenshot": {
+            "type": "boolean",
+            "description": "If set true, try call LSM's closeByAppId to leave screenshot on recent",
+            "default": false
+        }
+    },
+    "required": [
+        "processId"
+    ]
+}

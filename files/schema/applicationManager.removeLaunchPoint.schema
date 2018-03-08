@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.removeLaunchPoint",
+    "type": "object",
+    "properties": {
+        "launchPointId": {
+            "type": "string",
+            "description": "ID of launch point to be removed"
+        }
+    },
+    "required": [
+        "launchPointId"
+    ]
+}

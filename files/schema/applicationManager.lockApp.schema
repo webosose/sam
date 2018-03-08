@@ -1,0 +1,18 @@
+{
+    "id": "applicationManager.lockApp",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "ID of application to be locked."
+        },
+        "lock": {
+            "type": "boolean",
+            "description" : "When set the application is not allowed to launch"
+        }
+    },
+    "required": [
+        "id",
+        "lock"
+    ]
+}

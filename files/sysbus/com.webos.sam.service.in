@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.webos.service.applicationmanager;com.webos.applicationManager;com.webos.service.applicationManager;com.webos.service.systemmanager
+Exec=@WEBOS_INSTALL_SBINDIR@/sam
+Type=static

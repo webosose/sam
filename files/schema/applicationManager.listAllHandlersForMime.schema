@@ -1,0 +1,10 @@
+{
+    "id": "applicationManager.listAllHandlersForMime",
+    "type": "object",
+    "properties": {
+        "mime": {
+            "type": "string",
+            "description": "The mime for getting handler application by verb."
+        }
+    }
+}

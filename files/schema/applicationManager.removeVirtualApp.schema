@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.removeVirtualApp",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "virtual application ID to be removed"
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

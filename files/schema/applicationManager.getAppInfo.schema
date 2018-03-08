@@ -1,0 +1,17 @@
+{
+    "id": "applicationManager.getAppInfo",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Get application information for a given application ID."
+        },
+        "properties": {
+            "type": "array",
+            "description": "Get application information for service-user selected properties."
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

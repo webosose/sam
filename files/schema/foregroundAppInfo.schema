@@ -1,0 +1,27 @@
+{
+    "id": "foregroundAppInfo",
+        "type": "object",
+        "properties": {
+            "appId": {
+                "type": "string",
+                "description": "Application ID of application in foreground."
+            },
+            "windowId": {
+                "type": "string",
+                "description": "Window ID of application in foreground."
+            },
+            "processId": {
+                "type": "string",
+                "description": "Process ID of application in foreground."
+            },
+            "windowType": {
+                "type": "string",
+                "description": "Describe type of window : maximized, maximized, pip, popup, overay"
+            }
+        },
+        "required": [
+            "appId",
+            "windowId",
+            "processId"
+        ]
+}

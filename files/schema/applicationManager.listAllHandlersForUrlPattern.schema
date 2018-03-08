@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.listAllHandlersForUrlPattern",
+    "type": "object",
+    "properties": {
+        "urlPattern": {
+            "type": "string",
+            "description": "The mimes type for getting handler application."
+        }
+    },
+    "required": [
+        "urlPattern"
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.getHandlerForUrl",
+    "type": "object",
+    "properties": {
+        "url": {
+            "type": "string",
+            "description": "The url for getting handler application."
+        }
+    },
+    "required": [
+        "url"
+    ]
+}

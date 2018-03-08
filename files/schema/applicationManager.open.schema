@@ -1,0 +1,50 @@
+{
+    "id": "applicationManager.launch",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "ID of application to be launched."
+        },
+        "target": {
+            "type": "string",
+            "description": "A target URL. If id is not specified, this URL is opened in an appropriate application, if there is one."
+        },
+        "mime": {
+            "type": "string",
+            "description": "Mime type for target."
+        },
+        "params"  : {
+            "type": "object",
+            "description": "Additional launch parameters for the application."
+        },
+        "authToken"  : {
+            "type"     : "object",
+            "description": "Authorization token given to download manager when opening a remote file. deviceId is required with this."
+        },
+        "deviceId"  : {
+            "type"     : "object",
+            "description": "Device ID given to download manager when opening a remote file. authToken is required with this."
+        },
+        "overrideHandlerAppId": {
+            "type": "string",
+            "description": "If specified, this appid will be used to open a resource."
+        },
+        "fileName": {
+            "type": "string",
+            "description": "File name of target."
+        },
+        "subcsribe": {
+            "type": "boolean",
+            "description": "When true, the message is a subscription request."
+        },
+        "noSplash": {
+            "type": "boolean",
+            "description": "When true, there will be no splash screen."
+        },
+        "launchFirstApp" : {
+            "type" : "boolean",
+            "description": "When true, the app is set to first launched app after booting."
+        }
+    }
+}

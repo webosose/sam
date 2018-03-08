@@ -1,0 +1,9 @@
+{
+    "id": "applicationManager.running",
+    "type": "object",
+    "properties": {
+        "subscribe": {
+            "type": "boolean"
+        }
+    }
+}

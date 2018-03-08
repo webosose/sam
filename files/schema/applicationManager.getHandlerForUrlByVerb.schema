@@ -1,0 +1,21 @@
+{
+    "id": "applicationManager.getHandlerForUrlByVerb",
+    "type": "object",
+    "properties": {
+        "url": {
+            "type": "string",
+            "description": "The url for getting handler application by verb."
+        },
+        "mime": {
+            "type": "string",
+            "description": "The mime for getting handler application by verb."
+        },
+        "verb": {
+            "type": "string",
+            "description": "The verb for getting handler application."
+        }
+    },
+    "required": [
+        "verb"
+    ]
+}

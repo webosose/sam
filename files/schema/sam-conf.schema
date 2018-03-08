@@ -1,0 +1,110 @@
+{
+    "id": "Settings",
+    "type": "object",
+    "properties": {
+        "ApplicationPaths": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "typeByDir": {
+                        "type": "string",
+                        "enum": [
+                            "system_builtin",
+                            "system_updatable",
+                            "store",
+                            "dev",
+                            "alias",
+                            "tmp_alias"
+                        ],
+                        "description": "It explains apps are preinstalled, downloaedFromStore or installed in Devmode"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Absolute path the directory"
+                    }
+                },
+                "required": ["typeByDir", "path"]
+            },
+            "description" : "Application directory paths in sam-conf.json file."
+        },
+        "DevModePath": {
+            "type": "string",
+            "description": "If this file exists, it indicates it's working on development mode."
+        },
+        "JailModePath": {
+            "type": "string",
+            "description": "If this file exists, it means Native apps should be launched through Jailer"
+        },
+        "JailerPath": {
+            "type": "string",
+            "description": "Location of Jailer binary"
+        },
+        "QmlRunnerPath": {
+            "type": "string",
+            "description": "Location of Qml Runner binary"
+        },
+        "RespawnedPath": {
+            "type": "string",
+            "description": "If this file exists, it means sam already starts"
+        },
+        "NoJailApps": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "This is a white list for jailer. If an app is on this list, it' will be launched out of jail"
+        },
+        "SecurityEnabled": {
+            "type": "boolean",
+            "description": "If true, SAM checks security policy, such as DRM... etc."
+        },
+        "UsePartialKeywordMatchForAppSearch": {
+            "type": "boolean",
+            "description": "This field indicates that app searching is available."
+        },
+        "KeepAliveApps" : {
+            "type": "array",
+            "items": {
+                "type" : "string"
+            },
+            "description": "Applications which are to be kept alive."
+        },
+        "BootTimeApps" : {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "TV input apps for parental control bypassing"
+        },
+        "ReservedResource": {
+            "type": "object",
+            "properties": {
+                "mime": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "description": "3rd-party apps can not have any of the values listed here"
+        },
+        "LaunchPointDBKind" : {
+            "type": "object",
+            "description": "DBKind of LaunchPoint"
+        },
+        "LaunchPointDBPermissions" : {
+            "type": "array",
+            "items": {
+                "type": "object"
+            },
+            "description": "DBPermissions of LaunchPoint"
+        }
+    },
+    "required": [
+        "ApplicationPaths",
+        "JailerPath",
+        "LaunchPointDBKind",
+        "LaunchPointDBPermissions"
+    ]
+}

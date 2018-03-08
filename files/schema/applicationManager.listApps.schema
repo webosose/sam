@@ -1,0 +1,14 @@
+{
+    "id": "applicationManager.listApps",
+    "type": "object",
+    "properties": {
+        "properties": {
+            "type": "array",
+            "description": "Get application information for service-user selected properties."
+        },
+        "subscribe": {
+            "type": "boolean",
+            "description": "listApps support subscription to notify when Apps are updated, i.e., an app is installed or removed or edit"
+        }
+    }
+}

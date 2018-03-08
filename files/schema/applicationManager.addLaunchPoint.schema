@@ -1,0 +1,77 @@
+{
+    "id": "applicationManager.addLaunchPoint",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "ID of application to generate launch point"
+        },
+        "title": {
+            "type": "string",
+            "description": "Title for the launch point"
+        },
+        "icon": {
+            "type": "string",
+            "description": "Path to icon"
+        },
+        "bgImage": {
+            "type": "string",
+            "description": "This field is the location of a bitmap. The bitmap is displayed to the user when the user hovers over the launch point with the system pointer."
+        },
+        "bgImages": {
+            "type": "array",
+            "items": {
+                "type": "string"
+             },
+             "default" : [],
+             "description": "Locations of bitmaps that may be displayed to the user when the user hovers over the launch point with the system pointer."
+        },
+        "bgColor": {
+            "type": "string",
+            "description": "This field is the color to be displayed to the user when the user hovers over the launch point with the system pointer. This is used in the absence of the backgroundImage."
+        },
+        "imageForRecents": {
+            "type": "string",
+            "description": "This field is the location of a bitmap. The bitmap is displayed in the recent apps list."
+        },
+        "iconColor": {
+            "type": "string",
+            "description": "indicates color of the icon of the launch point."
+        },
+        "largeIcon": {
+            "type": "string",
+            "description": "path to largeIcon"
+        },
+        "appDescription": {
+            "type": "string",
+            "description": "A short tagline for the application"
+        },
+        "params": {
+            "type": "object",
+            "description": "Parameters to pass to the application"
+        },
+        "userData": {
+            "type": "string",
+            "description": "Additional data that may be used by clients, such as an identifier for analytics purposes"
+        },
+        "tileSize": {
+            "type": "string",
+            "enum": [ "normal", "large" ],
+            "default": "normal",
+            "description": "Hint for sizing of UI tiles: normal or large, large may be used for a promotional item"
+        },
+        "unmovable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Hint that an item should never be moved from it's given position"
+        },
+        "supportI18nTitle": {
+            "type": "boolean",
+            "default": true,
+            "description": "Hint that i18n will be supported for title"
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

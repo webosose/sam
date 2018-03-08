@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.getHandlerForMimeType",
+    "type": "object",
+    "properties": {
+        "mimeType": {
+            "type": "string",
+            "description": "The mime type for getting handler application."
+        }
+    },
+    "required": [
+        "mimeType"
+    ]
+}

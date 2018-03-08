@@ -1,0 +1,29 @@
+{
+    "id": "applicationManager.addVirtualApp",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "virtual application ID to be created."
+        },
+        "hostId": {
+            "type": "string",
+            "description": "host application id for virtual application."
+        },
+        "appInfo": {
+            "type": "object",
+            "description": "appInfo for virtual application.",
+            "default": {}
+        },
+        "params": {
+            "type": "object",
+            "description": "params to be passed to host application as launch params.",
+            "default": {}
+        }
+    },
+    "required": [
+        "id",
+        "hostId",
+        "params"
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.mimeTypeForExtension",
+    "type": "object",
+    "properties": {
+        "extension": {
+            "type": "string",
+            "description": "The extension of file for getting mime type."
+        }
+    },
+    "required": [
+        "extension"
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.closeByAppId",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Application ID to be closed."
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

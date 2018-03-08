@@ -1,0 +1,16 @@
+{
+  "id": "applicationManager.getAppStatus",
+  "type": "object",
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "appInfo": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "appId"
+  ]
+}

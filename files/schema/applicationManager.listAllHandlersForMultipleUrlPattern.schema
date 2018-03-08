@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.listAllHandlersForMultipleUrlPattern",
+    "type": "object",
+    "properties": {
+        "urls": {
+            "type": "array",
+            "description": "The urls for getting handler application."
+        }
+    },
+    "required": [
+        "urls"
+    ]
+}

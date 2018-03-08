@@ -1,0 +1,147 @@
+{
+    "ApplicationPaths": [
+        {
+            "typeByDir": "system_builtin",
+            "path": "@WEBOS_INSTALL_MNTDIR@/otycabi/usr/palm/applications"
+        },
+        {
+            "typeByDir": "system_builtin",
+            "path": "@WEBOS_INSTALL_MNTDIR@/otncabi/usr/palm/applications"
+        },
+        {
+            "typeByDir": "system_builtin",
+            "path": "@WEBOS_INSTALL_WEBOS_APPLICATIONSDIR@"
+        },
+        {
+            "typeByDir": "system_updatable",
+            "path": "@WEBOS_INSTALL_MEDIADIR@/system/apps/usr/palm/applications"
+        },
+        {
+            "typeByDir": "store",
+            "path": "@WEBOS_INSTALL_INSTALLEDAPPSDIR@"
+        },
+        {
+            "typeByDir": "dev",
+            "path": "@WEBOS_INSTALL_MEDIADIR@/developer/apps/usr/palm/applications"
+        },
+        {
+            "typeByDir": "alias",
+            "path": "@WEBOS_INSTALL_MEDIADIR@/alias/apps/usr/palm/applications"
+        },
+        {
+            "typeByDir": "tmp_alias",
+            "path": "@WEBOS_INSTALL_ROOT@/tmp/alias/apps/usr/palm/applications"
+        }
+    ],
+
+    "DevModePath": "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/devmode_enabled",
+    "JailModePath": "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/jailer_disabled",
+    "JailerPath": "@WEBOS_INSTALL_BINDIR@/jailer",
+    "QmlRunnerPath": "@WEBOS_INSTALL_BINDIR@/qml-runner",
+
+    "FullscreenWindowType": [
+        "_WEBOS_WINDOW_TYPE_CARD",
+        "_WEBOS_WINDOW_TYPE_RESTRICTED"
+    ],
+
+    "NoJailApps" : [
+        "com.webos.app.voiceagent",
+        "com.webos.app.voiceview",
+        "com.webos.app.multiview",
+        "com.webos.app.livemenu",
+        "com.webos.app.factorywin",
+        "com.webos.app.fingergesture",
+        "com.webos.app.livetv",
+        "com.webos.app.inputcommon",
+        "com.webos.app.externalinput.component",
+        "com.webos.app.hdmi1",
+        "com.webos.app.hdmi2",
+        "com.webos.app.hdmi3",
+        "com.webos.app.hdmi4",
+        "com.webos.app.tvhotkey",
+        "com.webos.app.voice",
+        "com.webos.app.searchanddiscovery",
+        "com.webos.app.externalinput.av1",
+        "com.webos.app.externalinput.av2",
+        "com.webos.app.externalinput.scart",
+        "com.webos.app.livezoom-inhdmi1",
+        "com.webos.app.livezoom-inhdmi2",
+        "com.webos.app.livezoom-inhdmi3",
+        "com.webos.app.livezoom-inhdmi4",
+        "com.webos.app.livezoom-intv",
+        "com.webos.app.livezoom-inphotovideo",
+        "com.webos.app.twinzoom-inhdmi1",
+        "com.webos.app.twinzoom-inhdmi2",
+        "com.webos.app.twinzoom-inhdmi3",
+        "com.webos.app.twinzoom-inhdmi4",
+        "com.webos.app.twinzoom-intv",
+        "com.webos.app.dvrpopup",
+        "com.webos.app.smhl",
+        "com.webos.app.tips",
+        "com.webos.app.livezoom-inrecordings",
+        "com.webos.app.externalinput.rgb",
+        "com.webos.app.ism"
+    ],
+
+    "HostAppsForAlias":[
+        "com.webos.app.webapphost"
+    ],
+
+    "BootTimeApps": [],
+
+    "StoreApp": "com.webos.app.discovery",
+
+    "ReservedResource": {
+        "mime": [
+            "application/vnd.lge.appstore"
+        ]
+    },
+
+    "LaunchPointDBKind": {
+        "id":"com.webos.applicationManager.launchpoints:1",
+        "owner":"com.webos.applicationManager",
+        "schema":{
+            "properties":{
+                "id":{"type":"string", "description":"unique id of app", "optional":false},
+                "lptype":{"type":"number", "description":"type of launchpoint", "optional":false},
+                "lpid":{"type":"string", "description":"unique id of launchpoint", "optional":false},
+                "title":{"type":"string", "description":"title of app", "optional":true},
+                "icon":{"type":"string", "description":"path of icon", "optional":true},
+                "bgImage":{"type":"string", "description":"path of backgroundImage", "optional":true},
+                "bgImages":{"type":"array", "items":{"type":"string"}, "description":"path for multiple backgroundImages", "optional":true},
+                "bgColor":{"type":"string", "description":"backgroundColor", "optional":true},
+                "imageForRecents":{"type":"string","description":"location of bitmap : displayed in the recent apps list","optional":true},
+                "iconColor":{"type":"string", "description":"indicates color of the icon of the launchpoint", "optional":true},
+                "largeIcon":{"type":"string", "description":"path of largeIcon", "optional":true},
+                "favicon":{"type":"string", "description":"path of favicon", "optional":true},
+                "appDescription":{"type":"string", "description": "A short tagline for the app", "optional":true},
+                "params":{"type":"object", "description":"parameters", "optional":true},
+                "userData":{"type":"string", "description": "Additional data that may be used by clients", "optional":true},
+                "tileSize":{"type":"string", "enum": [ "normal", "large" ], "default": "normal", "description": "Hint for UI tiling size", "optional": true},
+                "unmovable":{"type":"boolean", "description": "Hint that item should not be editable by user", "optional": true}
+            }
+        },
+
+        "indexes":[
+            {"name":"id", "props":[{"name":"id"}]},
+            {"name":"lptype", "props":[{"name":"lptype"}]},
+            {"name":"lpid", "props":[{"name":"lpid"}]},
+            {"name":"id_lpid", "props":[{"name":"id"}, {"name":"lpid"}]}
+        ]
+    },
+
+    "LaunchPointDBPermissions": [
+        {
+            "type"      : "db.kind",
+            "object"    : "com.webos.applicationManager.launchpoints:1",
+            "caller"    : "com.webos.applicationManager",
+            "operations":
+            {
+                "create"    : "allow",
+                "read"      : "allow",
+                "update"    : "allow",
+                "delete"    : "allow"
+            }
+        }
+    ]
+}

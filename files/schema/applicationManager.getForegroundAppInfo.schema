@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.getForegroundAppInfo",
+    "type": "object",
+    "properties": {
+        "extraInfo": {
+            "type": "boolean",
+            "description": "If set to true, returns all foreground apps as an array. Otherwise, returns only a full screen app (e.g. card type)"
+        },
+        "subscribe": {
+            "type": "boolean"
+        }
+    }
+}

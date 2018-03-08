@@ -1,0 +1,36 @@
+{
+    "exeName":"@WEBOS_INSTALL_SBINDIR@/sam",
+    "type": "regular",
+    "allowedNames": [
+        "com.webos.service.applicationmanager",
+        "com.webos.applicationManager",
+        "com.webos.service.applicationManager",
+        "com.webos.service.systemmanager"
+    ],
+    "permissions": [
+        {
+            "service":"com.webos.applicationManager",
+            "outbound":[
+                "*",
+                "com.webos.appInstallService",
+                "com.webos.appUpdateService",
+                "com.webos.booster",
+                "com.webos.bootManager",
+                "com.webos.memorymanager",
+                "com.webos.notification",
+                "com.webos.service.attachedstoragemanager",
+                "com.webos.service.bus",
+                "com.webos.service.config",
+                "com.webos.service.db",
+                "com.webos.service.downloadmanager",
+                "com.webos.service.power2",
+                "com.webos.service.sdx",
+                "com.webos.service.sm",
+                "com.webos.service.tvpower",
+                "com.palm.webappmanager",
+                "com.webos.settingsservice",
+                "com.webos.surfacemanager"
+            ]
+        }
+    ]
+}

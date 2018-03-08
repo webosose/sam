@@ -1,0 +1,13 @@
+{
+    "id": "applicationManager.searchApps",
+    "type": "object",
+    "properties": {
+        "keyword": {
+            "type": "string",
+            "description": "Keyword to search with"
+        }
+    },
+    "required": [
+        "keyword"
+    ]
+}

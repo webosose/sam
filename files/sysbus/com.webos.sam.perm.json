@@ -1,0 +1,21 @@
+{
+    "com.webos.applicationManager" : [
+        "all",
+        "appinstalld.internal",
+        "applications.internal",
+        "devices",
+        "database.internal",
+        "hub.configuration",
+        "launcher.control",
+        "launcher.status",
+        "networking.internal",
+        "notifications",
+        "security",
+        "settings",
+        "surfaces.control",
+        "surfaces.status",
+        "system",
+        "system.debug",
+        "tv.management"
+    ]
+}

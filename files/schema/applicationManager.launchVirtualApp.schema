@@ -1,0 +1,46 @@
+{
+    "id": "applicationManager.launchVirtualApp",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "virtual application ID to be launched."
+        },
+        "hostId": {
+            "type": "string",
+            "description": "Host app id for virtual application."
+        },
+        "appInfo": {
+            "type": "object",
+            "description": "appInfo for virtual application",
+            "default": {}
+        },
+        "params": {
+            "type": "object",
+             "description": "params to be passed to host application as params",
+             "default": {}
+        },
+        "noSplash": {
+            "type": "boolean"
+        },
+        "spinner": {
+            "type": "boolean"
+        },
+        "preload": {
+            "type": "string",
+            "enum": ["full", "semi-full", "partial", "minimal"],
+            "description": "App will be launched in background if preload is filled in"
+        },
+        "launchHidden": {
+            "type": "boolean"
+        },
+        "keepAlive": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "id",
+        "hostId",
+        "params"
+    ]
+}

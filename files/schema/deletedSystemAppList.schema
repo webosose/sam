@@ -1,0 +1,16 @@
+{
+    "id": "deletedSystemAppList",
+    "type": "object",
+    "properties": {
+        "deletedList": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "deleted preinstalled app IDs"
+        }
+    },
+    "required": [
+        "deletedList"
+    ]
+}
