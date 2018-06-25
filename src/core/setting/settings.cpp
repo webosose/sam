@@ -44,6 +44,7 @@ Settings::Settings()
       isJailMode( false ),
       isRestLoaded( false ),
       qmlRunnerPath( "/usr/bin/qml-runner" ),
+      appshellRunnerPath( "/usr/bin/app-shell/run_appshell" ),
       jailerPath( "/usr/bin/jailer" ),
       use_qml_booster_(false),
       launch_expired_timeout_(120000000000ULL), // 120sec
@@ -175,6 +176,9 @@ bool Settings::LoadStaticConfig(const char* filePath) {
 
   if (root["QmlRunnerPath"].isString())
     qmlRunnerPath = root["QmlRunnerPath"].asString();
+
+  if (root["AppShellRunnerPath"].isString())
+    appshellRunnerPath = root["AppShellRunnerPath"].asString();
 
   if (root["RespawnedPath"].isString())
     respawnedPath = root["RespawnedPath"].asBool();

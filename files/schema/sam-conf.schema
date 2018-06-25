@@ -44,6 +44,10 @@
             "type": "string",
             "description": "Location of Qml Runner binary"
         },
+        "AppShellRunnerPath": {
+            "type": "string",
+            "description": "Location of AppShell Runner binary"
+        },
         "RespawnedPath": {
             "type": "string",
             "description": "If this file exists, it means sam already starts"

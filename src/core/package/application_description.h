@@ -38,6 +38,7 @@ enum class AppType: int8_t {
   Native_Builtin,  // Native app (more special than general native app: e.g. Isis2, Chrome,...)
   Native_Mvpd,     // Native app (more special than general native app: e.g. Netflix, vudu,...)
   Native_Qml,      // Native app (stand alone qml apps, forked with qml runner)
+  Native_AppShell, // for Native app (stand alone appshell apps, forked with appshell runner)
   Qml,             // Qml app (launch via booster)
 };
 

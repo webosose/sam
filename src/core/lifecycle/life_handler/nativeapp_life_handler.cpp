@@ -127,7 +127,21 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
   const char* jailer_type = "";
   bool is_on_nojail_list = SettingsImpl::instance().checkAppAgainstNoJailAppList( app_desc->id() );
 
-  if (AppType::Native_Qml == app_desc->type()) {
+  if (AppType::Native_AppShell == app_desc->type()) {
+    fork_params[0] = SettingsImpl::instance().appshellRunnerPath.c_str();
+    fork_params[1] = "--appid";
+    fork_params[2] = app_desc->id().c_str();
+    fork_params[3] = "--folder";
+    fork_params[4] = app_desc->folderPath().c_str();
+    fork_params[5] = "--params";
+    fork_params[6] = str_params.c_str();
+    fork_params[7] = NULL;
+    LOG_INFO(MSGID_APPLAUNCH, 4, PMLOGKS("appshellRunnderPath", SettingsImpl::instance().appshellRunnerPath.c_str()),
+                                 PMLOGKS("app_id", app_desc->id().c_str()),
+                                 PMLOGKS("app_folder_path", app_desc->folderPath().c_str()),
+                                 PMLOGJSON("params", str_params.c_str()), "launch with appshell_runner");
+  }
+  else if (AppType::Native_Qml == app_desc->type()) {
     fork_params[0] = SettingsImpl::instance().qmlRunnerPath.c_str();
     fork_params[1] = str_params.c_str();
     fork_params[2] = NULL;

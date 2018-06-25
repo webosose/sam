@@ -79,6 +79,7 @@ std::string ApplicationDescription::appTypeToString(AppType type) {
     case AppType::Native_Builtin: str_appType = "native_builtin"; break;
     case AppType::Native_Mvpd:    str_appType = "native_mvpd"; break;
     case AppType::Native_Qml:     str_appType = "native_qml"; break;
+    case AppType::Native_AppShell:str_appType = "native_appshell"; break;
     case AppType::Qml:            str_appType = "qml"; break;
     default:
       str_appType = "unknown";
@@ -118,6 +119,7 @@ bool ApplicationDescription::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir
   else if ("stub" == app_type) app_type_ = AppType::Stub;
   else if ("native" == app_type) app_type_ = (privileged_jail) ? AppType::Native_Mvpd : AppType::Native;
   else if ("native_builtin" == app_type) app_type_ = AppType::Native_Builtin;
+  else if ("native_appshell" == app_type) app_type_ = AppType::Native_AppShell;
   else if ("qml" == app_type &&
            (AppTypeByDir::System_BuiltIn == type_by_dir || AppTypeByDir::System_Updatable == type_by_dir)) {
     if (SettingsImpl::instance().use_qml_booster_) app_type_ = AppType::Qml;
@@ -134,6 +136,7 @@ bool ApplicationDescription::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir
       handler_type_ = LifeHandlerType::Qml;
       break;
     case AppType::Native:
+    case AppType::Native_AppShell:
     case AppType::Native_Builtin:
     case AppType::Native_Mvpd:
     case AppType::Native_Qml:

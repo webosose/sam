@@ -71,6 +71,7 @@
                 "stub",
                 "native",
                 "native_builtin",
+                "native_appshell",
                 "qml"
             ],
             "description": "Identifies the application type"
