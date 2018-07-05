@@ -118,8 +118,7 @@ bool ApplicationDescription::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir
   else if ("stub" == app_type) app_type_ = AppType::Stub;
   else if ("native" == app_type) app_type_ = (privileged_jail) ? AppType::Native_Mvpd : AppType::Native;
   else if ("native_builtin" == app_type) app_type_ = AppType::Native_Builtin;
-  else if ("qml" == app_type &&
-           (AppTypeByDir::System_BuiltIn == type_by_dir || AppTypeByDir::System_Updatable == type_by_dir)) {
+  else if ("qml" == app_type) {
     if (SettingsImpl::instance().use_qml_booster_) app_type_ = AppType::Qml;
     else app_type_ = AppType::Native_Qml;
   }
