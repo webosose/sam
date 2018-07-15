@@ -88,6 +88,7 @@ class Settings {
   std::vector<std::string>  host_apps_for_alias;
   std::string               app_store_id_;
   std::string               qmlRunnerPath; // /usr/bin/qml-runner
+  std::string               appshellRunnerPath; // /usr/bin/app-shell/run_appshell
   std::string               jailerPath;    // /usr/bin/jailer
   bool                      use_qml_booster_;
   std::map<std::string, std::string> launch_event_reason_map_;

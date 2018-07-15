@@ -38,6 +38,7 @@
     "JailModePath": "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/jailer_disabled",
     "JailerPath": "@WEBOS_INSTALL_BINDIR@/jailer",
     "QmlRunnerPath": "@WEBOS_INSTALL_BINDIR@/qml-runner",
+    "AppShellRunnerPath": "@WEBOS_INSTALL_BINDIR@/app-shell/run_appshell",
 
     "FullscreenWindowType": [
         "_WEBOS_WINDOW_TYPE_CARD",
