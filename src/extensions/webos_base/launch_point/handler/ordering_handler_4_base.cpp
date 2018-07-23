@@ -42,14 +42,28 @@ void OrderingHandler4Base::MakeLaunchPointsInOrder(const std::vector<LaunchPoint
 }
 
 int OrderingHandler4Base::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  return 0;
+  // TODO: Currently, LP order is not supported in OSE
+  int i = 0;
+  for (auto it = ordered_list_.begin(); it != ordered_list_.end(); ++it, ++i) {
+    if (*it > lp_id) {
+      ordered_list_.insert(it, lp_id);
+      return i;
+    }
+  }
+  ordered_list_.push_back(lp_id);
+  return ordered_list_.size() - 1;
 }
 
 int OrderingHandler4Base::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
+  // TODO: Currently, LP order is not supported in OSE
   return 0;
 }
 
 void OrderingHandler4Base::DeleteLpInOrder(const std::string& lp_id) {
+  auto it = std::find(ordered_list_.begin(), ordered_list_.end(), lp_id);
+
+  if (it != ordered_list_.end())
+    ordered_list_.erase(it);
 }
 
 void OrderingHandler4Base::reorder() {
@@ -57,5 +71,7 @@ void OrderingHandler4Base::reorder() {
   for (auto it = visible_lps_.begin(); it != visible_lps_.end(); ++it) {
     ordered_list_.push_back(it->get()->LaunchPointId());
   }
+  std::sort(ordered_list_.begin(), ordered_list_.end(),
+            [](const std::string& a, const std::string& b) -> bool{ return (a < b); });
   signal_launch_points_ordered_(OrderChangeState::FULL);
 }
