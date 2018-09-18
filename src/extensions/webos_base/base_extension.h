@@ -49,7 +49,6 @@ private:
   BaseExtension(BaseExtension const&);
   BaseExtension& operator=(const BaseExtension&);
 
-  void OnUpdateInfoChanged(const pbnjson::JValue& jmsg);
   void OnLaunchingFinished(AppLaunchingItemPtr item);
 
   // lifecycle adapter

@@ -42,8 +42,6 @@ BaseExtension::~BaseExtension() {
 void BaseExtension::init(PrerequisiteMonitor& prerequisite_monitor) {
   BaseSettingsImpl::instance().Load(NULL);
 
-  AppinstalldSubscriber::instance().SubscribeUpdateInfo(boost::bind(&BaseExtension::OnUpdateInfoChanged, this, _1));
-
   // to check first app launch finished
   AppLifeManager::instance().signal_launching_finished.connect(boost::bind(&BaseExtension::OnLaunchingFinished, this, _1));
 
@@ -71,46 +69,6 @@ AppDesc4BasicPtr BaseExtension::GetAppDesc(const std::string& app_id) {
   if (!app_desc)
     return nullptr;
   return std::static_pointer_cast<ApplicationDescription4Base>(app_desc);
-}
-
-void BaseExtension::OnUpdateInfoChanged(const pbnjson::JValue& jmsg) {
-  LOG_DEBUG("update status: %s\n", JUtil::jsonToString(jmsg).c_str());
-
-  if (!jmsg.hasKey("returnValue") || !jmsg["returnValue"].asBool() ||
-      !jmsg["status"].isObject() || !jmsg["status"]["apps"].isArray()) {
-    LOG_WARNING(MSGID_INVALID_UPDATE_STATUS_MSG, 1,
-                PMLOGJSON("payload", JUtil::jsonToString(jmsg).c_str()), "");
-    return;
-  }
-
-  const pbnjson::JValue& update_info = jmsg["status"]["apps"];
-  int update_info_num = (int) update_info.arraySize();
-
-  LOG_INFO(MSGID_RECEIVED_UPDATE_INFO, 2,
-           PMLOGKFV("update_info_num", "%d", update_info_num),
-           PMLOGJSON("payload", JUtil::jsonToString(update_info).c_str()), "");
-
-  // clear all previous information
-  AppInfoManager::instance().reset_all_update_info();
-  AppInfoManager::instance().reset_all_out_of_service_info();
-
-  // set new update information
-  for (int i = 0; i < update_info_num; ++i) {
-    std::string app_id, category, update_type, update_ver;
-
-    if (!update_info[i].hasKey("id") || !update_info[i]["id"].isString()
-        || update_info[i]["id"].asString(app_id) != CONV_OK)
-      continue;
-
-    update_type = update_info[i]["status"].asString();
-    category = CATEGORY_ON_STORE_APPS;
-    update_ver = "";
-
-    if (update_type == OUT_OF_SERVICE)
-      AppInfoManager::instance().add_out_of_service_info(app_id);
-    else
-      AppInfoManager::instance().add_update_info(app_id, update_type, category, update_ver);
-  }
 }
 
 void BaseExtension::OnLaunchingFinished(AppLaunchingItemPtr item) {

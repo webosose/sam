@@ -34,8 +34,10 @@ public:
   virtual void ReloadDbData(bool connection);
   virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
 
-  virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-  virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+  virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text);
+
+  virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = static_cast<int>(StaticPosition::INVALID_POSITION));
+  virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = static_cast<int>(StaticPosition::INVALID_POSITION));
   virtual void DeleteLpInOrder(const std::string& lp_id);
 
   virtual std::vector<std::string> GetOrderedList() {
