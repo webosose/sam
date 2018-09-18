@@ -125,6 +125,14 @@ bool ApplicationDescription::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir
     if (SettingsImpl::instance().use_qml_booster_) app_type_ = AppType::Qml;
     else app_type_ = AppType::Native_Qml;
   }
+  // TODO - MIGRATION (START)
+  // Remove below line after inputcommon CCC (submissions/736)
+  // See more info : https://gpro.lgsvl.com/#/c/195309
+  else if ("qml" == app_type && AppTypeByDir::Dev == type_by_dir) {
+    if (SettingsImpl::instance().use_qml_booster_) app_type_ = AppType::Qml;
+    else app_type_ = AppType::Native_Qml;
+  }
+  // TODO - MIGRATION (END)
   else return false;
 
   // handler_type
