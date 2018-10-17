@@ -46,7 +46,6 @@ bool OrderingHandler4Base::SetOrder(const pbnjson::JValue& data, const std::vect
 }
 
 int OrderingHandler4Base::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  // TODO: Currently, LP order is not supported in OSE
   int i = 0;
   for (auto it = ordered_list_.begin(); it != ordered_list_.end(); ++it, ++i) {
     if (*it > lp_id) {
@@ -59,7 +58,6 @@ int OrderingHandler4Base::InsertLpInOrder(const std::string& lp_id, const pbnjso
 }
 
 int OrderingHandler4Base::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  // TODO: Currently, LP order is not supported in OSE
   return 0;
 }
 
@@ -73,7 +71,7 @@ void OrderingHandler4Base::DeleteLpInOrder(const std::string& lp_id) {
 void OrderingHandler4Base::reorder() {
   ordered_list_.clear();
   for (auto it = visible_lps_.begin(); it != visible_lps_.end(); ++it) {
-    ordered_list_.push_back(it->get()->Title());
+    ordered_list_.push_back(it->get()->LaunchPointId());
   }
   std::sort(ordered_list_.begin(), ordered_list_.end(),
             [](const std::string& a, const std::string& b) -> bool{ return (a < b); });
