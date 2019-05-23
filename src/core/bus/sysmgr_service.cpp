@@ -22,7 +22,6 @@
 @}
 */
 //->End of API documentation comment block
-
 #include "core/bus/sysmgr_service.h"
 
 #include <string>
@@ -41,19 +40,17 @@
 static SysMgrService* s_instance = 0;
 static const char* g_firt_use_flag = "/var/luna/preferences/ran-firstuse";
 
-
 SysMgrService* SysMgrService::instance()
 {
-    if(s_instance)
+    if (s_instance)
         return s_instance;
 
     s_instance = new SysMgrService();
     return s_instance;
 }
 
-SysMgrService::SysMgrService()
-    : ServiceBase("com.webos.service.systemmanager"),
-      m_bootStatus(false)
+SysMgrService::SysMgrService() :
+        ServiceBase("com.webos.service.systemmanager"), m_bootStatus(false)
 {
 }
 
@@ -63,7 +60,7 @@ SysMgrService::~SysMgrService()
 
 bool SysMgrService::Attach(GMainLoop* gml)
 {
-    if(!ServiceBase::Attach(gml))
+    if (!ServiceBase::Attach(gml))
         return false;
 
     (void) BootdSubscriber::instance().SubscribeBootStatus(boost::bind(&SysMgrService::postBootStatus, this, _1));
@@ -78,30 +75,30 @@ void SysMgrService::Detach()
 
 //->Start of API documentation comment block
 /**
-@page com_webos_systemmanager com.webos.systemmanager
-@{
-@section com_webos_systemmanager_getBootStatus getBootStatus
+ @page com_webos_systemmanager com.webos.systemmanager
+ @{
+ @section com_webos_systemmanager_getBootStatus getBootStatus
 
-gets the boot status
+ gets the boot status
 
-@par Parameters
-None
+ @par Parameters
+ None
 
-@par Returns(Call)
-Name | Required | Type | Description
------|--------|------|----------
-returnValue  | yes | Boolean | true if booted
-subscribed  | yes | Boolean | true if subscribed
+ @par Returns(Call)
+ Name | Required | Type | Description
+ -----|--------|------|----------
+ returnValue  | yes | Boolean | true if booted
+ subscribed  | yes | Boolean | true if subscribed
 
-@par Returns(Subscription)
-Name | Required | Type | Description
------|--------|------|----------
-finished  | yes | Boolean | true if finished
-firstUse  | yes | Boolean | false
-returnValue  | yes | Boolean | true if returned correctly
-subscribed  | yes | Boolean | true if subscribed
-@}
-*/
+ @par Returns(Subscription)
+ Name | Required | Type | Description
+ -----|--------|------|----------
+ finished  | yes | Boolean | true if finished
+ firstUse  | yes | Boolean | false
+ returnValue  | yes | Boolean | true if returned correctly
+ subscribed  | yes | Boolean | true if subscribed
+ @}
+ */
 //->End of API documentation comment block
 bool SysMgrService::cb_getBootStatus(LSHandle* lshandle, LSMessage* message, void* user_data)
 {
@@ -110,29 +107,23 @@ bool SysMgrService::cb_getBootStatus(LSHandle* lshandle, LSMessage* message, voi
     bool success = false;
     bool subscribed = false;
 
-    LOG_WARNING(MSGID_DEPRECATED_API, 4, PMLOGKS("SENDER", LSMessageGetSender(message)),
-                                         PMLOGKS("SENDER_SERVICE", LSMessageGetSenderServiceName(message)),
-                                         PMLOGKS("SERVICE_NAME", SysMgrService::instance()->name_.c_str()),
-                                         PMLOGKS("METHOD", LSMessageGetMethod(message)), "");
+    LOG_WARNING(MSGID_DEPRECATED_API, 4, PMLOGKS("SENDER", LSMessageGetSender(message)), PMLOGKS("SENDER_SERVICE", LSMessageGetSenderServiceName(message)),
+            PMLOGKS("SERVICE_NAME", SysMgrService::instance()->name_.c_str()), PMLOGKS("METHOD", LSMessageGetMethod(message)), "");
 
-    if(LSMessageIsSubscription(message))
-    {
-        if( !LSSubscriptionProcess(lshandle, message, &subscribed, &lserror) )
-        {
+    if (LSMessageIsSubscription(message)) {
+        if (!LSSubscriptionProcess(lshandle, message, &subscribed, &lserror)) {
             goto Done;
         }
     }
 
     reply.put("finished", SysMgrService::instance()->getBootStatus());
-    reply.put("firstUse", ! (boost::filesystem::exists(g_firt_use_flag)) );
+    reply.put("firstUse", !(boost::filesystem::exists(g_firt_use_flag)));
 
     success = true;
-Done:
-    reply.put("returnValue", success);
+    Done: reply.put("returnValue", success);
     reply.put("subscribed", subscribed);
 
-    if ( !LSMessageReply(lshandle, message, JUtil::jsonToString(reply).c_str(), &lserror) )
-    {
+    if (!LSMessageReply(lshandle, message, JUtil::jsonToString(reply).c_str(), &lserror)) {
         return false;
     }
     return true;
@@ -141,12 +132,12 @@ Done:
 void SysMgrService::postBootStatus(const pbnjson::JValue& jmsg)
 {
     bool status = false;
-    if (jmsg.hasKey("signals") && jmsg["signals"].isObject() &&
-        jmsg["signals"].hasKey("boot-done") && jmsg["signals"]["boot-done"].isBoolean()) {
+    if (jmsg.hasKey("signals") && jmsg["signals"].isObject() && jmsg["signals"].hasKey("boot-done") && jmsg["signals"]["boot-done"].isBoolean()) {
         status = jmsg["signals"]["boot-done"].asBool();
     }
 
-    if(m_bootStatus == status) return;
+    if (m_bootStatus == status)
+        return;
 
     LSErrorSafe lserror;
     pbnjson::JValue request = pbnjson::Object();
@@ -159,28 +150,22 @@ void SysMgrService::postBootStatus(const pbnjson::JValue& jmsg)
     get_categories(categories);
 
     std::string category;
-    for(auto it = categories.begin(); it != categories.end(); ++it)
-    {
+    for (auto it = categories.begin(); it != categories.end(); ++it) {
         category = *it;
 
-        if(!LSSubscriptionReply(SysMgrService::instance()->ServiceHandle(),
-                               (category + "getBootStatus").c_str(),
-                               JUtil::jsonToString(request).c_str(), &lserror))
+        if (!LSSubscriptionReply(SysMgrService::instance()->ServiceHandle(), (category + "getBootStatus").c_str(), JUtil::jsonToString(request).c_str(), &lserror))
             return;
     }
 }
 
-
-bool SysMgrService::cb_no_op(LSHandle* lshandle, LSMessage *msg,void *user_data)
+bool SysMgrService::cb_no_op(LSHandle* lshandle, LSMessage *msg, void *user_data)
 {
     return false;
 }
 
-LSMethod * SysMgrService::get_methods(std::string category) const {
-    static LSMethod s_methods[] = {
-        { "getBootStatus", SysMgrService::cb_getBootStatus },
-        { 0, 0 }
-    };
+LSMethod * SysMgrService::get_methods(std::string category) const
+{
+    static LSMethod s_methods[] = { { "getBootStatus", SysMgrService::cb_getBootStatus }, { 0, 0 } };
     return s_methods;
 }
 

@@ -71,7 +71,7 @@ void KeywordMap::addKeywords(pbnjson::JValue jsonArray)
         return;
 
     int numItems = jsonArray.arraySize();
-    for (int i=0; i < numItems; i++) {
+    for (int i = 0; i < numItems; i++) {
 
         pbnjson::JValue key = jsonArray[i];
         if (key.isString()) {

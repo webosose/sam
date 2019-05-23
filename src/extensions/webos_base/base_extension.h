@@ -37,34 +37,34 @@
 
 class BaseExtension: public Singleton<BaseExtension> {
 public:
-  void init(PrerequisiteMonitor& prerequisite_monitor);
-  void OnReady();
+    void init(PrerequisiteMonitor& prerequisite_monitor);
+    void OnReady();
 
-  AppDesc4BasicPtr GetAppDesc(const std::string& app_id);
+    AppDesc4BasicPtr GetAppDesc(const std::string& app_id);
 
 private:
-  friend class Singleton<BaseExtension> ;
-  BaseExtension();
-  virtual ~BaseExtension();
-  BaseExtension(BaseExtension const&);
-  BaseExtension& operator=(const BaseExtension&);
+    friend class Singleton<BaseExtension> ;
+    BaseExtension();
+    virtual ~BaseExtension();
+    BaseExtension(BaseExtension const&);
+    BaseExtension& operator=(const BaseExtension&);
 
-  void OnLaunchingFinished(AppLaunchingItemPtr item);
+    void OnLaunchingFinished(AppLaunchingItemPtr item);
 
-  // lifecycle adapter
-  AppLaunchingItemFactory4Base app_launching_item_factory_;
-  Prelauncher4Base prelauncher_;
-  MemoryChecker4Base memory_checker_;
-  LastAppHandler4Base lastapp_handler_;
+    // lifecycle adapter
+    AppLaunchingItemFactory4Base app_launching_item_factory_;
+    Prelauncher4Base prelauncher_;
+    MemoryChecker4Base memory_checker_;
+    LastAppHandler4Base lastapp_handler_;
 
-  // package adapter
-  AppScanFilter4Base app_scan_filter_;
-  AppDescriptionFactory4Base app_description_factory_;
+    // package adapter
+    AppScanFilter4Base app_scan_filter_;
+    AppDescriptionFactory4Base app_description_factory_;
 
-  // launchpoint adapter
-  DbHandler4Base db_handler_;
-  OrderingHandler4Base ordering_handler_;
-  LaunchPointFactory4Basic launch_point_factory_;
+    // launchpoint adapter
+    DbHandler4Base db_handler_;
+    OrderingHandler4Base ordering_handler_;
+    LaunchPointFactory4Basic launch_point_factory_;
 
 };
 

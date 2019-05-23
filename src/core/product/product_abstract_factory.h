@@ -21,7 +21,7 @@
 #include "core/base/singleton.h"
 
 class ProductAbstractFactory: public Singleton<ProductAbstractFactory> {
- public:
+public:
     ProductAbstractFactory();
     ~ProductAbstractFactory();
 
@@ -29,8 +29,8 @@ class ProductAbstractFactory: public Singleton<ProductAbstractFactory> {
     void OnReady();
     void Terminate();
 
- private:
-    friend class Singleton<ProductAbstractFactory>;
+private:
+    friend class Singleton<ProductAbstractFactory> ;
 };
 
 #endif  // CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_

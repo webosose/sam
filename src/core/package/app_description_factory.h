@@ -20,10 +20,10 @@
 #include "interface/package/app_description_factory_interface.h"
 
 class AppDescriptionFactory: public AppDescriptionFactoryInterface {
- public:
-  AppDescriptionFactory();
-  virtual ~AppDescriptionFactory();
-  virtual AppDescPtr Create(AppTypeByDir type_by_dir, pbnjson::JValue& jdesc, std::string& err_text);
+public:
+    AppDescriptionFactory();
+    virtual ~AppDescriptionFactory();
+    virtual AppDescPtr Create(AppTypeByDir type_by_dir, pbnjson::JValue& jdesc, std::string& err_text);
 };
 
 #endif // CORE_PACKAGE_APP_DESCRIPTION_FACTORY_H_

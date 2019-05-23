@@ -29,115 +29,115 @@
 #include "core/module/service_observer.h"
 #include "core/setting/settings.h"
 
-LocalePreferences::LocalePreferences() : locale_info_token_(0) {
+LocalePreferences::LocalePreferences() :
+        locale_info_token_(0)
+{
 }
 
-LocalePreferences::~LocalePreferences() {
+LocalePreferences::~LocalePreferences()
+{
 }
 
-void LocalePreferences::Init() {
+void LocalePreferences::Init()
+{
 }
 
-void LocalePreferences::OnRestInit() {
+void LocalePreferences::OnRestInit()
+{
 
-  pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::instance().localeInfoPath, std::string(""));
-  UpdateLocaleInfo(locale_info);
+    pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::instance().localeInfoPath, std::string(""));
+    UpdateLocaleInfo(locale_info);
 
-  ServiceObserver::instance().Add(WEBOS_SERVICE_SETTINGS,
-      std::bind(&LocalePreferences::OnSettingServiceStatusChanaged, this, std::placeholders::_1));
+    ServiceObserver::instance().Add(WEBOS_SERVICE_SETTINGS, std::bind(&LocalePreferences::OnSettingServiceStatusChanaged, this, std::placeholders::_1));
 }
 
-void LocalePreferences::OnSettingServiceStatusChanaged(bool connection) {
-  if (connection) {
-    if (locale_info_token_ == 0) {
-      std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
-      if (!LSCall(AppMgrService::instance().ServiceHandle(),
-                  "luna://com.webos.settingsservice/getSystemSettings",
-                  payload.c_str(), OnLocaleInfoReceived, this, &locale_info_token_, NULL)) {
-        LOG_WARNING(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "lscall"), PMLOGKS("where", __FUNCTION__),
-            "failed_subscribing_settings");
-      }
+void LocalePreferences::OnSettingServiceStatusChanaged(bool connection)
+{
+    if (connection) {
+        if (locale_info_token_ == 0) {
+            std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
+            if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), OnLocaleInfoReceived, this, &locale_info_token_, NULL)) {
+                LOG_WARNING(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "lscall"), PMLOGKS("where", __FUNCTION__), "failed_subscribing_settings");
+            }
+        }
+    } else {
+        if (0 != locale_info_token_) {
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), locale_info_token_, NULL);
+            locale_info_token_ = 0;
+        }
     }
-  } else {
-    if (0 != locale_info_token_) {
-      (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), locale_info_token_, NULL);
-      locale_info_token_ = 0;
-    }
-  }
 }
 
-bool LocalePreferences::OnLocaleInfoReceived(LSHandle* sh, LSMessage* message, void* user_data) {
-  LocalePreferences* s_this = static_cast<LocalePreferences*>(user_data);
-  if (s_this == NULL)
-    return false;
+bool LocalePreferences::OnLocaleInfoReceived(LSHandle* sh, LSMessage* message, void* user_data)
+{
+    LocalePreferences* s_this = static_cast<LocalePreferences*>(user_data);
+    if (s_this == NULL)
+        return false;
 
-  pbnjson::JValue json = JUtil::parse(LSMessageGetPayload(message), std::string(""));
+    pbnjson::JValue json = JUtil::parse(LSMessageGetPayload(message), std::string(""));
 
-  LOG_DEBUG("[RESPONSE-SUBSCRIPTION]: %s", JUtil::jsonToString(json).c_str());
+    LOG_DEBUG("[RESPONSE-SUBSCRIPTION]: %s", JUtil::jsonToString(json).c_str());
 
-  if (json.isNull() || !json["returnValue"].asBool() || !json["settings"].isObject()) {
-    LOG_WARNING(MSGID_RECEIVED_INVALID_SETTINGS, 1, PMLOGKS("reason", "invalid_return"),
-                                                    "received invaild message from settings service");
+    if (json.isNull() || !json["returnValue"].asBool() || !json["settings"].isObject()) {
+        LOG_WARNING(MSGID_RECEIVED_INVALID_SETTINGS, 1, PMLOGKS("reason", "invalid_return"), "received invaild message from settings service");
+        return true;
+    }
+
+    s_this->UpdateLocaleInfo(json["settings"]);
+
     return true;
-  }
-
-  s_this->UpdateLocaleInfo(json["settings"]);
-
-  return true;
 }
 
+void LocalePreferences::UpdateLocaleInfo(const pbnjson::JValue& j_locale)
+{
 
-void LocalePreferences::UpdateLocaleInfo(const pbnjson::JValue& j_locale) {
+    std::string ui_locale_info;
 
-  std::string ui_locale_info;
+    // load language info
+    if (j_locale.isNull() || j_locale.isObject() == false)
+        return;
 
-  // load language info
-  if (j_locale.isNull() || j_locale.isObject() == false) return;
+    if (j_locale.hasKey("localeInfo") && j_locale["localeInfo"].hasKey("locales") && j_locale["localeInfo"]["locales"].hasKey("UI")) {
+        ui_locale_info = j_locale["localeInfo"]["locales"]["UI"].asString();
+    }
 
-  if (j_locale.hasKey("localeInfo") && j_locale["localeInfo"].hasKey("locales") &&
-      j_locale["localeInfo"]["locales"].hasKey("UI")) {
-    ui_locale_info = j_locale["localeInfo"]["locales"]["UI"].asString();
-  }
-
-  if (!ui_locale_info.empty() && ui_locale_info != locale_info_) {
-    locale_info_ = ui_locale_info;
-    SetLocaleInfo(locale_info_);
-  }
+    if (!ui_locale_info.empty() && ui_locale_info != locale_info_) {
+        locale_info_ = ui_locale_info;
+        SetLocaleInfo(locale_info_);
+    }
 
 }
 
 /// separate the substrings of BCP-47 (langauge-Script-COUNTRY)
-void LocalePreferences::SetLocaleInfo(const std::string& locale) {
+void LocalePreferences::SetLocaleInfo(const std::string& locale)
+{
 
-  std::string language;
-  std::string script;
-  std::string region;
+    std::string language;
+    std::string script;
+    std::string region;
 
-  if(locale.empty()) {
-    language = "";
-    script = "";
-    region = "";
-  } else {
-    icu::Locale icu_UI_locale = icu::Locale::createFromName(locale.c_str());
+    if (locale.empty()) {
+        language = "";
+        script = "";
+        region = "";
+    } else {
+        icu::Locale icu_UI_locale = icu::Locale::createFromName(locale.c_str());
 
-    language = icu_UI_locale.getLanguage();
-    script = icu_UI_locale.getScript();
-    region = icu_UI_locale.getCountry();
-  }
+        language = icu_UI_locale.getLanguage();
+        script = icu_UI_locale.getScript();
+        region = icu_UI_locale.getCountry();
+    }
 
-  if (language == language_ && script == script_ && region == region_) {
-    return;
-  }
+    if (language == language_ && script == script_ && region == region_) {
+        return;
+    }
 
-  language_ = language;
-  script_   = script;
-  region_   = region;
+    language_ = language;
+    script_ = script;
+    region_ = region;
 
-  LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4, PMLOGKS("locale", locale.c_str()),
-                                         PMLOGKS("language", language_.c_str()),
-                                         PMLOGKS("script", script_.c_str()),
-                                         PMLOGKS("region", region_.c_str()), "");
+    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4, PMLOGKS("locale", locale.c_str()), PMLOGKS("language", language_.c_str()), PMLOGKS("script", script_.c_str()), PMLOGKS("region", region_.c_str()), "");
 
-  ResBundleAdaptor::instance().setLocale(locale);
-  signalLocaleChanged(language_, script_, region_);
+    ResBundleAdaptor::instance().setLocale(locale);
+    signalLocaleChanged(language_, script_, region_);
 }

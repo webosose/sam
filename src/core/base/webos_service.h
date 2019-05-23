@@ -19,10 +19,11 @@
 
 #include <glib.h>
 
-class WebOSService
-{
+class WebOSService {
 public:
-    virtual ~WebOSService() {}
+    virtual ~WebOSService()
+    {
+    }
 
     void start();
     void stop();
@@ -35,7 +36,10 @@ protected:
     virtual bool initialize() = 0;
     virtual bool terminate() = 0;
 
-    GMainLoop* main_loop() { return m_main_loop; }
+    GMainLoop* main_loop()
+    {
+        return m_main_loop;
+    }
 
 private:
     void init();

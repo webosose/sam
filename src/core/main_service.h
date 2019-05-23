@@ -19,8 +19,7 @@
 
 #include "core/base/webos_service.h"
 
-class MainService : public WebOSService
-{
+class MainService: public WebOSService {
 public:
     virtual ~MainService();
 

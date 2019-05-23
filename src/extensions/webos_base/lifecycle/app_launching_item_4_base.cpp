@@ -16,13 +16,12 @@
 
 #include "extensions/webos_base/lifecycle/app_launching_item_4_base.h"
 
-AppLaunchingItem4Base::AppLaunchingItem4Base(const std::string& appid,
-                                               AppLaunchRequestType rtype,
-                                               const pbnjson::JValue& params,
-                                               LSMessage* lsmsg)
-    : AppLaunchingItem(appid, rtype, params, lsmsg) {
+AppLaunchingItem4Base::AppLaunchingItem4Base(const std::string& appid, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg) :
+        AppLaunchingItem(appid, rtype, params, lsmsg)
+{
 }
 
-AppLaunchingItem4Base::~AppLaunchingItem4Base() {
+AppLaunchingItem4Base::~AppLaunchingItem4Base()
+{
 
 }

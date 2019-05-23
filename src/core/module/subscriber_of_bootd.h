@@ -24,27 +24,29 @@
 #include "core/base/singleton.h"
 
 class BootdSubscriber: public Singleton<BootdSubscriber> {
- public:
-  BootdSubscriber();
-  ~BootdSubscriber();
+public:
+    BootdSubscriber();
+    ~BootdSubscriber();
 
-  void Init();
-  boost::signals2::connection SubscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func);
+    void Init();
+    boost::signals2::connection SubscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func);
 
-  void OnServerStatusChanged(bool connection);
-  static bool OnBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-  const std::string& getBootStatus() const { return boot_status_str_; }
+    void OnServerStatusChanged(bool connection);
+    static bool OnBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    const std::string& getBootStatus() const
+    {
+        return boot_status_str_;
+    }
 
- private:
-  friend class Singleton<BootdSubscriber>;
+private:
+    friend class Singleton<BootdSubscriber> ;
 
-  void RequestBootStatus();
+    void RequestBootStatus();
 
-  LSMessageToken token_boot_status_;
-  std::string boot_status_str_;
-  boost::signals2::signal<void (const pbnjson::JValue&)> notify_boot_status;
+    LSMessageToken token_boot_status_;
+    std::string boot_status_str_;
+    boost::signals2::signal<void(const pbnjson::JValue&)> notify_boot_status;
 };
 
 #endif  // CORE_MODULE_SUBSCRIBER_OF_BOOTD_H_
-
 

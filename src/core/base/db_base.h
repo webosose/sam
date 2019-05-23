@@ -25,8 +25,7 @@
 #include <pbnjson.hpp>
 #include <string>
 
-class DBBase
-{
+class DBBase {
 public:
     DBBase();
     virtual ~DBBase();
@@ -36,12 +35,15 @@ public:
     virtual bool UpdateData(const pbnjson::JValue& json);
     virtual bool DeleteData(const pbnjson::JValue& json);
 
-    virtual std::string Name() const { return db_name_; }
+    virtual std::string Name() const
+    {
+        return db_name_;
+    }
 
     void LoadDb();
     bool Db8Query(const std::string& cmd, const std::string& query);
 
-    boost::signals2::signal<void (const pbnjson::JValue& loaded_db_result)> signal_db_loaded_;
+    boost::signals2::signal<void(const pbnjson::JValue& loaded_db_result)> signal_db_loaded_;
 
 protected:
     std::string db_name_;

@@ -23,28 +23,30 @@
 
 #include "core/base/singleton.h"
 
-class ConfigdSubscriber : public Singleton<ConfigdSubscriber> {
- public:
-  ConfigdSubscriber();
-  ~ConfigdSubscriber();
+class ConfigdSubscriber: public Singleton<ConfigdSubscriber> {
+public:
+    ConfigdSubscriber();
+    ~ConfigdSubscriber();
 
-  void Init();
-  void AddRequiredKey(const std::string& key) { config_keys_.push_back(key); }
-  boost::signals2::connection SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func);
+    void Init();
+    void AddRequiredKey(const std::string& key)
+    {
+        config_keys_.push_back(key);
+    }
+    boost::signals2::connection SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func);
 
-  void OnServerStatusChanged(bool connection);
-  static bool ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void OnServerStatusChanged(bool connection);
+    static bool ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
- private:
-  friend class Singleton<ConfigdSubscriber>;
+private:
+    friend class Singleton<ConfigdSubscriber> ;
 
-  void RequestConfigInfo();
+    void RequestConfigInfo();
 
-  std::vector<std::string> config_keys_;
-  LSMessageToken token_config_info_;
-  boost::signals2::signal<void (const pbnjson::JValue&)> notify_config_info;
+    std::vector<std::string> config_keys_;
+    LSMessageToken token_config_info_;
+    boost::signals2::signal<void(const pbnjson::JValue&)> notify_config_info;
 };
 
 #endif  // CORE_MODULE_SUBSCRIBER_OF_CONFIGD_H_
-
 

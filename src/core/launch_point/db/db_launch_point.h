@@ -18,16 +18,15 @@
 
 #include <string>
 
-class DBLaunchPoint : public DBBase
-{
- public:
-  DBLaunchPoint();
-  virtual ~DBLaunchPoint();
+class DBLaunchPoint: public DBBase {
+public:
+    DBLaunchPoint();
+    virtual ~DBLaunchPoint();
 
-  virtual void Init() override;
-  virtual bool InsertData(const pbnjson::JValue& json) override;
-  virtual bool UpdateData(const pbnjson::JValue& json) override;
-  virtual bool DeleteData(const pbnjson::JValue& json) override;
+    virtual void Init() override;
+    virtual bool InsertData(const pbnjson::JValue& json) override;
+    virtual bool UpdateData(const pbnjson::JValue& json) override;
+    virtual bool DeleteData(const pbnjson::JValue& json) override;
 
- private:
+private:
 };

@@ -24,64 +24,71 @@
 #include "core/bus/appmgr_service.h"
 #include "core/module/service_observer.h"
 
-ConfigdSubscriber::ConfigdSubscriber() : token_config_info_(0) {
+ConfigdSubscriber::ConfigdSubscriber() :
+        token_config_info_(0)
+{
 }
 
-ConfigdSubscriber::~ConfigdSubscriber() {
+ConfigdSubscriber::~ConfigdSubscriber()
+{
 }
 
-void ConfigdSubscriber::Init() {
-  ServiceObserver::instance().Add(WEBOS_SERVICE_CONFIGD,
-      std::bind(&ConfigdSubscriber::OnServerStatusChanged, this, std::placeholders::_1));
+void ConfigdSubscriber::Init()
+{
+    ServiceObserver::instance().Add(WEBOS_SERVICE_CONFIGD, std::bind(&ConfigdSubscriber::OnServerStatusChanged, this, std::placeholders::_1));
 }
 
-boost::signals2::connection ConfigdSubscriber::SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func) {
-  return notify_config_info.connect(func);
+boost::signals2::connection ConfigdSubscriber::SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func)
+{
+    return notify_config_info.connect(func);
 }
 
-void ConfigdSubscriber::OnServerStatusChanged(bool connection) {
-  if(connection) {
-    RequestConfigInfo();
-  } else {
-    if(0 != token_config_info_) {
-      (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_config_info_, NULL);
-      token_config_info_ = 0;
+void ConfigdSubscriber::OnServerStatusChanged(bool connection)
+{
+    if (connection) {
+        RequestConfigInfo();
+    } else {
+        if (0 != token_config_info_) {
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_config_info_, NULL);
+            token_config_info_ = 0;
+        }
     }
-  }
 }
 
-void ConfigdSubscriber::RequestConfigInfo() {
-  if(token_config_info_ != 0) return;
-  if(config_keys_.empty()) return;
+void ConfigdSubscriber::RequestConfigInfo()
+{
+    if (token_config_info_ != 0)
+        return;
+    if (config_keys_.empty())
+        return;
 
-  pbnjson::JValue payload = pbnjson::Object();
-  pbnjson::JValue configs = pbnjson::Array();
+    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue configs = pbnjson::Array();
 
-  payload.put("subscribe", true);
-  for(auto& key: config_keys_) {
-    configs.append(key);
-  }
-  payload.put("configNames", configs);
+    payload.put("subscribe", true);
+    for (auto& key : config_keys_) {
+        configs.append(key);
+    }
+    payload.put("configNames", configs);
 
-  std::string method = std::string("luna://") + WEBOS_SERVICE_CONFIGD + std::string("/getConfigs");
+    std::string method = std::string("luna://") + WEBOS_SERVICE_CONFIGD + std::string("/getConfigs");
 
-  LSErrorSafe lserror;
-  if (!LSCall(AppMgrService::instance().ServiceHandle(),
-      method.c_str(), JUtil::jsonToString(payload).c_str(),
-      ConfigInfoCallback, this, &token_config_info_, &lserror)) {
-          LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"),
-              PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()),
-              PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
-  }
+    LSErrorSafe lserror;
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), method.c_str(), JUtil::jsonToString(payload).c_str(), ConfigInfoCallback, this, &token_config_info_, &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    }
 }
 
-bool ConfigdSubscriber::ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data) {
-  ConfigdSubscriber* subscriber = static_cast<ConfigdSubscriber*>(user_data);
-  if(!subscriber) return false;
+bool ConfigdSubscriber::ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+{
+    ConfigdSubscriber* subscriber = static_cast<ConfigdSubscriber*>(user_data);
+    if (!subscriber)
+        return false;
 
-  pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-  if (jmsg.isNull()) return false;
+    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
+    if (jmsg.isNull())
+        return false;
 
-  subscriber->notify_config_info(jmsg);
-  return true;
+    subscriber->notify_config_info(jmsg);
+    return true;
 }

@@ -19,8 +19,7 @@
 extern PmLogContext GetSAMPmLogContext()
 {
     static PmLogContext samLogContext = 0;
-    if (0 == samLogContext)
-    {
+    if (0 == samLogContext) {
         PmLogGetContext("SAM", &samLogContext);
     }
 

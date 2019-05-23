@@ -19,8 +19,7 @@
 
 #include "interface/lifecycle/memory_checker_interface.h"
 
-class MemoryChecker: public MemoryCheckerInterface
-{
+class MemoryChecker: public MemoryCheckerInterface {
 public:
     MemoryChecker();
     ~MemoryChecker();

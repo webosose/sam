@@ -21,27 +21,18 @@
 
 #include "core/lifecycle/launching_item.h"
 
-enum class StageHandlerReturn4Base : int {
-  GO_NEXT_STAGE,
-  GO_DEPENDENT_STAGE,
-  REDIRECTED,
-  ERROR,
+enum class StageHandlerReturn4Base
+    : int {
+        GO_NEXT_STAGE, GO_DEPENDENT_STAGE, REDIRECTED, ERROR,
 };
 
-enum class StageHandlerType4Base : int {
-  MAIN_CALL,
-  SUB_CALL,
-  SUB_BRIDGE_CALL,
-  BRIDGE_CALL,
-  DIRECT_CHECK,
+enum class StageHandlerType4Base
+    : int {
+        MAIN_CALL, SUB_CALL, SUB_BRIDGE_CALL, BRIDGE_CALL, DIRECT_CHECK,
 };
 
 enum class AppLaunchingStage4Base {
-  INVALID = -1,
-  PREPARE_PRELAUNCH = 0,
-  CHECK_EXECUTE,
-  PRELAUNCH_DONE,
-  MEMORY_CHECK_DONE,
+    INVALID = -1, PREPARE_PRELAUNCH = 0, CHECK_EXECUTE, PRELAUNCH_DONE, MEMORY_CHECK_DONE,
 };
 
 class AppLaunchingItem4Base;
@@ -52,47 +43,47 @@ typedef boost::function<bool(AppLaunchingItem4BasePtr, pbnjson::JValue&)> Payloa
 typedef boost::function<StageHandlerReturn4Base(AppLaunchingItem4BasePtr)> StageHandler4Base;
 
 struct StageItem4Base {
-  StageHandlerType4Base handler_type;
-  std::string uri;
-  PayloadMaker4Base payload_maker;
-  StageHandler4Base handler;
-  AppLaunchingStage4Base launching_stage;
+    StageHandlerType4Base handler_type;
+    std::string uri;
+    PayloadMaker4Base payload_maker;
+    StageHandler4Base handler;
+    AppLaunchingStage4Base launching_stage;
 
-  StageItem4Base(StageHandlerType4Base _type, const std::string& _uri, PayloadMaker4Base _maker, StageHandler4Base _handler, AppLaunchingStage4Base _stage)
-      : handler_type(_type)
-      , uri(_uri)
-      , payload_maker(_maker)
-      , handler(_handler)
-      , launching_stage(_stage) {
-  }
+    StageItem4Base(StageHandlerType4Base _type, const std::string& _uri, PayloadMaker4Base _maker, StageHandler4Base _handler, AppLaunchingStage4Base _stage) :
+            handler_type(_type), uri(_uri), payload_maker(_maker), handler(_handler), launching_stage(_stage)
+    {
+    }
 };
 
 typedef std::deque<StageItem4Base> StageItem4BaseList;
 
 class AppLaunchingItem4Base: public AppLaunchingItem {
 public:
-  AppLaunchingItem4Base(const std::string& appid, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg);
-  virtual ~AppLaunchingItem4Base();
+    AppLaunchingItem4Base(const std::string& appid, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg);
+    virtual ~AppLaunchingItem4Base();
 
-  StageItem4BaseList& stage_list() {
-    return stage_list_;
-  }
+    StageItem4BaseList& stage_list()
+    {
+        return stage_list_;
+    }
 
-  void add_stage(StageItem4Base item) {
-    stage_list_.push_back(item);
-  }
+    void add_stage(StageItem4Base item)
+    {
+        stage_list_.push_back(item);
+    }
 
-  void pop_front_stage_list() {
-    stage_list_.pop_front();
-  }
+    void pop_front_stage_list()
+    {
+        stage_list_.pop_front();
+    }
 
-  void clear_all_stages() {
-    stage_list_.clear();
-  }
+    void clear_all_stages()
+    {
+        stage_list_.clear();
+    }
 
 private:
-  StageItem4BaseList stage_list_;
+    StageItem4BaseList stage_list_;
 };
-
 
 #endif

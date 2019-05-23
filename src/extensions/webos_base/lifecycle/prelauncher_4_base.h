@@ -22,31 +22,31 @@
 
 class Prelauncher4Base: public PrelauncherInterface {
 public:
-  Prelauncher4Base();
-  virtual ~Prelauncher4Base();
+    Prelauncher4Base();
+    virtual ~Prelauncher4Base();
 
-  virtual void add_item(AppLaunchingItemPtr item);
-  virtual void remove_item(const std::string& app_uid);
-  virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
-  virtual void cancel_all();
-
-private:
-  static bool cb_return_lscall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-  static bool cb_return_lscall_for_bridged_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-
-  void run_stages(AppLaunchingItem4BasePtr prelaunching_item);
-  void handle_stages(AppLaunchingItem4BasePtr prelaunching_item);
-
-  void redirect_to_another(AppLaunchingItem4BasePtr prelaunching_item);
-  void finish_prelaunching(AppLaunchingItem4BasePtr prelaunching_item);
-
-  AppLaunchingItem4BasePtr get_lscall_request_item_by_token(const LSMessageToken& token);
-  AppLaunchingItem4BasePtr get_item_by_uid(const std::string& uid);
-  void remove_item_from_lscall_request_list(const std::string& uid);
+    virtual void add_item(AppLaunchingItemPtr item);
+    virtual void remove_item(const std::string& app_uid);
+    virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
+    virtual void cancel_all();
 
 private:
-  AppLaunchingItem4BaseList item_queue_;
-  AppLaunchingItem4BaseList lscall_request_list_;
+    static bool cb_return_lscall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool cb_return_lscall_for_bridged_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+
+    void run_stages(AppLaunchingItem4BasePtr prelaunching_item);
+    void handle_stages(AppLaunchingItem4BasePtr prelaunching_item);
+
+    void redirect_to_another(AppLaunchingItem4BasePtr prelaunching_item);
+    void finish_prelaunching(AppLaunchingItem4BasePtr prelaunching_item);
+
+    AppLaunchingItem4BasePtr get_lscall_request_item_by_token(const LSMessageToken& token);
+    AppLaunchingItem4BasePtr get_item_by_uid(const std::string& uid);
+    void remove_item_from_lscall_request_list(const std::string& uid);
+
+private:
+    AppLaunchingItem4BaseList item_queue_;
+    AppLaunchingItem4BaseList lscall_request_list_;
 
 };
 

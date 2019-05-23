@@ -25,36 +25,48 @@
 
 #include "core/base/singleton.h"
 
-class LocalePreferences : public Singleton<LocalePreferences> {
- public:
-  void Init();
-  void OnRestInit();
+class LocalePreferences: public Singleton<LocalePreferences> {
+public:
+    void Init();
+    void OnRestInit();
 
-  const std::string& UIlocale() const { return locale_info_; }
-  const std::string& Language() const { return language_; }
-  const std::string& Script() const { return script_; }
-  const std::string& Region() const { return region_; }
+    const std::string& UIlocale() const
+    {
+        return locale_info_;
+    }
+    const std::string& Language() const
+    {
+        return language_;
+    }
+    const std::string& Script() const
+    {
+        return script_;
+    }
+    const std::string& Region() const
+    {
+        return region_;
+    }
 
-  boost::signals2::signal<void (std::string, std::string, std::string)> signalLocaleChanged;
+    boost::signals2::signal<void(std::string, std::string, std::string)> signalLocaleChanged;
 
- private:
-  friend class Singleton<LocalePreferences>;
+private:
+    friend class Singleton<LocalePreferences> ;
 
-  LocalePreferences();
-  ~LocalePreferences();
+    LocalePreferences();
+    ~LocalePreferences();
 
-  void OnSettingServiceStatusChanaged(bool connection);
-  static bool OnLocaleInfoReceived(LSHandle *sh, LSMessage *message, void *user_data);
+    void OnSettingServiceStatusChanaged(bool connection);
+    static bool OnLocaleInfoReceived(LSHandle *sh, LSMessage *message, void *user_data);
 
-  void UpdateLocaleInfo(const pbnjson::JValue& j_locale);
-  void SetLocaleInfo(const std::string& locale);
+    void UpdateLocaleInfo(const pbnjson::JValue& j_locale);
+    void SetLocaleInfo(const std::string& locale);
 
-  std::string locale_info_;
-  std::string language_;
-  std::string script_;
-  std::string region_;
+    std::string locale_info_;
+    std::string language_;
+    std::string script_;
+    std::string region_;
 
-  LSMessageToken locale_info_token_;
+    LSMessageToken locale_info_token_;
 };
 #endif // CORE_MODULE_LOCALE_PREFERENCES_H_
 

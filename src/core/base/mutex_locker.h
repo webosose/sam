@@ -19,11 +19,17 @@
 
 #include "core/base/mutex.h"
 
-class MutexLocker
-{
+class MutexLocker {
 public:
-    MutexLocker(Mutex* mutex) : m_mutex(mutex) { m_mutex->lock(); }
-    ~MutexLocker() { m_mutex->unlock(); }
+    MutexLocker(Mutex* mutex) :
+            m_mutex(mutex)
+    {
+        m_mutex->lock();
+    }
+    ~MutexLocker()
+    {
+        m_mutex->unlock();
+    }
 
 private:
     Mutex* m_mutex;

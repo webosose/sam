@@ -26,20 +26,15 @@ AppLaunchingItemDefaultFactory::~AppLaunchingItemDefaultFactory()
 
 }
 
-AppLaunchingItemPtr AppLaunchingItemDefaultFactory::Create(
-    const std::string& app_id, AppLaunchRequestType rtype,
-    const pbnjson::JValue& params, LSMessage* lsmsg,
-    int& err_code, std::string& err_text)
+AppLaunchingItemPtr AppLaunchingItemDefaultFactory::Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
 {
-    if(app_id.empty())
-    {
+    if (app_id.empty()) {
         // leave error log
         return NULL;
     }
 
     AppLaunchingItemPtr new_item = std::make_shared<AppLaunchingItem>(app_id, rtype, params, lsmsg);
-    if(new_item == NULL)
-    {
+    if (new_item == NULL) {
         // leave error log
         return NULL;
     }

@@ -23,14 +23,14 @@
 
 class DBLaunchPoint4Base: public DBBase {
 public:
-  DBLaunchPoint4Base();
-  virtual ~DBLaunchPoint4Base();
+    DBLaunchPoint4Base();
+    virtual ~DBLaunchPoint4Base();
 
-  virtual void Init() override;
+    virtual void Init() override;
 
-  virtual bool InsertData(const pbnjson::JValue& json) override;
-  virtual bool UpdateData(const pbnjson::JValue& json) override;
-  virtual bool DeleteData(const pbnjson::JValue& json) override;
+    virtual bool InsertData(const pbnjson::JValue& json) override;
+    virtual bool UpdateData(const pbnjson::JValue& json) override;
+    virtual bool DeleteData(const pbnjson::JValue& json) override;
 
 };
 

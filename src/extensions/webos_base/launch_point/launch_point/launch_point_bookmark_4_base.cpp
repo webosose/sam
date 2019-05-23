@@ -20,29 +20,29 @@
 #include "core/base/logging.h"
 #include "core/base/utils.h"
 
-LaunchPointPtr LaunchPointBookmark4Base::Create(const std::string& lp_id,
-                                                const pbnjson::JValue& data,
-                                                std::string& err_text) {
-  std::string app_id = data["id"].asString();
-  if (app_id.empty())
-    return nullptr;
+LaunchPointPtr LaunchPointBookmark4Base::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+{
+    std::string app_id = data["id"].asString();
+    if (app_id.empty())
+        return nullptr;
 
-  LaunchPoint4BasePtr new_lp = std::make_shared<LaunchPointBookmark4Base>(app_id, lp_id);
-  if (new_lp == nullptr)
-    return nullptr;
+    LaunchPoint4BasePtr new_lp = std::make_shared<LaunchPointBookmark4Base>(app_id, lp_id);
+    if (new_lp == nullptr)
+        return nullptr;
 
-  new_lp->SetAttrWithJson(data);
+    new_lp->SetAttrWithJson(data);
 
-  new_lp->SetLpType(LPType::BOOKMARK);
-  new_lp->SetDefaultLp(false);
-  new_lp->SetRemovable(true);
-  new_lp->SetSystemApp(false);
-  new_lp->SetVisible(true);
+    new_lp->SetLpType(LPType::BOOKMARK);
+    new_lp->SetDefaultLp(false);
+    new_lp->SetRemovable(true);
+    new_lp->SetSystemApp(false);
+    new_lp->SetVisible(true);
 
-  return new_lp;
+    return new_lp;
 }
 
-std::string LaunchPointBookmark4Base::Update(const pbnjson::JValue& data) {
-  SetAttrWithJson(data);
-  return "";
+std::string LaunchPointBookmark4Base::Update(const pbnjson::JValue& data)
+{
+    SetAttrWithJson(data);
+    return "";
 }

@@ -24,17 +24,14 @@
 
 class LaunchPointFactory4Basic: public LaunchPointFactoryInterface {
 public:
-  LaunchPointFactory4Basic();
-  virtual ~LaunchPointFactory4Basic();
+    LaunchPointFactory4Basic();
+    virtual ~LaunchPointFactory4Basic();
 
-  virtual LaunchPointPtr CreateLaunchPoint(const LPType type,
-                                           const std::string& lp_id,
-                                           const pbnjson::JValue& data,
-                                           std::string& errText);
+    virtual LaunchPointPtr CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
 
 private:
-  LaunchPointFactory4Basic(const LaunchPointFactory4Basic&);
-  LaunchPointFactory4Basic& operator=(const LaunchPointFactory4Basic&);
+    LaunchPointFactory4Basic(const LaunchPointFactory4Basic&);
+    LaunchPointFactory4Basic& operator=(const LaunchPointFactory4Basic&);
 
 };
 

@@ -23,21 +23,20 @@
 
 #include <map>
 
-class LaunchPointFactory: public LaunchPointFactoryInterface
-{
- public:
-  LaunchPointFactory();
-  virtual ~LaunchPointFactory();
+class LaunchPointFactory: public LaunchPointFactoryInterface {
+public:
+    LaunchPointFactory();
+    virtual ~LaunchPointFactory();
 
-  virtual LaunchPointPtr CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual LaunchPointPtr CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
 
- private:
-  LaunchPointFactory(const LaunchPointFactory&);
-  LaunchPointFactory& operator=(const LaunchPointFactory&);
+private:
+    LaunchPointFactory(const LaunchPointFactory&);
+    LaunchPointFactory& operator=(const LaunchPointFactory&);
 
-  void RegisterItem(const LPType type, CreateLaunchPointFunc func);
+    void RegisterItem(const LPType type, CreateLaunchPointFunc func);
 
-  std::map<LPType, CreateLaunchPointFunc> factory_map_;
+    std::map<LPType, CreateLaunchPointFunc> factory_map_;
 };
 
 #endif /* LAUNCH_POINT_FACTORY_H */

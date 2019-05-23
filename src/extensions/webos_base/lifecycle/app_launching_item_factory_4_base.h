@@ -21,14 +21,9 @@
 
 class AppLaunchingItemFactory4Base: public AppLaunchingItemFactoryInterface {
 public:
-  AppLaunchingItemFactory4Base();
-  virtual ~AppLaunchingItemFactory4Base();
-  virtual AppLaunchingItemPtr Create(const std::string& initial_app_id,
-                                     AppLaunchRequestType rtype,
-                                     const pbnjson::JValue& initial_params,
-                                     LSMessage* lsmsg,
-                                     int& err_code,
-                                     std::string& err_text);
+    AppLaunchingItemFactory4Base();
+    virtual ~AppLaunchingItemFactory4Base();
+    virtual AppLaunchingItemPtr Create(const std::string& initial_app_id, AppLaunchRequestType rtype, const pbnjson::JValue& initial_params, LSMessage* lsmsg, int& err_code, std::string& err_text);
 };
 
 #endif

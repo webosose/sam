@@ -30,11 +30,10 @@
 #include <glib.h>
 
 namespace pbnjson {
-    class JValue;
+class JValue;
 }
 
-class KeywordMap
-{
+class KeywordMap {
 public:
 
     KeywordMap();

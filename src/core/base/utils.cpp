@@ -46,8 +46,7 @@ std::string read_file(const std::string& file_name)
     std::ifstream file(file_name.c_str(), std::ifstream::in);
     std::string file_contents;
 
-    if(file.is_open() && file.good())
-    {
+    if (file.is_open() && file.good()) {
         std::stringstream buf;
         buf << file.rdbuf();
         file_contents = buf.str();
@@ -58,14 +57,11 @@ std::string read_file(const std::string& file_name)
 
 bool makeDir(const std::string &path, bool withParent)
 {
-    if (!withParent)
-    {
+    if (!withParent) {
         int result = mkdir(path.c_str(), 0755);
         if (result == 0 || errno == EEXIST)
             return true;
-    }
-    else
-    {
+    } else {
         int result = g_mkdir_with_parents(path.c_str(), 0755);
         if (result == 0)
             return true;
@@ -77,13 +73,10 @@ bool makeDir(const std::string &path, bool withParent)
 bool writeFile(const std::string &path, const std::string& buffer)
 {
     std::ofstream file(path.c_str());
-    if (file.is_open())
-    {
+    if (file.is_open()) {
         file << buffer;
         file.close();
-    }
-    else
-    {
+    } else {
         return false;
     }
     return true;
@@ -91,8 +84,7 @@ bool writeFile(const std::string &path, const std::string& buffer)
 
 int rmdirHelper(const char *path, const struct stat *pStat, int flag, struct FTW *ftw)
 {
-    switch(flag)
-    {
+    switch (flag) {
     case FTW_D:
     case FTW_DP:
         if (::rmdir(path) == -1)
@@ -116,15 +108,12 @@ bool removeDir(const std::string &path)
     if (lstat(path.c_str(), &oStat) == -1)
         return false;
 
-    if (S_ISDIR(oStat.st_mode))
-    {
+    if (S_ISDIR(oStat.st_mode)) {
         int flags = FTW_DEPTH;
-        if (::nftw(path.c_str(), rmdirHelper, 10, flags) == -1)
-        {
+        if (::nftw(path.c_str(), rmdirHelper, 10, flags) == -1) {
             return false;
         }
-    }
-    else
+    } else
         return false;
 
     return true;
@@ -134,7 +123,7 @@ bool dir_exists(const std::string& path)
 {
     struct stat st_buf;
     memset(&st_buf, 0, sizeof(st_buf));
-    if(lstat(path.c_str(), &st_buf) == -1)
+    if (lstat(path.c_str(), &st_buf) == -1)
         return false;
 
     return S_ISDIR(st_buf.st_mode);
@@ -147,24 +136,23 @@ bool removeFile(const std::string &path)
     return true;
 }
 
-bool isUrlValid(const  std::string& url)
+bool isUrlValid(const std::string& url)
 {
-    if(!url.size())
+    if (!url.size())
         return false;
 
     boost::regex r_url("^((https?|ftp|palm|luna)://|(file):///|(www|ftp)\\.).+$|(sprint-music:)");
-    if(boost::regex_match(url,r_url))
-    {
+    if (boost::regex_match(url, r_url)) {
         return true;
     }
     return false;
 }
 
-bool isRemoteFile (const char* uri)
+bool isRemoteFile(const char* uri)
 {
-    if(0 == strlen(uri))
+    if (0 == strlen(uri))
         return false;
-    if((strncasecmp (uri, "file:", 5) == 0) || ('/' == uri[0]))
+    if ((strncasecmp(uri, "file:", 5) == 0) || ('/' == uri[0]))
         return false;
     return true;
 }
@@ -172,8 +160,7 @@ bool isRemoteFile (const char* uri)
 std::string getResourceNameFromUrl(const std::string& url)
 {
     std::string resourceName;
-    if (isUrlValid(url))
-    {
+    if (isUrlValid(url)) {
         size_t slashIndex = url.rfind('/');
         if (slashIndex != std::string::npos)
             resourceName = url.c_str() + slashIndex + 1;
@@ -184,101 +171,96 @@ std::string getResourceNameFromUrl(const std::string& url)
 bool getExtensionFromUrl(const std::string& url, std::string& r_extn)
 {
     std::string resource;
-    if (isUrlValid(url))
-    {
+    if (isUrlValid(url)) {
         resource = getResourceNameFromUrl(url);
-    }
-    else
-    {
+    } else {
         resource = url;
     }
 
     std::string::size_type pos = resource.rfind('.');
     if (pos != std::string::npos) {
-        r_extn = resource.substr(pos+1);
+        r_extn = resource.substr(pos + 1);
         std::transform(r_extn.begin(), r_extn.end(), r_extn.begin(), tolower);
         return true;
     }
     return false;
 }
 
-std::string trimWhitespace(const std::string& s,const std::string& drop)
+std::string trimWhitespace(const std::string& s, const std::string& drop)
 {
-    std::string::size_type first = s.find_first_not_of( drop );
-    std::string::size_type last  = s.find_last_not_of( drop );
+    std::string::size_type first = s.find_first_not_of(drop);
+    std::string::size_type last = s.find_last_not_of(drop);
 
-    if( first == std::string::npos || last == std::string::npos ) return std::string( "" );
-    return s.substr( first, last - first + 1 );
+    if (first == std::string::npos || last == std::string::npos)
+        return std::string("");
+    return s.substr(first, last - first + 1);
 }
 
-
-int splitFileAndPath(const std::string& srcPathAndFile,std::string& pathPart,std::string& filePart) {
+int splitFileAndPath(const std::string& srcPathAndFile, std::string& pathPart, std::string& filePart)
+{
 
     std::vector<std::string> parts;
     //printf("splitFileAndPath - input [%s]\n",srcPathAndFile.c_str());
-    int s = splitStringOnKey(parts,srcPathAndFile,std::string("/"));
-    if ((s == 1) && (srcPathAndFile.at(srcPathAndFile.length()-1) == '/')) {
+    int s = splitStringOnKey(parts, srcPathAndFile, std::string("/"));
+    if ((s == 1) && (srcPathAndFile.at(srcPathAndFile.length() - 1) == '/')) {
         //only path part
         pathPart = srcPathAndFile;
         filePart = "";
-    }
-    else if (s == 1) {
+    } else if (s == 1) {
         //only file part
         if (srcPathAndFile.at(0) == '/') {
             pathPart = "/";
-        }
-        else {
+        } else {
             pathPart = "";
         }
         filePart = parts.at(0);
-    }
-    else if (s >= 2) {
-        for (int i=0;i<s-1;i++) {
+    } else if (s >= 2) {
+        for (int i = 0; i < s - 1; i++) {
             if ((parts.at(i)).size() == 0)
                 continue;
-            pathPart += std::string("/")+parts.at(i);
+            pathPart += std::string("/") + parts.at(i);
             //printf("splitFileAndPath - path is now [%s]\n",pathPart.c_str());
         }
         pathPart += std::string("/");
-        filePart = parts.at(s-1);
+        filePart = parts.at(s - 1);
     }
 
     return s;
 }
 
-
-int splitStringOnKey(std::vector<std::string>& returnSplitSubstrings,const std::string& baseStr,const std::string& delims) {
+int splitStringOnKey(std::vector<std::string>& returnSplitSubstrings, const std::string& baseStr, const std::string& delims)
+{
 
     std::string base = trimWhitespace(baseStr);
     std::string::size_type start = 0;
     std::string::size_type mark = 0;
     std::string extracted;
 
-    int i=0;
+    int i = 0;
     while (start < baseStr.size()) {
         //find the start of a non-delims
-        start = baseStr.find_first_not_of(delims,mark);
+        start = baseStr.find_first_not_of(delims, mark);
         if (start == std::string::npos)
             break;
         //find the end of the current substring (where the next instance of delim lives, or end of the string)
-        mark = baseStr.find_first_of(delims,start);
+        mark = baseStr.find_first_of(delims, start);
         if (mark == std::string::npos)
             mark = baseStr.size();
 
-        extracted = baseStr.substr(start,mark-start);
+        extracted = baseStr.substr(start, mark - start);
         if (extracted.size() > 0) {
             //valid string...add it
             returnSplitSubstrings.push_back(extracted);
             ++i;
         }
-        start=mark;
+        start = mark;
     }
 
     return i;
 }
 
-
-bool isNonErrorProcExit(int ecode,int normalCode) {
+bool isNonErrorProcExit(int ecode, int normalCode)
+{
 
     if (!WIFEXITED(ecode))
         return false;
@@ -287,7 +269,6 @@ bool isNonErrorProcExit(int ecode,int normalCode) {
 
     return true;
 }
-
 
 bool splitWindowIdentifierToAppAndProcessId(const std::string& id, std::string& appId, std::string& processId)
 {
@@ -316,26 +297,25 @@ bool splitWindowIdentifierToAppAndProcessId(const std::string& id, std::string& 
 
 bool isNumber(const std::string& str)
 {
-    return !str.empty() && std::find_if(str.begin(), str.end(),
-               [](char c) -> bool{return !std::isdigit(c);}) == str.end();
+    return !str.empty() && std::find_if(str.begin(), str.end(), [](char c) -> bool {return !std::isdigit(c);}) == str.end();
 }
 
 timespec diff(timespec start, timespec end)
 {
     timespec temp;
-    if ((end.tv_nsec-start.tv_nsec)<0) {
-        temp.tv_sec = end.tv_sec-start.tv_sec-1;
-        temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+    if ((end.tv_nsec - start.tv_nsec) < 0) {
+        temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+        temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
     } else {
-        temp.tv_sec = end.tv_sec-start.tv_sec;
-        temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+        temp.tv_sec = end.tv_sec - start.tv_sec;
+        temp.tv_nsec = end.tv_nsec - start.tv_nsec;
     }
     return temp;
 }
 
 void set_slash_to_base_path(std::string& path)
 {
-    if(!path.empty() && path[path.length()-1] == '/')
+    if (!path.empty() && path[path.length() - 1] == '/')
         return;
 
     path.append("/");
@@ -343,7 +323,7 @@ void set_slash_to_base_path(std::string& path)
 
 bool concat_to_filename(const std::string originPath, std::string& returnPath, const std::string addingStr)
 {
-    if(originPath.empty() || addingStr.empty())
+    if (originPath.empty() || addingStr.empty())
         return false;
 
     returnPath = "";
@@ -351,12 +331,9 @@ bool concat_to_filename(const std::string originPath, std::string& returnPath, c
     std::string dir_path, filename, name_only, ext;
     size_t pos_dir = originPath.find_last_of("/");
 
-    if(std::string::npos == pos_dir)
-    {
+    if (std::string::npos == pos_dir) {
         filename = originPath;
-    }
-    else
-    {
+    } else {
         pos_dir = pos_dir + 1;
         dir_path = originPath.substr(0, pos_dir);
         filename = originPath.substr(pos_dir);
@@ -364,13 +341,13 @@ bool concat_to_filename(const std::string originPath, std::string& returnPath, c
 
     size_t pos_ext = filename.find_last_of(".");
 
-    if(std::string::npos == pos_ext)
+    if (std::string::npos == pos_ext)
         return false;
 
     name_only = filename.substr(0, pos_ext);
     ext = filename.substr(pos_ext);
 
-    if(ext.length() < 2)
+    if (ext.length() < 2)
         return false;
 
     returnPath = dir_path + name_only + addingStr + ext;
@@ -381,9 +358,9 @@ bool concat_to_filename(const std::string originPath, std::string& returnPath, c
 double get_current_time()
 {
     timespec current_time;
-    if(clock_gettime(CLOCK_MONOTONIC, &current_time) == -1)
+    if (clock_gettime(CLOCK_MONOTONIC, &current_time) == -1)
         return -1;
-    return (double)current_time.tv_sec * NANO_SECOND + (double)current_time.tv_nsec;
+    return (double) current_time.tv_sec * NANO_SECOND + (double) current_time.tv_nsec;
 }
 
 bool convertToWindowTypeSAM(const std::string& lsm, std::string& sam)
@@ -398,21 +375,21 @@ bool convertToWindowTypeSAM(const std::string& lsm, std::string& sam)
     static struct {
         const std::string sam;
         const std::string lsm;
-    } windowTypeMap [] = {
-        { "card",          "_WEBOS_WINDOW_TYPE_CARD" },
+    } windowTypeMap[] = {
+        { "card", "_WEBOS_WINDOW_TYPE_CARD" },
         { "favoriteShows", "_WEBOS_WINDOW_TYPE_FAVORITE_SHOWS" },
         { "favoriteshows", "_WEBOS_WINDOW_TYPE_FAVORITE_SHOWS" },
-        { "floating",      "_WEBOS_WINDOW_TYPE_FLOATING" },
-        { "minimal",       "_WEBOS_WINDOW_TYPE_RESTRICTED" },
-        { "overlay",       "_WEBOS_WINDOW_TYPE_OVERLAY" },
-        { "popup",         "_WEBOS_WINDOW_TYPE_POPUP" },
-        { "screenSaver",   "_WEBOS_WINDOW_TYPE_SCREENSAVER" },
-        { "showcase",      "_WEBOS_WINDOW_TYPE_SHOWCASE" },
+        { "floating", "_WEBOS_WINDOW_TYPE_FLOATING" },
+        { "minimal", "_WEBOS_WINDOW_TYPE_RESTRICTED" },
+        { "overlay", "_WEBOS_WINDOW_TYPE_OVERLAY" },
+        { "popup", "_WEBOS_WINDOW_TYPE_POPUP" },
+        { "screenSaver", "_WEBOS_WINDOW_TYPE_SCREENSAVER" },
+        { "showcase", "_WEBOS_WINDOW_TYPE_SHOWCASE" },
     };
 
     static int size = sizeof(windowTypeMap) / sizeof((windowTypeMap)[0]);
 
-    for(int i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
         if (windowTypeMap[i].lsm == lsm) {
             sam = windowTypeMap[i].sam;
             return true;

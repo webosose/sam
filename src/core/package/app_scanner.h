@@ -28,54 +28,62 @@
 typedef std::vector<std::pair<std::string, AppTypeByDir>> BaseScanPaths;
 typedef std::map<std::string, AppDescPtr> AppDescMaps;
 
-enum class ScanMode : int {
-  NOT_RUNNING = 0,
-  FULL_SCAN,
-  PARTIAL_SCAN,
+enum class ScanMode
+    : int {
+        NOT_RUNNING = 0, FULL_SCAN, PARTIAL_SCAN,
 };
 
 class AppScanner {
- public:
+public:
 
-  AppScanner();
-  ~AppScanner();
+    AppScanner();
+    ~AppScanner();
 
-  void SetAppDescFactory(AppDescriptionFactoryInterface& factory) { app_desc_factory_ = &factory; }
-  void SetScanFilter(AppScanFilterInterface& scan_filter) { app_scan_filter_ = &scan_filter; }
-  void SetBCP47Info(const std::string& lang, const std::string& script, const std::string& region);
+    void SetAppDescFactory(AppDescriptionFactoryInterface& factory)
+    {
+        app_desc_factory_ = &factory;
+    }
+    void SetScanFilter(AppScanFilterInterface& scan_filter)
+    {
+        app_scan_filter_ = &scan_filter;
+    }
+    void SetBCP47Info(const std::string& lang, const std::string& script, const std::string& region);
 
-  void AddDirectory(std::string path, AppTypeByDir type);
-  void RemoveDirectory(std::string path, AppTypeByDir type);
+    void AddDirectory(std::string path, AppTypeByDir type);
+    void RemoveDirectory(std::string path, AppTypeByDir type);
 
-  bool isRunning() const;
-  void Run(ScanMode mode);
-  AppDescPtr ScanForOneApp(const std::string& app_id);
+    bool isRunning() const;
+    void Run(ScanMode mode);
+    AppDescPtr ScanForOneApp(const std::string& app_id);
 
-  boost::signals2::signal<void (AppDescPtr, ScanMode)> signalAppDetected;
-  boost::signals2::signal<void (ScanMode, const AppDescMaps&)> signalAppScanFinished;
+    boost::signals2::signal<void(AppDescPtr, ScanMode)> signalAppDetected;
+    boost::signals2::signal<void(ScanMode, const AppDescMaps&)> signalAppScanFinished;
 
- private:
-  struct AppDir {
-    std::string   path_;
-    AppTypeByDir  type_;
-    bool          is_scanned_;
-    AppDir(const std::string& path, const AppTypeByDir& type):path_(path), type_(type), is_scanned_(false) {}
-  };
+private:
+    struct AppDir {
+        std::string path_;
+        AppTypeByDir type_;
+        bool is_scanned_;
+        AppDir(const std::string& path, const AppTypeByDir& type) :
+                path_(path), type_(type), is_scanned_(false)
+        {
+        }
+    };
 
-  void RunScanner();
-  void ScanDir(std::string base_dir, AppTypeByDir type);
-  AppDescPtr ScanApp(std::string& path, AppTypeByDir type);
-  pbnjson::JValue LoadAppInfo(const std::string& app_dir_path, const AppTypeByDir& type_by_dir);
-  void RegisterNewAppDesc(AppDescPtr new_desc, AppDescMaps& app_roster);
+    void RunScanner();
+    void ScanDir(std::string base_dir, AppTypeByDir type);
+    AppDescPtr ScanApp(std::string& path, AppTypeByDir type);
+    pbnjson::JValue LoadAppInfo(const std::string& app_dir_path, const AppTypeByDir& type_by_dir);
+    void RegisterNewAppDesc(AppDescPtr new_desc, AppDescMaps& app_roster);
 
-  AppDescriptionFactoryInterface* app_desc_factory_;
-  AppScanFilterInterface* app_scan_filter_;
-  ScanMode scan_mode_;
-  std::vector<AppDir> target_dirs_;
-  AppDescMaps app_desc_maps_;
-  std::string language_;
-  std::string script_;
-  std::string region_;
+    AppDescriptionFactoryInterface* app_desc_factory_;
+    AppScanFilterInterface* app_scan_filter_;
+    ScanMode scan_mode_;
+    std::vector<AppDir> target_dirs_;
+    AppDescMaps app_desc_maps_;
+    std::string language_;
+    std::string script_;
+    std::string region_;
 };
 
 #endif // CORE_PACKAGE_APP_SCANNER_H_

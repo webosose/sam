@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 #include "core/base/jutil.h"
 #include "core/base/lsutils.h"
 
-CallItem::CallItem()
-    : m_chainData(pbnjson::Object())
+CallItem::CallItem() :
+        m_chainData(pbnjson::Object())
 {
 }
 
@@ -68,10 +68,8 @@ const std::string& CallItem::getMsg() const
     return m_msg;
 }
 
-LSCallItem::LSCallItem(LSHandle *handle, const char *uri, const char *payload)
-    : m_handle(handle)
-    , m_uri(uri)
-    , m_payload(payload)
+LSCallItem::LSCallItem(LSHandle *handle, const char *uri, const char *payload) :
+        m_handle(handle), m_uri(uri), m_payload(payload)
 {
 }
 
@@ -80,16 +78,13 @@ bool LSCallItem::Call()
     LSErrorSafe lserror;
     ErrorInfo errInfo;
 
-    if (!onBeforeCall())
-    {
+    if (!onBeforeCall()) {
         errInfo.setError(CALLCHANIN_ERR_GENERAL, "Cancelled");
         onError(errInfo);
         return false;
     }
 
-    if (!LSCallOneReply(m_handle, m_uri.c_str(), m_payload.c_str(),
-        LSCallItem::handler, this, NULL, &lserror))
-    {
+    if (!LSCallOneReply(m_handle, m_uri.c_str(), m_payload.c_str(), LSCallItem::handler, this, NULL, &lserror)) {
         errInfo.setError(CALLCHANIN_ERR_GENERAL, lserror.message);
         onError(errInfo);
         return false;
@@ -131,7 +126,8 @@ bool LSCallItem::handler(LSHandle *lshandle, LSMessage *message, void *user_data
 gboolean CallChain::cbAsyncDelete(gpointer data)
 {
     CallChain *p = reinterpret_cast<CallChain*>(data);
-    if (!p) return false;
+    if (!p)
+        return false;
 
     delete p;
     return false;
@@ -143,10 +139,8 @@ CallChain& CallChain::acquire(CallCompleteHandler handler, CallNotifier notifier
     return *chain;
 }
 
-CallChain::CallChain(CallCompleteHandler handler, CallNotifier notifier, void *user_data)
-    : m_handler(handler)
-    , m_notifier(notifier)
-    , m_user_data(user_data)
+CallChain::CallChain(CallCompleteHandler handler, CallNotifier notifier, void *user_data) :
+        m_handler(handler), m_notifier(notifier), m_user_data(user_data)
 {
 }
 
@@ -159,8 +153,10 @@ CallChain& CallChain::add(CallItemPtr call, bool push_front)
     call->onFinished.connect(boost::bind(&CallChain::onCallFinished, this, _1, _2));
     call->onError.connect(boost::bind(&CallChain::onCallError, this, _1));
 
-    if (push_front) m_calls.push_front(call);
-    else m_calls.push_back(call);
+    if (push_front)
+        m_calls.push_front(call);
+    else
+        m_calls.push_back(call);
     return *this;
 }
 
@@ -177,8 +173,7 @@ bool CallChain::run(pbnjson::JValue chainData)
 
 bool CallChain::proceed(pbnjson::JValue chainData)
 {
-    if (m_calls.empty())
-    {
+    if (m_calls.empty()) {
         ErrorInfo errInfo;
         chainData.put("returnValue", true);
         finish(chainData, errInfo);
@@ -188,8 +183,7 @@ bool CallChain::proceed(pbnjson::JValue chainData)
     CallItemPtr call = m_calls.front();
 
     call->setChainData(chainData);
-    if (!call->Call())
-    {
+    if (!call->Call()) {
         return false;
     }
 
@@ -201,20 +195,17 @@ void CallChain::finish(pbnjson::JValue chainData, ErrorInfo errInfo)
     if (m_handler)
         m_handler(chainData, errInfo, m_user_data);
 
-    g_timeout_add(0, cbAsyncDelete, (gpointer)this);
+    g_timeout_add(0, cbAsyncDelete, (gpointer) this);
 }
 
 void CallChain::onCallError(ErrorInfo errInfo)
 {
     CallItemPtr call = m_calls.front();
-    if(!call)
-    {
+    if (!call) {
         pbnjson::JValue result = pbnjson::Object();
         result.put("returnValue", false);
         finish(result, errInfo);
-    }
-    else
-    {
+    } else {
         pbnjson::JValue chainData = call->getChainData();
         chainData.put("returnValue", false);
         finish(chainData, errInfo);
@@ -224,8 +215,7 @@ void CallChain::onCallError(ErrorInfo errInfo)
 void CallChain::onCallFinished(bool result, ErrorInfo errInfo)
 {
     CallItemPtr call = m_calls.front();
-    if (!call)
-    {
+    if (!call) {
         pbnjson::JValue chainData = pbnjson::Object();
         chainData.put("returnValue", false);
 
@@ -239,8 +229,7 @@ void CallChain::onCallFinished(bool result, ErrorInfo errInfo)
     if (m_notifier && !((call->getStatus()).empty()))
         m_notifier(call->getStatus(), call->getMsg(), result, m_user_data);
 
-    if(!errInfo.errorText.empty())
-    {
+    if (!errInfo.errorText.empty()) {
         //if errorText is not empty, do not process next callChain.
         pbnjson::JValue chainData = call->getChainData();
         chainData.put("returnValue", false);
@@ -250,13 +239,9 @@ void CallChain::onCallFinished(bool result, ErrorInfo errInfo)
 
     bool processNext = result;
 
-    std::vector<CallConditionPtr>::iterator it = std::find_if(m_conditions.begin(), m_conditions.end(),
-        [=] (const CallConditionPtr p) -> bool { return p->condition_call == call; }
-        );
-    if (it != m_conditions.end())
-    {
-        if (result == (*it)->expected_result)
-        {
+    std::vector<CallConditionPtr>::iterator it = std::find_if(m_conditions.begin(), m_conditions.end(), [=] (const CallConditionPtr p) -> bool {return p->condition_call == call;});
+    if (it != m_conditions.end()) {
+        if (result == (*it)->expected_result) {
             add((*it)->target_call, true);
             processNext = true;
         }
@@ -264,12 +249,9 @@ void CallChain::onCallFinished(bool result, ErrorInfo errInfo)
         m_conditions.erase(it);
     }
 
-    if (processNext)
-    {
+    if (processNext) {
         proceed(call->getChainData());
-    }
-    else
-    {
+    } else {
         pbnjson::JValue chainData = call->getChainData();
         chainData.put("returnValue", false);
         finish(chainData, errInfo);

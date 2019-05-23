@@ -26,16 +26,16 @@
 
 class BaseSettings {
 public:
-  bool Load(const char* file_path);
-  bool LoadSAMConf(const char* file_path);
+    bool Load(const char* file_path);
+    bool LoadSAMConf(const char* file_path);
 
-  pbnjson::JValue launch_point_dbkind_;
-  pbnjson::JValue launch_point_permissions_;
+    pbnjson::JValue launch_point_dbkind_;
+    pbnjson::JValue launch_point_permissions_;
 
 private:
-  friend class Singleton<BaseSettings>;
-  BaseSettings();
-  virtual ~BaseSettings();
+    friend class Singleton<BaseSettings> ;
+    BaseSettings();
+    virtual ~BaseSettings();
 
 };
 

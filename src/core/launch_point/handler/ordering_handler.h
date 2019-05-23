@@ -27,25 +27,31 @@
 
 const int DEFAULT_POSITION_INVALID = -1;
 
-class OrderingHandler : public OrderingHandlerInterface
-{
- public:
-  OrderingHandler() {}
-  virtual ~OrderingHandler() {}
+class OrderingHandler: public OrderingHandlerInterface {
+public:
+    OrderingHandler()
+    {
+    }
+    virtual ~OrderingHandler()
+    {
+    }
 
-  virtual void Init();
-  virtual void HandleDbState(bool connection);
-  virtual void ReloadDbData(bool connection);
-  virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
+    virtual void Init();
+    virtual void HandleDbState(bool connection);
+    virtual void ReloadDbData(bool connection);
+    virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
 
-  virtual int  InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-  virtual int  UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-  virtual void DeleteLpInOrder(const std::string& lp_id);
+    virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual void DeleteLpInOrder(const std::string& lp_id);
 
-  virtual std::vector<std::string> GetOrderedList() { return ordered_list_; }
+    virtual std::vector<std::string> GetOrderedList()
+    {
+        return ordered_list_;
+    }
 
- private:
-  std::vector<std::string> ordered_list_;
+private:
+    std::vector<std::string> ordered_list_;
 };
 
 #endif

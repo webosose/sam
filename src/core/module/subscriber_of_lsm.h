@@ -23,8 +23,7 @@
 
 #include "core/base/singleton.h"
 
-class LSMSubscriber: public Singleton<LSMSubscriber>
-{
+class LSMSubscriber: public Singleton<LSMSubscriber> {
 public:
     LSMSubscriber();
     ~LSMSubscriber();
@@ -41,11 +40,11 @@ private:
     void subscribe_recent_list();
 
 public:
-    boost::signals2::signal<void (const pbnjson::JValue&)> signal_foreground_info;
-    boost::signals2::signal<void (const pbnjson::JValue&)> signal_recent_list;
+    boost::signals2::signal<void(const pbnjson::JValue&)> signal_foreground_info;
+    boost::signals2::signal<void(const pbnjson::JValue&)> signal_recent_list;
 
 private:
-    friend class Singleton<LSMSubscriber>;
+    friend class Singleton<LSMSubscriber> ;
 
     LSMessageToken m_token_category_watcher;
     LSMessageToken m_token_foreground_info;
@@ -53,5 +52,4 @@ private:
 };
 
 #endif
-
 

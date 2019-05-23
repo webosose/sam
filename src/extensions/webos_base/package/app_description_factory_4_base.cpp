@@ -17,21 +17,24 @@
 #include "extensions/webos_base/package/app_description_factory_4_base.h"
 #include "extensions/webos_base/package/application_description_4_base.h"
 
-AppDescriptionFactory4Base::AppDescriptionFactory4Base() {
+AppDescriptionFactory4Base::AppDescriptionFactory4Base()
+{
 }
 
-AppDescriptionFactory4Base::~AppDescriptionFactory4Base() {
+AppDescriptionFactory4Base::~AppDescriptionFactory4Base()
+{
 }
 
-AppDescPtr AppDescriptionFactory4Base::Create(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir) {
+AppDescPtr AppDescriptionFactory4Base::Create(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir)
+{
 
-  AppDesc4BasicPtr app_desc = std::make_shared<ApplicationDescription4Base>();
-  if (!app_desc)
-    return nullptr;
+    AppDesc4BasicPtr app_desc = std::make_shared<ApplicationDescription4Base>();
+    if (!app_desc)
+        return nullptr;
 
-  if (app_desc->LoadJson(jdesc, type_by_dir) == false) {
-    return nullptr;
-  }
+    if (app_desc->LoadJson(jdesc, type_by_dir) == false) {
+        return nullptr;
+    }
 
-  return app_desc;
+    return app_desc;
 }

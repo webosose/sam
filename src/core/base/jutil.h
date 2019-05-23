@@ -24,19 +24,13 @@
 #include "core/base/singleton.h"
 
 //! List of utilites for pbnjson
-class JUtil : public Singleton<JUtil>
-{
+class JUtil: public Singleton<JUtil> {
 public:
     //! Error class used in JUtil
-    class Error
-    {
+    class Error {
     public:
-        typedef enum
-        {
-            None = 0,
-            File_Io,
-            Schema,
-            Parse,
+        typedef enum {
+            None = 0, File_Io, Schema, Parse,
         } ErrorCode;
 
         //! Constructor
@@ -85,7 +79,7 @@ public:
     static void addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str);
 
 protected:
-    friend class Singleton<JUtil>;
+    friend class Singleton<JUtil> ;
 
     //! Constructor
     JUtil();
@@ -94,6 +88,6 @@ protected:
     ~JUtil();
 
 private:
-    std::map< std::string, pbnjson::JSchema > m_mapSchema;
+    std::map<std::string, pbnjson::JSchema> m_mapSchema;
 };
 #endif /* JUTIL_H */

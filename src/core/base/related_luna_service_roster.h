@@ -17,15 +17,15 @@
 #ifndef CORE_BASE_RELATED_LUNA_SERVICE_ROSTER_H_
 #define CORE_BASE_RELATED_LUNA_SERVICE_ROSTER_H_
 
-const std::string WEBOS_SERVICE_APPINSTALL  = "com.webos.appInstallService";
-const std::string WEBOS_SERVICE_APPUPDATE   = "com.webos.appUpdateService";
-const std::string WEBOS_SERVICE_ASM         = "com.webos.service.attachedstoragemanager";
-const std::string WEBOS_SERVICE_BOOTMGR     = "com.webos.bootManager";
-const std::string WEBOS_SERVICE_CONFIGD     = "com.webos.service.config";
-const std::string WEBOS_SERVICE_DB          = "com.webos.service.db";
-const std::string WEBOS_SERVICE_LSM         = "com.webos.surfacemanager";
-const std::string WEBOS_SERVICE_SETTINGS    = "com.webos.settingsservice";
-const std::string WEBOS_SERVICE_WAM         = "com.palm.webappmanager";
+const std::string WEBOS_SERVICE_APPINSTALL = "com.webos.appInstallService";
+const std::string WEBOS_SERVICE_APPUPDATE = "com.webos.appUpdateService";
+const std::string WEBOS_SERVICE_ASM = "com.webos.service.attachedstoragemanager";
+const std::string WEBOS_SERVICE_BOOTMGR = "com.webos.bootManager";
+const std::string WEBOS_SERVICE_CONFIGD = "com.webos.service.config";
+const std::string WEBOS_SERVICE_DB = "com.webos.service.db";
+const std::string WEBOS_SERVICE_LSM = "com.webos.surfacemanager";
+const std::string WEBOS_SERVICE_SETTINGS = "com.webos.settingsservice";
+const std::string WEBOS_SERVICE_WAM = "com.palm.webappmanager";
 
 #endif //  CORE_BASE_RELATED_LUNA_SERVICE_ROSTER_H_
 

@@ -21,60 +21,66 @@
 #include "core/base/logging.h"
 #include "core/bus/appmgr_service.h"
 
-DbHandler::DbHandler() : db_loaded_(false),
-                         db_load_count_(0)
+DbHandler::DbHandler() :
+        db_loaded_(false), db_load_count_(0)
 {
 }
 
-DbHandler::~DbHandler() {
+DbHandler::~DbHandler()
+{
 }
 
 /********************************************************/
 /*** Init Handler ***************************************/
 /********************************************************/
-void DbHandler::Init() {
-  launch_point_db_.signal_db_loaded_.connect( boost::bind(&DbHandler::OnLaunchPointDbLoaded, this, _1) );
-  launch_point_db_.Init();
+void DbHandler::Init()
+{
+    launch_point_db_.signal_db_loaded_.connect(boost::bind(&DbHandler::OnLaunchPointDbLoaded, this, _1));
+    launch_point_db_.Init();
 }
 
 /***********************************************************/
 /** Handling DB (handle/reload/update) *********************/
 /***********************************************************/
-void DbHandler::HandleDbState(bool connection) {
-  LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 3, PMLOGKS("status", "handle_launch_points_db_state"),
-                                            PMLOGKS("db_connected", connection?"done":"not_ready_yet"),
-                                            PMLOGKFV("db_load_count", "%d", db_load_count_), "");
+void DbHandler::HandleDbState(bool connection)
+{
+    LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 3, PMLOGKS("status", "handle_launch_points_db_state"), PMLOGKS("db_connected", connection?"done":"not_ready_yet"),
+            PMLOGKFV("db_load_count", "%d", db_load_count_), "");
 
-  if (!db_loaded_)
-    launch_point_db_.LoadDb();
+    if (!db_loaded_)
+        launch_point_db_.LoadDb();
 }
 
-void DbHandler::OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result) {
-  db_loaded_ = true;
-  ++db_load_count_;
+void DbHandler::OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
+{
+    db_loaded_ = true;
+    ++db_load_count_;
 
-  signal_db_loaded_(loaded_db_result);
+    signal_db_loaded_(loaded_db_result);
 }
 
-void DbHandler::ReloadDbData(bool connection) {
-  LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 2, PMLOGKS("status", "reload_db_data"),
-                                            PMLOGKS("connection", connection?"true":"false"), "");
+void DbHandler::ReloadDbData(bool connection)
+{
+    LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 2, PMLOGKS("status", "reload_db_data"), PMLOGKS("connection", connection?"true":"false"), "");
 
-  db_loaded_ = false;
-  HandleDbState(connection);
+    db_loaded_ = false;
+    HandleDbState(connection);
 }
 
 /***********************************************************/
 /** Insert/Update/Delete DB ********************************/
 /***********************************************************/
-bool DbHandler::InsertData(const pbnjson::JValue& json) {
-  return launch_point_db_.InsertData(json);
+bool DbHandler::InsertData(const pbnjson::JValue& json)
+{
+    return launch_point_db_.InsertData(json);
 }
 
-bool DbHandler::UpdateData(const pbnjson::JValue& json) {
-  return launch_point_db_.UpdateData(json);
+bool DbHandler::UpdateData(const pbnjson::JValue& json)
+{
+    return launch_point_db_.UpdateData(json);
 }
 
-bool DbHandler::DeleteData(const pbnjson::JValue& json) {
-  return launch_point_db_.DeleteData(json);
+bool DbHandler::DeleteData(const pbnjson::JValue& json)
+{
+    return launch_point_db_.DeleteData(json);
 }

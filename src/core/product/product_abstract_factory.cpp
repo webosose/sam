@@ -17,19 +17,24 @@
 #include "core/product/product_abstract_factory.h"
 #include <extensions/webos_base/base_extension.h>
 
-ProductAbstractFactory::ProductAbstractFactory() {
+ProductAbstractFactory::ProductAbstractFactory()
+{
 }
 
-ProductAbstractFactory::~ProductAbstractFactory() {
+ProductAbstractFactory::~ProductAbstractFactory()
+{
 }
 
-void ProductAbstractFactory::Initialize(PrerequisiteMonitor& prerequisite_monitor) {
+void ProductAbstractFactory::Initialize(PrerequisiteMonitor& prerequisite_monitor)
+{
     BaseExtension::instance().init(prerequisite_monitor);
 }
 
-void ProductAbstractFactory::OnReady() {
+void ProductAbstractFactory::OnReady()
+{
     BaseExtension::instance().OnReady();
 }
 
-void ProductAbstractFactory::Terminate() {
+void ProductAbstractFactory::Terminate()
+{
 }

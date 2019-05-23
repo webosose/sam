@@ -33,8 +33,8 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
 
 void MemoryChecker::remove_item(const std::string& item_uid)
 {
-    auto it = std::find_if(m_item_queue.begin(), m_item_queue.end(), [&item_uid](AppLaunchingItemPtr it){ return (it->uid() == item_uid); });
-    if(it != m_item_queue.end())
+    auto it = std::find_if(m_item_queue.begin(), m_item_queue.end(), [&item_uid](AppLaunchingItemPtr it) {return (it->uid() == item_uid);});
+    if (it != m_item_queue.end())
         m_item_queue.erase(it);
 }
 
@@ -42,7 +42,7 @@ void MemoryChecker::run()
 {
     auto it = m_item_queue.begin();
 
-    if(it == m_item_queue.end())
+    if (it == m_item_queue.end())
         return;
 
     std::string uid = (*it)->uid();

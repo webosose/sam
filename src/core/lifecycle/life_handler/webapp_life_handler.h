@@ -21,23 +21,21 @@
 
 #include "core/lifecycle/life_handler/life_handler_interface.h"
 
-class WebAppLifeHandler: public AppLifeHandlerInterface
-{
+class WebAppLifeHandler: public AppLifeHandlerInterface {
 public:
     WebAppLifeHandler();
     virtual ~WebAppLifeHandler();
 
     virtual void launch(AppLaunchingItemPtr item);
     virtual void close(AppCloseItemPtr item, std::string& err_text);
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params,
-                        std::string& err_text, bool send_life_event = true);
+    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true);
     virtual void clear_handling_item(const std::string& app_id);
 
-    boost::signals2::signal<void ()> signal_service_disconnected;
-    boost::signals2::signal<void (const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
-    boost::signals2::signal<void (const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
-    boost::signals2::signal<void (const std::string& app_id)> signal_running_app_removed;
-    boost::signals2::signal<void (const std::string& uid)> signal_launching_done;
+    boost::signals2::signal<void()> signal_service_disconnected;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
+    boost::signals2::signal<void(const std::string& app_id)> signal_running_app_removed;
+    boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
 
 private:
     void on_service_ready();

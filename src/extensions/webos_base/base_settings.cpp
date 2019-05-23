@@ -22,52 +22,56 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings_conf.h"
 
-BaseSettings::BaseSettings() {
-  launch_point_dbkind_ = pbnjson::Object();
-  launch_point_permissions_ = pbnjson::Object();
+BaseSettings::BaseSettings()
+{
+    launch_point_dbkind_ = pbnjson::Object();
+    launch_point_permissions_ = pbnjson::Object();
 }
 
-BaseSettings::~BaseSettings() {
+BaseSettings::~BaseSettings()
+{
 }
 
-bool BaseSettings::Load(const char* file_path) {
-  return LoadSAMConf(file_path);
+bool BaseSettings::Load(const char* file_path)
+{
+    return LoadSAMConf(file_path);
 }
 
-bool BaseSettings::LoadSAMConf(const char* file_path) {
-  std::string conf_path = kBasicSettingsFile;
+bool BaseSettings::LoadSAMConf(const char* file_path)
+{
+    std::string conf_path = kBasicSettingsFile;
 
-  LOG_DEBUG("Base LoadConf : %s", conf_path.c_str());
+    LOG_DEBUG("Base LoadConf : %s", conf_path.c_str());
 
-  JUtil::Error error;
-  pbnjson::JValue root = JUtil::parseFile(conf_path, "", &error);
-  if (root.isNull()) {
-    LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("FILE", conf_path.c_str()), "");
-    return false;
-  }
-
-  if (root.hasKey("BootTimeApps") && root["BootTimeApps"].isArray()) {
-    for (auto it : root["BootTimeApps"].items()) {
-      if (!it.isString())
-        continue;
-      SettingsImpl::instance().AddBootTimeApp(it.asString());
+    JUtil::Error error;
+    pbnjson::JValue root = JUtil::parseFile(conf_path, "", &error);
+    if (root.isNull()) {
+        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("FILE", conf_path.c_str()), "");
+        return false;
     }
-  }
 
-  if (root.hasKey("CRIUSupportApps") && root["CRIUSupportApps"].isArray()) {
-    for (auto it : root["CRIUSupportApps"].items()) {
-      if (!it.isString())
-        continue;
-      SettingsImpl::instance().AddCRIUSupportApp(it.asString());
+    if (root.hasKey("BootTimeApps") && root["BootTimeApps"].isArray()) {
+        for (auto it : root["BootTimeApps"].items()) {
+            if (!it.isString())
+                continue;
+            SettingsImpl::instance().AddBootTimeApp(it.asString());
+        }
     }
-  }
 
-  if (root.hasKey("LaunchPointDBKind"))
-    launch_point_dbkind_ = root["LaunchPointDBKind"];
+    if (root.hasKey("CRIUSupportApps") && root["CRIUSupportApps"].isArray()) {
+        for (auto it : root["CRIUSupportApps"].items()) {
+            if (!it.isString())
+                continue;
+            SettingsImpl::instance().AddCRIUSupportApp(it.asString());
+        }
+    }
 
-  if (root.hasKey("LaunchPointDBPermissions"))
-    launch_point_permissions_ = root["LaunchPointDBPermissions"];
+    if (root.hasKey("LaunchPointDBKind"))
+        launch_point_dbkind_ = root["LaunchPointDBKind"];
 
-  return true;
+    if (root.hasKey("LaunchPointDBPermissions"))
+        launch_point_permissions_ = root["LaunchPointDBPermissions"];
+
+    return true;
 }
 

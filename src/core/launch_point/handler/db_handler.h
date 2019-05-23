@@ -24,25 +24,25 @@
 #include "interface/launch_point/db_handler_interface.h"
 
 class DbHandler: public DbHandlerInterface {
- public:
-  DbHandler();
-  virtual ~DbHandler();
+public:
+    DbHandler();
+    virtual ~DbHandler();
 
-  virtual void Init();
-  virtual void HandleDbState(bool connection);
-  virtual void ReloadDbData(bool connection);
+    virtual void Init();
+    virtual void HandleDbState(bool connection);
+    virtual void ReloadDbData(bool connection);
 
-  virtual bool InsertData(const pbnjson::JValue& json);
-  virtual bool UpdateData(const pbnjson::JValue& json);
-  virtual bool DeleteData(const pbnjson::JValue& json);
+    virtual bool InsertData(const pbnjson::JValue& json);
+    virtual bool UpdateData(const pbnjson::JValue& json);
+    virtual bool DeleteData(const pbnjson::JValue& json);
 
- private:
-  void OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
+private:
+    void OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
 
-  DBLaunchPoint launch_point_db_;
+    DBLaunchPoint launch_point_db_;
 
-  bool db_loaded_;
-  unsigned int db_load_count_;
+    bool db_loaded_;
+    unsigned int db_load_count_;
 };
 
 #endif

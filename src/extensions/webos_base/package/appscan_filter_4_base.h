@@ -21,11 +21,11 @@
 
 class AppScanFilter4Base: public AppScanFilterInterface {
 public:
-  AppScanFilter4Base();
-  virtual ~AppScanFilter4Base();
+    AppScanFilter4Base();
+    virtual ~AppScanFilter4Base();
 
-  virtual bool ValidatePreCondition();
-  virtual bool ValidatePostCondition(AppTypeByDir type_by_dir, AppDescPtr app_desc);
+    virtual bool ValidatePreCondition();
+    virtual bool ValidatePostCondition(AppTypeByDir type_by_dir, AppDescPtr app_desc);
 };
 
 #endif // APPSCAN_FILTER_4_BASE_H

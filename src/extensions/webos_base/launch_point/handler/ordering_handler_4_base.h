@@ -26,29 +26,30 @@
 
 class OrderingHandler4Base: public OrderingHandlerInterface {
 public:
-  OrderingHandler4Base();
-  virtual ~OrderingHandler4Base();
+    OrderingHandler4Base();
+    virtual ~OrderingHandler4Base();
 
-  virtual void Init();
-  virtual void HandleDbState(bool connection);
-  virtual void ReloadDbData(bool connection);
-  virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
+    virtual void Init();
+    virtual void HandleDbState(bool connection);
+    virtual void ReloadDbData(bool connection);
+    virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
 
-  virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text);
+    virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text);
 
-  virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-  virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-  virtual void DeleteLpInOrder(const std::string& lp_id);
+    virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual void DeleteLpInOrder(const std::string& lp_id);
 
-  virtual std::vector<std::string> GetOrderedList() {
-    return ordered_list_;
-  }
+    virtual std::vector<std::string> GetOrderedList()
+    {
+        return ordered_list_;
+    }
 
 private:
-  void reorder();
+    void reorder();
 
-  std::vector<std::string> ordered_list_;
-  std::vector<LaunchPointPtr> visible_lps_;
+    std::vector<std::string> ordered_list_;
+    std::vector<LaunchPointPtr> visible_lps_;
 
 };
 

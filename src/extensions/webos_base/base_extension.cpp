@@ -32,49 +32,55 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings.h"
 
-BaseExtension::BaseExtension() {
+BaseExtension::BaseExtension()
+{
 
 }
 
-BaseExtension::~BaseExtension() {
+BaseExtension::~BaseExtension()
+{
 }
 
-void BaseExtension::init(PrerequisiteMonitor& prerequisite_monitor) {
-  BaseSettingsImpl::instance().Load(NULL);
+void BaseExtension::init(PrerequisiteMonitor& prerequisite_monitor)
+{
+    BaseSettingsImpl::instance().Load(NULL);
 
-  // to check first app launch finished
-  AppLifeManager::instance().signal_launching_finished.connect(boost::bind(&BaseExtension::OnLaunchingFinished, this, _1));
+    // to check first app launch finished
+    AppLifeManager::instance().signal_launching_finished.connect(boost::bind(&BaseExtension::OnLaunchingFinished, this, _1));
 
-  // set extension handlers for lifecycle interface
-  AppLifeManager::instance().set_applifeitem_factory(app_launching_item_factory_);
-  AppLifeManager::instance().set_prelauncher_handler(prelauncher_);
-  AppLifeManager::instance().set_memory_checker_handler(memory_checker_);
-  AppLifeManager::instance().set_lastapp_handler(lastapp_handler_);
+    // set extension handlers for lifecycle interface
+    AppLifeManager::instance().set_applifeitem_factory(app_launching_item_factory_);
+    AppLifeManager::instance().set_prelauncher_handler(prelauncher_);
+    AppLifeManager::instance().set_memory_checker_handler(memory_checker_);
+    AppLifeManager::instance().set_lastapp_handler(lastapp_handler_);
 
-  // set extension handlers for package interface
-  ApplicationManager::instance().SetAppScanFilter(app_scan_filter_);
-  ApplicationManager::instance().SetAppDescriptionFactory(app_description_factory_);
+    // set extension handlers for package interface
+    ApplicationManager::instance().SetAppScanFilter(app_scan_filter_);
+    ApplicationManager::instance().SetAppDescriptionFactory(app_description_factory_);
 
-  // set extension handlers for launch point interface
-  LaunchPointManager::instance().SetDbHandler(db_handler_);
-  LaunchPointManager::instance().SetOrderingHandler(ordering_handler_);
-  LaunchPointManager::instance().SetLaunchPointFactory(launch_point_factory_);
+    // set extension handlers for launch point interface
+    LaunchPointManager::instance().SetDbHandler(db_handler_);
+    LaunchPointManager::instance().SetOrderingHandler(ordering_handler_);
+    LaunchPointManager::instance().SetLaunchPointFactory(launch_point_factory_);
 }
 
-void BaseExtension::OnReady() {
+void BaseExtension::OnReady()
+{
 }
 
-AppDesc4BasicPtr BaseExtension::GetAppDesc(const std::string& app_id) {
-  AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
-  if (!app_desc)
-    return nullptr;
-  return std::static_pointer_cast<ApplicationDescription4Base>(app_desc);
+AppDesc4BasicPtr BaseExtension::GetAppDesc(const std::string& app_id)
+{
+    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
+    if (!app_desc)
+        return nullptr;
+    return std::static_pointer_cast<ApplicationDescription4Base>(app_desc);
 }
 
-void BaseExtension::OnLaunchingFinished(AppLaunchingItemPtr item) {
-  AppLaunchingItem4BasePtr basic_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
+void BaseExtension::OnLaunchingFinished(AppLaunchingItemPtr item)
+{
+    AppLaunchingItem4BasePtr basic_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
 
-  if (basic_item->err_text().empty())
-    AppLifeManager::instance().set_last_loading_app(basic_item->app_id());
+    if (basic_item->err_text().empty())
+        AppLifeManager::instance().set_last_loading_app(basic_item->app_id());
 }
 

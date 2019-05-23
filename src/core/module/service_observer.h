@@ -23,36 +23,37 @@
 #include "core/base/related_luna_service_roster.h"
 #include "core/base/singleton.h"
 
-class ServiceObserver : public Singleton<ServiceObserver> {
-  struct ObserverItem {
-    std::string     name_;
-    bool            connection_;
-    LSMessageToken  token_;
-    boost::signals2::signal<void (bool)> signalStatusChanged;
+class ServiceObserver: public Singleton<ServiceObserver> {
+    struct ObserverItem {
+        std::string name_;
+        bool connection_;
+        LSMessageToken token_;
+        boost::signals2::signal<void(bool)> signalStatusChanged;
 
-    ObserverItem(const std::string& service_name, boost::function<void (bool)> func)
-        : name_(service_name), connection_(false), token_(0) {
-      signalStatusChanged.connect(func);
-    }
-  };
-  typedef std::shared_ptr<ObserverItem> ObserverItemPtr;
+        ObserverItem(const std::string& service_name, boost::function<void(bool)> func) :
+                name_(service_name), connection_(false), token_(0)
+        {
+            signalStatusChanged.connect(func);
+        }
+    };
+    typedef std::shared_ptr<ObserverItem> ObserverItemPtr;
 
- public:
-  void Run();
-  void Stop();
-  bool IsConnected(const std::string& service_name) const;
-  void Add(const std::string& service_name, boost::function<void (bool)> func);
+public:
+    void Run();
+    void Stop();
+    bool IsConnected(const std::string& service_name) const;
+    void Add(const std::string& service_name, boost::function<void(bool)> func);
 
- private:
-  friend class Singleton<ServiceObserver>;
+private:
+    friend class Singleton<ServiceObserver> ;
 
-  ServiceObserver();
-  ~ServiceObserver();
+    ServiceObserver();
+    ~ServiceObserver();
 
-  static bool cbServerStatus(LSHandle *lshandle, LSMessage *message, void *user_data);
+    static bool cbServerStatus(LSHandle *lshandle, LSMessage *message, void *user_data);
 
-  std::vector<ObserverItemPtr> watching_services_;
-  bool started_;
+    std::vector<ObserverItemPtr> watching_services_;
+    bool started_;
 };
 
 #endif // CORE_MODULE_SERVICE_OBSERVER_H_

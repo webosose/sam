@@ -16,41 +16,48 @@
 
 #include "core/launch_point/handler/ordering_handler.h"
 
-void OrderingHandler::Init() {
-  //virtual
+void OrderingHandler::Init()
+{
+    //virtual
 }
 
 /***********************************************************/
 /** handling DB (handle/reload/update) *********************/
 /***********************************************************/
-void OrderingHandler::HandleDbState(bool connection) {
-  //virtual
+void OrderingHandler::HandleDbState(bool connection)
+{
+    //virtual
 }
 
-void OrderingHandler::ReloadDbData(bool connection) {
-  //virtual
+void OrderingHandler::ReloadDbData(bool connection)
+{
+    //virtual
 }
 
 /*******************************************************/
 /** handling ordered list (set/update/visibleLPs) ******/
 /*******************************************************/
-void OrderingHandler::MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason) {
-  //virtual
+void OrderingHandler::MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason)
+{
+    //virtual
 }
 
 /*******************************************************/
 /*** handling data (insert/update/delete with DB) ******/
 /*******************************************************/
-int OrderingHandler::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  //virtual
-  return DEFAULT_POSITION_INVALID;
+int OrderingHandler::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    //virtual
+    return DEFAULT_POSITION_INVALID;
 }
 
-int OrderingHandler::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  //virtual
-  return DEFAULT_POSITION_INVALID;
+int OrderingHandler::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    //virtual
+    return DEFAULT_POSITION_INVALID;
 }
 
-void OrderingHandler::DeleteLpInOrder(const std::string& lp_id) {
-  //virtual
+void OrderingHandler::DeleteLpInOrder(const std::string& lp_id)
+{
+    //virtual
 }

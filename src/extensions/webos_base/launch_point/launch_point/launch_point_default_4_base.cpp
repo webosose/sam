@@ -16,32 +16,32 @@
 
 #include "extensions/webos_base/launch_point/launch_point/launch_point_default_4_base.h"
 
-LaunchPointPtr LaunchPointDefault4Base::Create(const std::string& lp_id,
-                                               const pbnjson::JValue& data,
-                                               std::string& err_text) {
-  std::string app_id = data["id"].asString();
-  if (app_id.empty())
-    return nullptr;
+LaunchPointPtr LaunchPointDefault4Base::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+{
+    std::string app_id = data["id"].asString();
+    if (app_id.empty())
+        return nullptr;
 
-  LaunchPoint4BasePtr new_lp = std::make_shared<LaunchPointDefault4Base>(app_id, lp_id);
-  if (new_lp == nullptr) {
-    err_text = "fail to create instance";
-    return nullptr;
-  }
+    LaunchPoint4BasePtr new_lp = std::make_shared<LaunchPointDefault4Base>(app_id, lp_id);
+    if (new_lp == nullptr) {
+        err_text = "fail to create instance";
+        return nullptr;
+    }
 
-  new_lp->SetAttrWithJson(data);
+    new_lp->SetAttrWithJson(data);
 
-  new_lp->SetLpType(LPType::DEFAULT);
-  new_lp->SetDefaultLp(true);
-  new_lp->SetRemovable(data["removable"].asBool());
-  new_lp->SetSystemApp(data["systemApp"].asBool());
-  new_lp->SetVisible(data["visible"].asBool());
-  new_lp->SetMiniIcon(data["miniicon"].asString());
+    new_lp->SetLpType(LPType::DEFAULT);
+    new_lp->SetDefaultLp(true);
+    new_lp->SetRemovable(data["removable"].asBool());
+    new_lp->SetSystemApp(data["systemApp"].asBool());
+    new_lp->SetVisible(data["visible"].asBool());
+    new_lp->SetMiniIcon(data["miniicon"].asString());
 
-  return new_lp;
+    return new_lp;
 }
 
-std::string LaunchPointDefault4Base::Update(const pbnjson::JValue& data) {
-  SetAttrWithJson(data);
-  return "";
+std::string LaunchPointDefault4Base::Update(const pbnjson::JValue& data)
+{
+    SetAttrWithJson(data);
+    return "";
 }

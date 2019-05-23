@@ -22,87 +22,74 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/lifecycle/app_launching_item_4_base.h"
 
-AppLaunchingItemFactory4Base::AppLaunchingItemFactory4Base() {
+AppLaunchingItemFactory4Base::AppLaunchingItemFactory4Base()
+{
 }
 
-AppLaunchingItemFactory4Base::~AppLaunchingItemFactory4Base() {
+AppLaunchingItemFactory4Base::~AppLaunchingItemFactory4Base()
+{
 }
 
-AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_id,
-                                                          AppLaunchRequestType rtype,
-                                                          const pbnjson::JValue& params,
-                                                          LSMessage* lsmsg,
-                                                          int& err_code,
-                                                          std::string& err_text) {
-  if (app_id.empty()) {
-    LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-              PMLOGKS("reason", "empty_app_id"),
-              PMLOGKS("where", "tv_launching_item_factory"), "");
-    return NULL;
-  }
+AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
+{
+    if (app_id.empty()) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "tv_launching_item_factory"), "");
+        return NULL;
+    }
 
-  AppDesc4BasicPtr app_desc = BaseExtension::instance().GetAppDesc(app_id);
-  if (app_desc == nullptr) {
-    LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-              PMLOGKS("reason", "not_exist"),
-              PMLOGKS("where", "AppLaunchingItemFactory4Basic"), "");
-    err_code = -101;
-    err_text = "not exist";
-    return NULL;
-  }
+    AppDesc4BasicPtr app_desc = BaseExtension::instance().GetAppDesc(app_id);
+    if (app_desc == nullptr) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "not_exist"), PMLOGKS("where", "AppLaunchingItemFactory4Basic"), "");
+        err_code = -101;
+        err_text = "not exist";
+        return NULL;
+    }
 
-  // parse caller info
-  std::string caller = GetCallerFromMessage(lsmsg);
-  std::string caller_id = GetCallerID(caller);
-  std::string caller_pid = GetCallerPID(caller);
+    // parse caller info
+    std::string caller = GetCallerFromMessage(lsmsg);
+    std::string caller_id = GetCallerID(caller);
+    std::string caller_pid = GetCallerPID(caller);
 
-  pbnjson::JValue params4app = (params.hasKey("params") && params["params"].isObject()) ? params["params"].duplicate() : pbnjson::Object();
+    pbnjson::JValue params4app = (params.hasKey("params") && params["params"].isObject()) ? params["params"].duplicate() : pbnjson::Object();
 
-  // this is for WAM, SAM will bypass to WAM. WAM doens't unload the app even if user clicks "X" button to close it.
-  bool keep_alive = params.hasKey("keepAlive") && params["keepAlive"].asBool();
-  if (SettingsImpl::instance().IsKeepAliveApp(app_id)) {
-    keep_alive = true;
-  }
+    // this is for WAM, SAM will bypass to WAM. WAM doens't unload the app even if user clicks "X" button to close it.
+    bool keep_alive = params.hasKey("keepAlive") && params["keepAlive"].asBool();
+    if (SettingsImpl::instance().IsKeepAliveApp(app_id)) {
+        keep_alive = true;
+    }
 
-  // caller can request not show splash image on launching app (default action is showing splash image)
-  bool show_splash = !(params.hasKey("noSplash") && params["noSplash"].asBool());
-  // need to check if it's running. set to false if so.
-  if (!app_desc->splashOnLaunch()) {
-    show_splash = false;
-  }
+    // caller can request not show splash image on launching app (default action is showing splash image)
+    bool show_splash = !(params.hasKey("noSplash") && params["noSplash"].asBool());
+    // need to check if it's running. set to false if so.
+    if (!app_desc->splashOnLaunch()) {
+        show_splash = false;
+    }
 
-  // caller can request not show spinner on launching app (default action is showing spinner)
-  bool show_spinner = true;
-  if (params.hasKey("spinner")) {
-    show_spinner = params["spinner"].asBool();
-  }
-  // need to check if it's running. set to false if so.
-  if (!app_desc->spinnerOnLaunch()) {
-    show_spinner = false;
-  }
+    // caller can request not show spinner on launching app (default action is showing spinner)
+    bool show_spinner = true;
+    if (params.hasKey("spinner")) {
+        show_spinner = params["spinner"].asBool();
+    }
+    // need to check if it's running. set to false if so.
+    if (!app_desc->spinnerOnLaunch()) {
+        show_spinner = false;
+    }
 
-  AppLaunchingItem4BasePtr new_item = std::make_shared <AppLaunchingItem4Base> (app_id, rtype, params4app, lsmsg);
-  if (new_item == NULL) {
-    LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-              PMLOGKS("reason", "make_shared_error"),
-              PMLOGKS("where", "tv_launching_item_factory"), "");
-    return NULL;
-  }
+    AppLaunchingItem4BasePtr new_item = std::make_shared<AppLaunchingItem4Base>(app_id, rtype, params4app, lsmsg);
+    if (new_item == NULL) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "make_shared_error"), PMLOGKS("where", "tv_launching_item_factory"), "");
+        return NULL;
+    }
 
-  new_item->set_caller_id(caller_id);
-  new_item->set_caller_pid(caller_pid);
-  new_item->set_keep_alive(keep_alive);
-  new_item->set_show_splash(show_splash);
-  new_item->set_show_spinner(show_spinner);
-  new_item->set_sub_stage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
+    new_item->set_caller_id(caller_id);
+    new_item->set_caller_pid(caller_pid);
+    new_item->set_keep_alive(keep_alive);
+    new_item->set_show_splash(show_splash);
+    new_item->set_show_spinner(show_spinner);
+    new_item->set_sub_stage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
 
-  LOG_INFO(MSGID_APPLAUNCH, 6,
-           PMLOGKS("app_id", app_id.c_str()),
-           PMLOGKS("caller_id", new_item->caller_id().c_str()),
-           PMLOGKS("keep_alive", (keep_alive?"true":"false")),
-           PMLOGKS("show_splash", (show_splash?"true":"false")),
-           PMLOGKS("show_spinner", (show_spinner?"true":"false")),
-           PMLOGJSON("params", JUtil::jsonToString(params4app).c_str()), "");
+    LOG_INFO(MSGID_APPLAUNCH, 6, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("caller_id", new_item->caller_id().c_str()), PMLOGKS("keep_alive", (keep_alive?"true":"false")),
+            PMLOGKS("show_splash", (show_splash?"true":"false")), PMLOGKS("show_spinner", (show_spinner?"true":"false")), PMLOGJSON("params", JUtil::jsonToString(params4app).c_str()), "");
 
-  return new_item;
+    return new_item;
 }

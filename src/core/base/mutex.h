@@ -21,8 +21,7 @@
 
 #include "core/base/sptr.h"
 
-class Mutex : public RefCounted
-{
+class Mutex: public RefCounted {
 public:
     Mutex();
     virtual ~Mutex();

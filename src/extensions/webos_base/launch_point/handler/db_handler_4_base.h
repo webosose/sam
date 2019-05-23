@@ -25,24 +25,24 @@
 
 class DbHandler4Base: public DbHandlerInterface {
 public:
-  DbHandler4Base();
-  virtual ~DbHandler4Base();
+    DbHandler4Base();
+    virtual ~DbHandler4Base();
 
-  virtual void Init();
-  virtual void HandleDbState(bool connection);
-  virtual void ReloadDbData(bool connection);
+    virtual void Init();
+    virtual void HandleDbState(bool connection);
+    virtual void ReloadDbData(bool connection);
 
-  virtual bool InsertData(const pbnjson::JValue& json);
-  virtual bool UpdateData(const pbnjson::JValue& json);
-  virtual bool DeleteData(const pbnjson::JValue& json);
+    virtual bool InsertData(const pbnjson::JValue& json);
+    virtual bool UpdateData(const pbnjson::JValue& json);
+    virtual bool DeleteData(const pbnjson::JValue& json);
 
 private:
-  void OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
+    void OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
 
-  DBLaunchPoint4Base launch_point_db_;
+    DBLaunchPoint4Base launch_point_db_;
 
-  bool db_loaded_;
-  unsigned int db_load_count_;
+    bool db_loaded_;
+    unsigned int db_load_count_;
 };
 
 #endif

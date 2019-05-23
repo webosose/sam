@@ -21,43 +21,17 @@
 #include <vector>
 
 #include <luna-service2/lunaservice.h>
-#include <boost/signal.hpp>
 
-class LSErrorSafe:
-        public LSError
-{
+class LSErrorSafe: public LSError {
 public:
-    LSErrorSafe() {
+    LSErrorSafe()
+    {
         LSErrorInit(this);
     }
-    ~LSErrorSafe() {
+    ~LSErrorSafe()
+    {
         LSErrorFree(this);
     }
-};
-
-class LSDelayedMessage
-{
-public:
-    static LSDelayedMessage& acquire(LSMessage *message);
-
-    // TODO : support multi condition & action if it needs
-    void setCondition(boost::signal<void ()> &condition);
-    void setCondition(boost::signal<void (bool)> &condition);
-    void setAction(std::function<bool (LSMessage*)> action);
-
-private:
-    LSDelayedMessage(LSMessage *message);
-    ~LSDelayedMessage();
-
-    void onCondition();
-    void onCondition(bool success);
-
-    static gboolean cbAsyncDelete(gpointer data);
-
-private:
-    LSMessage *m_message;
-    std::function<bool (LSMessage*)> m_action;
-    boost::signals::scoped_connection m_connection;
 };
 
 std::string GetCallerFromMessage(LSMessage* message);

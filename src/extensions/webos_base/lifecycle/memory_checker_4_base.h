@@ -22,16 +22,16 @@
 
 class MemoryChecker4Base: public MemoryCheckerInterface {
 public:
-  MemoryChecker4Base();
-  virtual ~MemoryChecker4Base();
+    MemoryChecker4Base();
+    virtual ~MemoryChecker4Base();
 
-  virtual void add_item(AppLaunchingItemPtr item);
-  virtual void remove_item(const std::string& item_uid);
-  virtual void run();
-  virtual void cancel_all();
+    virtual void add_item(AppLaunchingItemPtr item);
+    virtual void remove_item(const std::string& item_uid);
+    virtual void run();
+    virtual void cancel_all();
 
 private:
-  AppLaunchingItem4BaseList app_launching_item_list_;
+    AppLaunchingItem4BaseList app_launching_item_list_;
 
 };
 

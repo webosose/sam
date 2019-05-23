@@ -28,34 +28,22 @@
 /**
  * Constructor.
  */
-RedirectHandler::RedirectHandler(const std::string& urlRe, const std::string& appId , bool schemeform, int32_t index )
-    : m_urlRe(urlRe)
-    , m_appId(appId)
-    , m_valid(true)
-    , m_schemeForm(schemeform)
-    , m_tag("")
-    , m_index(index)
+RedirectHandler::RedirectHandler(const std::string& urlRe, const std::string& appId, bool schemeform, int32_t index) :
+        m_urlRe(urlRe), m_appId(appId), m_valid(true), m_schemeForm(schemeform), m_tag(""), m_index(index)
 {
-    if(m_index < 0)
-    {
-         m_index = MimeSystem::assignIndex();
+    if (m_index < 0) {
+        m_index = MimeSystem::assignIndex();
     }
-    if (!urlRe.empty()){
+    if (!urlRe.empty()) {
         m_urlReg.set_expression(urlRe);
     }
 }
 
-RedirectHandler::RedirectHandler(const std::string& urlRe, const std::string& appId , bool schemeform, const std::string& handler_tag, int32_t index)
-    : m_urlRe(urlRe)
-    , m_appId(appId)
-    , m_valid(true)
-    , m_schemeForm(schemeform)
-    , m_tag(handler_tag)
-    , m_index(index)
+RedirectHandler::RedirectHandler(const std::string& urlRe, const std::string& appId, bool schemeform, const std::string& handler_tag, int32_t index) :
+        m_urlRe(urlRe), m_appId(appId), m_valid(true), m_schemeForm(schemeform), m_tag(handler_tag), m_index(index)
 {
-    if(m_index < 0)
-    {
-         m_index = MimeSystem::assignIndex();
+    if (m_index < 0) {
+        m_index = MimeSystem::assignIndex();
     }
     if (!urlRe.empty()) {
         m_urlReg.set_expression(urlRe);
@@ -96,7 +84,8 @@ RedirectHandler& RedirectHandler::operator=(const RedirectHandler& c)
     return *this;
 }
 
-RedirectHandler::RedirectHandler() : m_valid(false), m_schemeForm(false), m_index(0)
+RedirectHandler::RedirectHandler() :
+        m_valid(false), m_schemeForm(false), m_index(0)
 {
 }
 
@@ -124,10 +113,10 @@ bool RedirectHandler::reValid() const
     return m_urlReg.status() == 0;
 }
 
-bool RedirectHandler::addVerb(const std::string& verb,const std::string& jsonizedParams)
+bool RedirectHandler::addVerb(const std::string& verb, const std::string& jsonizedParams)
 {
     pbnjson::JValue jobj(jsonizedParams);
-    if(jobj.isNull()){
+    if (jobj.isNull()) {
         return false;
     }
     m_verbs[verb] = jsonizedParams;
@@ -148,20 +137,17 @@ std::string RedirectHandler::toJsonString()
 pbnjson::JValue RedirectHandler::toJValue()
 {
     pbnjson::JValue jobj = pbnjson::Object();
-    jobj.put("url",m_urlRe);
-    jobj.put("appId",m_appId);
-    jobj.put("index",m_index);
-    if (m_tag.size())
-    {
-        jobj.put("tag",m_tag);
+    jobj.put("url", m_urlRe);
+    jobj.put("appId", m_appId);
+    jobj.put("index", m_index);
+    if (m_tag.size()) {
+        jobj.put("tag", m_tag);
     }
-    jobj.put("schemeForm",m_schemeForm);
+    jobj.put("schemeForm", m_schemeForm);
 
     if (m_verbs.size()) {
         pbnjson::JValue jparam = pbnjson::Object();
-        for (std::map<std::string,std::string>::iterator it = m_verbs.begin();
-             it != m_verbs.end();++it)
-        {
+        for (std::map<std::string, std::string>::iterator it = m_verbs.begin(); it != m_verbs.end(); ++it) {
             jparam.put(it->first, it->second);
         }
         jobj.put("verbs", jparam);
@@ -171,39 +157,18 @@ pbnjson::JValue RedirectHandler::toJValue()
 
 ///--------------------------------------------------------------------------------------------------------------------
 
-
-ResourceHandler::ResourceHandler(const std::string& ext, const std::string& contentType,
-                                 const std::string& appId, bool stream, int32_t index)
-    : m_fileExt(ext)
-    , m_contentType(contentType)
-    , m_appId(appId)
-    , m_stream(stream)
-    , m_valid(true)
-    , m_tag("")
-    , m_index(index)
+ResourceHandler::ResourceHandler(const std::string& ext, const std::string& contentType, const std::string& appId, bool stream, int32_t index) :
+        m_fileExt(ext), m_contentType(contentType), m_appId(appId), m_stream(stream), m_valid(true), m_tag(""), m_index(index)
 {
-    if(m_index < 0)
-    {
+    if (m_index < 0) {
         m_index = MimeSystem::assignIndex();
     }
 }
 
-ResourceHandler::ResourceHandler(const std::string& ext,
-                                 const std::string& contentType,
-                                 const std::string& appId,
-                                 bool stream,
-                                 const std::string& handler_tag,
-                                 int32_t index)
-    : m_fileExt(ext)
-    , m_contentType(contentType)
-    , m_appId(appId)
-    , m_stream(stream)
-    , m_valid(true)
-    , m_tag(handler_tag)
-    , m_index(index)
+ResourceHandler::ResourceHandler(const std::string& ext, const std::string& contentType, const std::string& appId, bool stream, const std::string& handler_tag, int32_t index) :
+        m_fileExt(ext), m_contentType(contentType), m_appId(appId), m_stream(stream), m_valid(true), m_tag(handler_tag), m_index(index)
 {
-    if(m_index < 0)
-    {
+    if (m_index < 0) {
         m_index = MimeSystem::assignIndex();
     }
 }
@@ -237,10 +202,10 @@ ResourceHandler& ResourceHandler::operator=(const ResourceHandler& c)
     return *this;
 }
 
-bool ResourceHandler::addVerb(const std::string& verb,const std::string& jsonizedParams)
+bool ResourceHandler::addVerb(const std::string& verb, const std::string& jsonizedParams)
 {
     pbnjson::JValue jobj(jsonizedParams);
-    if(jobj.isNull()){
+    if (jobj.isNull()) {
         return false;
     }
     m_verbs[verb] = jsonizedParams;
@@ -267,15 +232,12 @@ pbnjson::JValue ResourceHandler::toJValue()
     jobj.put("appId", m_appId);
     jobj.put("streamable", m_stream);
     jobj.put("index", m_index);
-    if (m_tag.size())
-    {
+    if (m_tag.size()) {
         jobj.put("tag", m_tag);
     }
     if (m_verbs.size()) {
         pbnjson::JValue jparam = pbnjson::Object();
-        for (std::map<std::string,std::string>::iterator it = m_verbs.begin();
-             it != m_verbs.end();++it)
-        {
+        for (std::map<std::string, std::string>::iterator it = m_verbs.begin(); it != m_verbs.end(); ++it) {
             jparam.put(it->first, it->second);
         }
         jobj.put("verbs", jparam);

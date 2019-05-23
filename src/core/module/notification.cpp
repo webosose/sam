@@ -22,10 +22,12 @@
 #include "core/base/utils.h"
 
 ResBundleAdaptor::ResBundleAdaptor()
-{}
+{
+}
 
 ResBundleAdaptor::~ResBundleAdaptor()
-{}
+{
+}
 
 std::string ResBundleAdaptor::getLocString(const std::string& key)
 {
@@ -34,8 +36,7 @@ std::string ResBundleAdaptor::getLocString(const std::string& key)
 
 void ResBundleAdaptor::setLocale(const std::string& locale)
 {
-    if(locale.empty())
-    {
+    if (locale.empty()) {
         LOG_DEBUG("locale is empty");
         return;
     }
@@ -48,31 +49,32 @@ void ResBundleAdaptor::setLocale(const std::string& locale)
 }
 
 ToastHelper::ToastHelper()
-{}
+{
+}
 
 ToastHelper::~ToastHelper()
-{}
+{
+}
 
 bool ToastHelper::createToast(pbnjson::JValue msg)
 {
     LSErrorSafe lserror;
 
-    if(msg.isNull())
-    {
+    if (msg.isNull()) {
         LOG_WARNING(MSGID_NOTIFICATION, 0, "msg is empty");
         return false;
     }
 
     /*
-    if(!LSCallOneReply(MemMgrService::instance().getPrivateHandle(),
-                "palm://com.webos.notification/createToast",
-                JUtil::jsonToString(msg).c_str(),
-                toastLsCallBack, NULL, NULL, &lserror))
-    {
-        LOG_WARNING(MSGID_NOTIFICATION_FAIL, 1, PMLOGKS("NOTI_MSG", JUtil::jsonToString(msg).c_str()), "NOTI send failed");
-        return false;
-    }
-    */
+     if(!LSCallOneReply(MemMgrService::instance().getPrivateHandle(),
+     "palm://com.webos.notification/createToast",
+     JUtil::jsonToString(msg).c_str(),
+     toastLsCallBack, NULL, NULL, &lserror))
+     {
+     LOG_WARNING(MSGID_NOTIFICATION_FAIL, 1, PMLOGKS("NOTI_MSG", JUtil::jsonToString(msg).c_str()), "NOTI send failed");
+     return false;
+     }
+     */
     return true;
 }
 
@@ -80,12 +82,11 @@ bool ToastHelper::toastLsCallBack(LSHandle *sh, LSMessage *message, void *user_d
 {
     pbnjson::JValue json = JUtil::parse(LSMessageGetPayload(message), std::string(""));
 
-    if(json.isNull())
+    if (json.isNull())
         return true;
 
     bool returnValue = json["returnValue"].asBool();
-    if(!returnValue)
-    {
+    if (!returnValue) {
         LOG_WARNING(MSGID_NOTIFICATION_FAIL, 0, "Notification return failed from Noti-Service");
     }
 

@@ -21,13 +21,13 @@
 
 class LaunchPointDefault4Base: public LaunchPoint4Base {
 public:
-  LaunchPointDefault4Base(const std::string& id, const std::string& lp_id)
-      : LaunchPoint4Base(id, lp_id) {
-  }
+    LaunchPointDefault4Base(const std::string& id, const std::string& lp_id) :
+            LaunchPoint4Base(id, lp_id)
+    {
+    }
 
-  static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
-  virtual std::string Update(const pbnjson::JValue& data);
+    static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string Update(const pbnjson::JValue& data);
 };
-
 
 #endif /* LAUNCH_POINT_DEFAULT_4_BASE_H */

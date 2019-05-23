@@ -23,43 +23,36 @@
 
 #include "core/base/singleton.h"
 
-enum class PackageStatus : int8_t {
-  Unknown = 0,
-  Installed,
-  InstallFailed,
-  Uninstalled,
-  UninstallFailed,
-  AboutToUninstall,
-  ResetToDefault,
+enum class PackageStatus
+    : int8_t {
+        Unknown = 0, Installed, InstallFailed, Uninstalled, UninstallFailed, AboutToUninstall, ResetToDefault,
 };
 
 class AppinstalldSubscriber: public Singleton<AppinstalldSubscriber> {
- public:
-  AppinstalldSubscriber();
-  ~AppinstalldSubscriber();
+public:
+    AppinstalldSubscriber();
+    ~AppinstalldSubscriber();
 
-  void Init();
-  boost::signals2::connection SubscribeInstallStatus(
-      boost::function<void(const std::string&, const PackageStatus&)> func);
-  boost::signals2::connection SubscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func);
+    void Init();
+    boost::signals2::connection SubscribeInstallStatus(boost::function<void(const std::string&, const PackageStatus&)> func);
+    boost::signals2::connection SubscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func);
 
- private:
-  friend class Singleton<AppinstalldSubscriber>;
+private:
+    friend class Singleton<AppinstalldSubscriber> ;
 
-  void OnInstallServiceStatusChanged(bool connection);
-  void RequestInstallStatus();
-  static bool OnInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void OnInstallServiceStatusChanged(bool connection);
+    void RequestInstallStatus();
+    static bool OnInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-  void OnUpdateServiceStatusChanged(bool connection);
-  void RequestUpdateInfo();
-  static bool OnUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void OnUpdateServiceStatusChanged(bool connection);
+    void RequestUpdateInfo();
+    static bool OnUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-  LSMessageToken token_install_status_;
-  LSMessageToken token_update_info_;
-  boost::signals2::signal<void (const std::string&, const PackageStatus&)> notify_install_status_;
-  boost::signals2::signal<void (const pbnjson::JValue&)> notify_update_info_;
+    LSMessageToken token_install_status_;
+    LSMessageToken token_update_info_;
+    boost::signals2::signal<void(const std::string&, const PackageStatus&)> notify_install_status_;
+    boost::signals2::signal<void(const pbnjson::JValue&)> notify_update_info_;
 };
 
 #endif  // CORE_MODULE_SUBSCRIBER_OF_APPINSTALLD_H_
-
 

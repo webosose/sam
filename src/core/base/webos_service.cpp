@@ -25,7 +25,7 @@ void WebOSService::start()
 
 void WebOSService::stop()
 {
-    if(m_main_loop)
+    if (m_main_loop)
         g_main_loop_quit(m_main_loop);
 }
 
@@ -63,8 +63,7 @@ void WebOSService::run()
 void WebOSService::cleanup()
 {
     terminate();
-    if(m_main_loop)
-    {
+    if (m_main_loop) {
         g_main_loop_unref(m_main_loop);
     }
 }

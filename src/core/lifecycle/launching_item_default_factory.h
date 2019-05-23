@@ -20,12 +20,10 @@
 #include "interface/lifecycle/launching_item_factory_interface.h"
 
 class AppLaunchingItemDefaultFactory: public AppLaunchingItemFactoryInterface {
- public:
-  AppLaunchingItemDefaultFactory();
-  virtual ~AppLaunchingItemDefaultFactory();
-  virtual AppLaunchingItemPtr Create(const std::string& app_id, AppLaunchRequestType rtype,
-                                     const pbnjson::JValue& params, LSMessage* lsmsg,
-                                     int& err_code, std::string& err_text);
+public:
+    AppLaunchingItemDefaultFactory();
+    virtual ~AppLaunchingItemDefaultFactory();
+    virtual AppLaunchingItemPtr Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text);
 };
 
 #endif

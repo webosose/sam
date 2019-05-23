@@ -20,29 +20,32 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings.h"
 
-ApplicationDescription4Base::ApplicationDescription4Base()
-    : ApplicationDescription() {
+ApplicationDescription4Base::ApplicationDescription4Base() :
+        ApplicationDescription()
+{
 }
 
-ApplicationDescription4Base::~ApplicationDescription4Base() {
+ApplicationDescription4Base::~ApplicationDescription4Base()
+{
 }
 
-bool ApplicationDescription4Base::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir) {
-  if (ApplicationDescription::LoadJson(jdesc, type_by_dir) == false) {
-    return false;
-  }
+bool ApplicationDescription4Base::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir)
+{
+    if (ApplicationDescription::LoadJson(jdesc, type_by_dir) == false) {
+        return false;
+    }
 
-  // TODO: Below keys are product specific values.
-  // They should be moved into 'extension'
-  appinfo_json_.remove("lockable");
-  appinfo_json_.remove("bootLaunchParams");
-  appinfo_json_.remove("checkUpdateOnLaunch");
-  appinfo_json_.remove("hasPromotion");
-  appinfo_json_.remove("inAppSetting");
-  appinfo_json_.remove("installTime");
-  appinfo_json_.remove("disableBackHistoryAPI");
-  appinfo_json_.remove("accessibility");
-  appinfo_json_.remove("tileSize");
+    // TODO: Below keys are product specific values.
+    // They should be moved into 'extension'
+    appinfo_json_.remove("lockable");
+    appinfo_json_.remove("bootLaunchParams");
+    appinfo_json_.remove("checkUpdateOnLaunch");
+    appinfo_json_.remove("hasPromotion");
+    appinfo_json_.remove("inAppSetting");
+    appinfo_json_.remove("installTime");
+    appinfo_json_.remove("disableBackHistoryAPI");
+    appinfo_json_.remove("accessibility");
+    appinfo_json_.remove("tileSize");
 
-  return true;
+    return true;
 }

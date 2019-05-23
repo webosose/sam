@@ -21,15 +21,15 @@
 
 class ApplicationDescription4Base: public ApplicationDescription {
 public:
-  ApplicationDescription4Base();
-  virtual ~ApplicationDescription4Base();
+    ApplicationDescription4Base();
+    virtual ~ApplicationDescription4Base();
 
-  virtual bool LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir);
+    virtual bool LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir);
 
 private:
-  // make this class on-copyable
-  ApplicationDescription4Base& operator=(const ApplicationDescription4Base&) = delete;
-  ApplicationDescription4Base(const ApplicationDescription4Base&) = delete;
+    // make this class on-copyable
+    ApplicationDescription4Base& operator=(const ApplicationDescription4Base&) = delete;
+    ApplicationDescription4Base(const ApplicationDescription4Base&) = delete;
 
 };
 typedef std::shared_ptr<ApplicationDescription4Base> AppDesc4BasicPtr;

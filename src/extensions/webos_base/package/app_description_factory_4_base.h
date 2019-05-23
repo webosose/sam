@@ -21,10 +21,10 @@
 
 class AppDescriptionFactory4Base: public AppDescriptionFactoryInterface {
 public:
-  AppDescriptionFactory4Base();
-  virtual ~AppDescriptionFactory4Base();
+    AppDescriptionFactory4Base();
+    virtual ~AppDescriptionFactory4Base();
 
-  virtual AppDescPtr Create(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir);
+    virtual AppDescPtr Create(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir);
 };
 
 #endif // APP_DESCRIPTION_FACTORY_4_BASE_H

@@ -16,19 +16,17 @@
 
 #include "core/base/singleton.h"
 
-namespace SingletonNS
-{
-    std::list<Tracker*> _list;
-    bool _atexit_registered = false;
+namespace SingletonNS {
+std::list<Tracker*> _list;
+bool _atexit_registered = false;
 
-    void destroyAll()
-    {
-        Tracker *pTracker = NULL;
-        while(!_list.empty())
-        {
-            pTracker = _list.back();
-            _list.pop_back();
-            delete pTracker;
-        }
+void destroyAll()
+{
+    Tracker *pTracker = NULL;
+    while (!_list.empty()) {
+        pTracker = _list.back();
+        _list.pop_back();
+        delete pTracker;
     }
+}
 }

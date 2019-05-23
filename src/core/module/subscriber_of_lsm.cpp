@@ -29,10 +29,8 @@ static LSMSubscriber* g_this = NULL;
 const std::string LSM_API_FOREGROUND_INFO = "getForegroundAppInfo";
 const std::string LSM_API_RECENT_LIST = "getRecentsAppList";
 
-LSMSubscriber::LSMSubscriber()
-    : m_token_category_watcher(0)
-    , m_token_foreground_info(0)
-    , m_token_recent_list(0)
+LSMSubscriber::LSMSubscriber() :
+        m_token_category_watcher(0), m_token_foreground_info(0), m_token_recent_list(0)
 {
     g_this = this;
 }
@@ -42,63 +40,49 @@ LSMSubscriber::~LSMSubscriber()
 
 }
 
-
 void LSMSubscriber::init()
 {
-    ServiceObserver::instance().Add(WEBOS_SERVICE_LSM,
-            std::bind(&LSMSubscriber::on_server_status_changed, this, std::placeholders::_1));
+    ServiceObserver::instance().Add(WEBOS_SERVICE_LSM, std::bind(&LSMSubscriber::on_server_status_changed, this, std::placeholders::_1));
 }
-
 
 void LSMSubscriber::on_server_status_changed(bool connection)
 {
-    if(connection)
-    {
+    if (connection) {
         /*
-        luna://com.webos.service.bus/signal/registerServiceCategory
-        '{"serviceName": "com.webos.surfacemanager", "category": "/"}'
-        */
+         luna://com.webos.service.bus/signal/registerServiceCategory
+         '{"serviceName": "com.webos.surfacemanager", "category": "/"}'
+         */
         pbnjson::JValue payload = pbnjson::Object();
         payload.put("serviceName", "com.webos.surfacemanager");
         payload.put("category", "/");
         payload.put("subscribe", true);
 
         LSErrorSafe lserror;
-        if (!LSCall(AppMgrService::instance().ServiceHandle(),
-                    "luna://com.webos.service.bus/signal/registerServiceCategory",
-                    JUtil::jsonToString(payload).c_str(),
-                    category_watcher, NULL, &m_token_category_watcher, &lserror))
-        {
-            LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"),
-                                           PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()),
-                                           PMLOGKS("where", "signal_register_category"),
-                                           "err: %s", lserror.message);
+        if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.bus/signal/registerServiceCategory", JUtil::jsonToString(payload).c_str(), category_watcher, NULL,
+                &m_token_category_watcher, &lserror)) {
+            LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", "signal_register_category"), "err: %s",
+                    lserror.message);
         }
-    }
-    else
-    {
+    } else {
         //cancel LSM registerServiceCategory subscription
-        if(0 != m_token_category_watcher)
-        {
+        if (0 != m_token_category_watcher) {
             LSErrorSafe lserror;
             LSCallCancel(AppMgrService::instance().ServiceHandle(), m_token_category_watcher, &lserror);
-            if(LSErrorIsSet(&lserror))
+            if (LSErrorIsSet(&lserror))
                 LSErrorPrint(&lserror, stderr);
             m_token_category_watcher = 0;
         }
 
         //init m_lsmGetForgrndAppInfoReq
-        if(0 != m_token_foreground_info)
-        {
+        if (0 != m_token_foreground_info) {
             LSErrorSafe lserror;
             LSCallCancel(AppMgrService::instance().ServiceHandle(), m_token_foreground_info, &lserror);
-            if(LSErrorIsSet(&lserror))
+            if (LSErrorIsSet(&lserror))
                 LSErrorPrint(&lserror, stderr);
             m_token_foreground_info = 0;
         }
     }
 }
-
 
 bool LSMSubscriber::category_watcher(LSHandle* handle, LSMessage* lsmsg, void* user_data)
 {
@@ -115,19 +99,18 @@ bool LSMSubscriber::category_watcher(LSHandle* handle, LSMessage* lsmsg, void* u
     bool recent_list_api_ready = false;
 
     int array_size = jmsg["/"].arraySize();
-    for(int i = 0 ; i < array_size ; ++i)
-    {
+    for (int i = 0; i < array_size; ++i) {
         std::string lsm_api = jmsg["/"][i].asString();
-        if(lsm_api.compare(LSM_API_FOREGROUND_INFO) == 0)
+        if (lsm_api.compare(LSM_API_FOREGROUND_INFO) == 0)
             foreground_api_ready = true;
-        else if(lsm_api.compare(LSM_API_RECENT_LIST) == 0)
+        else if (lsm_api.compare(LSM_API_RECENT_LIST) == 0)
             recent_list_api_ready = true;
     }
 
-    if(foreground_api_ready)
+    if (foreground_api_ready)
         g_this->subscribe_foreground_info();
 
-    if(recent_list_api_ready)
+    if (recent_list_api_ready)
         g_this->subscribe_recent_list();
 
     return true;
@@ -135,18 +118,13 @@ bool LSMSubscriber::category_watcher(LSHandle* handle, LSMessage* lsmsg, void* u
 
 void LSMSubscriber::subscribe_foreground_info()
 {
-    if(m_token_foreground_info != 0)
+    if (m_token_foreground_info != 0)
         return;
 
     LSErrorSafe lserror;
-    if(!LSCall(AppMgrService::instance().ServiceHandle(),
-                "luna://com.webos.surfacemanager/getForegroundAppInfo", "{\"subscribe\":true}",
-                cb_foreground_info, NULL, &m_token_foreground_info, &lserror))
-    {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"),
-                                       PMLOGJSON("payload", "{\"subscribe\":true}"),
-                                       PMLOGKS("where", "lsm_get_foreground_info"),
-                                       "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.surfacemanager/getForegroundAppInfo", "{\"subscribe\":true}", cb_foreground_info, NULL, &m_token_foreground_info,
+            &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", "lsm_get_foreground_info"), "err: %s", lserror.message);
     }
 }
 
@@ -163,18 +141,12 @@ bool LSMSubscriber::cb_foreground_info(LSHandle* handle, LSMessage* lsmsg, void*
 
 void LSMSubscriber::subscribe_recent_list()
 {
-    if(m_token_recent_list != 0)
+    if (m_token_recent_list != 0)
         return;
 
     LSErrorSafe lserror;
-    if(!LSCall(AppMgrService::instance().ServiceHandle(),
-                "luna://com.webos.surfacemanager/getRecentsAppList", "{\"subscribe\":true}",
-                cb_recent_list, NULL, &m_token_recent_list, &lserror))
-    {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"),
-                                       PMLOGJSON("payload", "{\"subscribe\":true}"),
-                                       PMLOGKS("where", "lsm_get_recent_list"),
-                                       "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.surfacemanager/getRecentsAppList", "{\"subscribe\":true}", cb_recent_list, NULL, &m_token_recent_list, &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", "lsm_get_recent_list"), "err: %s", lserror.message);
     }
 }
 

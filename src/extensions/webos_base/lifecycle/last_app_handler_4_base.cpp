@@ -16,14 +16,18 @@
 
 #include "extensions/webos_base/lifecycle/last_app_handler_4_base.h"
 
-LastAppHandler4Base::LastAppHandler4Base() {
+LastAppHandler4Base::LastAppHandler4Base()
+{
 }
 
-LastAppHandler4Base::~LastAppHandler4Base() {
+LastAppHandler4Base::~LastAppHandler4Base()
+{
 }
 
-void LastAppHandler4Base::launch() {
+void LastAppHandler4Base::launch()
+{
 }
 
-void LastAppHandler4Base::cancel() {
+void LastAppHandler4Base::cancel()
+{
 }

@@ -24,27 +24,47 @@
 #include "core/package/application_description.h"
 
 class AppCloseItem {
- public:
-  AppCloseItem(const std::string& app_id, const std::string& pid,
-               const std::string& caller, const std::string& reason);
-  virtual ~AppCloseItem();
+public:
+    AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason);
+    virtual ~AppCloseItem();
 
-  const std::string& Uid() const { return uid_; }
-  const std::string& AppId() const { return app_id_; }
-  const std::string& Pid() const { return pid_; }
-  const std::string& Caller() const { return caller_; }
-  bool IsMemoryReclaim() const { return is_memory_reclaim_; }
-  const std::string& Reason() const { return reason_; }
-  const double& CloseStartTime() const { return close_start_time_; }
+    const std::string& Uid() const
+    {
+        return uid_;
+    }
+    const std::string& AppId() const
+    {
+        return app_id_;
+    }
+    const std::string& Pid() const
+    {
+        return pid_;
+    }
+    const std::string& Caller() const
+    {
+        return caller_;
+    }
+    bool IsMemoryReclaim() const
+    {
+        return is_memory_reclaim_;
+    }
+    const std::string& Reason() const
+    {
+        return reason_;
+    }
+    const double& CloseStartTime() const
+    {
+        return close_start_time_;
+    }
 
- private:
-  std::string           uid_;
-  std::string           app_id_;
-  std::string           pid_;
-  std::string           caller_;
-  bool                  is_memory_reclaim_;
-  std::string           reason_;
-  double                close_start_time_;
+private:
+    std::string uid_;
+    std::string app_id_;
+    std::string pid_;
+    std::string caller_;
+    bool is_memory_reclaim_;
+    std::string reason_;
+    double close_start_time_;
 };
 typedef std::shared_ptr<AppCloseItem> AppCloseItemPtr;
 typedef std::list<AppCloseItemPtr> AppCloseItemList;

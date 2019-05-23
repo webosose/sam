@@ -30,16 +30,19 @@
 #include "core/lifecycle/application_errors.h"
 
 class CallChain;
-class CallItem
-{
+class CallItem {
     friend class CallChain;
 public:
     CallItem();
+    virtual ~CallItem()
+    {
+    }
+    ;
 
     virtual bool Call() = 0;
 
-    boost::signals2::signal<void (bool, ErrorInfo errInfo)> onFinished;
-    boost::signals2::signal<void (ErrorInfo errInfo)> onError;
+    boost::signals2::signal<void(bool, ErrorInfo errInfo)> onFinished;
+    boost::signals2::signal<void(ErrorInfo errInfo)> onError;
 
 protected:
     void setError(int errorCode, std::string errorText);
@@ -61,10 +64,13 @@ private:
     std::string m_msg;
 };
 
-class LSCallItem : public CallItem
-{
+class LSCallItem: public CallItem {
 public:
     LSCallItem(LSHandle *handle, const char *uri, const char *payload);
+    virtual ~LSCallItem()
+    {
+    }
+    ;
 
     virtual bool Call();
 
@@ -82,19 +88,16 @@ private:
     std::string m_payload;
 };
 
-class CallChain
-{
+class CallChain {
     typedef std::shared_ptr<CallItem> CallItemPtr;
-    typedef std::function<void (pbnjson::JValue, ErrorInfo, void*)> CallCompleteHandler;
-    typedef std::function<void (const std::string&, const std::string&, bool, void*)> CallNotifier;
+    typedef std::function<void(pbnjson::JValue, ErrorInfo, void*)> CallCompleteHandler;
+    typedef std::function<void(const std::string&, const std::string&, bool, void*)> CallNotifier;
 
-    struct CallCondition
-    {
-        CallCondition(CallItemPtr _condition_call, bool _expected_result, CallItemPtr _target_call)
-            : condition_call(_condition_call)
-            , expected_result(_expected_result)
-            , target_call(_target_call)
-        {}
+    struct CallCondition {
+        CallCondition(CallItemPtr _condition_call, bool _expected_result, CallItemPtr _target_call) :
+                condition_call(_condition_call), expected_result(_expected_result), target_call(_target_call)
+        {
+        }
 
         CallItemPtr condition_call;
         bool expected_result;
@@ -113,7 +116,7 @@ public:
 
 private:
     CallChain(CallCompleteHandler handler, CallNotifier notifier, void *user_data);
-    ~CallChain();
+    virtual ~CallChain();
 
     bool proceed(pbnjson::JValue chainData);
     void finish(pbnjson::JValue chainData, ErrorInfo errInfo);
@@ -121,7 +124,10 @@ private:
     void onCallFinished(bool result, ErrorInfo errInfo);
     void onCallError(ErrorInfo errInfo);
 
-    void setNotifier(CallNotifier notifier) { m_notifier = notifier; }
+    void setNotifier(CallNotifier notifier)
+    {
+        m_notifier = notifier;
+    }
     static gboolean cbAsyncDelete(gpointer data);
 
 private:

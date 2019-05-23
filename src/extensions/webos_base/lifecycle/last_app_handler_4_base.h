@@ -25,11 +25,11 @@
 
 class LastAppHandler4Base: public LastAppHandlerInterface {
 public:
-  LastAppHandler4Base();
-  virtual ~LastAppHandler4Base();
+    LastAppHandler4Base();
+    virtual ~LastAppHandler4Base();
 
-  virtual void launch();
-  virtual void cancel();
+    virtual void launch();
+    virtual void cancel();
 
 };
 

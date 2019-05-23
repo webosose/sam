@@ -21,59 +21,69 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings.h"
 
-OrderingHandler4Base::OrderingHandler4Base() {
+OrderingHandler4Base::OrderingHandler4Base()
+{
 }
 
-OrderingHandler4Base::~OrderingHandler4Base() {
+OrderingHandler4Base::~OrderingHandler4Base()
+{
 }
 
-void OrderingHandler4Base::Init() {
+void OrderingHandler4Base::Init()
+{
 }
 
-void OrderingHandler4Base::HandleDbState(bool connection) {
+void OrderingHandler4Base::HandleDbState(bool connection)
+{
 }
 
-void OrderingHandler4Base::ReloadDbData(bool connection) {
+void OrderingHandler4Base::ReloadDbData(bool connection)
+{
 }
 
-void OrderingHandler4Base::MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason) {
-  visible_lps_ = visible_lps;
-  reorder();
+void OrderingHandler4Base::MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason)
+{
+    visible_lps_ = visible_lps;
+    reorder();
 }
 
-bool OrderingHandler4Base::SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text) {
-  return false;
+bool OrderingHandler4Base::SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text)
+{
+    return false;
 }
 
-int OrderingHandler4Base::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  int i = 0;
-  for (auto it = ordered_list_.begin(); it != ordered_list_.end(); ++it, ++i) {
-    if (*it > lp_id) {
-      ordered_list_.insert(it, lp_id);
-      return i;
+int OrderingHandler4Base::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    int i = 0;
+    for (auto it = ordered_list_.begin(); it != ordered_list_.end(); ++it, ++i) {
+        if (*it > lp_id) {
+            ordered_list_.insert(it, lp_id);
+            return i;
+        }
     }
-  }
-  ordered_list_.push_back(lp_id);
-  return ordered_list_.size() - 1;
+    ordered_list_.push_back(lp_id);
+    return ordered_list_.size() - 1;
 }
 
-int OrderingHandler4Base::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position) {
-  return 0;
+int OrderingHandler4Base::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    return 0;
 }
 
-void OrderingHandler4Base::DeleteLpInOrder(const std::string& lp_id) {
-  auto it = std::find(ordered_list_.begin(), ordered_list_.end(), lp_id);
+void OrderingHandler4Base::DeleteLpInOrder(const std::string& lp_id)
+{
+    auto it = std::find(ordered_list_.begin(), ordered_list_.end(), lp_id);
 
-  if (it != ordered_list_.end())
-    ordered_list_.erase(it);
+    if (it != ordered_list_.end())
+        ordered_list_.erase(it);
 }
 
-void OrderingHandler4Base::reorder() {
-  ordered_list_.clear();
-  for (auto it = visible_lps_.begin(); it != visible_lps_.end(); ++it) {
-    ordered_list_.push_back(it->get()->LaunchPointId());
-  }
-  std::sort(ordered_list_.begin(), ordered_list_.end(),
-            [](const std::string& a, const std::string& b) -> bool{ return (a < b); });
-  signal_launch_points_ordered_(OrderChangeState::FULL);
+void OrderingHandler4Base::reorder()
+{
+    ordered_list_.clear();
+    for (auto it = visible_lps_.begin(); it != visible_lps_.end(); ++it) {
+        ordered_list_.push_back(it->get()->LaunchPointId());
+    }
+    std::sort(ordered_list_.begin(), ordered_list_.end(), [](const std::string& a, const std::string& b) -> bool {return (a < b);});
+    signal_launch_points_ordered_(OrderChangeState::FULL);
 }

@@ -21,18 +21,22 @@
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings.h"
 
-AppScanFilter4Base::AppScanFilter4Base() {
+AppScanFilter4Base::AppScanFilter4Base()
+{
 }
 
-AppScanFilter4Base::~AppScanFilter4Base() {
+AppScanFilter4Base::~AppScanFilter4Base()
+{
 }
 
-bool AppScanFilter4Base::ValidatePreCondition() {
-  return true;
+bool AppScanFilter4Base::ValidatePreCondition()
+{
+    return true;
 }
 
-bool AppScanFilter4Base::ValidatePostCondition(AppTypeByDir type_by_dir, AppDescPtr app_desc) {
-  if (app_desc == NULL)
-    return false;
-  return true;
+bool AppScanFilter4Base::ValidatePostCondition(AppTypeByDir type_by_dir, AppDescPtr app_desc)
+{
+    if (app_desc == NULL)
+        return false;
+    return true;
 }

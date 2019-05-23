@@ -20,8 +20,7 @@
 #include "core/lifecycle/launching_item.h"
 #include "interface/lifecycle/prelauncher_interface.h"
 
-class Prelauncher: public PrelauncherInterface
-{
+class Prelauncher: public PrelauncherInterface {
 public:
     Prelauncher();
     ~Prelauncher();

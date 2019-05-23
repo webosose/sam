@@ -20,20 +20,20 @@
 
 #include "core/base/singleton.h"
 
-class ResBundleAdaptor : public Singleton<ResBundleAdaptor> {
+class ResBundleAdaptor: public Singleton<ResBundleAdaptor> {
 private:
     std::string m_resFile;
     std::string m_resPath;
 
     std::shared_ptr<ResBundle> m_resBundle;
 
-    ResBundleAdaptor& operator=( const ResBundleAdaptor& );
-    ResBundleAdaptor( const ResBundleAdaptor& );
+    ResBundleAdaptor& operator=(const ResBundleAdaptor&);
+    ResBundleAdaptor(const ResBundleAdaptor&);
 
     ResBundleAdaptor();
     virtual ~ResBundleAdaptor();
 
-    friend class Singleton<ResBundleAdaptor>;
+    friend class Singleton<ResBundleAdaptor> ;
 
 public:
     std::string getLocString(const std::string& key);

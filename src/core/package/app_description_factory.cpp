@@ -16,12 +16,15 @@
 
 #include "core/package/app_description_factory.h"
 
-AppDescriptionFactory::AppDescriptionFactory() {
+AppDescriptionFactory::AppDescriptionFactory()
+{
 }
 
-AppDescriptionFactory::~AppDescriptionFactory(){
+AppDescriptionFactory::~AppDescriptionFactory()
+{
 }
 
-AppDescPtr AppDescriptionFactory::Create(AppTypeByDir type_by_dir, pbnjson::JValue& jdesc, std::string& err_text) {
-  return nullptr;
+AppDescPtr AppDescriptionFactory::Create(AppTypeByDir type_by_dir, pbnjson::JValue& jdesc, std::string& err_text)
+{
+    return nullptr;
 }

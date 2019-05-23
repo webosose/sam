@@ -22,55 +22,58 @@
 #include <memory>
 #include <vector>
 
-enum class PrerequisiteItemStatus: int8_t {
-  Ready = 1,
-  Doing,
-  Passed,
-  Failed,
+enum class PrerequisiteItemStatus
+    : int8_t {
+        Ready = 1, Doing, Passed, Failed,
 };
 
 class PrerequisiteItem {
- public:
-  PrerequisiteItem();
-  virtual ~PrerequisiteItem();
+public:
+    PrerequisiteItem();
+    virtual ~PrerequisiteItem();
 
-  virtual void Start() = 0;
-  PrerequisiteItemStatus Status() const { return status_; }
+    virtual void Start() = 0;
+    PrerequisiteItemStatus Status() const
+    {
+        return status_;
+    }
 
- protected:
-  void SetStatus(PrerequisiteItemStatus status);
+protected:
+    void SetStatus(PrerequisiteItemStatus status);
 
- private:
-  friend class PrerequisiteMonitor;
+private:
+    friend class PrerequisiteMonitor;
 
-  PrerequisiteItemStatus status_;
-  std::function<void(PrerequisiteItemStatus)> status_notifier_;
+    PrerequisiteItemStatus status_;
+    std::function<void(PrerequisiteItemStatus)> status_notifier_;
 };
 typedef std::shared_ptr<PrerequisiteItem> PrerequisiteItemPtr;
 
-enum class PrerequisiteResult: int8_t {
-  Passed = 1,
-  Failed,
+enum class PrerequisiteResult
+    : int8_t {
+        Passed = 1, Failed,
 };
 
-class PrerequisiteMonitor
-{
- public:
-  PrerequisiteMonitor(std::function<void(PrerequisiteResult)> result_handler) : result_handler_(result_handler) {}
-  ~PrerequisiteMonitor();
+class PrerequisiteMonitor {
+public:
+    PrerequisiteMonitor(std::function<void(PrerequisiteResult)> result_handler) :
+            result_handler_(result_handler)
+    {
+    }
+    ~PrerequisiteMonitor();
 
-  static PrerequisiteMonitor& Create(std::function<void(PrerequisiteResult)> result_handler);
+    static PrerequisiteMonitor& Create(std::function<void(PrerequisiteResult)> result_handler);
 
-  void AddItem(PrerequisiteItemPtr item);
-  void Run();
+    void AddItem(PrerequisiteItemPtr item);
+    void Run();
 
- private:
-  void HandleItemStatus(PrerequisiteItemStatus status);
+private:
+    void HandleItemStatus(PrerequisiteItemStatus status);
 
-  static gboolean AsyncDelete(gpointer data);
+    static gboolean AsyncDelete(gpointer data);
 
-  std::vector<PrerequisiteItemPtr> prerequisites_;
-  std::function<void(PrerequisiteResult)> result_handler_;
+    std::vector<PrerequisiteItemPtr> prerequisites_;
+    std::function<void(PrerequisiteResult)> result_handler_;
 };
 
 #endif  //  CORE_BASE_PREREQUISITE_MONITOR_H_

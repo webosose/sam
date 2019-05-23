@@ -29,40 +29,44 @@
 
 class LaunchPoint4Base: public LaunchPoint {
 public:
-  LaunchPoint4Base(const std::string& id, const std::string& lp_id);
-  virtual ~LaunchPoint4Base();
+    LaunchPoint4Base(const std::string& id, const std::string& lp_id);
+    virtual ~LaunchPoint4Base();
 
-  void SetFavicon(const std::string& favicon);
-  void SetIcons(const pbnjson::JValue& icons);
-  void SetRelaunch(bool val) {
-    relaunch_ = val;
-  }
+    void SetFavicon(const std::string& favicon);
+    void SetIcons(const pbnjson::JValue& icons);
+    void SetRelaunch(bool val)
+    {
+        relaunch_ = val;
+    }
 
-  const std::string& Favicon() const {
-    return favicon_;
-  }
+    const std::string& Favicon() const
+    {
+        return favicon_;
+    }
 
-  const pbnjson::JValue& Icons() const {
-    return icons_;
-  }
+    const pbnjson::JValue& Icons() const
+    {
+        return icons_;
+    }
 
-  bool IsRelaunch() const {
-    return relaunch_;
-  }
+    bool IsRelaunch() const
+    {
+        return relaunch_;
+    }
 
-  virtual pbnjson::JValue ToJValue() const;
-  virtual std::string Update(const pbnjson::JValue& data);
-  virtual void UpdateIfEmpty(LaunchPointPtr lp);
-  virtual void SetAttrWithJson(const pbnjson::JValue& data);
+    virtual pbnjson::JValue ToJValue() const;
+    virtual std::string Update(const pbnjson::JValue& data);
+    virtual void UpdateIfEmpty(LaunchPointPtr lp);
+    virtual void SetAttrWithJson(const pbnjson::JValue& data);
 
 private:
-  // prevent object copy
-  LaunchPoint4Base(const LaunchPoint4Base&);
-  LaunchPoint4Base& operator=(const LaunchPoint4Base&) const;
+    // prevent object copy
+    LaunchPoint4Base(const LaunchPoint4Base&);
+    LaunchPoint4Base& operator=(const LaunchPoint4Base&) const;
 
-  std::string favicon_;
-  pbnjson::JValue icons_;
-  bool relaunch_;
+    std::string favicon_;
+    pbnjson::JValue icons_;
+    bool relaunch_;
 };
 
 typedef std::shared_ptr<const LaunchPoint4Base> LaunchPoint4BaseConstPtr;

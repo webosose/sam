@@ -22,75 +22,82 @@
 #include "core/base/logging.h"
 #include "core/base/lsutils.h"
 
-ServiceBase::ServiceBase(const std::string& name) : name_(name), handle_(NULL) {
-  services_.push_back({name, NULL});
+ServiceBase::ServiceBase(const std::string& name) :
+        name_(name), handle_(NULL)
+{
+    services_.push_back( { name, NULL });
 }
 
-ServiceBase::~ServiceBase() {
+ServiceBase::~ServiceBase()
+{
 }
 
-void ServiceBase::AddCompatibleNames(const std::vector<std::string>& names) {
-  for (const auto& n : names) {
-    services_.push_back({n, NULL});
-  }
+void ServiceBase::AddCompatibleNames(const std::vector<std::string>& names)
+{
+    for (const auto& n : names) {
+        services_.push_back( { n, NULL });
+    }
 }
 
-bool ServiceBase::Attach(GMainLoop * gml) {
+bool ServiceBase::Attach(GMainLoop * gml)
+{
 
-  bool first_handle = true;
-  for (auto& it : services_) {
-    LSErrorSafe lse;
-    const std::string& name = it.first;
+    bool first_handle = true;
+    for (auto& it : services_) {
+        LSErrorSafe lse;
+        const std::string& name = it.first;
 
-    if (!LSRegister(name.c_str(), &(it.second), &lse)) {
-      LOG_ERROR(MSGID_SRVC_REGISTER_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
-      return false;
+        if (!LSRegister(name.c_str(), &(it.second), &lse)) {
+            LOG_ERROR(MSGID_SRVC_REGISTER_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
+            return false;
+        }
+
+        std::vector<std::string> categories;
+        get_categories(categories);
+
+        for (const auto& category : categories) {
+            if (!LSRegisterCategory(it.second, category.c_str(), get_methods(category), NULL, NULL, &lse)) {
+                LOG_ERROR(MSGID_SRVC_CATEGORY_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
+                return false;
+            }
+
+            if (!LSCategorySetData(it.second, category.c_str(), this, &lse)) {
+                LOG_ERROR(MSGID_SRVC_CATEGORY_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
+                return false;
+            }
+        }
+
+        if (!LSGmainAttach(it.second, gml, &lse)) {
+            LOG_ERROR(MSGID_SRVC_ATTACH_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
+            return false;
+        }
+
+        if (first_handle) {
+            handle_ = it.second;
+            first_handle = false;
+        }
     }
 
-    std::vector<std::string> categories;
-    get_categories(categories);
-
-    for (const auto& category : categories) {
-      if (!LSRegisterCategory(it.second, category.c_str(), get_methods(category), NULL, NULL, &lse)) {
-        LOG_ERROR(MSGID_SRVC_CATEGORY_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
-        return false;
-      }
-
-      if (!LSCategorySetData(it.second, category.c_str(), this, &lse)) {
-        LOG_ERROR(MSGID_SRVC_CATEGORY_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
-        return false;
-      }
-    }
-
-    if (!LSGmainAttach(it.second, gml, &lse)) {
-      LOG_ERROR(MSGID_SRVC_ATTACH_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
-      return false;
-    }
-
-    if (first_handle) {
-      handle_ = it.second;
-      first_handle = false;
-    }
-  }
-
-  return true;
+    return true;
 }
 
-void ServiceBase::Detach() {
+void ServiceBase::Detach()
+{
 
-  for (auto& it : services_) {
-    LSErrorSafe lse;
-    if (!LSUnregister(it.second, &lse)) {
-      LOG_WARNING(MSGID_SRVC_DETACH_FAIL, 1, PMLOGKS("service", it.first.c_str()), "err: %s", lse.message);
-      return;
+    for (auto& it : services_) {
+        LSErrorSafe lse;
+        if (!LSUnregister(it.second, &lse)) {
+            LOG_WARNING(MSGID_SRVC_DETACH_FAIL, 1, PMLOGKS("service", it.first.c_str()), "err: %s", lse.message);
+            return;
+        }
+
+        it.second = NULL;
     }
 
-    it.second = NULL;
-  }
-
-  handle_ = NULL;
+    handle_ = NULL;
 }
 
-bool ServiceBase::IsAttached() {
-  return (NULL != handle_);
+bool ServiceBase::IsAttached()
+{
+    return (NULL != handle_);
 }

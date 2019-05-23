@@ -50,104 +50,113 @@ const std::string CONFIGD_KEY_KEEPALIVE_APPS = "com.webos.applicationManager.kee
 const std::string CONFIGD_KEY_SUPPORT_QML_BOOSTER = "com.webos.applicationManager.supportQmlBooster";
 const std::string CONFIGD_KEY_LIFECYCLE_REASON = "com.webos.applicationManager.lifeCycle";
 
-class ConfigInfo : public PrerequisiteItem {
- public:
-  ConfigInfo() {}
-  virtual ~ConfigInfo() {
-    config_info_connection_.disconnect();
-  }
-
-  virtual void Start() {
-    ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_FALLBACK_PRECEDENCE);
-    ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_KEEPALIVE_APPS);
-    ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER);
-    ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_LIFECYCLE_REASON);
-    config_info_connection_ = ConfigdSubscriber::instance().SubscribeConfigInfo(
-                                  boost::bind(&CorePrerequisites::ConfigInfo::HandleStatus, this, _1));
-  }
-
-  void HandleStatus(const pbnjson::JValue& jmsg) {
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "received_configd_msg"), "%s", JUtil::jsonToString(jmsg).c_str());
-
-    if (!jmsg.hasKey("configs") || !jmsg["configs"].isObject()) {
-      LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("func", __FUNCTION__), PMLOGKFV("line", "%d", __LINE__), "");
+class ConfigInfo: public PrerequisiteItem {
+public:
+    ConfigInfo()
+    {
+    }
+    virtual ~ConfigInfo()
+    {
+        config_info_connection_.disconnect();
     }
 
-    if (jmsg["configs"].hasKey(CONFIGD_KEY_FALLBACK_PRECEDENCE) && jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE].isArray())
-      SettingsImpl::instance().setAssetFallbackKeys(jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE]);
-
-    if (jmsg["configs"].hasKey(CONFIGD_KEY_KEEPALIVE_APPS) && jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS].isArray())
-      SettingsImpl::instance().setKeepAliveApps(jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS]);
-
-    if (jmsg["configs"].hasKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER) && jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].isBoolean())
-      SettingsImpl::instance().set_support_qml_booster(jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
-
-    if (jmsg["configs"].hasKey(CONFIGD_KEY_LIFECYCLE_REASON) && jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON].isObject())
-      SettingsImpl::instance().SetLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
-
-    if (jmsg.hasKey("missingConfigs") && jmsg["missingConfigs"].isArray() && jmsg["missingConfigs"].arraySize() > 0) {
-      LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
-          PMLOGKS("status", "missing_core_config_info"),
-          PMLOGJSON("missed_infos", JUtil::jsonToString(jmsg["missingConfigs"]).c_str()), "");
+    virtual void Start()
+    {
+        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_FALLBACK_PRECEDENCE);
+        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_KEEPALIVE_APPS);
+        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER);
+        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_LIFECYCLE_REASON);
+        config_info_connection_ = ConfigdSubscriber::instance().SubscribeConfigInfo(boost::bind(&CorePrerequisites::ConfigInfo::HandleStatus, this, _1));
     }
 
-    config_info_connection_.disconnect();
-    SetStatus(PrerequisiteItemStatus::Passed);
-  }
+    void HandleStatus(const pbnjson::JValue& jmsg)
+    {
+        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "received_configd_msg"), "%s", JUtil::jsonToString(jmsg).c_str());
 
- private:
-  boost::signals2::connection config_info_connection_;
+        if (!jmsg.hasKey("configs") || !jmsg["configs"].isObject()) {
+            LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("func", __FUNCTION__), PMLOGKFV("line", "%d", __LINE__), "");
+        }
+
+        if (jmsg["configs"].hasKey(CONFIGD_KEY_FALLBACK_PRECEDENCE) && jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE].isArray())
+            SettingsImpl::instance().setAssetFallbackKeys(jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE]);
+
+        if (jmsg["configs"].hasKey(CONFIGD_KEY_KEEPALIVE_APPS) && jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS].isArray())
+            SettingsImpl::instance().setKeepAliveApps(jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS]);
+
+        if (jmsg["configs"].hasKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER) && jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].isBoolean())
+            SettingsImpl::instance().set_support_qml_booster(jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
+
+        if (jmsg["configs"].hasKey(CONFIGD_KEY_LIFECYCLE_REASON) && jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON].isObject())
+            SettingsImpl::instance().SetLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
+
+        if (jmsg.hasKey("missingConfigs") && jmsg["missingConfigs"].isArray() && jmsg["missingConfigs"].arraySize() > 0) {
+            LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("status", "missing_core_config_info"), PMLOGJSON("missed_infos", JUtil::jsonToString(jmsg["missingConfigs"]).c_str()), "");
+        }
+
+        config_info_connection_.disconnect();
+        SetStatus(PrerequisiteItemStatus::Passed);
+    }
+
+private:
+    boost::signals2::connection config_info_connection_;
 };
 
-class BootStatus : public PrerequisiteItem {
- public:
-  BootStatus() {}
-  virtual ~BootStatus() {
-    boot_status_connection_.disconnect();
-  }
+class BootStatus: public PrerequisiteItem {
+public:
+    BootStatus()
+    {
+    }
+    virtual ~BootStatus()
+    {
+        boot_status_connection_.disconnect();
+    }
 
-  virtual void Start() {
-    boot_status_connection_ = BootdSubscriber::instance().SubscribeBootStatus(
-                                  boost::bind(&CorePrerequisites::BootStatus::HandleStatus, this, _1));
-  }
+    virtual void Start()
+    {
+        boot_status_connection_ = BootdSubscriber::instance().SubscribeBootStatus(boost::bind(&CorePrerequisites::BootStatus::HandleStatus, this, _1));
+    }
 
-  void HandleStatus(const pbnjson::JValue& jmsg) {
-    LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1 ,PMLOGJSON("Payload", JUtil::jsonToString(jmsg).c_str()), "");
+    void HandleStatus(const pbnjson::JValue& jmsg)
+    {
+        LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1, PMLOGJSON("Payload", JUtil::jsonToString(jmsg).c_str()), "");
 
-    if (!jmsg.hasKey("signals") || !jmsg["signals"].isObject() ||
-        !jmsg["signals"].hasKey("core-boot-done") || !jmsg["signals"]["core-boot-done"].asBool()) return;
+        if (!jmsg.hasKey("signals") || !jmsg["signals"].isObject() || !jmsg["signals"].hasKey("core-boot-done") || !jmsg["signals"]["core-boot-done"].asBool())
+            return;
 
-    boot_status_connection_.disconnect();
-    SetStatus(PrerequisiteItemStatus::Passed);
-  }
- private:
-  boost::signals2::connection boot_status_connection_;
+        boot_status_connection_.disconnect();
+        SetStatus(PrerequisiteItemStatus::Passed);
+    }
+private:
+    boost::signals2::connection boot_status_connection_;
 };
 
-static void OnReady(PrerequisiteResult result) {
-  if(AppMgrService::instance().IsServiceReady()) return;
+static void OnReady(PrerequisiteResult result)
+{
+    if (AppMgrService::instance().IsServiceReady())
+        return;
 
-  LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "all_precondition_ready"), "");
+    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "all_precondition_ready"), "");
 
-  SettingsImpl::instance().onRestLoad();
-  LocalePreferences::instance().OnRestInit();
-  ProductAbstractFactory::instance().OnReady();
-  ApplicationManager::instance().StartPostInit();
+    SettingsImpl::instance().onRestLoad();
+    LocalePreferences::instance().OnRestInit();
+    ProductAbstractFactory::instance().OnReady();
+    ApplicationManager::instance().StartPostInit();
 
-  AppMgrService::instance().SetServiceStatus(true);
-  AppMgrService::instance().OnServiceReady();
+    AppMgrService::instance().SetServiceStatus(true);
+    AppMgrService::instance().OnServiceReady();
 }
 
 }   // namespace CorePrerequisites
 
-
 ////////////////////////////////////////////////////////////////////
 // Main Service
 ////////////////////////////////////////////////////////////////////
-MainService::~MainService() {
+MainService::~MainService()
+{
 }
 
-bool MainService::initialize() {
+bool MainService::initialize()
+{
     // Load Settings (first!)
     SettingsImpl::instance().load(NULL);    //load default setting file
 
@@ -186,7 +195,8 @@ bool MainService::initialize() {
     return true;
 }
 
-bool MainService::terminate() {
+bool MainService::terminate()
+{
     ServiceObserver::instance().Stop();
 
     SysMgrService::instance()->Detach();

@@ -16,84 +16,50 @@
 
 #include "core/base/lsutils.h"
 
-LSDelayedMessage& LSDelayedMessage::acquire(LSMessage *message) {
-  LSDelayedMessage *msg = new LSDelayedMessage(message);
-  return *msg;
+std::string GetCallerFromMessage(LSMessage* message)
+{
+    std::string caller = "";
+    if (!message)
+        return "";
+
+    if (LSMessageGetApplicationID(message))
+        caller = LSMessageGetApplicationID(message);
+    else if (LSMessageGetSenderServiceName(message))
+        caller = LSMessageGetSenderServiceName(message);
+    return caller;
 }
 
-gboolean LSDelayedMessage::cbAsyncDelete(gpointer data) {
-  LSDelayedMessage *p = reinterpret_cast<LSDelayedMessage*>(data);
-  if (!p) return false;
-  delete p;
-  return false;
+std::string GetCallerID(const std::string& caller)
+{
+    if (std::string::npos == caller.find(" "))
+        return caller;
+    return caller.substr(0, caller.find(" "));
 }
 
-LSDelayedMessage::LSDelayedMessage(LSMessage *message) : m_message(message) {
-  LSMessageRef(m_message);
+std::string GetCallerPID(const std::string& caller)
+{
+    if (std::string::npos == caller.find(" "))
+        return "";
+    return caller.substr(caller.find(" ") + 1);
 }
 
-LSDelayedMessage::~LSDelayedMessage() {
-  LSMessageUnref(m_message);
+std::string GetCategoryFromMessage(LSMessage* message)
+{
+    if (!message)
+        return std::string("");
+    const char* category = LSMessageGetCategory(message);
+    if (!category)
+        return std::string("");
+    return std::string(category);
 }
 
-void LSDelayedMessage::setCondition(boost::signal<void()> &condition) {
-  m_connection = condition.connect(
-      std::bind(static_cast<void(LSDelayedMessage::*)()>(&LSDelayedMessage::onCondition), this));
-}
-
-void LSDelayedMessage::setCondition(boost::signal<void(bool)> &condition) {
-  m_connection = condition.connect(
-      std::bind(static_cast<void (LSDelayedMessage::*)(bool)>(&LSDelayedMessage::onCondition), this, std::placeholders::_1));
-}
-
-void LSDelayedMessage::onCondition() {
-  m_action(m_message);
-  m_connection.disconnect();
-  g_timeout_add(0, cbAsyncDelete, (gpointer)this);
-}
-
-void LSDelayedMessage::onCondition(bool success) {
-  m_action(m_message);
-  m_connection.disconnect();
-  g_timeout_add(0, cbAsyncDelete, (gpointer)this);
-}
-
-void LSDelayedMessage::setAction(std::function<bool(LSMessage*)> action) {
-  m_action = action;
-}
-
-std::string GetCallerFromMessage(LSMessage* message) {
-  std::string caller = "";
-  if (!message) return "";
-
-  if (LSMessageGetApplicationID(message))
-    caller = LSMessageGetApplicationID(message);
-  else if (LSMessageGetSenderServiceName(message))
-    caller = LSMessageGetSenderServiceName(message);
-  return caller;
-}
-
-std::string GetCallerID(const std::string& caller) {
-  if (std::string::npos == caller.find(" ")) return caller;
-  return caller.substr(0, caller.find(" "));
-}
-
-std::string GetCallerPID(const std::string& caller) {
-  if (std::string::npos == caller.find(" ")) return "";
-  return caller.substr(caller.find(" ")+1);
-}
-
-std::string GetCategoryFromMessage(LSMessage* message) {
-  if (!message) return std::string("");
-  const char* category = LSMessageGetCategory(message);
-  if (!category) return std::string("");
-  return std::string(category);
-}
-
-std::string GetMethodFromMessage(LSMessage* message) {
-  if (!message) return "";
-  const char* method = LSMessageGetMethod(message);
-  if (!method) return "";
-  return std::string(method);
+std::string GetMethodFromMessage(LSMessage* message)
+{
+    if (!message)
+        return "";
+    const char* method = LSMessageGetMethod(message);
+    if (!method)
+        return "";
+    return std::string(method);
 }
 

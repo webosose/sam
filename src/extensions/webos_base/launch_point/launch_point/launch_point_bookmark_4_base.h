@@ -21,12 +21,13 @@
 
 class LaunchPointBookmark4Base: public LaunchPoint4Base {
 public:
-  LaunchPointBookmark4Base(const std::string& id, const std::string& lp_id)
-      : LaunchPoint4Base(id, lp_id) {
-  }
+    LaunchPointBookmark4Base(const std::string& id, const std::string& lp_id) :
+            LaunchPoint4Base(id, lp_id)
+    {
+    }
 
-  static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
-  virtual std::string Update(const pbnjson::JValue& data);
+    static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string Update(const pbnjson::JValue& data);
 };
 
 #endif /* LAUNCH_POINT_BOOKMARK_4_BASE_H */

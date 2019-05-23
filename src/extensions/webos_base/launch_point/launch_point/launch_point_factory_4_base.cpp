@@ -20,25 +20,24 @@
 #include "extensions/webos_base/launch_point/launch_point/launch_point_bookmark_4_base.h"
 #include "extensions/webos_base/launch_point/launch_point/launch_point_default_4_base.h"
 
-LaunchPointFactory4Basic::LaunchPointFactory4Basic() {
+LaunchPointFactory4Basic::LaunchPointFactory4Basic()
+{
 }
 
-LaunchPointFactory4Basic::~LaunchPointFactory4Basic() {
+LaunchPointFactory4Basic::~LaunchPointFactory4Basic()
+{
 }
 
-LaunchPointPtr LaunchPointFactory4Basic::CreateLaunchPoint(const LPType type,
-                                                           const std::string& lp_id,
-                                                           const pbnjson::JValue& data,
-                                                           std::string& errText) {
-  switch(type) {
-  case DEFAULT:
-    return LaunchPointDefault4Base::Create(lp_id, data, errText);
-  case BOOKMARK:
-    return LaunchPointBookmark4Base::Create(lp_id, data, errText);
-  default:
-    LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1,
-              PMLOGKS("status", "fail_to_create_launch_point"), "");
-    errText = "unknown type";
-  }
-  return nullptr;
+LaunchPointPtr LaunchPointFactory4Basic::CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText)
+{
+    switch (type) {
+    case DEFAULT:
+        return LaunchPointDefault4Base::Create(lp_id, data, errText);
+    case BOOKMARK:
+        return LaunchPointBookmark4Base::Create(lp_id, data, errText);
+    default:
+        LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1, PMLOGKS("status", "fail_to_create_launch_point"), "");
+        errText = "unknown type";
+    }
+    return nullptr;
 }

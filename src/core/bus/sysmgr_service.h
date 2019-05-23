@@ -27,8 +27,7 @@
 
 #include "core/bus/service_base.h"
 
-class SysMgrService : public ServiceBase
-{
+class SysMgrService: public ServiceBase {
 public:
     static SysMgrService* instance();
 
@@ -38,8 +37,14 @@ public:
     virtual bool Attach(GMainLoop* gml);
     virtual void Detach();
 
-    bool getBootStatus() {return m_bootStatus;}
-    void setBootStatus(bool status) { m_bootStatus = status;}
+    bool getBootStatus()
+    {
+        return m_bootStatus;
+    }
+    void setBootStatus(bool status)
+    {
+        m_bootStatus = status;
+    }
 
     void postBootStatus(const pbnjson::JValue& jmsg);
 
@@ -48,8 +53,8 @@ protected:
     void get_categories(std::vector<std::string> &categories) const;
 
 private:
-    static bool cb_no_op(LSHandle* lshandle, LSMessage *massage,void *user_data);
-    static bool cb_getBootStatus(LSHandle* lshandle, LSMessage *message,void *user_data);
+    static bool cb_no_op(LSHandle* lshandle, LSMessage *massage, void *user_data);
+    static bool cb_getBootStatus(LSHandle* lshandle, LSMessage *message, void *user_data);
 
     bool m_bootStatus;
 };
