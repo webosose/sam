@@ -58,10 +58,18 @@ void LSMSubscriber::on_server_status_changed(bool connection)
         payload.put("subscribe", true);
 
         LSErrorSafe lserror;
-        if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.bus/signal/registerServiceCategory", JUtil::jsonToString(payload).c_str(), category_watcher, NULL,
-                &m_token_category_watcher, &lserror)) {
-            LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", "signal_register_category"), "err: %s",
-                    lserror.message);
+        if (!LSCall(AppMgrService::instance().ServiceHandle(),
+                    "luna://com.webos.service.bus/signal/registerServiceCategory",
+                    payload.stringify().c_str(),
+                    category_watcher,
+                    NULL,
+                    &m_token_category_watcher,
+                    &lserror)) {
+            LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                      PMLOGKS("type", "lscall"),
+                      PMLOGJSON("payload", payload.stringify().c_str()),
+                      PMLOGKS("where", "signal_register_category"),
+                      "err: %s", lserror.message);
         }
     } else {
         //cancel LSM registerServiceCategory subscription
@@ -90,7 +98,7 @@ bool LSMSubscriber::category_watcher(LSHandle* handle, LSMessage* lsmsg, void* u
     if (jmsg.isNull())
         return false;
 
-    LOG_DEBUG("%s , LSM CategoryPayLoad : %s", __PRETTY_FUNCTION__, JUtil::jsonToString(jmsg).c_str());
+    LOG_DEBUG("%s , LSM CategoryPayLoad : %s", __PRETTY_FUNCTION__, jmsg.stringify().c_str());
 
     if (!jmsg.hasKey("/") || !jmsg["/"].isArray() || jmsg["/"].arraySize() < 1)
         return true;

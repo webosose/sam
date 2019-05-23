@@ -62,12 +62,21 @@ void QmlAppLifeHandler::launch(AppLaunchingItemPtr item)
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("main", app_desc->entryPoint());
     payload.put("appId", item->app_id());
-    payload.put("params", JUtil::jsonToString(item->params()));
+    payload.put("params", item->params().duplicate().stringify());
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.webos.booster/launch", JUtil::jsonToString(payload).c_str(), cb_return_booster_launch, this, &token, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallonereply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", "booster_launch"), "err: %s", lserror.message);
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+                        "luna://com.webos.booster/launch",
+                        payload.stringify().c_str(),
+                        cb_return_booster_launch,
+                        this,
+                        &token,
+                        &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscallonereply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", "booster_launch"), "err: %s", lserror.message);
         item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
         signal_launching_done(item->uid());
         return;
@@ -116,7 +125,10 @@ bool QmlAppLifeHandler::cb_return_booster_launch(LSHandle* handle, LSMessage* ls
     }
 
     if (!jmsg.hasKey("returnValue") || jmsg["returnValue"].asBool() == false) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "invalid_return"), "invalid_booster_return err: %s", JUtil::jsonToString(jmsg).c_str());
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("app_id", item->app_id().c_str()),
+                  PMLOGKS("reason", "invalid_return"),
+                  "invalid_booster_return err: %s", jmsg.stringify().c_str());
 
         // TODO: set proper life status for this error case
         g_this->signal_app_life_status_changed(item->app_id(), "", RuntimeStatus::STOP);
@@ -135,7 +147,10 @@ bool QmlAppLifeHandler::cb_return_booster_launch(LSHandle* handle, LSMessage* ls
     }
 
     if (pid.empty()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "received_empty_pid"), "invalid_booster_return err: %s", JUtil::jsonToString(jmsg).c_str());
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("app_id", item->app_id().c_str()),
+                  PMLOGKS("reason", "received_empty_pid"),
+                  "invalid_booster_return err: %s", jmsg.stringify().c_str());
 
         // TODO: set proper life status for this error case
         g_this->signal_app_life_status_changed(item->app_id(), "", RuntimeStatus::STOP);
@@ -159,16 +174,24 @@ bool QmlAppLifeHandler::cb_return_booster_launch(LSHandle* handle, LSMessage* ls
 void QmlAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
 {
     pbnjson::JValue payload = pbnjson::Object();
-    payload.put("appId", item->AppId());
+    payload.put("appId", item->getAppId());
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.webos.booster/close", JUtil::jsonToString(payload).c_str(), cb_return_booster_close,
-    NULL, NULL, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallonereply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", "booster_close"), "err: %s", lserror.message);
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+                        "luna://com.webos.booster/close",
+                        payload.stringify().c_str(),
+                        cb_return_booster_close,
+                        NULL,
+                        NULL,
+                        &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscallonereply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", "booster_close"), "err: %s", lserror.message);
         err_text = "close request fail";
     }
 
-    signal_app_life_status_changed(item->AppId(), "", RuntimeStatus::CLOSING);
+    signal_app_life_status_changed(item->getAppId(), "", RuntimeStatus::CLOSING);
 }
 
 bool QmlAppLifeHandler::cb_return_booster_close(LSHandle* handle, LSMessage* lsmsg, void* user_data)
@@ -208,7 +231,10 @@ bool QmlAppLifeHandler::qml_process_watcher(LSHandle* handle, LSMessage* lsmsg, 
         return true;
     }
     if (!jmsg.hasKey("pid") || !jmsg["pid"].isNumber()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("where", "booster_process_watcher"), PMLOGJSON("payload", JUtil::jsonToString(jmsg).c_str()), "invalid pid info");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("where", "booster_process_watcher"),
+                  PMLOGJSON("payload", jmsg.stringify().c_str()),
+                  "invalid pid info");
         return true;
     }
 

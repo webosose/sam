@@ -28,43 +28,43 @@ public:
     AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason);
     virtual ~AppCloseItem();
 
-    const std::string& Uid() const
+    const std::string& getUid() const
     {
-        return uid_;
+        return m_uid;
     }
-    const std::string& AppId() const
+    const std::string& getAppId() const
     {
-        return app_id_;
+        return m_app_id;
     }
-    const std::string& Pid() const
+    const std::string& getPid() const
     {
-        return pid_;
+        return m_pid;
     }
-    const std::string& Caller() const
+    const std::string& getCaller() const
     {
-        return caller_;
+        return m_caller;
     }
     bool IsMemoryReclaim() const
     {
-        return is_memory_reclaim_;
+        return m_is_memory_reclaim;
     }
-    const std::string& Reason() const
+    const std::string& getReason() const
     {
-        return reason_;
+        return m_reason;
     }
-    const double& CloseStartTime() const
+    const double& getCloseStartTime() const
     {
-        return close_start_time_;
+        return m_close_start_time;
     }
 
 private:
-    std::string uid_;
-    std::string app_id_;
-    std::string pid_;
-    std::string caller_;
-    bool is_memory_reclaim_;
-    std::string reason_;
-    double close_start_time_;
+    std::string m_uid;
+    std::string m_app_id;
+    std::string m_pid;
+    std::string m_caller;
+    bool m_is_memory_reclaim;
+    std::string m_reason;
+    double m_close_start_time;
 };
 typedef std::shared_ptr<AppCloseItem> AppCloseItemPtr;
 typedef std::list<AppCloseItemPtr> AppCloseItemList;

@@ -113,7 +113,10 @@ bool VirtualAppManager::OnTempPackageReady(LSHandle* lshandle, LSMessage* lsmsg,
 
     pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
     if (jmsg.isNull() || !jmsg.hasKey("returnValue") || !jmsg["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_VIRTUAL_APP_WARNING, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "received_false"), "return: %s", JUtil::jsonToString(jmsg).c_str());
+        LOG_ERROR(MSGID_VIRTUAL_APP_WARNING, 2,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("status", "received_false"),
+                  "return: %s", jmsg.stringify().c_str());
         item->error_code = ERROR_CODE_COMMON;
         item->error_text = VIRTUALAPP_ERR_TXT_INSTALL_LSCONFIG_FAIL;
         VirtualAppManager::instance().FinishJob(item);
@@ -251,7 +254,10 @@ bool VirtualAppManager::OnPackageReady(LSHandle* lshandle, LSMessage* lsmsg, voi
 
     pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
     if (jmsg.isNull() || !jmsg.hasKey("returnValue") || !jmsg["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_VIRTUAL_APP_WARNING, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "received_false"), "return: %s", JUtil::jsonToString(jmsg).c_str());
+        LOG_ERROR(MSGID_VIRTUAL_APP_WARNING, 2,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("status", "received_false"),
+                  "return: %s", jmsg.stringify().c_str());
         item->error_code = ERROR_CODE_COMMON;
         item->error_text = VIRTUALAPP_ERR_TXT_INSTALL_LSCONFIG_FAIL;
         VirtualAppManager::instance().FinishJob(item);
@@ -311,7 +317,7 @@ void VirtualAppManager::UninstallVirtualApp(const pbnjson::JValue& jmsg, LSMessa
     // don't need to check app lock, just remove it
     else if (AppTypeByDir::TempAlias == app_desc->getTypeByDir()) {
         error_text = "";
-        AppLifeManager::instance().close_by_app_id(app_id, "", "", error_text, false);
+        AppLifeManager::instance().closeByAppId(app_id, "", "", error_text, false);
 
         RemoveVirtualAppPackage(app_id, VirtualAppType::TEMP);
     }
@@ -414,11 +420,14 @@ void VirtualAppManager::ReplyForRequest(LSMessage* lsmsg, int error_code, const 
         payload.put("errorText", error_text);
     }
 
-    LOG_INFO(MSGID_VIRTUAL_APP_RETURN, 1, PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), "");
+    LOG_INFO(MSGID_VIRTUAL_APP_RETURN, 1, PMLOGJSON("payload", payload.stringify().c_str()), "");
 
     LSErrorSafe lserror;
-    if (!LSMessageRespond(lsmsg, JUtil::jsonToString(payload).c_str(), &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "respond"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), "err: %s", lserror.message);
+    if (!LSMessageRespond(lsmsg, payload.stringify().c_str(), &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 2,
+                  PMLOGKS("type", "respond"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  "err: %s", lserror.message);
     }
 }
 
@@ -459,7 +468,7 @@ bool VirtualAppManager::CreateVirtualAppPackage(const std::string& app_id, const
     // load default info from webapphost
     pbnjson::JValue new_app_info = host_desc->toJValue().duplicate();
 
-    LOG_DEBUG("[host_app_info] %s", JUtil::jsonToString(new_app_info).c_str());
+    LOG_DEBUG("[host_app_info] %s", new_app_info.stringify().c_str());
 
     // overwrite appInfo received from caller
     // TODO: This might cause serious security issue
@@ -469,7 +478,7 @@ bool VirtualAppManager::CreateVirtualAppPackage(const std::string& app_id, const
             std::string key = it.first.asString();
             if (key.empty())
                 continue;
-            LOG_DEBUG("key: %s, value: %s", key.c_str(), JUtil::jsonToString(app_info[key]).c_str());
+            LOG_DEBUG("key: %s, value: %s", key.c_str(), app_info[key].stringify().c_str());
             new_app_info.put(key, app_info[key]);
         }
     }
@@ -482,7 +491,7 @@ bool VirtualAppManager::CreateVirtualAppPackage(const std::string& app_id, const
     new_app_info.put("hostFolderPath", host_desc->folderPath());
     new_app_info.put("removable", true);
 
-    LOG_DEBUG("[virtual_app_info] %s", JUtil::jsonToString(new_app_info).c_str());
+    LOG_DEBUG("[virtual_app_info] %s", new_app_info.stringify().c_str());
 
     if (VirtualAppType::REGULAR == app_type) {
         new_app_info.put("visible", true);
@@ -504,7 +513,7 @@ bool VirtualAppManager::CreateVirtualAppPackage(const std::string& app_id, const
         return false;
     }
 
-    std::string str_app_info = JUtil::jsonToString(new_app_info);
+    std::string str_app_info = new_app_info.stringify();
     if (!g_file_set_contents(app_info_path.c_str(), str_app_info.c_str(), str_app_info.length(), NULL)) {
         LOG_ERROR(MSGID_VIRTUAL_APP_WARNING, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("app_info_path", app_info_path.c_str()), PMLOGKS("status", "failed_to_write_app_info"), "");
         error_text = VIRTUALAPP_ERR_TXT_CREATING_APP_INFO_FAIL;

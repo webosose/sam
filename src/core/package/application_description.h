@@ -207,7 +207,6 @@ public:
     {
         return appinfo_json_;
     }
-    std::string toString() const;
 
     // setter
     void SetIntVersion(uint16_t major, uint16_t minor, uint16_t micro)

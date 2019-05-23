@@ -260,7 +260,9 @@ void LaunchPointLunaAdapter::OnLaunchPointsListChanged(const pbnjson::JValue& la
 
     LSErrorSafe lserror;
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
-    LP_SUBSCRIPTION_KEY, JUtil::jsonToString(payload).c_str(), &lserror)) {
+                             LP_SUBSCRIPTION_KEY,
+                             payload.stringify().c_str(),
+                             &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "ls_subscription_reply"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }
@@ -276,7 +278,9 @@ void LaunchPointLunaAdapter::OnLaunchPointChanged(const std::string& change, con
             PMLOGKFV("position", "%d", launch_point.hasKey("position") ? launch_point["position"].asNumber<int>():-1), "");
     LSErrorSafe lserror;
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
-    LP_SUBSCRIPTION_KEY, JUtil::jsonToString(payload).c_str(), &lserror)) {
+                             LP_SUBSCRIPTION_KEY,
+                             payload.stringify().c_str(),
+                             &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "ls_subscription_reply"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }

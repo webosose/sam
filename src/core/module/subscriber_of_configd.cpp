@@ -74,8 +74,17 @@ void ConfigdSubscriber::RequestConfigInfo()
     std::string method = std::string("luna://") + WEBOS_SERVICE_CONFIGD + std::string("/getConfigs");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().ServiceHandle(), method.c_str(), JUtil::jsonToString(payload).c_str(), ConfigInfoCallback, this, &token_config_info_, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().ServiceHandle(),
+                method.c_str(),
+                payload.stringify().c_str(),
+                ConfigInfoCallback,
+                this,
+                &token_config_info_,
+                &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscall"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }
 

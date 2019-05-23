@@ -71,7 +71,9 @@ public:
 
     void HandleStatus(const pbnjson::JValue& jmsg)
     {
-        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "received_configd_msg"), "%s", JUtil::jsonToString(jmsg).c_str());
+        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
+                 PMLOGKS("status", "received_configd_msg"),
+                 "%s", jmsg.duplicate().stringify().c_str());
 
         if (!jmsg.hasKey("configs") || !jmsg["configs"].isObject()) {
             LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("func", __FUNCTION__), PMLOGKFV("line", "%d", __LINE__), "");
@@ -90,7 +92,9 @@ public:
             SettingsImpl::instance().SetLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
 
         if (jmsg.hasKey("missingConfigs") && jmsg["missingConfigs"].isArray() && jmsg["missingConfigs"].arraySize() > 0) {
-            LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("status", "missing_core_config_info"), PMLOGJSON("missed_infos", JUtil::jsonToString(jmsg["missingConfigs"]).c_str()), "");
+            LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
+                        PMLOGKS("status", "missing_core_config_info"),
+                        PMLOGJSON("missed_infos", jmsg["missingConfigs"].stringify().c_str()), "");
         }
 
         config_info_connection_.disconnect();
@@ -118,7 +122,7 @@ public:
 
     void HandleStatus(const pbnjson::JValue& jmsg)
     {
-        LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1, PMLOGJSON("Payload", JUtil::jsonToString(jmsg).c_str()), "");
+        LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1, PMLOGJSON("Payload", jmsg.duplicate().stringify().c_str()), "");
 
         if (!jmsg.hasKey("signals") || !jmsg["signals"].isObject() || !jmsg["signals"].hasKey("core-boot-done") || !jmsg["signals"]["core-boot-done"].asBool())
             return;

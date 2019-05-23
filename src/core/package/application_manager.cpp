@@ -65,7 +65,7 @@ protected:
         bool app_locked = true;
 
         if (!jmsg.hasKey("results") || !jmsg["results"].isArray()) {
-            LOG_DEBUG("result fail: %s", JUtil::jsonToString(jmsg).c_str());
+            LOG_DEBUG("result fail: %s", jmsg.stringify().c_str());
             setError(PARENTAL_ERR_GET_SETTINGVAL, "invalid return message");
             return false;
         }
@@ -86,7 +86,7 @@ protected:
         }
 
         if (!received_valid_parental_mode_info || !received_valid_lock_info) {
-            LOG_DEBUG("receiving valid result fail: %s", JUtil::jsonToString(jmsg).c_str());
+            LOG_DEBUG("receiving valid result fail: %s", jmsg.stringify().c_str());
             setError(PARENTAL_ERR_GET_SETTINGVAL, "not found valid lock info");
             return false;
         }
@@ -110,7 +110,7 @@ protected:
         //{"returnValue": true, "matched" : true/false }
         bool matched = false;
         if (!jmsg.hasKey("matched") || !jmsg["matched"].isBoolean() || jmsg["matched"].asBool(matched) != CONV_OK || matched == false) {
-            LOG_DEBUG("Pincode is not matched: %s", JUtil::jsonToString(jmsg).c_str());
+            LOG_DEBUG("Pincode is not matched: %s", jmsg.stringify().c_str());
             setError(PARENTAL_ERR_UNMATCH_PINCODE, "pincode is not matched");
             return false;
         }
@@ -282,7 +282,7 @@ void ApplicationManager::RemoveAppsOnUSB(const std::string& app_dir, const AppTy
     }
 
     // change app_status to close->stop
-    AppLifeManager::instance().close_apps(candidates_for_removal, true);
+    AppLifeManager::instance().closeApps(candidates_for_removal, true);
 
     for (const auto& app_id : candidates_for_removal) {
         RemoveApp(app_id, true, AppStatusChangeEvent::STORAGE_DETACHED);
@@ -434,7 +434,7 @@ void ApplicationManager::OnAppScanFinished(ScanMode mode, const AppDescMaps& sca
 
         // close removed apps if it's running
         if (!removed_apps.empty())
-            AppLifeManager::instance().close_apps(removed_apps, true);
+            AppLifeManager::instance().closeApps(removed_apps, true);
 
         Clear();
         app_roster_ = scanned_apps;
@@ -501,7 +501,7 @@ void ApplicationManager::OnReadyToUninstallVirtualApp(pbnjson::JValue result, Er
     }
 
     std::string error_text = "";
-    AppLifeManager::instance().close_by_app_id(app_id, "", "", error_text, false);
+    AppLifeManager::instance().closeByAppId(app_id, "", "", error_text, false);
     VirtualAppManager::instance().RemoveVirtualAppPackage(app_id, VirtualAppType::REGULAR);
 }
 
@@ -548,8 +548,13 @@ void ApplicationManager::UninstallApp(const std::string& id, std::string& errorR
 
         LSErrorSafe lserror;
 
-        if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.webos.appInstallService/remove", JUtil::jsonToString(payload).c_str(), cbAppUninstalled,
-        NULL, NULL, &lserror)) {
+        if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+                            "luna://com.webos.appInstallService/remove",
+                            payload.stringify().c_str(),
+                            cbAppUninstalled,
+                            NULL,
+                            NULL,
+                            &lserror)) {
             errorReason = lserror.message;
             return;
         }
@@ -567,7 +572,7 @@ bool ApplicationManager::cbAppUninstalled(LSHandle* lshandle, LSMessage *message
         LOG_ERROR(MSGID_UNINSTALL_APP_ERR, 1, PMLOGKS("status", "received_return_false"), "null jmsg");
     }
 
-    LOG_INFO(MSGID_UNINSTALL_APP, 1, PMLOGKS("status", "recieved_result"), "%s", JUtil::jsonToString(jmsg).c_str());
+    LOG_INFO(MSGID_UNINSTALL_APP, 1, PMLOGKS("status", "recieved_result"), "%s", jmsg.stringify().c_str());
 
     return true;
 }

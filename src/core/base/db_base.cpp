@@ -133,7 +133,7 @@ void DBBase::LoadDb()
     call_chain.add(check_kind);
 
     //2. register kind to DB
-    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/putKind", JUtil::jsonToString(db_kind_).c_str());
+    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/putKind", db_kind_.stringify().c_str());
 
     call_chain.add_if(check_kind, false, reg_kind);
 
@@ -142,7 +142,7 @@ void DBBase::LoadDb()
     permission_data.put("permissions", db_permissions_);
 
     auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/putPermissions",
-            JUtil::jsonToString(permission_data).c_str());
+            permission_data.stringify().c_str());
 
     call_chain.add_if(reg_kind, true, reg_permission);
 

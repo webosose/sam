@@ -33,13 +33,17 @@ AppLaunchingItemFactory4Base::~AppLaunchingItemFactory4Base()
 AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
 {
     if (app_id.empty()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "tv_launching_item_factory"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "empty_app_id"),
+                  PMLOGKS("where", "tv_launching_item_factory"), "");
         return NULL;
     }
 
     AppDesc4BasicPtr app_desc = BaseExtension::instance().GetAppDesc(app_id);
     if (app_desc == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "not_exist"), PMLOGKS("where", "AppLaunchingItemFactory4Basic"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "not_exist"),
+                  PMLOGKS("where", "AppLaunchingItemFactory4Basic"), "");
         err_code = -101;
         err_text = "not exist";
         return NULL;
@@ -77,7 +81,9 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
 
     AppLaunchingItem4BasePtr new_item = std::make_shared<AppLaunchingItem4Base>(app_id, rtype, params4app, lsmsg);
     if (new_item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "make_shared_error"), PMLOGKS("where", "tv_launching_item_factory"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "make_shared_error"),
+                  PMLOGKS("where", "tv_launching_item_factory"), "");
         return NULL;
     }
 
@@ -88,8 +94,13 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
     new_item->set_show_spinner(show_spinner);
     new_item->set_sub_stage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
 
-    LOG_INFO(MSGID_APPLAUNCH, 6, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("caller_id", new_item->caller_id().c_str()), PMLOGKS("keep_alive", (keep_alive?"true":"false")),
-            PMLOGKS("show_splash", (show_splash?"true":"false")), PMLOGKS("show_spinner", (show_spinner?"true":"false")), PMLOGJSON("params", JUtil::jsonToString(params4app).c_str()), "");
+    LOG_INFO(MSGID_APPLAUNCH, 6,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("caller_id", new_item->caller_id().c_str()),
+             PMLOGKS("keep_alive", (keep_alive?"true":"false")),
+             PMLOGKS("show_splash", (show_splash?"true":"false")),
+             PMLOGKS("show_spinner", (show_spinner?"true":"false")),
+             PMLOGJSON("params", params4app.stringify().c_str()), "");
 
     return new_item;
 }

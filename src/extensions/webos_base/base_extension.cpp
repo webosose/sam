@@ -49,10 +49,10 @@ void BaseExtension::init(PrerequisiteMonitor& prerequisite_monitor)
     AppLifeManager::instance().signal_launching_finished.connect(boost::bind(&BaseExtension::OnLaunchingFinished, this, _1));
 
     // set extension handlers for lifecycle interface
-    AppLifeManager::instance().set_applifeitem_factory(app_launching_item_factory_);
-    AppLifeManager::instance().set_prelauncher_handler(prelauncher_);
-    AppLifeManager::instance().set_memory_checker_handler(memory_checker_);
-    AppLifeManager::instance().set_lastapp_handler(lastapp_handler_);
+    AppLifeManager::instance().setApplifeitemFactory(app_launching_item_factory_);
+    AppLifeManager::instance().setPrelauncherHandler(prelauncher_);
+    AppLifeManager::instance().setMemoryCheckerHandler(memory_checker_);
+    AppLifeManager::instance().setLastappHandler(lastapp_handler_);
 
     // set extension handlers for package interface
     ApplicationManager::instance().SetAppScanFilter(app_scan_filter_);
@@ -81,6 +81,6 @@ void BaseExtension::OnLaunchingFinished(AppLaunchingItemPtr item)
     AppLaunchingItem4BasePtr basic_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
 
     if (basic_item->err_text().empty())
-        AppLifeManager::instance().set_last_loading_app(basic_item->app_id());
+        AppLifeManager::instance().setLastLoadingApp(basic_item->app_id());
 }
 

@@ -47,7 +47,7 @@ public:
             return;
         if (!LSMessageIsSubscription(lsmsg_))
             return;
-        (void) LSMessageRespond(lsmsg_, JUtil::jsonToString(payload).c_str(), NULL);
+        LSMessageRespond(lsmsg_, payload.duplicate().stringify().c_str(), NULL);
     }
     void ReplyResult()
     {
@@ -62,7 +62,7 @@ public:
             LOG_INFO(MSGID_API_RETURN_FALSE, 4, PMLOGKS("category", category_.c_str()), PMLOGKS("method", method_.c_str()), PMLOGKFV("err_code", "%d", error_code_),
                     PMLOGKS("err_text", error_text_.c_str()), "");
         }
-        (void) LSMessageRespond(lsmsg_, JUtil::jsonToString(return_payload_).c_str(), NULL);
+        (void) LSMessageRespond(lsmsg_, return_payload_.stringify().c_str(), NULL);
     }
     void ReplyResult(const pbnjson::JValue& payload)
     {

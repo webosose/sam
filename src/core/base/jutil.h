@@ -28,9 +28,13 @@ class JUtil: public Singleton<JUtil> {
 public:
     //! Error class used in JUtil
     class Error {
+    friend class JUtil;
     public:
         typedef enum {
-            None = 0, File_Io, Schema, Parse,
+            None = 0,
+            File_Io,
+            Schema,
+            Parse,
         } ErrorCode;
 
         //! Constructor
@@ -43,8 +47,6 @@ public:
         std::string detail();
 
     private:
-        friend class JUtil;
-
         /*! Set Error code and detail string.
          * If detail value is NULL, detail value set as default error message.
          */
@@ -71,9 +73,6 @@ public:
      * If cache set, find cache first and if not exist in cache load schema and store it.
      */
     pbnjson::JSchema loadSchema(const std::string &schemaName, bool cache);
-
-    //! Convert json object to std::string
-    static std::string jsonToString(pbnjson::JValue json);
 
     // Add a string into array if not exist
     static void addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str);

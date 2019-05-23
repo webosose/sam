@@ -79,7 +79,7 @@ bool DBLaunchPoint::InsertData(const pbnjson::JValue& json)
     json_db_qry.put("lptype", json["lptype"]);
     json_db_qry.put("launchPointId", json["launchPointId"]);
 
-    db8_qry = "{\"objects\":[" + JUtil::jsonToString(json_db_qry) + "]}";
+    db8_qry = "{\"objects\":[" + json_db_qry.stringify() + "]}";
 
     return Db8Query(db8_api, db8_qry);
 }
@@ -134,7 +134,7 @@ bool DBLaunchPoint::UpdateData(const pbnjson::JValue& json)
     json_where.put("val", json["launchPointId"]);
     json_db_qry["query"]["where"].append(json_where);
 
-    db8_qry = JUtil::jsonToString(json_db_qry);
+    db8_qry = json_db_qry.stringify();
 
     return Db8Query(db8_api, db8_qry);
 }
@@ -155,7 +155,7 @@ bool DBLaunchPoint::DeleteData(const pbnjson::JValue& json)
     json_where.put("val", json["launchPointId"]);
     json_db_qry["query"]["where"].append(json_where);
 
-    db8_qry = JUtil::jsonToString(json_db_qry);
+    db8_qry = json_db_qry.stringify();
 
     return Db8Query(db8_api, db8_qry);
 }

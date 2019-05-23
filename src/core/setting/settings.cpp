@@ -126,7 +126,7 @@ void Settings::LoadConfigOnRWFilesystemReady()
         m_deletedSystemApps = json;
     }
 
-    LOG_DEBUG("[Load deletedList] %s", JUtil::jsonToString(m_deletedSystemApps).c_str());
+    LOG_DEBUG("[Load deletedList] %s", m_deletedSystemApps.stringify().c_str());
 }
 
 bool Settings::LoadStaticConfig(const char* filePath)
@@ -282,7 +282,9 @@ void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
         return;
     keepAliveApps.clear();
 
-    LOG_INFO(MSGID_CONFIGD_INIT, 1, PMLOGKS("CONFIG_TYPE", "keep_alive_apps"), "%s", JUtil::jsonToString(apps).c_str());
+    LOG_INFO(MSGID_CONFIGD_INIT, 1,
+             PMLOGKS("CONFIG_TYPE", "keep_alive_apps"),
+             "%s", apps.duplicate().stringify().c_str());
 
     int apps_num = apps.arraySize();
     for (int i = 0; i < apps_num; ++i) {
@@ -306,7 +308,9 @@ void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
 
     m_assetFallbackPrecedence.clear();
 
-    LOG_INFO(MSGID_CONFIGD_INIT, 1, PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"), "%s", JUtil::jsonToString(keys_arr).c_str());
+    LOG_INFO(MSGID_CONFIGD_INIT, 1,
+             PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"),
+             "%s", keys_arr.duplicate().stringify().c_str());
 
     if (!keys_arr.isArray())
         return;
@@ -396,7 +400,7 @@ void Settings::setSystemAppAsRemoved(const std::string& appId)
 
     m_deletedSystemApps[DELETED_LIST_KEY].append(appId);
 
-    std::string deletedList = JUtil::jsonToString(m_deletedSystemApps);
+    std::string deletedList = m_deletedSystemApps.stringify();
 
     LOG_DEBUG("[REMOVE SYSTEM APP] deletedList: %s", deletedList.c_str());
 

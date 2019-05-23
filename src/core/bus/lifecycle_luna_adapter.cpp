@@ -375,7 +375,7 @@ void LifeCycleLunaAdapter::ChangeRunningAppId(LunaTaskPtr task)
         return;
     }
 
-    if (!AppLifeManager::instance().change_running_app_id(caller_id, target_id, err_info)) {
+    if (!AppLifeManager::instance().changeRunningAppId(caller_id, target_id, err_info)) {
         task->ReplyResultWithError(err_info.errorCode, err_info.errorText);
         return;
     }
@@ -477,7 +477,7 @@ void LifeCycleLunaAdapter::RegisterApp(LunaTaskPtr task)
     }
 
     std::string error_text;
-    AppLifeManager::instance().RegisterApp(task->caller(), task->lsmsg(), error_text);
+    AppLifeManager::instance().registerApp(task->caller(), task->lsmsg(), error_text);
 
     if (!error_text.empty()) {
         task->ReplyResultWithError(API_ERR_CODE_GENERAL, error_text);
@@ -494,7 +494,7 @@ void LifeCycleLunaAdapter::RegisterNativeApp(LunaTaskPtr task)
     }
 
     std::string error_text;
-    AppLifeManager::instance().connect_nativeapp(task->caller(), task->lsmsg(), error_text);
+    AppLifeManager::instance().connectNativeApp(task->caller(), task->lsmsg(), error_text);
 
     if (!error_text.empty()) {
         task->ReplyResultWithError(API_ERR_CODE_GENERAL, error_text);
@@ -504,7 +504,7 @@ void LifeCycleLunaAdapter::RegisterNativeApp(LunaTaskPtr task)
 
 void LifeCycleLunaAdapter::NotifyAlertClosed(LunaTaskPtr task)
 {
-    AppLifeManager::instance().handle_bridged_launch_request(task->jmsg());
+    AppLifeManager::instance().handleBridgedLaunchRequest(task->jmsg());
     task->ReplyResult();
 }
 
@@ -550,11 +550,16 @@ void LifeCycleLunaAdapter::OnForegroundAppChanged(const std::string& app_id)
     payload.put("windowId", "");
     payload.put("processId", "");
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2, PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), "");
+    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
+             PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO),
+             PMLOGJSON("payload", payload.stringify().c_str()), "");
 
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
-    SUBSKEY_FOREGROUND_INFO, JUtil::jsonToString(payload).c_str(), NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "subscriptionreply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "");
+    SUBSKEY_FOREGROUND_INFO, payload.stringify().c_str(), NULL)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "subscriptionreply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", __FUNCTION__), "");
         return;
     }
 }
@@ -566,10 +571,17 @@ void LifeCycleLunaAdapter::OnExtraForegroundInfoChanged(const pbnjson::JValue& f
     payload.put("subscribed", true);
     payload.put("foregroundAppInfo", foreground_info);
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2, PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO_EX), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), "");
+    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
+             PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO_EX),
+             PMLOGJSON("payload", payload.stringify().c_str()), "");
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
-    SUBSKEY_FOREGROUND_INFO_EX, JUtil::jsonToString(payload).c_str(), NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "subscriptionreply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "");
+                             SUBSKEY_FOREGROUND_INFO_EX,
+                             payload.stringify().c_str(),
+                             NULL)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "subscriptionreply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", __FUNCTION__), "");
         return;
     }
 }
@@ -580,10 +592,17 @@ void LifeCycleLunaAdapter::OnLifeCycleEventGenarated(const pbnjson::JValue& even
     pbnjson::JValue payload = event.duplicate();
     payload.put("returnValue", true);
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2, PMLOGKS("skey", SUBSKEY_GET_APP_LIFE_EVENTS), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), "");
+    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
+             PMLOGKS("skey", SUBSKEY_GET_APP_LIFE_EVENTS),
+             PMLOGJSON("payload", payload.stringify().c_str()), "");
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
-    SUBSKEY_GET_APP_LIFE_EVENTS, JUtil::jsonToString(payload).c_str(), NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "subscriptionreply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "");
+                             SUBSKEY_GET_APP_LIFE_EVENTS,
+                             payload.stringify().c_str(),
+                             NULL)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "subscriptionreply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", __FUNCTION__), "");
         return;
     }
 }

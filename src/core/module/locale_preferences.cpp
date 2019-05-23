@@ -76,7 +76,7 @@ bool LocalePreferences::OnLocaleInfoReceived(LSHandle* sh, LSMessage* message, v
 
     pbnjson::JValue json = JUtil::parse(LSMessageGetPayload(message), std::string(""));
 
-    LOG_DEBUG("[RESPONSE-SUBSCRIPTION]: %s", JUtil::jsonToString(json).c_str());
+    LOG_DEBUG("[RESPONSE-SUBSCRIPTION]: %s", json.stringify().c_str());
 
     if (json.isNull() || !json["returnValue"].asBool() || !json["settings"].isObject()) {
         LOG_WARNING(MSGID_RECEIVED_INVALID_SETTINGS, 1, PMLOGKS("reason", "invalid_return"), "received invaild message from settings service");

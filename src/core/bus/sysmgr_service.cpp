@@ -123,7 +123,7 @@ bool SysMgrService::cb_getBootStatus(LSHandle* lshandle, LSMessage* message, voi
     Done: reply.put("returnValue", success);
     reply.put("subscribed", subscribed);
 
-    if (!LSMessageReply(lshandle, message, JUtil::jsonToString(reply).c_str(), &lserror)) {
+    if (!LSMessageReply(lshandle, message, reply.stringify().c_str(), &lserror)) {
         return false;
     }
     return true;
@@ -153,7 +153,7 @@ void SysMgrService::postBootStatus(const pbnjson::JValue& jmsg)
     for (auto it = categories.begin(); it != categories.end(); ++it) {
         category = *it;
 
-        if (!LSSubscriptionReply(SysMgrService::instance()->ServiceHandle(), (category + "getBootStatus").c_str(), JUtil::jsonToString(request).c_str(), &lserror))
+        if (!LSSubscriptionReply(SysMgrService::instance()->ServiceHandle(), (category + "getBootStatus").c_str(), request.stringify().c_str(), &lserror))
             return;
     }
 }

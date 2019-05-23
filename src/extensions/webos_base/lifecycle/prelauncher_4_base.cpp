@@ -124,7 +124,10 @@ bool Prelauncher4Base::cb_return_lscall_for_bridged_request(LSHandle* handle, LS
 
     prelaunching_item->reset_return_token();
 
-    LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", prelaunching_item->app_id().c_str()), PMLOGJSON("payload", JUtil::jsonToString(jmsg).c_str()), "received return for just bridge request");
+    LOG_INFO(MSGID_APPLAUNCH, 2,
+             PMLOGKS("app_id", prelaunching_item->app_id().c_str()),
+             PMLOGJSON("payload", jmsg.stringify().c_str()),
+             "received return for just bridge request");
 
     return true;
 }
@@ -168,7 +171,10 @@ void Prelauncher4Base::input_bridged_return(AppLaunchingItemPtr item, const pbnj
         return;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGJSON("jmsg", JUtil::jsonToString(jmsg).c_str()), PMLOGKS("action", "trigger_bridged_launching"), "");
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->app_id().c_str()),
+             PMLOGJSON("jmsg", jmsg.duplicate().stringify().c_str()),
+             PMLOGKS("action", "trigger_bridged_launching"), "");
 
     AppLaunchingItem4BasePtr prelaunching_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
     prelaunching_item->set_call_return_jmsg(jmsg);
@@ -245,11 +251,15 @@ void Prelauncher4Base::run_stages(AppLaunchingItem4BasePtr prelaunching_item)
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), stage_item.uri.c_str(), JUtil::jsonToString(payload).c_str(),
-            (((stage_item.handler_type == StageHandlerType4Base::BRIDGE_CALL) || (stage_item.handler_type == StageHandlerType4Base::SUB_BRIDGE_CALL)) ?
-                    cb_return_lscall_for_bridged_request : cb_return_lscall), this, &token, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallonereply"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", stage_item.uri.c_str()), "err: %s",
-                lserror.message);
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+                        stage_item.uri.c_str(),
+                        payload.stringify().c_str(),
+                        (((stage_item.handler_type == StageHandlerType4Base::BRIDGE_CALL) || (stage_item.handler_type == StageHandlerType4Base::SUB_BRIDGE_CALL)) ? cb_return_lscall_for_bridged_request : cb_return_lscall), this, &token, &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscallonereply"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", stage_item.uri.c_str()),
+                  "err: %s", lserror.message);
         prelaunching_item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
         finish_prelaunching(prelaunching_item);
         return;

@@ -1095,7 +1095,10 @@ void PackageLunaAdapter::OnListAppsChanged(const pbnjson::JValue& apps, const st
     payload.put("apps", apps);
 
     // reply for clients wanted full properties
-    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(), subs_key.c_str(), JUtil::jsonToString(payload).c_str(), NULL)) {
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
+                             subs_key.c_str(),
+                             payload.stringify().c_str(),
+                             NULL)) {
         LOG_WARNING(MSGID_LSCALL_ERR, 1, PMLOGKS("type", "subscription_reply"), "%s: %d", __FUNCTION__, __LINE__);
     }
 
@@ -1126,7 +1129,7 @@ void PackageLunaAdapter::OnListAppsChanged(const pbnjson::JValue& apps, const st
 
         payload.put("apps", new_apps);
 
-        if (!LSMessageRespond(message, JUtil::jsonToString(payload).c_str(), NULL)) {
+        if (!LSMessageRespond(message, payload.stringify().c_str(), NULL)) {
             LOG_ERROR(MSGID_LSCALL_ERR, 1, PMLOGKS("type", "respond"), "%s: %d", __FUNCTION__, __LINE__);
         }
     }
@@ -1147,7 +1150,7 @@ void PackageLunaAdapter::OnOneAppChanged(const pbnjson::JValue& app, const std::
     payload.put("app", app);
 
     // reply for clients wanted full properties
-    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(), subs_key.c_str(), JUtil::jsonToString(payload).c_str(), NULL)) {
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(), subs_key.c_str(), payload.stringify().c_str(), NULL)) {
         LOG_WARNING(MSGID_LSCALL_ERR, 1, PMLOGKS("type", "subscription_reply"), "%s: %d", __FUNCTION__, __LINE__);
     }
 
@@ -1178,7 +1181,7 @@ void PackageLunaAdapter::OnOneAppChanged(const pbnjson::JValue& app, const std::
 
         payload.put("app", new_props);
 
-        if (!LSMessageRespond(message, JUtil::jsonToString(payload).c_str(), NULL)) {
+        if (!LSMessageRespond(message, payload.stringify().c_str(), NULL)) {
             LOG_ERROR(MSGID_LSCALL_ERR, 1, PMLOGKS("type", "respond"), "%s: %d", __FUNCTION__, __LINE__);
         }
     }
@@ -1224,7 +1227,7 @@ void PackageLunaAdapter::OnAppStatusChanged(AppStatusChangeEvent event, AppDescP
 
     std::string subs_key = "getappstatus#" + app_desc->id() + "#N";
     std::string subs_key_w_appinfo = "getappstatus#" + app_desc->id() + "#Y";
-    std::string str_payload = JUtil::jsonToString(payload);
+    std::string str_payload = payload.stringify();
 
     switch (event) {
     case AppStatusChangeEvent::APP_INSTALLED:
@@ -1236,7 +1239,7 @@ void PackageLunaAdapter::OnAppStatusChanged(AppStatusChangeEvent event, AppDescP
         break;
     }
 
-    std::string str_payload_w_appinfo = JUtil::jsonToString(payload);
+    std::string str_payload_w_appinfo = payload.stringify();
 
     if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(), subs_key.c_str(), str_payload.c_str(), NULL)) {
 

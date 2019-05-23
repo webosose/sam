@@ -131,7 +131,7 @@ void RedirectHandler::removeVerb(const std::string& verb)
 std::string RedirectHandler::toJsonString()
 {
     pbnjson::JValue jobj = toJValue();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue RedirectHandler::toJValue()
@@ -221,7 +221,7 @@ void ResourceHandler::removeVerb(const std::string& verb)
 std::string ResourceHandler::toJsonString()
 {
     pbnjson::JValue jobj = toJValue();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue ResourceHandler::toJValue()

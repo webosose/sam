@@ -38,9 +38,10 @@
 typedef std::tuple<std::string, AppType, double> LoadingAppItem;
 
 class AppLifeManager: public Singleton<AppLifeManager> {
+friend class Singleton<AppLifeManager> ;
 public:
     AppLifeManager();
-    ~AppLifeManager();
+    virtual ~AppLifeManager();
 
     void init();
 
@@ -51,25 +52,25 @@ public:
     void CloseAll(LifeCycleTaskPtr task);
 
     void launch(AppLaunchRequestType rtype, const std::string& app_id, const pbnjson::JValue& params, LSMessage* lsmsg);
-    void close_by_app_id(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool preload_only = false, bool clear_all_items = false);
-    void close_by_pid(const std::string& pid, const std::string& caller_id, std::string& err_text);
-    void close_all_loading_apps();
-    void close_all_apps(bool clear_all_items = false);
-    void close_apps(const std::vector<std::string>& app_ids, bool clear_all_items = false);
-    void handle_bridged_launch_request(const pbnjson::JValue& params);
-    void RegisterApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
-    void connect_nativeapp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
-    bool change_running_app_id(const std::string& current_id, const std::string& target_id, ErrorInfo& err_info);
-    void trigger_to_launch_last_app();
+    void closeByAppId(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool preload_only = false, bool clear_all_items = false);
+    void closeByPid(const std::string& pid, const std::string& caller_id, std::string& err_text);
+    void closeAllLoadingApps();
+    void closeAllApps(bool clear_all_items = false);
+    void closeApps(const std::vector<std::string>& app_ids, bool clear_all_items = false);
+    void handleBridgedLaunchRequest(const pbnjson::JValue& params);
+    void registerApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
+    void connectNativeApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
+    bool changeRunningAppId(const std::string& current_id, const std::string& target_id, ErrorInfo& err_info);
+    void triggerToLaunchLastApp();
 
-    void set_last_loading_app(const std::string& app_id);
+    void setLastLoadingApp(const std::string& app_id);
 
-    void get_launching_app_ids(std::vector<std::string>& app_ids);
+    void getLaunchingAppIds(std::vector<std::string>& app_ids);
 
-    void set_applifeitem_factory(AppLaunchingItemFactoryInterface& factory);
-    void set_prelauncher_handler(PrelauncherInterface& prelauncher);
-    void set_memory_checker_handler(MemoryCheckerInterface& memory_checker);
-    void set_lastapp_handler(LastAppHandlerInterface& lastapp_handler);
+    void setApplifeitemFactory(AppLaunchingItemFactoryInterface& factory);
+    void setPrelauncherHandler(PrelauncherInterface& prelauncher);
+    void setMemoryCheckerHandler(MemoryCheckerInterface& memory_checker);
+    void setLastappHandler(LastAppHandlerInterface& lastapp_handler);
 
     boost::signals2::signal<void(const std::string& app_id, const LifeStatus& life_status)> signal_app_life_status_changed;
     boost::signals2::signal<void(const std::string& app_id)> signal_foreground_app_changed;
@@ -78,91 +79,89 @@ public:
     boost::signals2::signal<void(AppLaunchingItemPtr)> signal_launching_finished;
 
 private:
-    friend class Singleton<AppLifeManager> ;
+    static bool callbackCloseAppViaLSM(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    static bool cb_close_app_via_lsm(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    AppLaunchingItemPtr getLaunchingItemByUid(const std::string& uid);
+    AppLaunchingItemPtr getLaunchingItemByAppId(const std::string& app_id);
+    void removeItem(const std::string& uid);
 
-    AppLaunchingItemPtr get_launching_item_by_uid(const std::string& uid);
-    AppLaunchingItemPtr get_launching_item_by_app_id(const std::string& app_id);
-    void remove_item(const std::string& uid);
+    void addItemIntoAutomaticPendingList(AppLaunchingItemPtr item);
+    void removeItemFromAutomaticPendingList(const std::string& app_id);
+    bool isInAutomaticPendingList(const std::string& app_id);
+    void getAutomaticPendingAppIds(std::vector<std::string>& app_ids);
 
-    void add_item_into_automatic_pending_list(AppLaunchingItemPtr item);
-    void remove_item_from_automatic_pending_list(const std::string& app_id);
-    bool is_in_automatic_pending_list(const std::string& app_id);
-    void get_automatic_pending_app_ids(std::vector<std::string>& app_ids);
+    bool isFullscreenAppLoading(const std::string& new_launching_app_id, const std::string& new_launching_app_uid);
+    void getLoadingAppIds(std::vector<std::string>& app_ids);
+    void addLoadingApp(const std::string& app_id, const AppType& type);
+    void removeLoadingApp(const std::string& app_id);
+    void stopAllWebappItem();
+    bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
+    void clearLaunchingAndLoadingItemsByAppId(const std::string& app_id);
+    bool hasOnlyPreloadedItems(const std::string& app_id);
+    void handleAutomaticApp(const std::string& app_id, bool continue_to_launch = true);
+    bool isLaunchingItemExpired(AppLaunchingItemPtr item);
+    bool isLoadingAppExpired(const std::string& app_id);
 
-    bool is_fullscreen_app_loading(const std::string& new_launching_app_id, const std::string& new_launching_app_uid);
-    void get_loading_app_ids(std::vector<std::string>& app_ids);
-    void add_loading_app(const std::string& app_id, const AppType& type);
-    void remove_loading_app(const std::string& app_id);
-    void stop_all_webapp_item();
-    bool is_fullscreen_window_type(const pbnjson::JValue& foreground_info);
-    void clear_launching_and_loading_items_by_app_id(const std::string& app_id);
-    bool has_only_preloaded_items(const std::string& app_id);
-    void handle_automatic_app(const std::string& app_id, bool continue_to_launch = true);
-    bool is_launching_item_expired(AppLaunchingItemPtr item);
-    bool is_loading_app_expired(const std::string& app_id);
+    void addTimerForLastLoadingApp(const std::string& app_id);
+    void removeTimerForLastLoadingApp(bool trigger);
+    static gboolean runLastLoadingAppTimeoutHandler(gpointer user_data);
 
-    void add_timer_for_last_loading_app(const std::string& app_id);
-    void remove_timer_for_last_loading_app(bool trigger);
-    static gboolean run_last_loading_app_timeout_handler(gpointer user_data);
-
-    void add_last_launching_app(const std::string& app_id);
-    void remove_last_launching_app(const std::string& app_id);
-    bool is_last_launching_app(const std::string& app_id);
-    void reset_last_app_candidates();
+    void addLastLaunchingApp(const std::string& app_id);
+    void removeLastLaunchingApp(const std::string& app_id);
+    bool isLastLaunchingApp(const std::string& app_id);
+    void resetLastAppCandidates();
 
     // app life cycle interfaces
-    void on_prelaunching_done(const std::string& uid);
-    void on_memory_checking_done(const std::string& uid);
-    void on_launching_done(const std::string& uid);
-    void on_running_app_added(const std::string& app_id, const std::string& pid, const std::string& webprocid);
-    void on_running_app_removed(const std::string& app_id);
-    void on_running_list_changed(const std::string& app_id);
-    void on_memory_checking_start(const std::string& uid);
-    void on_runtime_status_changed(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status);
-    void SetAppLifeStatus(const std::string& app_id, const std::string& uid, LifeStatus new_status);
-    void on_foreground_info_changed(const pbnjson::JValue& jmsg);
+    void onPrelaunchingDone(const std::string& uid);
+    void onMemoryCheckingDone(const std::string& uid);
+    void onLaunchingDone(const std::string& uid);
+    void onRunningAppAdded(const std::string& app_id, const std::string& pid, const std::string& webprocid);
+    void onRunningAppRemoved(const std::string& app_id);
+    void onRunningListChanged(const std::string& app_id);
+    void onMemoryCheckingStart(const std::string& uid);
+    void onRuntimeStatusChanged(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status);
+    void setAppLifeStatus(const std::string& app_id, const std::string& uid, LifeStatus new_status);
+    void onForegroundInfoChanged(const pbnjson::JValue& jmsg);
 
-    void run_with_prelauncher(AppLaunchingItemPtr item);
-    void run_with_memory_checker(AppLaunchingItemPtr item);
-    void run_with_launcher(AppLaunchingItemPtr item);
-    void run_lastapp_handler();
-    void finish_launching(AppLaunchingItemPtr item);
+    void runWithPrelauncher(AppLaunchingItemPtr item);
+    void runWithMemoryChecker(AppLaunchingItemPtr item);
+    void runWithLauncher(AppLaunchingItemPtr item);
+    void runLastappHandler();
+    void finishLaunching(AppLaunchingItemPtr item);
 
-    void launch_app(AppLaunchingItemPtr item);
-    void close_app(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool clear_all_items = false);
-    void pause_app(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool report_event = true);
+    void launchApp(AppLaunchingItemPtr item);
+    void closeApp(const std::string& appId, const std::string& callerId, const std::string& reason, std::string& err_text, bool clearAllItems = false);
+    void pauseApp(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool report_event = true);
 
-    void reply_with_result(LSMessage* lsmsg, const std::string& pid, bool result, const int& err_code, const std::string& err_text);
-    void reply_subscription_on_launch(const std::string& app_id, bool show_splash);
-    void reply_subscription_for_app_life_status(const std::string& app_id, const std::string& uid, const LifeStatus& life_status);
-    void reply_subscription_for_running(const pbnjson::JValue& running_list, bool devmode = false);
-    void GenerateLifeCycleEvent(const std::string& app_id, const std::string& uid, LifeEvent event);
+    void replyWithResult(LSMessage* lsmsg, const std::string& pid, bool result, const int& err_code, const std::string& err_text);
+    void replySubscriptionOnLaunch(const std::string& app_id, bool show_splash);
+    void replySubscriptionForAppLifeStatus(const std::string& app_id, const std::string& uid, const LifeStatus& life_status);
+    void replySubscriptionForRunning(const pbnjson::JValue& running_list, bool devmode = false);
+    void generateLifeCycleEvent(const std::string& app_id, const std::string& uid, LifeEvent event);
 
-    AppLifeHandlerInterface* GetLifeHandlerForApp(const std::string& app_id);
+    AppLifeHandlerInterface* getLifeHandlerForApp(const std::string& app_id);
 
 private:
     // extendable interface
-    AppLaunchingItemFactoryInterface* launch_item_factory_;
-    PrelauncherInterface* prelauncher_;
-    MemoryCheckerInterface* memory_checker_;
-    NativeAppLifeHandler native_lifecycle_handler_;
-    WebAppLifeHandler web_lifecycle_handler_;
-    QmlAppLifeHandler qml_lifecycle_handler_;
-    LastAppHandlerInterface* lastapp_handler_;
-    LifeCycleRouter lifecycle_router_;
+    AppLaunchingItemFactoryInterface* m_launchItemFactory;
+    PrelauncherInterface* m_prelauncher;
+    MemoryCheckerInterface* m_memoryChecker;
+    NativeAppLifeHandler m_nativeLifecycleHandler;
+    WebAppLifeHandler m_webLifecycleHandler;
+    QmlAppLifeHandler m_qmlLifecycleHandler;
+    LastAppHandlerInterface* m_lastappHandler;
+    LifeCycleRouter m_lifecycleRouter;
 
     // member variables
-    std::vector<LifeCycleTaskPtr> lifecycle_tasks_;
-    AppLaunchingItemList launch_item_list_;
-    AppCloseItemList close_item_list_;
-    std::vector<std::string> m_fullscreen_window_types;
-    AppLaunchingItemList m_automatic_pending_list;
-    std::map<std::string, std::string> close_reason_info_;
-    std::vector<LoadingAppItem> m_loading_app_list;
-    std::vector<std::string> last_launching_apps_;
-    std::pair<guint, std::string> last_loading_app_timer_set_;
+    std::vector<LifeCycleTaskPtr> m_lifecycleTasks;
+    AppLaunchingItemList m_launchItemList;
+    AppCloseItemList m_closeItemList;
+    std::vector<std::string> m_fullscreenWindowTypes;
+    AppLaunchingItemList m_automaticPendingList;
+    std::map<std::string, std::string> m_closeReasonInfo;
+    std::vector<LoadingAppItem> m_loadingAppList;
+    std::vector<std::string> m_lastLaunchingApps;
+    std::pair<guint, std::string> m_lastLoadingAppTimerSet;
 };
 
 #endif

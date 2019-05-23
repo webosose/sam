@@ -45,11 +45,6 @@ ApplicationDescription::~ApplicationDescription()
 {
 }
 
-std::string ApplicationDescription::toString() const
-{
-    return JUtil::jsonToString(appinfo_json_);
-}
-
 const std::list<ResourceHandler>& ApplicationDescription::mimeTypes() const
 {
     return mime_types_;

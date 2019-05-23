@@ -299,7 +299,7 @@ std::string NativeAppLifeCycleInterfaceVer1::MakeForkArguments(AppLaunchingItemP
             payload.put("preload", item->preload());
     }
 
-    return JUtil::jsonToString(payload);
+    return payload.stringify();
 }
 
 bool NativeAppLifeCycleInterfaceVer1::CheckLaunchCondition(AppLaunchingItemPtr item)
@@ -450,7 +450,7 @@ std::string NativeAppLifeCycleInterfaceVer2::MakeForkArguments(AppLaunchingItemP
     if (AppType::Native_Qml == app_desc->type())
         payload.put("main", app_desc->entryPoint());
 
-    return JUtil::jsonToString(payload);
+    return payload.stringify();
 }
 
 bool NativeAppLifeCycleInterfaceVer2::CheckLaunchCondition(AppLaunchingItemPtr item)
@@ -507,7 +507,7 @@ void NativeAppLifeCycleInterfaceVer2::CloseAsPolicy(NativeClientInfoPtr client, 
     if (client->IsRegistered()) {
         pbnjson::JValue payload = pbnjson::Object();
         payload.put("event", "close");
-        payload.put("reason", item->Reason());
+        payload.put("reason", item->getReason());
         payload.put("returnValue", true);
 
         if (client->SendEvent(payload) == false) {
@@ -651,7 +651,9 @@ bool NativeClientInfo::SendEvent(pbnjson::JValue& payload)
 {
 
     if (!is_registered_) {
-        LOG_WARNING(MSGID_NATIVE_APP_LIFE_CYCLE_EVENT, 1, PMLOGKS("reason", "app_is_not_registered"), "payload: %s", JUtil::jsonToString(payload).c_str());
+        LOG_WARNING(MSGID_NATIVE_APP_LIFE_CYCLE_EVENT, 1,
+                    PMLOGKS("reason", "app_is_not_registered"),
+                    "payload: %s", payload.stringify().c_str());
         return false;
     }
 
@@ -660,8 +662,11 @@ bool NativeClientInfo::SendEvent(pbnjson::JValue& payload)
     }
 
     LSErrorSafe lserror;
-    if (!LSMessageRespond(lsmsg_, JUtil::jsonToString(payload).c_str(), &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "respond"), PMLOGJSON("payload", JUtil::jsonToString(payload).c_str()), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    if (!LSMessageRespond(lsmsg_, payload.stringify().c_str(), &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "respond"),
+                  PMLOGJSON("payload", payload.stringify().c_str()),
+                  PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
         return false;
     }
 
@@ -781,16 +786,16 @@ void NativeAppLifeHandler::launch(AppLaunchingItemPtr item)
 
 void NativeAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
 {
-    NativeClientInfoPtr client_info = GetNativeClientInfo(item->AppId());
+    NativeClientInfoPtr client_info = GetNativeClientInfo(item->getAppId());
 
     if (client_info == nullptr) {
-        LOG_INFO(MSGID_APPCLOSE_ERR, 2, PMLOGKS("app_id", item->AppId().c_str()), PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
+        LOG_INFO(MSGID_APPCLOSE_ERR, 2, PMLOGKS("app_id", item->getAppId().c_str()), PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
         err_text = "native app is not running";
         return;
     }
-    RuntimeStatus life_status = AppInfoManager::instance().runtime_status(item->AppId());
+    RuntimeStatus life_status = AppInfoManager::instance().runtime_status(item->getAppId());
     if (RuntimeStatus::STOP == life_status) {
-        LOG_INFO(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", item->AppId().c_str()), "native app is not running");
+        LOG_INFO(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", item->getAppId().c_str()), "native app is not running");
         err_text = "native app is not running";
         return;
     }

@@ -220,8 +220,10 @@ void LaunchPointManager::OnListAppsChanged(const pbnjson::JValue& apps, const st
         list_apps_changes_.append(c);
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT, 3, PMLOGKS("status", "full_list_changed_on_list_apps"), PMLOGKS("change_reason", JUtil::jsonToString(list_apps_changes_).c_str()),
-            PMLOGKS("where", "OnListAppsChanged"), "");
+    LOG_INFO(MSGID_LAUNCH_POINT, 3,
+             PMLOGKS("status", "full_list_changed_on_list_apps"),
+             PMLOGKS("change_reason", list_apps_changes_.stringify().c_str()),
+             PMLOGKS("where", "OnListAppsChanged"), "");
 
     HandleLpmState(LPStateInput::LOAD_APPS, apps);
 }
@@ -672,7 +674,7 @@ void LaunchPointManager::RemoveLaunchPoint(const pbnjson::JValue& data, std::str
         if (IsLastVisibleLp(lp)) {
             std::string error_text;
             LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3, PMLOGKS("status", "remove_launch_point"), PMLOGKS("last_visible_app", (lp->Id()).c_str()), PMLOGKS("status", "closed"), "");
-            AppLifeManager::instance().close_by_app_id(lp->Id(), "", "", error_text, false, true);
+            AppLifeManager::instance().closeByAppId(lp->Id(), "", "", error_text, false, true);
         }
 
         launch_point_list_.remove_if([=](LaunchPointPtr p) {return p->LaunchPointId() == lp->LaunchPointId();});

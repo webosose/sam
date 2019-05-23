@@ -127,11 +127,6 @@ pbnjson::JSchema JUtil::loadSchema(const std::string& schemaName, bool cache)
     return schema;
 }
 
-std::string JUtil::jsonToString(pbnjson::JValue json)
-{
-    return pbnjson::JGenerator::serialize(json, pbnjson::JSchemaFragment("{}"));
-}
-
 void JUtil::addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str)
 {
     if (arr.isNull() || !arr.isArray() || str.empty())

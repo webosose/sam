@@ -220,7 +220,7 @@ MimeSystem::RedirectHandlerNode::~RedirectHandlerNode()
 std::string MimeSystem::RedirectHandlerNode::toJsonString()
 {
     pbnjson::JValue jobj = toJValue();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue MimeSystem::RedirectHandlerNode::toJValue()
@@ -547,7 +547,7 @@ MimeSystem::ResourceHandlerNode::~ResourceHandlerNode()
 std::string MimeSystem::ResourceHandlerNode::toJsonString()
 {
     pbnjson::JValue jobj = toJValue();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue MimeSystem::ResourceHandlerNode::toJValue()
@@ -1655,14 +1655,14 @@ std::string MimeSystem::allTablesAsJsonString()
     pbnjson::JValue jobj = pbnjson::Object();
     jobj.put("resources", resourceTableAsJsonArray());
     jobj.put("redirects", redirectTableAsJsonArray());
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 std::string MimeSystem::resourceTableAsJsonString()
 {
     MutexLocker locker(&m_mutex);
     pbnjson::JValue jobj = resourceTableAsJson();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue MimeSystem::resourceTableAsJson()
@@ -1699,7 +1699,7 @@ std::string MimeSystem::redirectTableAsJsonString()
 {
     MutexLocker locker(&m_mutex);
     pbnjson::JValue jobj = redirectTableAsJson();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue MimeSystem::redirectTableAsJson()
@@ -1735,7 +1735,7 @@ std::string MimeSystem::extensionMapAsJsonString()
 {
     MutexLocker locker(&m_mutex);
     pbnjson::JValue jobj = extensionMapAsJson();
-    return JUtil::jsonToString(jobj);
+    return jobj.stringify();
 }
 
 pbnjson::JValue MimeSystem::extensionMapAsJson()
@@ -1781,7 +1781,7 @@ pbnjson::JValue MimeSystem::mimeTableAsJson(std::string& r_err)
 
 std::string MimeSystem::mimeTableAsString(std::string& r_err)
 {
-    return JUtil::jsonToString(mimeTableAsJson(r_err));
+    return mimeTableAsJson(r_err).stringify();
 }
 
 bool MimeSystem::saveMimeTable(const std::string& file, std::string& r_err)
