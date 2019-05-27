@@ -43,11 +43,8 @@ static bool kill_processes(const PidVector& pids, int signame);
 
 static NativeAppLifeHandler* g_this = NULL;
 
-////////////////////////////////////////////////////////////////
-// NativeAppLifeCycleInterface
-
-NativeAppLifeCycleInterface::NativeAppLifeCycleInterface(NativeAppLifeHandler* parent) :
-        parent_(parent)
+NativeAppLifeCycleInterface::NativeAppLifeCycleInterface(NativeAppLifeHandler* parent)
+    : m_parent(parent)
 {
 }
 
@@ -55,64 +52,67 @@ NativeAppLifeCycleInterface::~NativeAppLifeCycleInterface()
 {
 }
 
-void NativeAppLifeCycleInterface::AddLaunchHandler(RuntimeStatus status, NativeAppLaunchHandler handler)
+void NativeAppLifeCycleInterface::addLaunchHandler(RuntimeStatus status, NativeAppLaunchHandler handler)
 {
-    launch_handler_map_[status] = handler;
+    m_launchHandlerMap[status] = handler;
 }
 
-void NativeAppLifeCycleInterface::Launch(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterface::launch(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
-
     // Check launch condition
-    if (CheckLaunchCondition(item) == false) {
-        Parent()->signal_launching_done(item->uid());
+    if (checkLaunchCondition(item) == false) {
+        parent()->signal_launching_done(item->uid());
         return;
     }
 
-    RuntimeStatus life_status = AppInfoManager::instance().runtime_status(item->app_id());
-    if (!launch_handler_map_.count(life_status)) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "invalid_status_to_handle"), PMLOGKS("where", __FUNCTION__), "");
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+    RuntimeStatus life_status = AppInfoManager::instance().runtimeStatus(item->appId());
+    if (!m_launchHandlerMap.count(life_status)) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("reason", "invalid_status_to_handle"),
+                  PMLOGKS("where", __FUNCTION__), "");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "start_launch_handler"), "life_status: %d", (int )life_status);
+    LOG_INFO(MSGID_APPLAUNCH, 2,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("status", "start_launch_handler"), "life_status: %d", (int )life_status);
 
-    NativeAppLaunchHandler handler = launch_handler_map_[life_status];
+    NativeAppLaunchHandler handler = m_launchHandlerMap[life_status];
     handler(client, item);
 }
 
-void NativeAppLifeCycleInterface::Close(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
+void NativeAppLifeCycleInterface::close(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
 {
-
-    CloseAsPolicy(client, item, err_text);
+    closeAsPolicy(client, item, err_text);
 }
 
-void NativeAppLifeCycleInterface::Pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
+void NativeAppLifeCycleInterface::pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
 {
-
-    PauseAsPolicy(client, params, err_text, send_life_event);
+    pauseAsPolicy(client, params, err_text, send_life_event);
 }
 
-////////////////////////////////////////////////////////////////
-// NativeAppLifeCycleInterface: Template methods for common
-
-void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
-
     if (item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "null_poiner"), PMLOGKS("where", __FUNCTION__), "");
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return;
     }
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->app_id());
+    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->appId());
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "null_description"), PMLOGKS("where", __FUNCTION__), "");
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
-        Parent()->signal_launching_done(item->uid());
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "null_description"),
+                  PMLOGKS("where", __FUNCTION__), "");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
+        parent()->signal_launching_done(item->uid());
         return;
     }
 
@@ -123,7 +123,7 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
 
     // [ Template method ]
     // Handle Differently based on Ver1/Ver2 policy
-    std::string str_params = MakeForkArguments(item, app_desc);
+    std::string str_params = makeForkArguments(item, app_desc);
 
     const char* fork_params[10] = { 0, };
     const char* jailer_type = "";
@@ -138,14 +138,20 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
         fork_params[5] = "--params";
         fork_params[6] = str_params.c_str();
         fork_params[7] = NULL;
-        LOG_INFO(MSGID_APPLAUNCH, 4, PMLOGKS("appshellRunnderPath", SettingsImpl::instance().appshellRunnerPath.c_str()), PMLOGKS("app_id", app_desc->id().c_str()),
-                PMLOGKS("app_folder_path", app_desc->folderPath().c_str()), PMLOGJSON("params", str_params.c_str()), "launch with appshell_runner");
+        LOG_INFO(MSGID_APPLAUNCH, 4,
+                 PMLOGKS("appshellRunnderPath", SettingsImpl::instance().appshellRunnerPath.c_str()),
+                 PMLOGKS("app_id", app_desc->id().c_str()),
+                 PMLOGKS("app_folder_path", app_desc->folderPath().c_str()),
+                 PMLOGJSON("params", str_params.c_str()), "launch with appshell_runner");
     } else if (AppType::Native_Qml == app_desc->type()) {
         fork_params[0] = SettingsImpl::instance().qmlRunnerPath.c_str();
         fork_params[1] = str_params.c_str();
         fork_params[2] = NULL;
 
-        LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("app_path", path.c_str()), PMLOGJSON("params", str_params.c_str()), "launch with qml_runner");
+        LOG_INFO(MSGID_APPLAUNCH, 3,
+                 PMLOGKS("app_id", app_desc->id().c_str()),
+                 PMLOGKS("app_path", path.c_str()),
+                 PMLOGJSON("params", str_params.c_str()), "launch with qml_runner");
     } else if (SettingsImpl::instance().isJailMode && !is_on_nojail_list) {
         if (AppTypeByDir::Dev == app_desc->getTypeByDir()) {
             jailer_type = "native_devmode";
@@ -182,8 +188,12 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
 
         // This log shows whether native app's launched via Jailer or not
         // Do not remove this log, until jailer become stable
-        LOG_INFO(MSGID_APPLAUNCH, 6, PMLOGKS("jailer_path", SettingsImpl::instance().jailerPath.c_str()), PMLOGKS("jailer_type", jailer_type), PMLOGKS("app_id", app_desc->id().c_str()),
-                PMLOGKS("app_folder_path", app_desc->folderPath().c_str()), PMLOGKS("app_path", path.c_str()), PMLOGJSON("params", str_params.c_str()), "launch with jail");
+        LOG_INFO(MSGID_APPLAUNCH, 6,
+                 PMLOGKS("jailer_path", SettingsImpl::instance().jailerPath.c_str()),
+                 PMLOGKS("jailer_type", jailer_type),
+                 PMLOGKS("app_id", app_desc->id().c_str()),
+                 PMLOGKS("app_folder_path", app_desc->folderPath().c_str()),
+                 PMLOGKS("app_path", path.c_str()), PMLOGJSON("params", str_params.c_str()), "launch with jail");
     } else {
         // This log shows whether native app's launched via Jailer or not
         // Do not remove this log, until jailer become stable
@@ -191,16 +201,19 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
         fork_params[1] = str_params.c_str();
         fork_params[2] = NULL;
 
-        LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("app_path", path.c_str()), PMLOGJSON("params", str_params.c_str()), "launch as root");
+        LOG_INFO(MSGID_APPLAUNCH, 3,
+                 PMLOGKS("app_id", app_desc->id().c_str()),
+                 PMLOGKS("app_path", path.c_str()),
+                 PMLOGJSON("params", str_params.c_str()), "launch as root");
 
     }
 
     int pid = -1;
 
     if (item->preload().empty())
-        Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::LAUNCHING);
+        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
     else
-        Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::PRELOADING);
+        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
 
     // TODO: define whether CRIU is common feature or not
     //       If CRIU is tv specific feature, redesign for this codes
@@ -213,9 +226,13 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
         // arguments: appid, argc, argv
         pid = criue_restore_app(app_desc->id().c_str(), argc, (char **) fork_params);
         if (pid <= 0) {
-            LOG_WARNING(MSGID_HANDLE_CRIU, 2, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("status", "failed_to_restore"), "pid: %d", pid);
+            LOG_WARNING(MSGID_HANDLE_CRIU, 2,
+                        PMLOGKS("app_id", app_desc->id().c_str()),
+                        PMLOGKS("status", "failed_to_restore"), "pid: %d", pid);
         } else {
-            LOG_INFO(MSGID_HANDLE_CRIU, 2, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("status", "restored_image"), "pid: %d", pid);
+            LOG_INFO(MSGID_HANDLE_CRIU, 2,
+                     PMLOGKS("app_id", app_desc->id().c_str()),
+                     PMLOGKS("status", "restored_image"), "pid: %d", pid);
         }
     }
 
@@ -224,10 +241,12 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
     }
 
     if (pid <= 0) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("path", path.c_str()), "forked_pid: %d", pid);
-        Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::STOP);
-        item->set_err_code_text(APP_ERR_NATIVE_SPAWN, "Failed to launch process");
-        Parent()->signal_launching_done(item->uid());
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("app_id", app_desc->id().c_str()),
+                  PMLOGKS("path", path.c_str()), "forked_pid: %d", pid);
+        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::STOP);
+        item->setErrCodeText(APP_ERR_NATIVE_SPAWN, "Failed to launch process");
+        parent()->signal_launching_done(item->uid());
         return;
     }
 
@@ -235,56 +254,61 @@ void NativeAppLifeCycleInterface::LaunchAsCommon(NativeClientInfoPtr client, App
     g_child_watch_add(pid, (GChildWatchFunc) NativeAppLifeHandler::ChildProcessWatcher, NULL);
 
     double current_time = get_current_time();
-    double elapsed_time = current_time - item->launch_start_time();
-    LOG_INFO(MSGID_APP_LAUNCHED, 5, PMLOGKS("app_id", app_desc->id().c_str()), PMLOGKS("type", "native"), PMLOGKFV("pid", "%d", pid), PMLOGKFV("start_time", "%f", item->launch_start_time()),
-            PMLOGKFV("collapse_time", "%f", elapsed_time), "");
+    double elapsed_time = current_time - item->launchStartTime();
+    LOG_INFO(MSGID_APP_LAUNCHED, 5,
+             PMLOGKS("app_id", app_desc->id().c_str()),
+             PMLOGKS("type", "native"),
+             PMLOGKFV("pid", "%d", pid),
+             PMLOGKFV("start_time", "%f", item->launchStartTime()),
+             PMLOGKFV("collapse_time", "%f", elapsed_time), "");
 
     std::string new_pid = boost::lexical_cast<std::string>(pid);
-    item->set_pid(new_pid);
+    item->setPid(new_pid);
     client->SetPid(new_pid);
     client->StartTimerForCheckingRegistration();
-    AppInfoManager::instance().set_last_launch_time(item->app_id(), current_time);
-    Parent()->signal_running_app_added(item->app_id(), new_pid, "");
-    Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::RUNNING);
-    Parent()->signal_launching_done(item->uid());
+    AppInfoManager::instance().setLastLaunchTime(item->appId(), current_time);
+    parent()->signal_running_app_added(item->appId(), new_pid, "");
+    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::RUNNING);
+    parent()->signal_launching_done(item->uid());
 }
 
-void NativeAppLifeCycleInterface::RelaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterface::relaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
     pbnjson::JValue payload = pbnjson::Object();
-    MakeRelaunchParams(item, payload);
+    makeRelaunchParams(item, payload);
 
-    Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::LAUNCHING);
+    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
 
     if (client->SendEvent(payload) == false) {
         LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", client->AppId().c_str()), "failed_to_send_relaunch_event");
     }
 
-    Parent()->signal_launching_done(item->uid());
+    parent()->signal_launching_done(item->uid());
 }
 
 ////////////////////////////////////////////////////////////////
 // NativeAppLifeCycleInterface version1
 
-NativeAppLifeCycleInterfaceVer1::NativeAppLifeCycleInterfaceVer1(NativeAppLifeHandler* parent) :
-        NativeAppLifeCycleInterface(parent)
+NativeAppLifeCycleInterfaceVer1::NativeAppLifeCycleInterfaceVer1(NativeAppLifeHandler* parent)
+    : NativeAppLifeCycleInterface(parent)
 {
+    addLaunchHandler(RuntimeStatus::STOP, boost::bind(&NativeAppLifeCycleInterface::launchAsCommon, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::STOP, boost::bind(&NativeAppLifeCycleInterface::LaunchAsCommon, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::RUNNING, boost::bind(&NativeAppLifeCycleInterfaceVer1::launchNotRegisteredAppAsPolicy, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::RUNNING, boost::bind(&NativeAppLifeCycleInterfaceVer1::LaunchNotRegisteredAppAsPolicy, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::REGISTERED, boost::bind(&NativeAppLifeCycleInterface::relaunchAsCommon, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::REGISTERED, boost::bind(&NativeAppLifeCycleInterface::RelaunchAsCommon, this, _1, _2));
-
-    AddLaunchHandler(RuntimeStatus::CLOSING, boost::bind(&NativeAppLifeCycleInterfaceVer1::LaunchAfterClosedAsPolicy, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::CLOSING, boost::bind(&NativeAppLifeCycleInterfaceVer1::launchAfterClosedAsPolicy, this, _1, _2));
 }
 
-std::string NativeAppLifeCycleInterfaceVer1::MakeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc)
+std::string NativeAppLifeCycleInterfaceVer1::makeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc)
 {
-
     pbnjson::JValue payload = pbnjson::Object();
 
     if (AppType::Native_Qml == app_desc->type()) {
@@ -293,7 +317,7 @@ std::string NativeAppLifeCycleInterfaceVer1::MakeForkArguments(AppLaunchingItemP
         payload.put("params", item->params());
     } else {
         payload = item->params().duplicate();
-        payload.put("nid", item->app_id());
+        payload.put("nid", item->appId());
         payload.put("@system_native_app", true);
         if (!item->preload().empty())
             payload.put("preload", item->preload());
@@ -302,143 +326,172 @@ std::string NativeAppLifeCycleInterfaceVer1::MakeForkArguments(AppLaunchingItemP
     return payload.stringify();
 }
 
-bool NativeAppLifeCycleInterfaceVer1::CheckLaunchCondition(AppLaunchingItemPtr item)
+bool NativeAppLifeCycleInterfaceVer1::checkLaunchCondition(AppLaunchingItemPtr item)
 {
-
-    if (Parent()->GetLaunchPendingItem(item->app_id()) != NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "already_in_queue"), PMLOGKS("where", "launch_nativeapp"), "");
-        item->set_err_code_text(APP_ERR_NATIVE_IS_LAUNCHING, item->app_id() + std::string(" is already launching"));
+    if (parent()->GetLaunchPendingItem(item->appId()) != NULL) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("reason", "already_in_queue"),
+                  PMLOGKS("where", "launch_nativeapp"), "");
+        item->setErrCodeText(APP_ERR_NATIVE_IS_LAUNCHING, item->appId() + std::string(" is already launching"));
         return false;
     }
     return true;
 }
 
-void NativeAppLifeCycleInterfaceVer1::MakeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& payload)
+void NativeAppLifeCycleInterfaceVer1::makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& payload)
 {
-
     payload.put("message", "relaunch");
     payload.put("parameters", item->params());
     payload.put("returnValue", true);
 }
 
-void NativeAppLifeCycleInterfaceVer1::LaunchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterfaceVer1::launchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("status", "app_is_closing"),
+             PMLOGKS("action", "wait_until_being_closed"),
+             "life_status: %d", (int )AppInfoManager::instance().runtimeStatus(item->appId()));
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "app_is_closing"), PMLOGKS("action", "wait_until_being_closed"), "life_status: %d",
-            (int )AppInfoManager::instance().runtime_status(item->app_id()));
-
-    Parent()->AddLaunchingItemIntoPendingQ(item);
+    parent()->AddLaunchingItemIntoPendingQ(item);
 }
 
-void NativeAppLifeCycleInterfaceVer1::LaunchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterfaceVer1::launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    double last_launch_time = AppInfoManager::instance().last_launch_time(item->app_id());
+    double last_launch_time = AppInfoManager::instance().lastLaunchTime(item->appId());
     double current_time = get_current_time();
-    bool preload_mode_on = AppInfoManager::instance().preload_mode_on(item->app_id());
+    bool preload_mode_on = AppInfoManager::instance().preloadModeOn(item->appId());
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("preload_mode_on", (preload_mode_on ? "on":"off")),
-            PMLOGKS("preload_mode", (item->preload().empty() ? "empty":item->preload().c_str())), "in close_and_launch");
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("preload_mode_on", (preload_mode_on ? "on":"off")),
+             PMLOGKS("preload_mode", (item->preload().empty() ? "empty":item->preload().c_str())),
+             "in close_and_launch");
 
     // if less than 3 sec, just skip
     if ((current_time - last_launch_time) < TIME_LIMIT_OF_APP_LAUNCHING) {
         if (preload_mode_on && item->preload().empty()) {
             // should close and launch if currently being launched in hidden mode
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "running"), PMLOGKS("action", "skip_by_launching_time"), "life_cycle: %d",
-                    (int )AppInfoManager::instance().runtime_status(item->app_id()));
-            item->set_pid(AppInfoManager::instance().pid(item->app_id()));
-            Parent()->signal_launching_done(item->uid());
+            LOG_INFO(MSGID_APPLAUNCH, 3,
+                     PMLOGKS("app_id", item->appId().c_str()),
+                     PMLOGKS("status", "running"),
+                     PMLOGKS("action", "skip_by_launching_time"),
+                     "life_cycle: %d", (int )AppInfoManager::instance().runtimeStatus(item->appId()));
+            item->setPid(AppInfoManager::instance().pid(item->appId()));
+            parent()->signal_launching_done(item->uid());
             return;
         }
     }
 
-    std::string pid = AppInfoManager::instance().pid(item->app_id());
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "running"), PMLOGKS("action", "close_and_launch"), "life_cycle: %d, pid: %s",
-            (int )AppInfoManager::instance().runtime_status(item->app_id()), pid.c_str());
+    std::string pid = AppInfoManager::instance().pid(item->appId());
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("status", "running"),
+             PMLOGKS("action", "close_and_launch"),
+             "life_cycle: %d, pid: %s", (int )AppInfoManager::instance().runtimeStatus(item->appId()), pid.c_str());
 
     PidVector all_pids = FindChildPids(client->Pid());
-    (void) Parent()->SendSystemSignal(all_pids, SIGTERM);
-    Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::CLOSING);
-    Parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
+    (void) parent()->SendSystemSignal(all_pids, SIGTERM);
+    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::CLOSING);
+    parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
 
-    Parent()->AddLaunchingItemIntoPendingQ(item);
+    parent()->AddLaunchingItemIntoPendingQ(item);
 }
 
-void NativeAppLifeCycleInterfaceVer1::CloseAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
+void NativeAppLifeCycleInterfaceVer1::closeAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
 {
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    RuntimeStatus current_status = AppInfoManager::instance().runtime_status(client->AppId());
+    RuntimeStatus current_status = AppInfoManager::instance().runtimeStatus(client->AppId());
     if (RuntimeStatus::CLOSING == current_status) {
-        LOG_INFO(MSGID_APPCLOSE, 3, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("pid", client->Pid().c_str()), PMLOGKS("action", "wait_closing"), "already being closed");
+        LOG_INFO(MSGID_APPCLOSE, 3,
+                 PMLOGKS("app_id", client->AppId().c_str()),
+                 PMLOGKS("pid", client->Pid().c_str()),
+                 PMLOGKS("action", "wait_closing"), "already being closed");
         return;
     }
 
     if (client->Pid().empty()) {
         LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("reason", "empty_pid"), PMLOGKS("where", __FUNCTION__), "");
         err_text = "empty pid";
-        Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::STOP);
+        parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::STOP);
         return;
     }
 
     PidVector all_pids = FindChildPids(client->Pid());
-    if (!Parent()->SendSystemSignal(all_pids, SIGTERM)) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("reason", "empty_pids"), PMLOGKS("where", __FUNCTION__), "");
+    if (!parent()->SendSystemSignal(all_pids, SIGTERM)) {
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("reason", "empty_pids"),
+                  PMLOGKS("where", __FUNCTION__), "");
         err_text = "not found any pids to kill";
-        Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::STOP);
+        parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::STOP);
         return;
     }
 
-    Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
+    parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
 
-    Parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
+    parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
 
-    LOG_INFO(MSGID_APPCLOSE, 3, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("pid", client->Pid().c_str()), PMLOGKS("action", "sigterm"), "");
+    LOG_INFO(MSGID_APPCLOSE, 3,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("pid", client->Pid().c_str()),
+             PMLOGKS("action", "sigterm"), "");
 }
 
-void NativeAppLifeCycleInterfaceVer1::PauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
+void NativeAppLifeCycleInterfaceVer1::pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
 {
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
-
-    LOG_INFO(MSGID_APPCLOSE, 3, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("pid", client->Pid().c_str()), PMLOGKS("action", "sigterm_to_pause"), "");
+    LOG_INFO(MSGID_APPCLOSE, 3,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("pid", client->Pid().c_str()),
+             PMLOGKS("action", "sigterm_to_pause"), "");
 
     PidVector all_pids = FindChildPids(client->Pid());
-    (void) Parent()->SendSystemSignal(all_pids, SIGTERM);
+    (void) parent()->SendSystemSignal(all_pids, SIGTERM);
     if (send_life_event)
-        Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
-    Parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
+        parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
+    parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
 }
-
-////////////////////////////////////////////////////////////////
-// NativeAppLifeCycleInterface version2
 
 NativeAppLifeCycleInterfaceVer2::NativeAppLifeCycleInterfaceVer2(NativeAppLifeHandler* parent) :
         NativeAppLifeCycleInterface(parent)
 {
+    addLaunchHandler(RuntimeStatus::STOP, boost::bind(&NativeAppLifeCycleInterface::launchAsCommon, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::STOP, boost::bind(&NativeAppLifeCycleInterface::LaunchAsCommon, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::RUNNING, boost::bind(&NativeAppLifeCycleInterfaceVer2::launchNotRegisteredAppAsPolicy, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::RUNNING, boost::bind(&NativeAppLifeCycleInterfaceVer2::LaunchNotRegisteredAppAsPolicy, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::REGISTERED, boost::bind(&NativeAppLifeCycleInterface::relaunchAsCommon, this, _1, _2));
 
-    AddLaunchHandler(RuntimeStatus::REGISTERED, boost::bind(&NativeAppLifeCycleInterface::RelaunchAsCommon, this, _1, _2));
-
-    AddLaunchHandler(RuntimeStatus::CLOSING, boost::bind(&NativeAppLifeCycleInterfaceVer2::LaunchAfterClosedAsPolicy, this, _1, _2));
+    addLaunchHandler(RuntimeStatus::CLOSING, boost::bind(&NativeAppLifeCycleInterfaceVer2::launchAfterClosedAsPolicy, this, _1, _2));
 }
 
-std::string NativeAppLifeCycleInterfaceVer2::MakeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc)
+std::string NativeAppLifeCycleInterfaceVer2::makeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc)
 {
-
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("event", "launch");
-    payload.put("reason", item->launch_reason());
-    payload.put("appId", item->app_id());
+    payload.put("reason", item->launchReason());
+    payload.put("appId", item->appId());
     payload.put("interfaceVersion", 2);
     payload.put("interfaceMethod", "registerApp");
     payload.put("parameters", item->params());
@@ -453,55 +506,60 @@ std::string NativeAppLifeCycleInterfaceVer2::MakeForkArguments(AppLaunchingItemP
     return payload.stringify();
 }
 
-bool NativeAppLifeCycleInterfaceVer2::CheckLaunchCondition(AppLaunchingItemPtr item)
+bool NativeAppLifeCycleInterfaceVer2::checkLaunchCondition(AppLaunchingItemPtr item)
 {
     return true;
 }
 
-void NativeAppLifeCycleInterfaceVer2::MakeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& payload)
+void NativeAppLifeCycleInterfaceVer2::makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& payload)
 {
-
     payload.put("event", "relaunch");
-    payload.put("reason", item->launch_reason());
-    payload.put("appId", item->app_id());
+    payload.put("reason", item->launchReason());
+    payload.put("appId", item->appId());
     payload.put("parameters", item->params());
     payload.put("returnValue", true);
 }
 
-void NativeAppLifeCycleInterfaceVer2::LaunchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterfaceVer2::launchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("status", "app_is_closing"),
+             PMLOGKS("action", "wait_until_being_closed"),
+             "life_status: %d", (int )AppInfoManager::instance().runtimeStatus(item->appId()));
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "app_is_closing"), PMLOGKS("action", "wait_until_being_closed"), "life_status: %d",
-            (int )AppInfoManager::instance().runtime_status(item->app_id()));
-
-    Parent()->AddLaunchingItemIntoPendingQ(item);
+    parent()->AddLaunchingItemIntoPendingQ(item);
 }
 
-void NativeAppLifeCycleInterfaceVer2::LaunchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
+void NativeAppLifeCycleInterfaceVer2::launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item)
 {
-
     LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
 
     if (client->IsRegistrationExpired()) {
         // clean up previous launch reqeust from pending queue
-        Parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
+        parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
 
-        Parent()->signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::CLOSING);
+        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::CLOSING);
 
-        (void) Parent()->FindPidsAndSendSystemSignal(client->Pid(), SIGKILL);
+        (void) parent()->FindPidsAndSendSystemSignal(client->Pid(), SIGKILL);
     }
 
-    Parent()->AddLaunchingItemIntoPendingQ(item);
+    parent()->AddLaunchingItemIntoPendingQ(item);
 }
 
-void NativeAppLifeCycleInterfaceVer2::CloseAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
+void NativeAppLifeCycleInterfaceVer2::closeAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text)
 {
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
-
-    Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
+    parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
 
     // if registered
     if (client->IsRegistered()) {
@@ -511,31 +569,35 @@ void NativeAppLifeCycleInterfaceVer2::CloseAsPolicy(NativeClientInfoPtr client, 
         payload.put("returnValue", true);
 
         if (client->SendEvent(payload) == false) {
-            LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", client->AppId().c_str()), "failed_to_send_close_event");
+            LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
+                        PMLOGKS("app_id", client->AppId().c_str()),
+                        "failed_to_send_close_event");
         }
 
         PidVector all_pids = FindChildPids(client->Pid());
         if (item->IsMemoryReclaim()) {
             //start force kill timer()
-            Parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
+            parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
         } else {
-            Parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_NOT_RESPONDING);
+            parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_NOT_RESPONDING);
         }
         // if not registered
     } else {
         //  clean up pending queue
-        Parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
+        parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
 
         // send sigkill
         PidVector all_pids = FindChildPids(client->Pid());
-        (void) Parent()->SendSystemSignal(all_pids, SIGKILL);
+        (void) parent()->SendSystemSignal(all_pids, SIGKILL);
     }
 }
 
-void NativeAppLifeCycleInterfaceVer2::PauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
+void NativeAppLifeCycleInterfaceVer2::pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
 {
-
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("start_native_handler", __FUNCTION__), "ver: %d", client->InterfaceVersion());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", client->AppId().c_str()),
+             PMLOGKS("start_native_handler", __FUNCTION__),
+             "ver: %d", client->InterfaceVersion());
 
     if (client->IsRegistered()) {
         pbnjson::JValue payload = pbnjson::Object();
@@ -545,39 +607,42 @@ void NativeAppLifeCycleInterfaceVer2::PauseAsPolicy(NativeClientInfoPtr client, 
         payload.put("returnValue", true);
 
         if (send_life_event)
-            Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::PAUSING);
+            parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::PAUSING);
 
         if (client->SendEvent(payload) == false) {
             LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", client->AppId().c_str()), "failed_to_send_pause_event");
         }
     } else {
         // clean up pending queue
-        Parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
+        parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
 
         if (send_life_event)
-            Parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
+            parent()->signal_app_life_status_changed(client->AppId(), "", RuntimeStatus::CLOSING);
 
-        (void) Parent()->FindPidsAndSendSystemSignal(client->Pid(), SIGKILL);
+        (void) parent()->FindPidsAndSendSystemSignal(client->Pid(), SIGKILL);
     }
 }
 
-////////////////////////////////////////////////////////////////
-// NativeClientInfo
-
-NativeClientInfo::NativeClientInfo(const std::string& app_id) :
-        app_id_(app_id), interface_version_(1), is_registered_(false), is_registration_expired_(false), lsmsg_(NULL), registration_check_timer_source_(0), registration_check_start_time_(0), life_cycle_handler_(
-                NULL)
+NativeClientInfo::NativeClientInfo(const std::string& app_id)
+    : m_appId(app_id),
+      m_interfaceVersion(1),
+      m_isRegistered(false),
+      m_isRegistrationExpired(false),
+      m_lsmsg(NULL),
+      m_registrationCheckTimerSource(0),
+      m_registrationCheckStartTime(0),
+      m_lifeCycleHandler(NULL)
 {
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", app_id_.c_str()), "client_info_created");
+    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", m_appId.c_str()), "client_info_created");
 }
 
 NativeClientInfo::~NativeClientInfo()
 {
-    if (lsmsg_ != NULL)
-        LSMessageUnref(lsmsg_);
+    if (m_lsmsg != NULL)
+        LSMessageUnref(m_lsmsg);
     StopTimerForCheckingRegistration();
 
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", app_id_.c_str()), "client_info_removed");
+    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", m_appId.c_str()), "client_info_removed");
 }
 
 void NativeClientInfo::Register(LSMessage* lsmsg)
@@ -587,27 +652,27 @@ void NativeClientInfo::Register(LSMessage* lsmsg)
         return;
     }
 
-    if (lsmsg_ != NULL) {
+    if (m_lsmsg != NULL) {
         // leave log for release previous connection
-        LSMessageUnref(lsmsg_);
-        lsmsg_ = NULL;
+        LSMessageUnref(m_lsmsg);
+        m_lsmsg = NULL;
     }
 
     StopTimerForCheckingRegistration();
 
-    lsmsg_ = lsmsg;
-    LSMessageRef(lsmsg_);
-    is_registered_ = true;
-    is_registration_expired_ = false;
+    m_lsmsg = lsmsg;
+    LSMessageRef(m_lsmsg);
+    m_isRegistered = true;
+    m_isRegistrationExpired = false;
 }
 
 void NativeClientInfo::Unregister()
 {
-    if (lsmsg_ != NULL) {
-        LSMessageUnref(lsmsg_);
-        lsmsg_ = NULL;
+    if (m_lsmsg != NULL) {
+        LSMessageUnref(m_lsmsg);
+        m_lsmsg = NULL;
     }
-    is_registered_ = false;
+    m_isRegistered = false;
 }
 
 void NativeClientInfo::StartTimerForCheckingRegistration()
@@ -615,17 +680,17 @@ void NativeClientInfo::StartTimerForCheckingRegistration()
 
     StopTimerForCheckingRegistration();
 
-    registration_check_timer_source_ = g_timeout_add( TIMEOUT_FOR_REGISTER_V2, NativeClientInfo::CheckRegistration, (gpointer) (this));
-    registration_check_start_time_ = get_current_time();
-    is_registration_expired_ = false;
+    m_registrationCheckTimerSource = g_timeout_add( TIMEOUT_FOR_REGISTER_V2, NativeClientInfo::CheckRegistration, (gpointer) (this));
+    m_registrationCheckStartTime = get_current_time();
+    m_isRegistrationExpired = false;
 }
 
 void NativeClientInfo::StopTimerForCheckingRegistration()
 {
 
-    if (registration_check_timer_source_ != 0) {
-        g_source_remove(registration_check_timer_source_);
-        registration_check_timer_source_ = 0;
+    if (m_registrationCheckTimerSource != 0) {
+        g_source_remove(m_registrationCheckTimerSource);
+        m_registrationCheckTimerSource = 0;
     }
 }
 
@@ -634,7 +699,7 @@ gboolean NativeClientInfo::CheckRegistration(gpointer user_data)
     NativeClientInfo* native_client = static_cast<NativeClientInfo*>(user_data);
 
     if (!native_client->IsRegistered()) {
-        native_client->is_registration_expired_ = true;
+        native_client->m_isRegistrationExpired = true;
     }
 
     native_client->StopTimerForCheckingRegistration();
@@ -643,14 +708,14 @@ gboolean NativeClientInfo::CheckRegistration(gpointer user_data)
 
 void NativeClientInfo::SetLifeCycleHandler(int ver, NativeAppLifeCycleInterface* handler)
 {
-    interface_version_ = ver;
-    life_cycle_handler_ = handler;
+    m_interfaceVersion = ver;
+    m_lifeCycleHandler = handler;
 }
 
 bool NativeClientInfo::SendEvent(pbnjson::JValue& payload)
 {
 
-    if (!is_registered_) {
+    if (!m_isRegistered) {
         LOG_WARNING(MSGID_NATIVE_APP_LIFE_CYCLE_EVENT, 1,
                     PMLOGKS("reason", "app_is_not_registered"),
                     "payload: %s", payload.stringify().c_str());
@@ -662,7 +727,7 @@ bool NativeClientInfo::SendEvent(pbnjson::JValue& payload)
     }
 
     LSErrorSafe lserror;
-    if (!LSMessageRespond(lsmsg_, payload.stringify().c_str(), &lserror)) {
+    if (!LSMessageRespond(m_lsmsg, payload.stringify().c_str(), &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
                   PMLOGKS("type", "respond"),
                   PMLOGJSON("payload", payload.stringify().c_str()),
@@ -673,11 +738,9 @@ bool NativeClientInfo::SendEvent(pbnjson::JValue& payload)
     return true;
 }
 
-////////////////////////////////////////////////////////////////
-// NativeAppLifeHandler
-
-NativeAppLifeHandler::NativeAppLifeHandler() :
-        native_handler_v1_(this), native_handler_v2_(this)
+NativeAppLifeHandler::NativeAppLifeHandler()
+    : m_nativeHandlerV1(this),
+      m_nativeHandlerV2(this)
 {
     g_this = this;
 }
@@ -688,10 +751,12 @@ NativeAppLifeHandler::~NativeAppLifeHandler()
 
 NativeClientInfoPtr NativeAppLifeHandler::MakeNewClientInfo(const std::string& app_id)
 {
-
     AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "not_existing_app"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "not_existing_app"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return nullptr;
     }
 
@@ -699,17 +764,17 @@ NativeClientInfoPtr NativeAppLifeHandler::MakeNewClientInfo(const std::string& a
 
     switch (app_desc->NativeInterfaceVersion()) {
     case 1:
-        new_client_info->SetLifeCycleHandler(1, &native_handler_v1_);
+        new_client_info->SetLifeCycleHandler(1, &m_nativeHandlerV1);
         break;
     case 2:
-        new_client_info->SetLifeCycleHandler(2, &native_handler_v2_);
+        new_client_info->SetLifeCycleHandler(2, &m_nativeHandlerV2);
         break;
     default:
-        new_client_info->SetLifeCycleHandler(1, &native_handler_v1_);
+        new_client_info->SetLifeCycleHandler(1, &m_nativeHandlerV1);
         break;
     }
 
-    active_clients_.push_back(new_client_info);
+    m_activeClients.push_back(new_client_info);
 
     PrintNativeClients();
 
@@ -718,12 +783,11 @@ NativeClientInfoPtr NativeAppLifeHandler::MakeNewClientInfo(const std::string& a
 
 NativeClientInfoPtr NativeAppLifeHandler::GetNativeClientInfo(const std::string& app_id, bool make_new)
 {
-
-    auto it = std::find_if(active_clients_.begin(), active_clients_.end(), [&app_id](NativeClientInfoPtr client) {
+    auto it = std::find_if(m_activeClients.begin(), m_activeClients.end(), [&app_id](NativeClientInfoPtr client) {
         return app_id == client->AppId();
     });
 
-    if (it == active_clients_.end()) {
+    if (it == m_activeClients.end()) {
         return make_new ? MakeNewClientInfo(app_id) : nullptr;
     }
 
@@ -733,11 +797,11 @@ NativeClientInfoPtr NativeAppLifeHandler::GetNativeClientInfo(const std::string&
 NativeClientInfoPtr NativeAppLifeHandler::GetNativeClientInfoByPid(const std::string& pid)
 {
 
-    auto it = std::find_if(active_clients_.begin(), active_clients_.end(), [&pid](NativeClientInfoPtr client) {
+    auto it = std::find_if(m_activeClients.begin(), m_activeClients.end(), [&pid](NativeClientInfoPtr client) {
         return pid == client->Pid();
     });
 
-    if (it == active_clients_.end())
+    if (it == m_activeClients.end())
         return nullptr;
 
     return (*it);
@@ -751,37 +815,38 @@ NativeClientInfoPtr NativeAppLifeHandler::GetNativeClientInfoOrMakeNew(const std
 void NativeAppLifeHandler::RemoveNativeClientInfo(const std::string& app_id)
 {
 
-    auto it = std::find_if(active_clients_.begin(), active_clients_.end(), [&app_id](NativeClientInfoPtr client) {
+    auto it = std::find_if(m_activeClients.begin(), m_activeClients.end(), [&app_id](NativeClientInfoPtr client) {
         return app_id == client->AppId();
     });
-    if (it != active_clients_.end()) {
-        active_clients_.erase(it);
+    if (it != m_activeClients.end()) {
+        m_activeClients.erase(it);
     }
 }
 
 void NativeAppLifeHandler::PrintNativeClients()
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 1, PMLOGKFV("native_app_clients_total", "%d", (int)active_clients_.size()), "");
-    for (auto client : active_clients_) {
-        LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", client->AppId().c_str()), PMLOGKS("pid", client->Pid().c_str()), "current_client");
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 1, PMLOGKFV("native_app_clients_total", "%d", (int)m_activeClients.size()), "");
+    for (auto client : m_activeClients) {
+        LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+                 PMLOGKS("app_id", client->AppId().c_str()),
+                 PMLOGKS("pid", client->Pid().c_str()), "current_client");
     }
 }
 
-///////////////////////////////////////////////////////////
-// life cycle handler interface
-
 void NativeAppLifeHandler::launch(AppLaunchingItemPtr item)
 {
-    NativeClientInfoPtr client_info = GetNativeClientInfoOrMakeNew(item->app_id());
+    NativeClientInfoPtr client_info = GetNativeClientInfoOrMakeNew(item->appId());
 
     if (client_info == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         signal_launching_done(item->uid());
         return;
     }
 
-    client_info->GetLifeCycleHandler()->Launch(client_info, item);
+    client_info->GetLifeCycleHandler()->launch(client_info, item);
 }
 
 void NativeAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
@@ -789,18 +854,20 @@ void NativeAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
     NativeClientInfoPtr client_info = GetNativeClientInfo(item->getAppId());
 
     if (client_info == nullptr) {
-        LOG_INFO(MSGID_APPCLOSE_ERR, 2, PMLOGKS("app_id", item->getAppId().c_str()), PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
+        LOG_INFO(MSGID_APPCLOSE_ERR, 2,
+                 PMLOGKS("app_id", item->getAppId().c_str()),
+                 PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
         err_text = "native app is not running";
         return;
     }
-    RuntimeStatus life_status = AppInfoManager::instance().runtime_status(item->getAppId());
+    RuntimeStatus life_status = AppInfoManager::instance().runtimeStatus(item->getAppId());
     if (RuntimeStatus::STOP == life_status) {
         LOG_INFO(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", item->getAppId().c_str()), "native app is not running");
         err_text = "native app is not running";
         return;
     }
 
-    client_info->GetLifeCycleHandler()->Close(client_info, item, err_text);
+    client_info->GetLifeCycleHandler()->close(client_info, item, err_text);
 }
 
 void NativeAppLifeHandler::pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
@@ -808,12 +875,14 @@ void NativeAppLifeHandler::pause(const std::string& app_id, const pbnjson::JValu
     NativeClientInfoPtr client_info = GetNativeClientInfo(app_id);
 
     if (client_info == nullptr) {
-        LOG_INFO(MSGID_APPPAUSE_ERR, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
+        LOG_INFO(MSGID_APPPAUSE_ERR, 2,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
         err_text = "no_handling_info";
         return;
     }
 
-    client_info->GetLifeCycleHandler()->Pause(client_info, params, err_text, send_life_event);
+    client_info->GetLifeCycleHandler()->pause(client_info, params, err_text, send_life_event);
 }
 
 void NativeAppLifeHandler::RegisterApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text)
@@ -821,7 +890,9 @@ void NativeAppLifeHandler::RegisterApp(const std::string& app_id, LSMessage* lsm
     NativeClientInfoPtr client_info = GetNativeClientInfo(app_id);
 
     if (client_info == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "no_handling_info"), "%s", __FUNCTION__);
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "no_handling_info"), "%s", __FUNCTION__);
         err_text = "no_handling_info";
         return;
     }
@@ -840,7 +911,9 @@ void NativeAppLifeHandler::RegisterApp(const std::string& app_id, LSMessage* lsm
         LOG_WARNING(MSGID_APPLAUNCH_ERR, 1, PMLOGKS("app_id", app_id.c_str()), "failed_to_send_registered_event");
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "connected"), "");
+    LOG_INFO(MSGID_APPLAUNCH, 2,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("status", "connected"), "");
 
     // update life status
     signal_app_life_status_changed(app_id, "", RuntimeStatus::REGISTERED);
@@ -859,7 +932,7 @@ bool NativeAppLifeHandler::ChangeRunningAppId(const std::string& current_id, con
     }
 
     // return error if target_id is already running
-    if (AppInfoManager::instance().is_running(target_id)) {
+    if (AppInfoManager::instance().isRunning(target_id)) {
         LOG_ERROR(MSGID_CHANGE_APPID, 1, PMLOGKS("to", target_id.c_str()), "already running");
         err_info.setError(APP_IS_ALREADY_RUNNING, target_id + " already exists in running list");
         return false;
@@ -875,46 +948,39 @@ bool NativeAppLifeHandler::ChangeRunningAppId(const std::string& current_id, con
     signal_running_app_added(target_id, client_info->Pid(), "");
     signal_app_life_status_changed(target_id, "", RuntimeStatus::RUNNING);
 
-    LOG_INFO(MSGID_CHANGE_APPID, 4, PMLOGKS("status", "changed"), PMLOGKS("prev_app_id", current_id.c_str()), PMLOGKS("new_app_id", target_id.c_str()),
-            PMLOGKS("new_app_pid", client_info->Pid().c_str()), "");
+    LOG_INFO(MSGID_CHANGE_APPID, 4,
+             PMLOGKS("status", "changed"),
+             PMLOGKS("prev_app_id", current_id.c_str()),
+             PMLOGKS("new_app_id", target_id.c_str()),
+             PMLOGKS("new_app_pid", client_info->Pid().c_str()), "");
 
     return true;
 }
 
-void NativeAppLifeHandler::clear_handling_item(const std::string& app_id)
-{
-}
-
-////////////////////////////////////////////////////////////////////
-/// common functions
-////////////////////////////////////////////////////////////////////
 void NativeAppLifeHandler::AddLaunchingItemIntoPendingQ(AppLaunchingItemPtr item)
 {
-    launch_pending_queue_.push_back(item);
+    m_launchPendingQueue.push_back(item);
 }
 
 AppLaunchingItemPtr NativeAppLifeHandler::GetLaunchPendingItem(const std::string& app_id)
 {
-    auto it = std::find_if(launch_pending_queue_.begin(), launch_pending_queue_.end(), [&app_id](AppLaunchingItemPtr item) {
-        return (item->app_id() == app_id);
+    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&app_id](AppLaunchingItemPtr item) {
+        return (item->appId() == app_id);
     });
-    if (it == launch_pending_queue_.end())
+    if (it == m_launchPendingQueue.end())
         return nullptr;
     return (*it);
 }
 
 void NativeAppLifeHandler::RemoveLaunchPendingItem(const std::string& app_id)
 {
-    auto it = std::find_if(launch_pending_queue_.begin(), launch_pending_queue_.end(), [&app_id](AppLaunchingItemPtr item) {
-        return (item->app_id() == app_id);
+    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&app_id](AppLaunchingItemPtr item) {
+        return (item->appId() == app_id);
     });
-    if (it != launch_pending_queue_.end())
-        launch_pending_queue_.erase(it);
+    if (it != m_launchPendingQueue.end())
+        m_launchPendingQueue.erase(it);
 }
 
-////////////////////////////////////////////////////////////////////
-/// native app main launcher
-////////////////////////////////////////////////////////////////////
 pid_t fork_process(const char **argv, const char **envp)
 {
     //TODO : Set child's working path
@@ -922,23 +988,30 @@ pid_t fork_process(const char **argv, const char **envp)
     GError* gerr = NULL;
     GSpawnFlags flags = (GSpawnFlags) (G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_DO_NOT_REAP_CHILD);
 
-    gboolean result = g_spawn_async_with_pipes(NULL, const_cast<char**>(argv),  // cmd arguments
-            const_cast<char**>(envp),  // environment variables
-            flags,
-            NULL,
-            NULL, &pid,
-            NULL,
-            NULL,
-            NULL, &gerr);
+    gboolean result = g_spawn_async_with_pipes(NULL,
+                                               const_cast<char**>(argv),  // cmd arguments
+                                               const_cast<char**>(envp),  // environment variables
+                                               flags,
+                                               NULL,
+                                               NULL, &pid,
+                                               NULL,
+                                               NULL,
+                                               NULL,
+                                               &gerr);
     if (gerr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "fork_fail"), PMLOGKS("where", "fork_process"), "returned_pid: %d, err_text: %s", (int )pid, gerr->message);
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "fork_fail"),
+                  PMLOGKS("where", "fork_process"),
+                  "returned_pid: %d, err_text: %s", (int )pid, gerr->message);
         g_error_free(gerr);
         gerr = NULL;
         return -1;
     }
 
     if (!result) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "return_false_from_gspawn"), PMLOGKS("where", "fork_process"), "returned_pid: %d", pid);
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "return_false_from_gspawn"),
+                  PMLOGKS("where", "fork_process"), "returned_pid: %d", pid);
         return -1;
     }
 
@@ -968,15 +1041,21 @@ bool NativeAppLifeHandler::FindPidsAndSendSystemSignal(const std::string& pid, i
 bool NativeAppLifeHandler::SendSystemSignal(const PidVector& pids, int signame)
 {
 
-    LOG_INFO(MSGID_APPCLOSE, 1, PMLOGKS("status", __FUNCTION__), "signame: %d, pids: %s", signame, PidsToString(pids).c_str());
+    LOG_INFO(MSGID_APPCLOSE, 1,
+             PMLOGKS("status", __FUNCTION__),
+             "signame: %d, pids: %s", signame, PidsToString(pids).c_str());
 
     if (pids.empty()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("reason", "empty_pids"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("reason", "empty_pids"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return false;
     }
 
     if (!kill_processes(pids, signame)) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("reason", "seding_signal_error"), PMLOGKS("where", __FUNCTION__), "signame: %d", signame);
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("reason", "seding_signal_error"),
+                  PMLOGKS("where", __FUNCTION__), "signame: %d", signame);
         return false;
     }
 
@@ -986,17 +1065,21 @@ bool NativeAppLifeHandler::SendSystemSignal(const PidVector& pids, int signame)
 void NativeAppLifeHandler::StartTimerToKillApp(const std::string& app_id, const std::string& pid, const PidVector& all_pids, guint timeout)
 {
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "start_kill_timer"), "pid: %s", pid.c_str());
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("status", "start_kill_timer"), "pid: %s", pid.c_str());
 
     KillingDataPtr target_item = std::make_shared<KillingData>(app_id, pid, all_pids);
-    target_item->timer_source_ = g_timeout_add(timeout, NativeAppLifeHandler::KillAppOnTimeout, (gpointer) target_item.get());
-    killing_list_.push_back(target_item);
+    target_item->m_timerSource = g_timeout_add(timeout, NativeAppLifeHandler::KillAppOnTimeout, (gpointer) target_item.get());
+    m_killingList.push_back(target_item);
 }
 
 void NativeAppLifeHandler::StopTimerToKillApp(const std::string& app_id)
 {
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "cancel_kill_timer"), "");
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("status", "cancel_kill_timer"), "");
 
     KillingDataPtr item = GetKillingDataByAppId(app_id);
     if (item == nullptr) {
@@ -1010,27 +1093,34 @@ gboolean NativeAppLifeHandler::KillAppOnTimeout(gpointer user_data)
 {
 
     if (user_data == NULL) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("status", "null_user_data"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("status", "null_user_data"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return FALSE;
     }
 
     KillingData* killing_item = static_cast<KillingData*>(user_data);
     if (killing_item == NULL) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("status", "null_killing_item"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("status", "null_killing_item"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return FALSE;
     }
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2, PMLOGKS("app_id", killing_item->app_id_.c_str()), PMLOGKS("status", "kill_process"), "");
-
-    g_this->SendSystemSignal(killing_item->all_pids_, SIGKILL);
+    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
+             PMLOGKS("app_id", killing_item->m_appId.c_str()),
+             PMLOGKS("status", "kill_process"), "");
+    g_this->SendSystemSignal(killing_item->m_allPids, SIGKILL);
 
     return FALSE;
 }
 
 KillingDataPtr NativeAppLifeHandler::GetKillingDataByAppId(const std::string& app_id)
 {
-    auto it = std::find_if(killing_list_.begin(), killing_list_.end(), [&app_id](KillingDataPtr data) {return (data->app_id_ == app_id);});
-    if (it == killing_list_.end())
+    auto it = std::find_if(m_killingList.begin(), m_killingList.end(), [&app_id](KillingDataPtr data) {
+        return (data->m_appId == app_id);}
+    );
+    if (it == m_killingList.end())
         return NULL;
 
     return (*it);
@@ -1038,12 +1128,12 @@ KillingDataPtr NativeAppLifeHandler::GetKillingDataByAppId(const std::string& ap
 
 void NativeAppLifeHandler::RemoveKillingData(const std::string& app_id)
 {
-    auto it = killing_list_.begin();
-    while (it != killing_list_.end()) {
-        if (app_id == (*it)->app_id_) {
-            g_source_remove((*it)->timer_source_);
-            (*it)->timer_source_ = 0;
-            it = killing_list_.erase(it);
+    auto it = m_killingList.begin();
+    while (it != m_killingList.end()) {
+        if (app_id == (*it)->m_appId) {
+            g_source_remove((*it)->m_timerSource);
+            (*it)->m_timerSource = 0;
+            it = m_killingList.erase(it);
         } else {
             ++it;
         }
@@ -1094,9 +1184,6 @@ static std::string PidsToString(const PidVector& pids)
     return result;
 }
 
-////////////////////////////////////////////////////////////////////
-/// native app process watcher
-////////////////////////////////////////////////////////////////////
 void NativeAppLifeHandler::ChildProcessWatcher(GPid pid, gint status, gpointer data)
 {
     g_spawn_close_pid(pid);
@@ -1110,22 +1197,33 @@ void NativeAppLifeHandler::HandleClosedPid(const std::string& pid, gint status)
 
     NativeClientInfoPtr client = GetNativeClientInfoByPid(pid);
     if (client == nullptr) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 3, PMLOGKS("pid", pid.c_str()), PMLOGKS("reason", "empty_client_info"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 3,
+                  PMLOGKS("pid", pid.c_str()),
+                  PMLOGKS("reason", "empty_client_info"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return;
     }
 
     std::string app_id = client->AppId();
 
-    RuntimeStatus life_status = AppInfoManager::instance().runtime_status(app_id);
+    RuntimeStatus life_status = AppInfoManager::instance().runtimeStatus(app_id);
     if (RuntimeStatus::CLOSING == life_status) {
-        LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("pid", pid.c_str()), PMLOGKS("where", "native_process_watcher"), "received event closed by sam");
+        LOG_INFO(MSGID_APPCLOSE, 2,
+                 PMLOGKS("pid", pid.c_str()),
+                 PMLOGKS("where", "native_process_watcher"), "received event closed by sam");
     } else {
-        LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("pid", pid.c_str()), PMLOGKS("where", "native_process_watcher"), "received event closed by itself");
+        LOG_INFO(MSGID_APPCLOSE, 2,
+                 PMLOGKS("pid", pid.c_str()),
+                 PMLOGKS("where", "native_process_watcher"), "received event closed by itself");
     }
 
     StopTimerToKillApp(app_id);
 
-    LOG_INFO(MSGID_APP_CLOSED, 4, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("type", "native"), PMLOGKS("pid", pid.c_str()), PMLOGKFV("exit_status", "%d", status), "");
+    LOG_INFO(MSGID_APP_CLOSED, 4,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("type", "native"),
+             PMLOGKS("pid", pid.c_str()),
+             PMLOGKFV("exit_status", "%d", status), "");
 
     RemoveNativeClientInfo(app_id);
 
@@ -1139,15 +1237,17 @@ void NativeAppLifeHandler::HandlePendingQOnRegistered(const std::string& app_id)
 {
 
     // handle all pending request as relaunch
-    auto pending_item = launch_pending_queue_.begin();
-    while (pending_item != launch_pending_queue_.end()) {
-        if ((*pending_item)->app_id() != app_id) {
+    auto pending_item = m_launchPendingQueue.begin();
+    while (pending_item != m_launchPendingQueue.end()) {
+        if ((*pending_item)->appId() != app_id) {
             ++pending_item;
             continue;
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("action", "launch_app_waiting_registration"), "");
+            LOG_INFO(MSGID_APPLAUNCH, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("action", "launch_app_waiting_registration"), "");
             launch(*pending_item);
-            pending_item = launch_pending_queue_.erase(pending_item);
+            pending_item = m_launchPendingQueue.erase(pending_item);
         }
     }
 }
@@ -1159,7 +1259,9 @@ void NativeAppLifeHandler::HandlePendingQOnClosed(const std::string& app_id)
     AppLaunchingItemPtr pending_item = GetLaunchPendingItem(app_id);
     if (pending_item) {
         RemoveLaunchPendingItem(app_id);
-        LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("action", "launch_app_waiting_previous_app_closed"), "");
+        LOG_INFO(MSGID_APPLAUNCH, 2,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("action", "launch_app_waiting_previous_app_closed"), "");
         launch(pending_item);
     }
 }
@@ -1167,16 +1269,18 @@ void NativeAppLifeHandler::HandlePendingQOnClosed(const std::string& app_id)
 void NativeAppLifeHandler::CancelLaunchPendingItemAndMakeItDone(const std::string& app_id)
 {
 
-    auto pending_item = launch_pending_queue_.begin();
-    while (pending_item != launch_pending_queue_.end()) {
-        if ((*pending_item)->app_id() != app_id) {
+    auto pending_item = m_launchPendingQueue.begin();
+    while (pending_item != m_launchPendingQueue.end()) {
+        if ((*pending_item)->appId() != app_id) {
             ++pending_item;
             continue;
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("action", "cancel_launch_request"), "");
-            (*pending_item)->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "launching_cancled");
+            LOG_INFO(MSGID_APPLAUNCH, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("action", "cancel_launch_request"), "");
+            (*pending_item)->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "launching_cancled");
             signal_launching_done((*pending_item)->uid());
-            pending_item = launch_pending_queue_.erase(pending_item);
+            pending_item = m_launchPendingQueue.erase(pending_item);
         }
     }
 }

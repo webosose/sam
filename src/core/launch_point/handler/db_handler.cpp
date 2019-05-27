@@ -36,7 +36,7 @@ DbHandler::~DbHandler()
 void DbHandler::Init()
 {
     launch_point_db_.signal_db_loaded_.connect(boost::bind(&DbHandler::OnLaunchPointDbLoaded, this, _1));
-    launch_point_db_.Init();
+    launch_point_db_.init();
 }
 
 /***********************************************************/
@@ -48,7 +48,7 @@ void DbHandler::HandleDbState(bool connection)
             PMLOGKFV("db_load_count", "%d", db_load_count_), "");
 
     if (!db_loaded_)
-        launch_point_db_.LoadDb();
+        launch_point_db_.loadDb();
 }
 
 void DbHandler::OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
@@ -72,15 +72,15 @@ void DbHandler::ReloadDbData(bool connection)
 /***********************************************************/
 bool DbHandler::InsertData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.InsertData(json);
+    return launch_point_db_.insertData(json);
 }
 
 bool DbHandler::UpdateData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.UpdateData(json);
+    return launch_point_db_.updateData(json);
 }
 
 bool DbHandler::DeleteData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.DeleteData(json);
+    return launch_point_db_.deleteData(json);
 }

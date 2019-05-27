@@ -36,43 +36,43 @@ typedef boost::function<void(LunaTaskPtr)> LunaApiHandler;
 class AppMgrService: public ServiceBase, public Singleton<AppMgrService> {
 public:
     AppMgrService();
-    ~AppMgrService();
+    virtual ~AppMgrService();
 
-    virtual bool Attach(GMainLoop* gml);
-    virtual void Detach();
+    virtual bool attach(GMainLoop* gml);
+    virtual void detach();
 
-    void RegisterApiHandler(const std::string& category, const std::string& method, const std::string& schema, LunaApiHandler handler);
+    void registerApiHandler(const std::string& category, const std::string& method, const std::string& schema, LunaApiHandler handler);
 
-    void OnServiceReady();
-    void SetServiceStatus(bool status)
+    void onServiceReady();
+    void setServiceStatus(bool status)
     {
-        service_ready_ = status;
+        m_serviceReady = status;
     }
-    bool IsServiceReady() const
+    bool isServiceReady() const
     {
-        return service_ready_;
+        return m_serviceReady;
     }
 
     boost::signals2::signal<void()> signalOnServiceReady;
 
 protected:
-    virtual LSMethod* get_methods(std::string category) const;
-    virtual void get_categories(std::vector<std::string>& categories) const;
+    virtual LSMethod* getMethods(std::string category) const;
+    virtual void getCategories(std::vector<std::string>& categories) const;
 
 private:
     friend class Singleton<AppMgrService> ;
 
-    void PostAttach();
-    static bool OnApiCalled(LSHandle* lshandle, LSMessage* lsmsg, void* ctx);
-    void HandlePendingTask(std::vector<LunaTaskPtr>& tasks);
+    void postAttach();
+    static bool onApiCalled(LSHandle* lshandle, LSMessage* lsmsg, void* ctx);
+    void handlePendingTask(std::vector<LunaTaskPtr>& tasks);
 
-    LifeCycleLunaAdapter lifecycle_luna_adapter_;
-    PackageLunaAdapter package_luna_adapter_;
-    LaunchPointLunaAdapter launchpoint_luna_adapter_;
+    LifeCycleLunaAdapter m_lifecycleLunaAdapter;
+    PackageLunaAdapter m_packageLunaAdapter;
+    LaunchPointLunaAdapter m_launchpointLunaAdapter;
 
-    std::map<std::string, LunaApiHandler> api_handler_map_;
+    std::map<std::string, LunaApiHandler> m_apiHandlerMap;
 
-    bool service_ready_;
+    bool m_serviceReady;
 };
 
 #endif  // CORE_BUS_APPLICATION_SERVICE_H_

@@ -70,7 +70,6 @@ public:
     virtual ~LSCallItem()
     {
     }
-    ;
 
     virtual bool Call();
 

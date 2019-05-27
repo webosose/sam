@@ -48,28 +48,28 @@ WebAppLifeHandler::~WebAppLifeHandler()
 //////////////////////////////////////////////////////////////
 void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
 {
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->app_id());
+    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->appId());
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "webapp_launch"), "");
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->appId().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "webapp_launch"), "");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         signal_launching_done(item->uid());
         return;
     }
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("appDesc", app_desc->toJValue());
-    payload.put("reason", item->launch_reason());
+    payload.put("reason", item->launchReason());
     payload.put("parameters", item->params());
-    payload.put("launchingAppId", item->caller_id());
-    payload.put("launchingProcId", item->caller_pid());
-    payload.put("keepAlive", item->keep_alive());
+    payload.put("launchingAppId", item->callerId());
+    payload.put("launchingProcId", item->callerPid());
+    payload.put("keepAlive", item->keepAlive());
 
     if (!(item->preload().empty()))
         payload.put("preload", item->preload());
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
                         "luna://com.palm.webappmanager/launchApp",
                         payload.stringify().c_str(),
                         cb_return_for_launch_request,
@@ -80,24 +80,24 @@ void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGKS("type", "lscallonereply"),
                   PMLOGJSON("payload", payload.stringify().c_str()),
                   PMLOGKS("where", "wam_launchApp"), "err: %s", lserror.message);
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         signal_launching_done(item->uid());
         return;
     }
 
-    add_loading_app(item->app_id());
+    add_loading_app(item->appId());
 
     if (item->preload().empty())
-        signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::LAUNCHING);
+        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
     else
-        signal_app_life_status_changed(item->app_id(), item->uid(), RuntimeStatus::PRELOADING);
+        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
 
     double current_time = get_current_time();
-    double elapsed_time = current_time - item->launch_start_time();
-    LOG_INFO(MSGID_APP_LAUNCHED, 5, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("type", "web"), PMLOGKS("pid", ""), PMLOGKFV("start_time", "%f", item->launch_start_time()),
+    double elapsed_time = current_time - item->launchStartTime();
+    LOG_INFO(MSGID_APP_LAUNCHED, 5, PMLOGKS("app_id", item->appId().c_str()), PMLOGKS("type", "web"), PMLOGKS("pid", ""), PMLOGKFV("start_time", "%f", item->launchStartTime()),
             PMLOGKFV("collapse_time", "%f", elapsed_time), "");
 
-    item->set_return_token(token);
+    item->setReturnToken(token);
     m_lscall_request_list.push_back(item);
 }
 
@@ -117,7 +117,7 @@ bool WebAppLifeHandler::cb_return_for_launch_request(LSHandle* handle, LSMessage
 
     uid = item->uid();
     g_this->remove_item_from_lscall_request_list(uid);
-    item->reset_return_token();
+    item->resetReturnToken();
 
     pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
     if (jmsg.isNull()) {
@@ -127,7 +127,7 @@ bool WebAppLifeHandler::cb_return_for_launch_request(LSHandle* handle, LSMessage
         return false;
     }
 
-    std::string app_id = jmsg.hasKey("appId") && jmsg["appId"].isString() ? jmsg["appId"].asString() : item->app_id();
+    std::string app_id = jmsg.hasKey("appId") && jmsg["appId"].isString() ? jmsg["appId"].asString() : item->appId();
     std::string proc_id = jmsg.hasKey("procId") && jmsg["procId"].isString() ? jmsg["procId"].asString() : "";
 
     // TODO: WAM doesn't return "returnValue" on success
@@ -143,7 +143,7 @@ bool WebAppLifeHandler::cb_return_for_launch_request(LSHandle* handle, LSMessage
         if (app_id.empty())
             LOG_CRITICAL(MSGID_LIFE_STATUS_ERR, 2, PMLOGKS("reason", "cannot_handle_life_status"), PMLOGKS("where", "wam_launch_cb_return"), "");
 
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "WebAppMgr's launchApp is failed");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "WebAppMgr's launchApp is failed");
         g_this->signal_launching_done(item->uid());
 
         g_this->signal_app_life_status_changed(app_id, "", RuntimeStatus::STOP);
@@ -152,7 +152,7 @@ bool WebAppLifeHandler::cb_return_for_launch_request(LSHandle* handle, LSMessage
 
     LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "received_launch_return_from_wam"), "");
 
-    item->set_pid(proc_id);
+    item->setPid(proc_id);
     g_this->signal_launching_done(item->uid());
 
     return true;
@@ -164,7 +164,7 @@ bool WebAppLifeHandler::cb_return_for_launch_request(LSHandle* handle, LSMessage
 void WebAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
 {
     bool need_to_handle_fake_stop = false;
-    if (!AppInfoManager::instance().is_running(item->getAppId())) {
+    if (!AppInfoManager::instance().isRunning(item->getAppId())) {
         if (is_loading(item->getAppId())) {
             need_to_handle_fake_stop = true;
         } else {
@@ -179,7 +179,7 @@ void WebAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
     payload.put("reason", item->getReason());
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
                         "luna://com.palm.webappmanager/killApp",
                         payload.stringify().c_str(),
                         cb_return_for_close_request, this, NULL, &lserror)) {
@@ -234,7 +234,7 @@ void WebAppLifeHandler::pause(const std::string& app_id, const pbnjson::JValue& 
     payload.put("parameters", params);
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
                         "luna://com.palm.webappmanager/pauseApp",
                         payload.stringify().c_str(),
                         cb_return_for_pause_request,
@@ -283,7 +283,7 @@ void WebAppLifeHandler::on_wam_service_status_changed(bool connection)
     } else {
         LSErrorSafe lserror;
         if (0 != m_wam_subscription_token) {
-            if (!LSCallCancel(AppMgrService::instance().ServiceHandle(), m_wam_subscription_token, &lserror)) {
+            if (!LSCallCancel(AppMgrService::instance().serviceHandle(), m_wam_subscription_token, &lserror)) {
                 LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallcancel"), PMLOGKS("payload", ""), PMLOGKS("where", "wam_listRunningApps"), "err: %s", lserror.message);
             }
             m_wam_subscription_token = 0;
@@ -299,12 +299,12 @@ void WebAppLifeHandler::on_service_ready()
 
 void WebAppLifeHandler::subscribe_wam_running_list()
 {
-    if (AppMgrService::instance().IsServiceReady() == false || ServiceObserver::instance().IsConnected(WEBOS_SERVICE_WAM) == false || m_wam_subscription_token != 0) {
+    if (AppMgrService::instance().isServiceReady() == false || ServiceObserver::instance().IsConnected(WEBOS_SERVICE_WAM) == false || m_wam_subscription_token != 0) {
         return;
     }
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.palm.webappmanager/listRunningApps", "{\"includeSysApps\":true,\"subscribe\":true}", cb_wam_subscription_runninglist, this,
+    if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.palm.webappmanager/listRunningApps", "{\"includeSysApps\":true,\"subscribe\":true}", cb_wam_subscription_runninglist, this,
             &m_wam_subscription_token, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"includeSysApps\":true,\"subscribe\":true}"), PMLOGKS("where", "wam_listRUnningApps"), "err: %s",
                 lserror.message);
@@ -441,7 +441,7 @@ AppLaunchingItemPtr WebAppLifeHandler::get_lscall_request_item_by_token(const LS
     auto it = m_lscall_request_list.begin();
     auto it_end = m_lscall_request_list.end();
     for (; it != it_end; ++it) {
-        if ((*it)->return_token() == token)
+        if ((*it)->returnToken() == token)
             return *it;
     }
     return NULL;
@@ -453,7 +453,7 @@ void WebAppLifeHandler::remove_item_from_lscall_request_list(const std::string& 
     if (it == m_lscall_request_list.end())
         return;
 
-    LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", (*it)->app_id().c_str()), PMLOGKS("uid", uid.c_str()), "removed from checking queue");
+    LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", (*it)->appId().c_str()), PMLOGKS("uid", uid.c_str()), "removed from checking queue");
 
     m_lscall_request_list.erase(it);
 }
@@ -480,8 +480,4 @@ bool WebAppLifeHandler::is_loading(const std::string& app_id)
     return std::find(m_loading_list.begin(), m_loading_list.end(), app_id) != m_loading_list.end();
 }
 
-void WebAppLifeHandler::clear_handling_item(const std::string& app_id)
-{
-
-}
 

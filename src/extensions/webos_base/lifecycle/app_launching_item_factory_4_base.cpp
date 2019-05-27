@@ -50,9 +50,9 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
     }
 
     // parse caller info
-    std::string caller = GetCallerFromMessage(lsmsg);
-    std::string caller_id = GetCallerID(caller);
-    std::string caller_pid = GetCallerPID(caller);
+    std::string caller = getCallerFromMessage(lsmsg);
+    std::string caller_id = getCallerID(caller);
+    std::string caller_pid = getCallerPID(caller);
 
     pbnjson::JValue params4app = (params.hasKey("params") && params["params"].isObject()) ? params["params"].duplicate() : pbnjson::Object();
 
@@ -87,16 +87,16 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
         return NULL;
     }
 
-    new_item->set_caller_id(caller_id);
-    new_item->set_caller_pid(caller_pid);
-    new_item->set_keep_alive(keep_alive);
-    new_item->set_show_splash(show_splash);
-    new_item->set_show_spinner(show_spinner);
-    new_item->set_sub_stage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
+    new_item->setCallerId(caller_id);
+    new_item->setCallerPid(caller_pid);
+    new_item->setKeepAlive(keep_alive);
+    new_item->setShowSplash(show_splash);
+    new_item->setShowSpinner(show_spinner);
+    new_item->setSubStage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
 
     LOG_INFO(MSGID_APPLAUNCH, 6,
              PMLOGKS("app_id", app_id.c_str()),
-             PMLOGKS("caller_id", new_item->caller_id().c_str()),
+             PMLOGKS("caller_id", new_item->callerId().c_str()),
              PMLOGKS("keep_alive", (keep_alive?"true":"false")),
              PMLOGKS("show_splash", (show_splash?"true":"false")),
              PMLOGKS("show_spinner", (show_spinner?"true":"false")),

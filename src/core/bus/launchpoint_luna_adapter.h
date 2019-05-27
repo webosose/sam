@@ -24,25 +24,25 @@ public:
     LaunchPointLunaAdapter();
     ~LaunchPointLunaAdapter();
 
-    void Init();
+    void init();
 
 private:
-    void InitLunaApiHandler();
-    void OnReady();
-    void RequestController(LunaTaskPtr task);
-    void HandleRequest(LunaTaskPtr task);
+    void initLunaApiHandler();
+    void onReady();
+    void requestController(LunaTaskPtr task);
+    void handleRequest(LunaTaskPtr task);
 
-    void AddLaunchPoint(LunaTaskPtr task);
-    void UpdateLaunchPoint(LunaTaskPtr task);
-    void RemoveLaunchPoint(LunaTaskPtr task);
-    void MoveLaunchPoint(LunaTaskPtr task);
-    void ListLaunchPoints(LunaTaskPtr task);
-    void SearchApps(LunaTaskPtr task);
+    void addLaunchPoint(LunaTaskPtr task);
+    void updateLaunchPoint(LunaTaskPtr task);
+    void removeLaunchPoint(LunaTaskPtr task);
+    void moveLaunchPoint(LunaTaskPtr task);
+    void listLaunchPoints(LunaTaskPtr task);
+    void searchApps(LunaTaskPtr task);
 
-    void OnLaunchPointsListChanged(const pbnjson::JValue& launch_points);
-    void OnLaunchPointChanged(const std::string& change, const pbnjson::JValue& launch_point);
+    void onLaunchPointsListChanged(const pbnjson::JValue& launch_points);
+    void onLaunchPointChanged(const std::string& change, const pbnjson::JValue& launch_point);
 
-    std::vector<LunaTaskPtr> pending_tasks_;
+    std::vector<LunaTaskPtr> m_pendingTasks;
 };
 
 #endif  // CORE_BUS_LAUNCHPOINT_LUNA_ADAPTER_H_

@@ -49,7 +49,7 @@ void BootdSubscriber::OnServerStatusChanged(bool connection)
         RequestBootStatus();
     } else {
         if (0 != token_boot_status_) {
-            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_boot_status_, NULL);
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_boot_status_, NULL);
             token_boot_status_ = 0;
         }
     }
@@ -63,7 +63,7 @@ void BootdSubscriber::RequestBootStatus()
     std::string method = std::string("luna://") + WEBOS_SERVICE_BOOTMGR + std::string("/getBootStatus");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().ServiceHandle(), method.c_str(), "{\"subscribe\":true}", OnBootStatusCallback, this, &token_boot_status_, &lserror)) {
+    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnBootStatusCallback, this, &token_boot_status_, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }

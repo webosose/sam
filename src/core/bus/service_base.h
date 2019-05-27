@@ -29,27 +29,27 @@ public:
     ServiceBase(const std::string& name);
     virtual ~ServiceBase();
 
-    virtual bool Attach(GMainLoop* gml);
-    virtual void Detach();
+    virtual bool attach(GMainLoop* gml);
+    virtual void detach();
 
-    const std::string& ServiceName() const
+    const std::string& serviceName() const
     {
-        return name_;
+        return m_name;
     }
-    LSHandle* ServiceHandle() const
+    LSHandle* serviceHandle() const
     {
-        return handle_;
+        return m_handle;
     }
-    bool IsAttached();
+    bool isAttached();
 
 protected:
-    void AddCompatibleNames(const std::vector<std::string>& names);
-    virtual LSMethod* get_methods(std::string category) const = 0;
+    void addCompatibleNames(const std::vector<std::string>& names);
+    virtual LSMethod* getMethods(std::string category) const = 0;
 
-    virtual void get_categories(std::vector<std::string> &categories) const = 0;
+    virtual void getCategories(std::vector<std::string> &categories) const = 0;
 
-    std::string name_;
-    LSHandle* handle_;
-    std::vector<std::pair<std::string, LSHandle*>> services_;
+    std::string m_name;
+    LSHandle* m_handle;
+    std::vector<std::pair<std::string, LSHandle*>> m_services;
 };
 #endif

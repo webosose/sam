@@ -32,8 +32,11 @@
 #define SAM_INTERNAL_ID  "com.webos.applicationManager"
 #define SLEEP_TIME_TO_CLOSE_FULLSCREEN_APP 500000
 
-AppLifeManager::AppLifeManager() :
-        m_launchItemFactory(NULL), m_prelauncher(NULL), m_memoryChecker(NULL), m_lastappHandler(NULL)
+AppLifeManager::AppLifeManager()
+    : m_launchItemFactory(NULL),
+      m_prelauncher(NULL),
+      m_memoryChecker(NULL),
+      m_lastappHandler(NULL)
 {
 }
 
@@ -43,9 +46,8 @@ AppLifeManager::~AppLifeManager()
 
 void AppLifeManager::init()
 {
-
-    m_lifecycleRouter.Init();
-    AppInfoManager::instance().Init();
+    m_lifecycleRouter.init();
+    AppInfoManager::instance().init();
 
     // receive signal on service disconnected
     m_webLifecycleHandler.signal_service_disconnected.connect(boost::bind(&AppLifeManager::stopAllWebappItem, this));
@@ -75,7 +77,6 @@ void AppLifeManager::init()
     m_fullscreenWindowTypes = SettingsImpl::instance().fullscreen_window_types;
 }
 
-///////////////////////////////////////////////////////////////
 void AppLifeManager::Launch(LifeCycleTaskPtr task)
 {
     launch(AppLaunchRequestType::EXTERNAL, task->app_id(), task->LunaTask()->jmsg(), task->LunaTask()->lsmsg());
@@ -163,9 +164,6 @@ void AppLifeManager::CloseAll(LifeCycleTaskPtr task)
     closeAllApps();
 }
 
-///////////////////////////////////////////////////////////////////////
-// set extendable handler
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::setApplifeitemFactory(AppLaunchingItemFactoryInterface& factory)
 {
     m_launchItemFactory = &factory;
@@ -189,28 +187,34 @@ void AppLifeManager::setLastappHandler(LastAppHandlerInterface& lastapp_handler)
     m_lastappHandler = &lastapp_handler;
 }
 
-///////////////////////////////////////////////////////////////////////
-/// Stage Clear Event Handler
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::onPrelaunchingDone(const std::string& uid)
 {
     AppLaunchingItemPtr item = getLaunchingItemByUid(uid);
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "null_pointer"), PMLOGKS("where", "on_prelaunching_done"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "null_pointer"),
+                  PMLOGKS("where", "on_prelaunching_done"), "");
         return;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKS("status", "prelaunching_done"),
-            PMLOGKFV("launching_stage_in_detail", "%d", item->sub_stage()), "");
+    LOG_INFO(MSGID_APPLAUNCH, 4,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("uid", uid.c_str()),
+             PMLOGKS("status", "prelaunching_done"),
+             PMLOGKFV("launching_stage_in_detail", "%d", item->subStage()), "");
 
     if (AppLaunchingStage::PRELAUNCH != item->stage()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "not_in_prelaunching_stage"),
-                PMLOGKS("where", "on_prelaunching_done"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 4,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "not_in_prelaunching_stage"),
+                  PMLOGKS("where", "on_prelaunching_done"), "");
         return;
     }
 
     // just finish launch if error occurs
-    if (item->err_text().empty() == false) {
+    if (item->errText().empty() == false) {
         finishLaunching(item);
         return;
     }
@@ -223,31 +227,43 @@ void AppLifeManager::onMemoryCheckingStart(const std::string& uid)
 {
     AppLaunchingItemPtr item = getLaunchingItemByUid(uid);
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "null_pointer"), PMLOGKS("where", "on_memory_checking_start"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "null_pointer"),
+                  PMLOGKS("where", "on_memory_checking_start"), "");
         return;
     }
-    generateLifeCycleEvent(item->app_id(), uid, LifeEvent::SPLASH);
+    generateLifeCycleEvent(item->appId(), uid, LifeEvent::SPLASH);
 }
 
 void AppLifeManager::onMemoryCheckingDone(const std::string& uid)
 {
     AppLaunchingItemPtr item = getLaunchingItemByUid(uid);
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "null_pointer"), PMLOGKS("where", "on_memory_checking_done"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "null_pointer"),
+                  PMLOGKS("where", "on_memory_checking_done"), "");
         return;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKS("status", "memory_checking_done"),
-            PMLOGKFV("launching_stage_in_detail", "%d", item->sub_stage()), "");
+    LOG_INFO(MSGID_APPLAUNCH, 4,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("uid", uid.c_str()),
+             PMLOGKS("status", "memory_checking_done"),
+             PMLOGKFV("launching_stage_in_detail", "%d", item->subStage()), "");
 
     if (AppLaunchingStage::MEMORY_CHECK != item->stage()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "not_in_memory_checking_stage"),
-                PMLOGKS("where", "on_memory_checking_done"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 4,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "not_in_memory_checking_stage"),
+                  PMLOGKS("where", "on_memory_checking_done"), "");
         return;
     }
 
     // just finish launch if error occurs
-    if (item->err_text().empty() == false) {
+    if (item->errText().empty() == false) {
         finishLaunching(item);
         return;
     }
@@ -260,62 +276,78 @@ void AppLifeManager::onLaunchingDone(const std::string& uid)
 {
     AppLaunchingItemPtr item = getLaunchingItemByUid(uid);
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("uid", uid.c_str()), PMLOGKS("reason", "null_pointer"), PMLOGKS("where", "on_launching_done"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("uid", uid.c_str()),
+                  PMLOGKS("reason", "null_pointer"),
+                  PMLOGKS("where", "on_launching_done"), "");
         return;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKS("status", "launching_done"), "");
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("uid", uid.c_str()),
+             PMLOGKS("status", "launching_done"), "");
 
     finishLaunching(item);
 }
 
-///////////////////////////////////////////////////////////////////////
-/// stage handler
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::runWithPrelauncher(AppLaunchingItemPtr item)
 {
-    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "start_prelaunching"), PMLOGKS("PerfType", "AppLaunch"),
-            PMLOGKS("PerfGroup", item->app_id().c_str()), "");
+    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4,
+                        PMLOGKS("app_id", item->appId().c_str()),
+                        PMLOGKS("status", "start_prelaunching"),
+                        PMLOGKS("PerfType", "AppLaunch"),
+                        PMLOGKS("PerfGroup", item->appId().c_str()), "");
 
     if (m_prelauncher == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "no_prelauncher_handler"), PMLOGKS("where", "run_with_prelauncher"), "");
-        item->set_err_code_text(APP_LAUNCH_ERR_GENERAL, "internal error");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("reason", "no_prelauncher_handler"),
+                  PMLOGKS("where", "run_with_prelauncher"), "");
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         finishLaunching(item);
         return;
     }
 
-    item->set_stage(AppLaunchingStage::PRELAUNCH);
-
-    m_prelauncher->add_item(item);
+    item->setStage(AppLaunchingStage::PRELAUNCH);
+    m_prelauncher->addItem(item);
 }
 
 void AppLifeManager::runWithMemoryChecker(AppLaunchingItemPtr item)
 {
-    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "start_memory_checking"), PMLOGKS("PerfType", "AppLaunch"),
-            PMLOGKS("PerfGroup", item->app_id().c_str()), "");
+    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4,
+                        PMLOGKS("app_id", item->appId().c_str()),
+                        PMLOGKS("status", "start_memory_checking"),
+                        PMLOGKS("PerfType", "AppLaunch"),
+                        PMLOGKS("PerfGroup", item->appId().c_str()), "");
 
     if (m_memoryChecker == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 1, PMLOGKS("app_id", item->app_id().c_str()), "memorychecker is not registered");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 1, PMLOGKS("app_id", item->appId().c_str()), "memorychecker is not registered");
         return;
     }
-    item->set_stage(AppLaunchingStage::MEMORY_CHECK);
+    item->setStage(AppLaunchingStage::MEMORY_CHECK);
     m_memoryChecker->add_item(item);
     m_memoryChecker->run();
 }
 
 void AppLifeManager::runWithLauncher(AppLaunchingItemPtr item)
 {
-    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "start_launching"), PMLOGKS("PerfType", "AppLaunch"),
-            PMLOGKS("PerfGroup", item->app_id().c_str()), "");
+    LOG_INFO_WITH_CLOCK(MSGID_APPLAUNCH, 4,
+                        PMLOGKS("app_id", item->appId().c_str()),
+                        PMLOGKS("status", "start_launching"),
+                        PMLOGKS("PerfType", "AppLaunch"),
+                        PMLOGKS("PerfGroup", item->appId().c_str()), "");
 
-    item->set_stage(AppLaunchingStage::LAUNCH);
+    item->setStage(AppLaunchingStage::LAUNCH);
     launchApp(item);
 }
 
 void AppLifeManager::runLastappHandler()
 {
     if (m_lastappHandler == NULL) {
-        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 2, PMLOGKS("reason", "no_lastapp_handler"), PMLOGKS("where", "run_lastapp_handler"), "");
+        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 2,
+                  PMLOGKS("reason", "no_lastapp_handler"),
+                  PMLOGKS("where", "run_lastapp_handler"), "");
         return;
     }
 
@@ -329,16 +361,19 @@ void AppLifeManager::runLastappHandler()
 
 void AppLifeManager::finishLaunching(AppLaunchingItemPtr item)
 {
-    bool is_automatic_launch = item->automatic_launch();
-    bool is_last_app_candidate = isLastLaunchingApp(item->app_id()) && (m_lastLaunchingApps.size() == 1);
+    bool is_automatic_launch = item->automaticLaunch();
+    bool is_last_app_candidate = isLastLaunchingApp(item->appId()) && (m_lastLaunchingApps.size() == 1);
 
-    bool redirect_to_lastapplaunch = (is_automatic_launch || item->is_last_input_app() || is_last_app_candidate) && !item->err_text().empty();
+    bool redirect_to_lastapplaunch = (is_automatic_launch || item->isLastInputApp() || is_last_app_candidate) && !item->errText().empty();
 
-    LOG_INFO(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("status", "finish_launching"), PMLOGKS("mode", (is_automatic_launch ? "automatic_launch":"normal")), "");
+    LOG_INFO(MSGID_APPLAUNCH, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("status", "finish_launching"),
+             PMLOGKS("mode", (is_automatic_launch ? "automatic_launch":"normal")), "");
 
     signal_launching_finished(item);
-    replyWithResult(item->lsmsg(), item->pid(), item->err_text().empty(), item->err_code(), item->err_text());
-    removeLastLaunchingApp(item->app_id());
+    replyWithResult(item->lsmsg(), item->pid(), item->errText().empty(), item->errCode(), item->errText());
+    removeLastLaunchingApp(item->appId());
 
     std::string app_uid = item->uid();
     removeItem(app_uid);
@@ -351,10 +386,6 @@ void AppLifeManager::finishLaunching(AppLaunchingItemPtr item)
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// App life event handler
-///////////////////////////////////////////////////////////////////////
-
 void AppLifeManager::onRuntimeStatusChanged(const std::string& app_id, const std::string& uid, const RuntimeStatus& new_status)
 {
 
@@ -363,35 +394,44 @@ void AppLifeManager::onRuntimeStatusChanged(const std::string& app_id, const std
         return;
     }
 
-    m_lifecycleRouter.SetRuntimeStatus(app_id, new_status);
-    LifeStatus new_life_status = m_lifecycleRouter.GetLifeStatusFromRuntimeStatus(new_status);
+    m_lifecycleRouter.setRuntimeStatus(app_id, new_status);
+    LifeStatus new_life_status = m_lifecycleRouter.getLifeStatusFromRuntimeStatus(new_status);
 
     setAppLifeStatus(app_id, uid, new_life_status);
 }
 
-void AppLifeManager::setAppLifeStatus(const std::string& app_id, const std::string& uid, LifeStatus new_status)
+void AppLifeManager::setAppLifeStatus(const std::string& appId, const std::string& uid, LifeStatus newStatus)
 {
+    std::cout << "uid : " << uid << std::endl;
+    AppDescPtr appDesc = ApplicationManager::instance().getAppById(appId);
+    LifeStatus currentStatus = AppInfoManager::instance().lifeStatus(appId);
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
-    LifeStatus current_status = AppInfoManager::instance().life_status(app_id);
-
-    const LifeCycleRoutePolicy& route_policy = m_lifecycleRouter.GetLifeCycleRoutePolicy(current_status, new_status);
+    const LifeCycleRoutePolicy& routePolicy = m_lifecycleRouter.getLifeCycleRoutePolicy(currentStatus, newStatus);
     LifeStatus next_status;
     RouteAction route_action;
-    RouteLog route_log;
-    std::tie(next_status, route_action, route_log) = route_policy;
+    RouteLog routeLog;
+    std::tie(next_status, route_action, routeLog) = routePolicy;
 
-    LifeEvent life_event = m_lifecycleRouter.GetLifeEventFromLifeStatus(next_status);
+    LifeEvent life_event = m_lifecycleRouter.getLifeEventFromLifeStatus(next_status);
 
     // generate lifecycle event
-    generateLifeCycleEvent(app_id, uid, life_event);
+    generateLifeCycleEvent(appId, uid, life_event);
 
-    if (RouteLog::CHECK == route_log) {
-        LOG_INFO(MSGID_LIFE_STATUS, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKFV("current", "%d", (int)current_status), PMLOGKFV("next", "%d", (int)next_status), "just to check it");
-    } else if (RouteLog::WARN == route_log) {
-        LOG_WARNING(MSGID_LIFE_STATUS, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKFV("current", "%d", (int)current_status), PMLOGKFV("next", "%d", (int)next_status), "handle exception");
-    } else if (RouteLog::ERROR == route_log) {
-        LOG_ERROR(MSGID_LIFE_STATUS, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKFV("current", "%d", (int)current_status), PMLOGKFV("next", "%d", (int)next_status), "unexpected transition");
+    if (RouteLog::CHECK == routeLog) {
+        LOG_INFO(MSGID_LIFE_STATUS, 3,
+                 PMLOGKS("app_id", appId.c_str()),
+                 PMLOGKFV("current", "%d", (int)currentStatus),
+                 PMLOGKFV("next", "%d", (int)next_status), "just to check it");
+    } else if (RouteLog::WARN == routeLog) {
+        LOG_WARNING(MSGID_LIFE_STATUS, 3,
+                    PMLOGKS("app_id", appId.c_str()),
+                    PMLOGKFV("current", "%d", (int)currentStatus),
+                    PMLOGKFV("next", "%d", (int)next_status), "handle exception");
+    } else if (RouteLog::ERROR == routeLog) {
+        LOG_ERROR(MSGID_LIFE_STATUS, 3,
+                  PMLOGKS("app_id", appId.c_str()),
+                  PMLOGKFV("current", "%d", (int)currentStatus),
+                  PMLOGKFV("next", "%d", (int)next_status), "unexpected transition");
     }
 
     if (RouteAction::IGNORE == route_action)
@@ -400,35 +440,40 @@ void AppLifeManager::setAppLifeStatus(const std::string& app_id, const std::stri
     switch (next_status) {
     case LifeStatus::LAUNCHING:
     case LifeStatus::RELAUNCHING:
-        if (app_desc)
-            addLoadingApp(app_id, app_desc->type());
-        AppInfoManager::instance().set_preload_mode(app_id, false);
+        if (appDesc)
+            addLoadingApp(appId, appDesc->type());
+        AppInfoManager::instance().setPreloadMode(appId, false);
         break;
     case LifeStatus::PRELOADING:
-        AppInfoManager::instance().set_preload_mode(app_id, true);
+        AppInfoManager::instance().setPreloadMode(appId, true);
         break;
     case LifeStatus::STOP:
     case LifeStatus::FOREGROUND:
-        AppInfoManager::instance().set_preload_mode(app_id, false);
+        AppInfoManager::instance().setPreloadMode(appId, false);
     case LifeStatus::PAUSING:
-        removeLoadingApp(app_id);
+        removeLoadingApp(appId);
         break;
     default:
         break;
     }
 
-    LOG_INFO(MSGID_LIFE_STATUS, 4, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("uid", uid.c_str()), PMLOGKFV("current", "%d", (int)current_status), PMLOGKFV("new", "%d", (int)next_status),
-            "life_status_changed");
+    LOG_INFO(MSGID_LIFE_STATUS, 4,
+             PMLOGKS("app_id", appId.c_str()),
+             PMLOGKS("uid", uid.c_str()),
+             PMLOGKFV("current", "%d", (int)currentStatus),
+             PMLOGKFV("new", "%d", (int)next_status), "life_status_changed");
 
     // set life status
-    AppInfoManager::instance().set_life_status(app_id, next_status);
-    signal_app_life_status_changed(app_id, next_status);
-    replySubscriptionForAppLifeStatus(app_id, uid, next_status);
+    AppInfoManager::instance().setLifeStatus(appId, next_status);
+    signal_app_life_status_changed(appId, next_status);
+    replySubscriptionForAppLifeStatus(appId, uid, next_status);
 }
 
 void AppLifeManager::stopAllWebappItem()
 {
-    LOG_INFO(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("status", "remove_webapp_in_loading_list"), PMLOGKS("reason", "WAM_disconnected"), "");
+    LOG_INFO(MSGID_APPLAUNCH_ERR, 2,
+             PMLOGKS("status", "remove_webapp_in_loading_list"),
+             PMLOGKS("reason", "WAM_disconnected"), "");
 
     std::vector<LoadingAppItem> loading_apps = m_loadingAppList;
     for (const auto& app : loading_apps) {
@@ -437,19 +482,16 @@ void AppLifeManager::stopAllWebappItem()
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// running list changed
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::onRunningAppAdded(const std::string& app_id, const std::string& pid, const std::string& webprocid)
 {
-    AppInfoManager::instance().add_running_info(app_id, pid, webprocid);
+    AppInfoManager::instance().addRunningInfo(app_id, pid, webprocid);
     onRunningListChanged(app_id);
 }
 
 void AppLifeManager::onRunningAppRemoved(const std::string& app_id)
 {
 
-    AppInfoManager::instance().remove_running_info(app_id);
+    AppInfoManager::instance().removeRunningInfo(app_id);
     onRunningListChanged(app_id);
 
     if (isInAutomaticPendingList(app_id))
@@ -459,20 +501,17 @@ void AppLifeManager::onRunningAppRemoved(const std::string& app_id)
 void AppLifeManager::onRunningListChanged(const std::string& app_id)
 {
     pbnjson::JValue running_list = pbnjson::Array();
-    AppInfoManager::instance().get_running_list(running_list);
+    AppInfoManager::instance().getRunningList(running_list);
     replySubscriptionForRunning(running_list);
 
     AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
     if (app_desc != NULL && AppTypeByDir::Dev == app_desc->getTypeByDir()) {
         running_list = pbnjson::Array();
-        AppInfoManager::instance().get_running_list(running_list, true);
+        AppInfoManager::instance().getRunningList(running_list, true);
         replySubscriptionForRunning(running_list, true);
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// handle reply
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::replyWithResult(LSMessage* lsmsg, const std::string& pid, bool result, const int& err_code, const std::string& err_text)
 {
 
@@ -521,8 +560,8 @@ void AppLifeManager::replySubscriptionForAppLifeStatus(const std::string& app_id
     }
 
     AppLaunchingItemPtr launch_item = uid.empty() ? NULL : getLaunchingItemByUid(uid);
-    std::string str_status = AppInfoManager::instance().life_status_to_string(life_status);
-    bool preloaded = AppInfoManager::instance().preload_mode_on(app_id);
+    std::string str_status = AppInfoManager::instance().toString(life_status);
+    bool preloaded = AppInfoManager::instance().preloadModeOn(app_id);
 
     payload.put("status", str_status);    // change enum to string
     payload.put("appId", app_id);
@@ -538,11 +577,11 @@ void AppLifeManager::replySubscriptionForAppLifeStatus(const std::string& app_id
 
     if (LifeStatus::LAUNCHING == life_status || LifeStatus::RELAUNCHING == life_status) {
         if (launch_item) {
-            payload.put("reason", launch_item->launch_reason());
+            payload.put("reason", launch_item->launchReason());
         }
     } else if (LifeStatus::FOREGROUND == life_status) {
         pbnjson::JValue fg_info = pbnjson::JValue();
-        AppInfoManager::instance().get_json_foreground_info_by_id(app_id, fg_info);
+        AppInfoManager::instance().getJsonForegroundInfoById(app_id, fg_info);
         if (!fg_info.isNull() && fg_info.isObject()) {
             for (auto it : fg_info.children()) {
                 const std::string key = it.first.asString();
@@ -568,7 +607,7 @@ void AppLifeManager::replySubscriptionForAppLifeStatus(const std::string& app_id
              PMLOGJSON("payload", payload.stringify().c_str()), "");
 
     LSErrorSafe lserror;
-    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
                              "getAppLifeStatus",
                              payload.stringify().c_str(), &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
@@ -584,15 +623,15 @@ void AppLifeManager::generateLifeCycleEvent(const std::string& app_id, const std
 
     AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
     AppLaunchingItemPtr launch_item = uid.empty() ? NULL : getLaunchingItemByUid(uid);
-    LifeStatus current_status = AppInfoManager::instance().life_status(app_id);
-    bool preloaded = AppInfoManager::instance().preload_mode_on(app_id);
+    LifeStatus current_status = AppInfoManager::instance().lifeStatus(app_id);
+    bool preloaded = AppInfoManager::instance().preloadModeOn(app_id);
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("appId", app_id);
 
     if (LifeEvent::SPLASH == event) {
         // generate splash event only for fresh launch case
-        if (launch_item && !launch_item->show_splash() && !launch_item->show_spinner())
+        if (launch_item && !launch_item->showSplash() && !launch_item->showSpinner())
             return;
         if (LifeStatus::BACKGROUND == current_status && preloaded == false)
             return;
@@ -601,10 +640,10 @@ void AppLifeManager::generateLifeCycleEvent(const std::string& app_id, const std
 
         payload.put("event", "splash");
         payload.put("title", (app_desc ? app_desc->title() : ""));
-        payload.put("showSplash", (launch_item && launch_item->show_splash()));
-        payload.put("showSpinner", (launch_item && launch_item->show_spinner()));
+        payload.put("showSplash", (launch_item && launch_item->showSplash()));
+        payload.put("showSpinner", (launch_item && launch_item->showSpinner()));
 
-        if (launch_item && launch_item->show_splash())
+        if (launch_item && launch_item->showSplash())
             payload.put("splashBackground", (app_desc ? app_desc->splashBackground() : ""));
     } else if (LifeEvent::PRELOAD == event) {
         payload.put("event", "preload");
@@ -612,16 +651,19 @@ void AppLifeManager::generateLifeCycleEvent(const std::string& app_id, const std
             payload.put("preload", launch_item->preload());
     } else if (LifeEvent::LAUNCH == event) {
         payload.put("event", "launch");
-        payload.put("reason", launch_item->launch_reason());
+        payload.put("reason", launch_item->launchReason());
     } else if (LifeEvent::FOREGROUND == event) {
         payload.put("event", "foreground");
 
         pbnjson::JValue fg_info = pbnjson::JValue();
-        AppInfoManager::instance().get_json_foreground_info_by_id(app_id, fg_info);
+        AppInfoManager::instance().getJsonForegroundInfoById(app_id, fg_info);
         if (!fg_info.isNull() && fg_info.isObject()) {
             for (auto it : fg_info.children()) {
                 const std::string key = it.first.asString();
-                if ("windowType" == key || "windowGroup" == key || "windowGroupOwner" == key || "windowGroupOwnerId" == key) {
+                if ("windowType" == key ||
+                    "windowGroup" == key ||
+                    "windowGroupOwner" == key ||
+                    "windowGroupOwnerId" == key) {
                     payload.put(key, fg_info[key]);
                 }
             }
@@ -660,7 +702,7 @@ void AppLifeManager::replySubscriptionForRunning(const pbnjson::JValue& running_
              PMLOGJSON("payload", payload.stringify().c_str()), "");
 
     LSErrorSafe lserror;
-    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
                              subscription_key.c_str(),
                              payload.stringify().c_str(), &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
@@ -671,12 +713,8 @@ void AppLifeManager::replySubscriptionForRunning(const pbnjson::JValue& running_
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// API: launch
-///////////////////////////////////////////////////////////////////////
-void AppLifeManager::launch(AppLaunchRequestType rtype, const std::string& app_id, const pbnjson::JValue& params, LSMessage* lsmsg)
+void AppLifeManager::launch(AppLaunchRequestType rtype, const std::string& appId, const pbnjson::JValue& params, LSMessage* lsmsg)
 {
-
     // check launching item factory
     if (m_launchItemFactory == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 1, PMLOGKS("status", "no_launch_item_factory_registered"), "");
@@ -684,94 +722,106 @@ void AppLifeManager::launch(AppLaunchRequestType rtype, const std::string& app_i
         return;
     }
 
-    int err_code = 0;
-    std::string err_text = "";
-    AppLaunchingItemPtr new_item = m_launchItemFactory->Create(app_id, rtype, params, lsmsg, err_code, err_text);
-    if (new_item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "creating_item_fail"), PMLOGKS("where", "launch_in_app_life_manager"), "");
-        if (err_text.empty())
+    int errCode = 0;
+    std::string errText = "";
+    AppLaunchingItemPtr newItem = m_launchItemFactory->Create(appId, rtype, params, lsmsg, errCode, errText);
+    if (newItem == NULL) {
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", appId.c_str()),
+                  PMLOGKS("reason", "creating_item_fail"),
+                  PMLOGKS("where", "launch_in_app_life_manager"), "");
+        if (errText.empty()) {
             replyWithResult(lsmsg, "", false, (int) APP_LAUNCH_ERR_GENERAL, "internal error");
-        else
-            replyWithResult(lsmsg, "", false, err_code, err_text);
+        } else {
+            replyWithResult(lsmsg, "", false, errCode, errText);
+        }
         return;
     }
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(new_item->app_id());
-
     // set start time
-    new_item->set_launch_start_time(get_current_time());
+    newItem->setLaunchStartTime(get_current_time());
 
     // put new request into launching queue
-    m_launchItemList.push_back(new_item);
+    m_launchItemList.push_back(newItem);
 
-    if (new_item->automatic_launch()) {
-
-        if (isFullscreenAppLoading(new_item->app_id(), new_item->uid())) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", new_item->app_id().c_str()), PMLOGKS("status", "skip_launching_last_app"), "");
-            finishLaunching(new_item);
+    if (newItem->automaticLaunch()) {
+        if (isFullscreenAppLoading(newItem->appId(), newItem->uid())) {
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", newItem->appId().c_str()),
+                     PMLOGKS("status", "skip_launching_last_app"), "");
+            finishLaunching(newItem);
             return;
         }
 
-        if (new_item->launch_reason() == "autoReload" && AppInfoManager::instance().is_running(new_item->app_id())) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", new_item->app_id().c_str()), PMLOGKS("status", "waiting_for_foreground_app_removed"), "");
-            addItemIntoAutomaticPendingList(new_item);
+        if (newItem->launchReason() == "autoReload" && AppInfoManager::instance().isRunning(newItem->appId())) {
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", newItem->appId().c_str()),
+                     PMLOGKS("status", "waiting_for_foreground_app_removed"), "");
+            addItemIntoAutomaticPendingList(newItem);
             return;
         }
     }
 
     // start prelaunching
-    runWithPrelauncher(new_item);
+    runWithPrelauncher(newItem);
 }
 
 void AppLifeManager::handleBridgedLaunchRequest(const pbnjson::JValue& params)
 {
     std::string item_uid;
     if (!params.hasKey(SYS_LAUNCHING_UID) || params[SYS_LAUNCHING_UID].asString(item_uid) != CONV_OK) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "uid_not_found"), PMLOGKS("where", "handle_bridged_launch"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "uid_not_found"),
+                  PMLOGKS("where", "handle_bridged_launch"), "");
         return;
     }
 
     AppLaunchingItemPtr launching_item = getLaunchingItemByUid(item_uid);
     if (launching_item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("uid", item_uid.c_str()), PMLOGKS("reason", "launching_item_not_found"), PMLOGKS("where", "handle_bridged_launch"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("uid", item_uid.c_str()),
+                  PMLOGKS("reason", "launching_item_not_found"),
+                  PMLOGKS("where", "handle_bridged_launch"), "");
         return;
     }
 
     // set return payload
-    launching_item->set_call_return_jmsg(params);
+    launching_item->setCallReturnJmsg(params);
 
     if (m_prelauncher)
-        m_prelauncher->input_bridged_return(launching_item, params);
+        m_prelauncher->inputBridgedReturn(launching_item, params);
 }
 
-///////////////////////////////////////////////////////////////////////
-/// API: registerNativeApp
-///////////////////////////////////////////////////////////////////////
-void AppLifeManager::registerApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text)
+void AppLifeManager::registerApp(const std::string& appId, LSMessage* lsmsg, std::string& errText)
 {
-
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
-    if (!app_desc) {
-        err_text = "not existing app";
+    AppDescPtr appDesc = ApplicationManager::instance().getAppById(appId);
+    if (!appDesc) {
+        errText = "not existing app";
         return;
     }
 
-    if (app_desc->NativeInterfaceVersion() != 2) {
-        err_text = "trying to register via unmatched method with nativeLifeCycleInterfaceVersion";
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "wrong_version_interface_on_register"), PMLOGKS("method", "registerNativeApp"),
-                "nativeLifeCycleInterfaceVersion: %d", app_desc->NativeInterfaceVersion());
+    if (appDesc->NativeInterfaceVersion() != 2) {
+        errText = "trying to register via unmatched method with nativeLifeCycleInterfaceVersion";
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", appId.c_str()),
+                  PMLOGKS("reason", "wrong_version_interface_on_register"),
+                  PMLOGKS("method", "registerNativeApp"),
+                  "nativeLifeCycleInterfaceVersion: %d", appDesc->NativeInterfaceVersion());
         return;
     }
 
-    RuntimeStatus runtime_status = AppInfoManager::instance().runtime_status(app_id);
+    RuntimeStatus runtimeStatus = AppInfoManager::instance().runtimeStatus(appId);
 
-    if (RuntimeStatus::RUNNING != runtime_status && RuntimeStatus::REGISTERED != runtime_status) {
-        err_text = "invalid status";
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "invalid_life_status_to_connect_nativeapp"), PMLOGKFV("runtime_status", "%d", (int) runtime_status), "");
+    if (RuntimeStatus::RUNNING != runtimeStatus && RuntimeStatus::REGISTERED != runtimeStatus) {
+        errText = "invalid status";
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", appId.c_str()),
+                  PMLOGKS("reason", "invalid_life_status_to_connect_nativeapp"),
+                  PMLOGKFV("runtime_status", "%d", (int) runtimeStatus), "");
         return;
     }
 
-    m_nativeLifecycleHandler.RegisterApp(app_id, lsmsg, err_text);
+    m_nativeLifecycleHandler.RegisterApp(appId, lsmsg, errText);
 }
 
 void AppLifeManager::connectNativeApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text)
@@ -785,25 +835,28 @@ void AppLifeManager::connectNativeApp(const std::string& app_id, LSMessage* lsms
 
     if (app_desc->NativeInterfaceVersion() != 1) {
         err_text = "trying to register via unmatched method with nativeLifeCycleInterfaceVersion";
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "wrong_version_interface_on_register"), PMLOGKS("method", "registerNativeApp"),
-                "nativeLifeCycleInterfaceVersion: %d", app_desc->NativeInterfaceVersion());
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "wrong_version_interface_on_register"),
+                  PMLOGKS("method", "registerNativeApp"),
+                  "nativeLifeCycleInterfaceVersion: %d", app_desc->NativeInterfaceVersion());
         return;
     }
 
-    RuntimeStatus runtime_status = AppInfoManager::instance().runtime_status(app_id);
+    RuntimeStatus runtime_status = AppInfoManager::instance().runtimeStatus(app_id);
 
     if (RuntimeStatus::RUNNING != runtime_status && RuntimeStatus::REGISTERED != runtime_status) {
         err_text = "invalid_status";
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "invalid_life_status_to_connect_nativeapp"), PMLOGKFV("runtime_status", "%d", (int) runtime_status), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "invalid_life_status_to_connect_nativeapp"),
+                  PMLOGKFV("runtime_status", "%d", (int) runtime_status), "");
         return;
     }
 
     m_nativeLifecycleHandler.RegisterApp(app_id, lsmsg, err_text);
 }
 
-///////////////////////////////////////////////////////////////////////
-/// API: changeRunningAppId
-///////////////////////////////////////////////////////////////////////
 bool AppLifeManager::changeRunningAppId(const std::string& current_id, const std::string& target_id, ErrorInfo& err_info)
 {
     return m_nativeLifecycleHandler.ChangeRunningAppId(current_id, target_id, err_info);
@@ -812,8 +865,8 @@ bool AppLifeManager::changeRunningAppId(const std::string& current_id, const std
 void AppLifeManager::triggerToLaunchLastApp()
 {
 
-    std::string fg_app_id = AppInfoManager::instance().get_current_foreground_app_id();
-    if (!fg_app_id.empty() && AppInfoManager::instance().is_running(fg_app_id))
+    std::string fg_app_id = AppInfoManager::instance().getCurrentForegroundAppId();
+    if (!fg_app_id.empty() && AppInfoManager::instance().isRunning(fg_app_id))
         return;
 
     LOG_INFO(MSGID_LAUNCH_LASTAPP, 1, PMLOGKS("status", "trigger_to_launch_last_app"), "");
@@ -821,9 +874,6 @@ void AppLifeManager::triggerToLaunchLastApp()
     runLastappHandler();
 }
 
-///////////////////////////////////////////////////////////////////////
-/// close
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::closeByAppId(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool preload_only, bool clear_all_items)
 {
 
@@ -836,10 +886,10 @@ void AppLifeManager::closeByAppId(const std::string& app_id, const std::string& 
     // swith close request to pause request
     // except for below cases
     if (SettingsImpl::instance().IsKeepAliveApp(app_id) &&
-    caller_id != "com.webos.memorymanager" &&
-    caller_id != "com.webos.appInstallService" &&
-    (caller_id != "com.webos.surfacemanager.windowext" || reason != "recent") &&
-    caller_id != SAM_INTERNAL_ID) {
+        caller_id != "com.webos.memorymanager" &&
+        caller_id != "com.webos.appInstallService" &&
+        (caller_id != "com.webos.surfacemanager.windowext" || reason != "recent") &&
+        caller_id != SAM_INTERNAL_ID) {
         pauseApp(app_id, pbnjson::Object(), err_text);
         return;
     }
@@ -849,9 +899,11 @@ void AppLifeManager::closeByAppId(const std::string& app_id, const std::string& 
 
 void AppLifeManager::closeByPid(const std::string& pid, const std::string& caller_id, std::string& err_text)
 {
-    const std::string& app_id = AppInfoManager::instance().get_app_id_by_pid(pid);
+    const std::string& app_id = AppInfoManager::instance().getAppIdByPid(pid);
     if (app_id.empty()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("pid", pid.c_str()), PMLOGKS("mode", "by_pid"), "no appid matched by pid");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
+                  PMLOGKS("pid", pid.c_str()),
+                  PMLOGKS("mode", "by_pid"), "no appid matched by pid");
         err_text = "no app matched by pid";
         return;
     }
@@ -863,7 +915,7 @@ void AppLifeManager::closeAllLoadingApps()
 {
     resetLastAppCandidates();
 
-    m_prelauncher->cancel_all();
+    m_prelauncher->cancelAll();
     m_memoryChecker->cancel_all();
 
     std::vector<std::string> automatic_pending_list;
@@ -877,10 +929,15 @@ void AppLifeManager::closeAllLoadingApps()
         std::string err_text = "";
         closeByAppId(std::get<0>(app), SAM_INTERNAL_ID, "", err_text, false, true);
 
-        if (err_text.empty() == false)
-            LOG_WARNING(MSGID_APPCLOSE, 2, PMLOGKS("app_id", (std::get<0>(app)).c_str()), PMLOGKS("mode", "close_loading_app"), "err: %s", err_text.c_str());
-        else
-            LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("app_id", (std::get<0>(app)).c_str()), PMLOGKS("mode", "close_loading_app"), "ok");
+        if (err_text.empty() == false) {
+            LOG_WARNING(MSGID_APPCLOSE, 2,
+                        PMLOGKS("app_id", (std::get<0>(app)).c_str()),
+                        PMLOGKS("mode", "close_loading_app"), "err: %s", err_text.c_str());
+        } else {
+            LOG_INFO(MSGID_APPCLOSE, 2,
+                     PMLOGKS("app_id", (std::get<0>(app)).c_str()),
+                     PMLOGKS("mode", "close_loading_app"), "ok");
+        }
     }
 }
 
@@ -888,7 +945,7 @@ void AppLifeManager::closeAllApps(bool clear_all_items)
 {
     LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("action", "close_all_apps"), PMLOGKS("status", "start"), "");
     std::vector<std::string> running_apps;
-    AppInfoManager::instance().get_running_app_ids(running_apps);
+    AppInfoManager::instance().getRunningAppIds(running_apps);
     closeApps(running_apps, clear_all_items);
     resetLastAppCandidates();
 }
@@ -896,7 +953,9 @@ void AppLifeManager::closeAllApps(bool clear_all_items)
 void AppLifeManager::closeApps(const std::vector<std::string>& app_ids, bool clear_all_items)
 {
     if (app_ids.size() < 1) {
-        LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("action", "close_all_apps"), PMLOGKS("status", "no_apps_to_close"), "");
+        LOG_INFO(MSGID_APPCLOSE, 2,
+                 PMLOGKS("action", "close_all_apps"),
+                 PMLOGKS("status", "no_apps_to_close"), "");
         return;
     }
 
@@ -904,7 +963,7 @@ void AppLifeManager::closeApps(const std::vector<std::string>& app_ids, bool cle
     bool performed_closing_apps = false;
     for (auto& app_id : app_ids) {
         // kill app on fullscreen later
-        if (AppInfoManager::instance().is_app_on_fullscreen(app_id)) {
+        if (AppInfoManager::instance().isAppOnFullscreen(app_id)) {
             fullscreen_app_id = app_id;
             continue;
         }
@@ -925,55 +984,56 @@ void AppLifeManager::closeApps(const std::vector<std::string>& app_ids, bool cle
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// app life handlers
-///////////////////////////////////////////////////////////////////////
 void AppLifeManager::launchApp(AppLaunchingItemPtr item)
 {
-    AppLifeHandlerInterface* life_handler = getLifeHandlerForApp(item->app_id());
+    AppLifeHandlerInterface* life_handler = getLifeHandlerForApp(item->appId());
     if (nullptr == life_handler) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "launch_app_in_app_life_manager"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("reason", "null_description"),
+                  PMLOGKS("where", "launch_app_in_app_life_manager"), "");
         return;
     }
 
     life_handler->launch(item);
 }
 
-void AppLifeManager::closeApp(const std::string& appId, const std::string& callerId, const std::string& reason, std::string& err_text, bool clearAllItems)
+void AppLifeManager::closeApp(const std::string& appId, const std::string& callerId, const std::string& reason, std::string& errText, bool clearAllItems)
 {
-    if (clearAllItems)
+    if (clearAllItems) {
         clearLaunchingAndLoadingItemsByAppId(appId);
+    }
 
     AppLifeHandlerInterface* life_handler = getLifeHandlerForApp(appId);
     if (nullptr == life_handler) {
         LOG_ERROR(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", appId.c_str()), "no valid life handler");
-        err_text = "no valid life handler";
+        errText = "no valid life handler";
         return;
     }
 
     std::string close_reason = SettingsImpl::instance().GetCloseReason(callerId, reason);
 
-    if (AppInfoManager::instance().is_running(appId) && m_closeReasonInfo.count(appId) == 0) {
+    if (AppInfoManager::instance().isRunning(appId) && m_closeReasonInfo.count(appId) == 0) {
         m_closeReasonInfo[appId] = close_reason;
     }
 
     const std::string& pid = AppInfoManager::instance().pid(appId);
-    AppCloseItemPtr new_item = std::make_shared<AppCloseItem>(appId, pid, callerId, close_reason);
-    if (nullptr == new_item) {
+    AppCloseItemPtr item = std::make_shared<AppCloseItem>(appId, pid, callerId, close_reason);
+    if (nullptr == item) {
         LOG_ERROR(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", appId.c_str()), "memory alloc fail");
-        err_text = "memory alloc fail";
+        errText = "memory alloc fail";
         return;
     }
 
     LOG_INFO(MSGID_APPCLOSE, 2, PMLOGKS("app_id", appId.c_str()), PMLOGKS("pid", pid.c_str()), "");
 
-    life_handler->close(new_item, err_text);
+    life_handler->close(item, errText);
 }
 
 void AppLifeManager::pauseApp(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool report_event)
 {
 
-    if (!AppInfoManager::instance().is_running(app_id)) {
+    if (!AppInfoManager::instance().isRunning(app_id)) {
         err_text = "app is not running";
         return;
     }
@@ -988,22 +1048,6 @@ void AppLifeManager::pauseApp(const std::string& app_id, const pbnjson::JValue& 
     life_handler->pause(app_id, params, err_text, report_event);
 }
 
-///////////////////////////////////////////////////////////////////////
-/// handle foreground appinfo
-///////////////////////////////////////////////////////////////////////
-
-/*
- {
- "windowGroup": true,
- "windowGroupOwner": false,
- "windowGroupOwnerId": "com.webos.surfacegroup.owner",
- "appId": "com.webos.surfacegroup.client",
- "windowType": "_WEBOS_WINDOW_TYPE_CARD",
- "windowId": "",
- "processId": "3019"
- }
- */
-
 bool AppLifeManager::isFullscreenWindowType(const pbnjson::JValue& foreground_info)
 {
     bool window_group = foreground_info["windowGroup"].asBool();
@@ -1011,50 +1055,31 @@ bool AppLifeManager::isFullscreenWindowType(const pbnjson::JValue& foreground_in
     std::string window_type = foreground_info["windowType"].asString();
 
     for (auto& win_type : m_fullscreenWindowTypes) {
-        if (win_type == window_type && window_group_owner)
+        if (win_type == window_type && window_group_owner) {
             return true;
+        }
     }
     return false;
 }
 
-/*
- {
- "foregroundAppInfo": [
- {
- "appId": "com.yourdomain.app",
- "windowType": "_WEBOS_WINDOW_TYPE_CARD",
- "processId": "1159",
- "windowId": ""
- },
- {
- "appId": "com.palm.app.settings",
- "windowType": "_WEBOS_WINDOW_TYPE_OVERLAY",
- "processId": "1159",
- "windowId": ""
- }
- ],
- "reason":"forceMinimize",
- "returnValue": true
- }
- */
-
 void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
 {
-    if (jmsg.isNull() || !jmsg["returnValue"].asBool() || !jmsg.hasKey("foregroundAppInfo") || !jmsg["foregroundAppInfo"].isArray()) {
-        LOG_ERROR(MSGID_GET_FOREGROUND_APP_ERR, 1,
-                  PMLOGJSON("payload", jmsg.duplicate().stringify().c_str()), "invalid message from LSM");
+    if (jmsg.isNull() ||
+        !jmsg["returnValue"].asBool() ||
+        !jmsg.hasKey("foregroundAppInfo") ||
+        !jmsg["foregroundAppInfo"].isArray()) {
+        LOG_ERROR(MSGID_GET_FOREGROUND_APP_ERR, 1, PMLOGJSON("payload", jmsg.duplicate().stringify().c_str()), "invalid message from LSM");
         return;
     }
 
     pbnjson::JValue lsm_foreground_info = jmsg["foregroundAppInfo"];
 
-    LOG_INFO(MSGID_GET_FOREGROUND_APPINFO, 1,
-             PMLOGJSON("ForegroundApps", lsm_foreground_info.stringify().c_str()), "");
+    LOG_INFO(MSGID_GET_FOREGROUND_APPINFO, 1, PMLOGJSON("ForegroundApps", lsm_foreground_info.stringify().c_str()), "");
 
-    std::string prev_foreground_app_id = AppInfoManager::instance().get_current_foreground_app_id();
-    std::vector<std::string> prev_foreground_apps = AppInfoManager::instance().get_foreground_apps();
+    std::string prev_foreground_app_id = AppInfoManager::instance().getCurrentForegroundAppId();
+    std::vector<std::string> prev_foreground_apps = AppInfoManager::instance().getForegroundApps();
     std::vector<std::string> new_foreground_apps;
-    pbnjson::JValue prev_foreground_info = AppInfoManager::instance().get_json_foreground_info();
+    pbnjson::JValue prev_foreground_info = AppInfoManager::instance().getJsonForegroundInfo();
     std::string new_foreground_app_id = "";
     bool found_fullscreen_window = false;
 
@@ -1062,17 +1087,22 @@ void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
     int array_size = lsm_foreground_info.arraySize();
     for (int i = 0; i < array_size; ++i) {
         std::string app_id;
-        if (!lsm_foreground_info[i].hasKey("appId") || !lsm_foreground_info[i]["appId"].isString() || lsm_foreground_info[i]["appId"].asString(app_id) != CONV_OK || app_id.empty()) {
+        if (!lsm_foreground_info[i].hasKey("appId") ||
+            !lsm_foreground_info[i]["appId"].isString() ||
+            lsm_foreground_info[i]["appId"].asString(app_id) != CONV_OK ||
+            app_id.empty()) {
             continue;
         }
 
-        LifeStatus current_status = AppInfoManager::instance().life_status(app_id);
+        LifeStatus current_status = AppInfoManager::instance().lifeStatus(app_id);
         if (LifeStatus::STOP == current_status) {
             LOG_INFO(MSGID_FOREGROUND_INFO, 1, PMLOGKS("filter_out", app_id.c_str()), "remove not running app");
             continue;
         }
 
-        LOG_INFO_WITH_CLOCK(MSGID_GET_FOREGROUND_APPINFO, 2, PMLOGKS("PerfType", "AppLaunch"), PMLOGKS("PerfGroup", app_id.c_str()), "");
+        LOG_INFO_WITH_CLOCK(MSGID_GET_FOREGROUND_APPINFO, 2,
+                            PMLOGKS("PerfType", "AppLaunch"),
+                            PMLOGKS("PerfGroup", app_id.c_str()), "");
 
         new_foreground_info.append(lsm_foreground_info[i].duplicate());
         new_foreground_apps.push_back(app_id);
@@ -1083,19 +1113,20 @@ void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
         }
     }
 
-    LOG_INFO(MSGID_GET_FOREGROUND_APPINFO, 1,
-             PMLOGJSON("FilteredForegroundApps", new_foreground_info.duplicate().stringify().c_str()), "");
+    LOG_INFO(MSGID_GET_FOREGROUND_APPINFO, 1, PMLOGJSON("FilteredForegroundApps", new_foreground_info.duplicate().stringify().c_str()), "");
 
     // update foreground info into app info manager
     if (found_fullscreen_window) {
-        AppInfoManager::instance().set_last_foreground_app_id(new_foreground_app_id);
+        AppInfoManager::instance().setLastForegroundAppId(new_foreground_app_id);
         resetLastAppCandidates();
     }
-    AppInfoManager::instance().set_current_foreground_app_id(new_foreground_app_id);
-    AppInfoManager::instance().set_foreground_apps(new_foreground_apps);
-    AppInfoManager::instance().set_foreground_info(new_foreground_info);
+    AppInfoManager::instance().setCurrentForegroundAppId(new_foreground_app_id);
+    AppInfoManager::instance().setForegroundApps(new_foreground_apps);
+    AppInfoManager::instance().setForegroundInfo(new_foreground_info);
 
-    LOG_INFO(MSGID_FOREGROUND_INFO, 2, PMLOGKS("current_foreground_app", new_foreground_app_id.c_str()), PMLOGKS("prev_foreground_app", prev_foreground_app_id.c_str()), "");
+    LOG_INFO(MSGID_FOREGROUND_INFO, 2,
+             PMLOGKS("current_foreground_app", new_foreground_app_id.c_str()),
+             PMLOGKS("prev_foreground_app", prev_foreground_app_id.c_str()), "");
 
     // set background
     for (auto& prev_app_id : prev_foreground_apps) {
@@ -1108,7 +1139,7 @@ void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
         }
 
         if (found == false) {
-            switch (AppInfoManager::instance().life_status(prev_app_id)) {
+            switch (AppInfoManager::instance().lifeStatus(prev_app_id)) {
             case LifeStatus::FOREGROUND:
             case LifeStatus::PAUSING:
                 setAppLifeStatus(prev_app_id, "", LifeStatus::BACKGROUND);
@@ -1123,7 +1154,7 @@ void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
     for (auto& current_app_id : new_foreground_apps) {
         setAppLifeStatus(current_app_id, "", LifeStatus::FOREGROUND);
 
-        if (!AppInfoManager::instance().is_running(current_app_id)) {
+        if (!AppInfoManager::instance().isRunning(current_app_id)) {
             LOG_INFO(MSGID_FOREGROUND_INFO, 1, PMLOGKS("app_id", current_app_id.c_str()), "no running info, but received foreground info");
         }
     }
@@ -1150,50 +1181,61 @@ void AppLifeManager::onForegroundInfoChanged(const pbnjson::JValue& jmsg)
     }
 }
 
-///////////////////////////////////////////////////////////////////////
-/// common util functions
-///////////////////////////////////////////////////////////////////////
 bool AppLifeManager::isFullscreenAppLoading(const std::string& new_launching_app_id, const std::string& new_launching_app_uid)
 {
     bool result = false;
 
     for (auto& launching_item : m_launchItemList) {
-        if (new_launching_app_id == launching_item->app_id() && launching_item->uid() == new_launching_app_uid)
+        if (new_launching_app_id == launching_item->appId() && launching_item->uid() == new_launching_app_uid)
             continue;
 
-        AppDescPtr app_desc = ApplicationManager::instance().getAppById(launching_item->app_id());
+        AppDescPtr app_desc = ApplicationManager::instance().getAppById(launching_item->appId());
         if (app_desc == NULL) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", launching_item->app_id().c_str()), PMLOGKS("status", "not_candidate_checking_launching"), "null description");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", launching_item->appId().c_str()),
+                     PMLOGKS("status", "not_candidate_checking_launching"), "null description");
             continue;
         }
 
-        if (("com.webos.app.container" == launching_item->app_id()) || ("com.webos.app.inputcommon" == launching_item->app_id()))
+        if (("com.webos.app.container" == launching_item->appId()) || ("com.webos.app.inputcommon" == launching_item->appId()))
             continue;
 
         if (app_desc->is_child_window()) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", launching_item->app_id().c_str()), PMLOGKS("status", "not_candidate_checking_launching"), "child window type");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", launching_item->appId().c_str()),
+                     PMLOGKS("status", "not_candidate_checking_launching"), "child window type");
             continue;
         }
         if (!(launching_item->preload().empty())) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", launching_item->app_id().c_str()), PMLOGKS("status", "not_candidate_checking_launching"), "preloading app");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", launching_item->appId().c_str()),
+                     PMLOGKS("status", "not_candidate_checking_launching"), "preloading app");
             continue;
         }
 
         if (app_desc->defaultWindowType() == "card" || app_desc->defaultWindowType() == "minimal") {
             if (isLaunchingItemExpired(launching_item)) {
-                LOG_INFO(MSGID_LAUNCH_LASTAPP, 3, PMLOGKS("app_id", launching_item->app_id().c_str()), PMLOGKS("status", "not_candidate_checking_launching"),
-                        PMLOGKFV("launching_stage_in_detail", "%d", launching_item->sub_stage()), "fullscreen app, but expired");
+                LOG_INFO(MSGID_LAUNCH_LASTAPP, 3,
+                         PMLOGKS("app_id", launching_item->appId().c_str()),
+                         PMLOGKS("status", "not_candidate_checking_launching"),
+                         PMLOGKFV("launching_stage_in_detail", "%d", launching_item->subStage()),
+                         "fullscreen app, but expired");
                 continue;
             }
 
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 3, PMLOGKS("status", "autolaunch_condition_check"), PMLOGKS("launching_app_id", launching_item->app_id().c_str()),
-                    PMLOGKFV("launching_stage_in_detail", "%d", launching_item->sub_stage()), "fullscreen app is already launching");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 3,
+                     PMLOGKS("status", "autolaunch_condition_check"),
+                     PMLOGKS("launching_app_id", launching_item->appId().c_str()),
+                     PMLOGKFV("launching_stage_in_detail", "%d", launching_item->subStage()),
+                     "fullscreen app is already launching");
 
-            addLastLaunchingApp(launching_item->app_id());
+            addLastLaunchingApp(launching_item->appId());
             result = true;
         } else {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", launching_item->app_id().c_str()), PMLOGKS("status", "not_candidate_checking_launching"), "not fullscreen type: %s",
-                    app_desc->defaultWindowType().c_str());
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                    PMLOGKS("app_id", launching_item->appId().c_str()),
+                    PMLOGKS("status", "not_candidate_checking_launching"),
+                    "not fullscreen type: %s", app_desc->defaultWindowType().c_str());
         }
     }
 
@@ -1203,31 +1245,43 @@ bool AppLifeManager::isFullscreenAppLoading(const std::string& new_launching_app
     for (auto& app_id : app_ids) {
         AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
         if (app_desc == NULL) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "not_candidate_checking_loading"), "null description");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("status", "not_candidate_checking_loading"), "null description");
             continue;
         }
         if (app_desc->is_child_window()) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "not_candidate_checking_loading"), "child window type");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("status", "not_candidate_checking_loading"), "child window type");
             continue;
         }
-        if (AppInfoManager::instance().preload_mode_on(app_id)) {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "not_candidate_checking_loading"), "preloading app");
+        if (AppInfoManager::instance().preloadModeOn(app_id)) {
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("status", "not_candidate_checking_loading"), "preloading app");
             continue;
         }
 
         if (app_desc->defaultWindowType() == "card" || app_desc->defaultWindowType() == "minimal") {
             if (isLoadingAppExpired(app_id)) {
-                LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "not_candidate_checking_loading"), "fullscreen app, but expired");
+                LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                         PMLOGKS("app_id", app_id.c_str()),
+                         PMLOGKS("status", "not_candidate_checking_loading"), "fullscreen app, but expired");
                 continue;
             }
 
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("status", "autolaunch_condition_check"), PMLOGKS("loading_app_id", app_id.c_str()), "fullscreen app is already loading");
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("status", "autolaunch_condition_check"),
+                     PMLOGKS("loading_app_id", app_id.c_str()), "fullscreen app is already loading");
 
             setLastLoadingApp(app_id);
             result = true;
             break;
         } else {
-            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "not_candidate_checking_loading"), "not fullscreen type: %s", app_desc->defaultWindowType().c_str());
+            LOG_INFO(MSGID_LAUNCH_LASTAPP, 2,
+                     PMLOGKS("app_id", app_id.c_str()),
+                     PMLOGKS("status", "not_candidate_checking_loading"), "not fullscreen type: %s", app_desc->defaultWindowType().c_str());
         }
     }
 
@@ -1239,30 +1293,12 @@ void AppLifeManager::clearLaunchingAndLoadingItemsByAppId(const std::string& app
     bool found = false;
 
     while (true) {
-        auto it = std::find_if(m_launchItemList.begin(), m_launchItemList.end(), [&app_id](AppLaunchingItemPtr item) {return (item->app_id() == app_id);});
+        auto it = std::find_if(m_launchItemList.begin(), m_launchItemList.end(), [&app_id](AppLaunchingItemPtr item) {return (item->appId() == app_id);});
 
         if (it == m_launchItemList.end())
             break;
-
-        AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
-        if (app_desc != NULL) {
-            switch (app_desc->handler_type()) {
-            case LifeHandlerType::Web:
-                m_webLifecycleHandler.clear_handling_item(app_id);
-                break;
-            case LifeHandlerType::Qml:
-                m_qmlLifecycleHandler.clear_handling_item(app_id);
-                break;
-            case LifeHandlerType::Native:
-                m_nativeLifecycleHandler.clear_handling_item(app_id);
-                break;
-            default:
-                break;
-            }
-        }
-
         std::string err_text = "stopped launching";
-        (*it)->set_err_code_text(APP_LAUNCH_ERR_GENERAL, err_text);
+        (*it)->setErrCodeText(APP_LAUNCH_ERR_GENERAL, err_text);
         finishLaunching(*it);
         found = true;
     }
@@ -1274,15 +1310,19 @@ void AppLifeManager::clearLaunchingAndLoadingItemsByAppId(const std::string& app
         }
     }
 
-    if (found)
+    if (found) {
         setAppLifeStatus(app_id, "", LifeStatus::STOP);
+    }
 }
 
 void AppLifeManager::handleAutomaticApp(const std::string& app_id, bool continue_to_launch)
 {
     AppLaunchingItemPtr item = getLaunchingItemByAppId(app_id);
     if (item == NULL) {
-        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "launching_item_not_found"), PMLOGKS("where", "handle_automatic_app"), "");
+        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "launching_item_not_found"),
+                  PMLOGKS("where", "handle_automatic_app"), "");
         removeItemFromAutomaticPendingList(app_id);
 
         return;
@@ -1293,7 +1333,10 @@ void AppLifeManager::handleAutomaticApp(const std::string& app_id, bool continue
     if (continue_to_launch) {
         runWithPrelauncher(item);
     } else {
-        LOG_INFO(MSGID_LAUNCH_LASTAPP, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "cancel_to_launch_last_app"), PMLOGKS("where", "handle_automatic_app"), "");
+        LOG_INFO(MSGID_LAUNCH_LASTAPP, 3,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("status", "cancel_to_launch_last_app"),
+                 PMLOGKS("where", "handle_automatic_app"), "");
         finishLaunching(item);
         return;
     }
@@ -1302,7 +1345,7 @@ void AppLifeManager::handleAutomaticApp(const std::string& app_id, bool continue
 void AppLifeManager::getLaunchingAppIds(std::vector<std::string>& app_ids)
 {
     for (auto& launching_item : m_launchItemList)
-        app_ids.push_back(launching_item->app_id());
+        app_ids.push_back(launching_item->appId());
 }
 
 AppLaunchingItemPtr AppLifeManager::getLaunchingItemByUid(const std::string& uid)
@@ -1317,7 +1360,7 @@ AppLaunchingItemPtr AppLifeManager::getLaunchingItemByUid(const std::string& uid
 AppLaunchingItemPtr AppLifeManager::getLaunchingItemByAppId(const std::string& app_id)
 {
     for (auto& launching_item : m_launchItemList) {
-        if (launching_item->app_id() == app_id)
+        if (launching_item->appId() == app_id)
             return launching_item;
     }
     return NULL;
@@ -1325,7 +1368,8 @@ AppLaunchingItemPtr AppLifeManager::getLaunchingItemByAppId(const std::string& a
 
 void AppLifeManager::removeItem(const std::string& uid)
 {
-    auto it = std::find_if(m_launchItemList.begin(), m_launchItemList.end(), [&uid](AppLaunchingItemPtr item) {return (item->uid() == uid);});
+    auto it = std::find_if(m_launchItemList.begin(), m_launchItemList.end(),
+                          [&uid](AppLaunchingItemPtr item) {return (item->uid() == uid);});
     if (it == m_launchItemList.end())
         return;
     m_launchItemList.erase(it);
@@ -1334,21 +1378,29 @@ void AppLifeManager::removeItem(const std::string& uid)
 void AppLifeManager::addItemIntoAutomaticPendingList(AppLaunchingItemPtr item)
 {
     m_automaticPendingList.push_back(item);
-    LOG_INFO(MSGID_LAUNCH_LASTAPP, 3, PMLOGKS("app_id", item->app_id().c_str()), PMLOGKS("mode", "pending_automatic_app"), PMLOGKS("status", "added_into_list"), "");
+    LOG_INFO(MSGID_LAUNCH_LASTAPP, 3,
+             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("mode", "pending_automatic_app"),
+             PMLOGKS("status", "added_into_list"), "");
 }
 
 void AppLifeManager::removeItemFromAutomaticPendingList(const std::string& app_id)
 {
-    auto it = std::find_if(m_automaticPendingList.begin(), m_automaticPendingList.end(), [&app_id](AppLaunchingItemPtr item) {return (item->app_id() == app_id);});
+    auto it = std::find_if(m_automaticPendingList.begin(), m_automaticPendingList.end(),
+                          [&app_id](AppLaunchingItemPtr item) {return (item->appId() == app_id);});
     if (it != m_automaticPendingList.end()) {
         m_automaticPendingList.erase(it);
-        LOG_INFO(MSGID_LAUNCH_LASTAPP, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("mode", "pending_automatic_app"), PMLOGKS("status", "removed_from_list"), "");
+        LOG_INFO(MSGID_LAUNCH_LASTAPP, 3,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("mode", "pending_automatic_app"),
+                 PMLOGKS("status", "removed_from_list"), "");
     }
 }
 
 bool AppLifeManager::isInAutomaticPendingList(const std::string& app_id)
 {
-    auto it = std::find_if(m_automaticPendingList.begin(), m_automaticPendingList.end(), [&app_id](AppLaunchingItemPtr item) {return (item->app_id() == app_id);});
+    auto it = std::find_if(m_automaticPendingList.begin(), m_automaticPendingList.end(),
+                          [&app_id](AppLaunchingItemPtr item) {return (item->appId() == app_id);});
 
     if (it != m_automaticPendingList.end())
         return true;
@@ -1359,7 +1411,7 @@ bool AppLifeManager::isInAutomaticPendingList(const std::string& app_id)
 void AppLifeManager::getAutomaticPendingAppIds(std::vector<std::string>& app_ids)
 {
     for (auto& launching_item : m_automaticPendingList)
-        app_ids.push_back(launching_item->app_id());
+        app_ids.push_back(launching_item->appId());
 }
 
 void AppLifeManager::getLoadingAppIds(std::vector<std::string>& app_ids)
@@ -1402,7 +1454,8 @@ void AppLifeManager::removeLoadingApp(const std::string& app_id)
 
 void AppLifeManager::setLastLoadingApp(const std::string& app_id)
 {
-    auto it = std::find_if(m_loadingAppList.begin(), m_loadingAppList.end(), [&app_id](const LoadingAppItem& loading_app) {return (std::get<0>(loading_app) == app_id);});
+    auto it = std::find_if(m_loadingAppList.begin(), m_loadingAppList.end(),
+                          [&app_id](const LoadingAppItem& loading_app) {return (std::get<0>(loading_app) == app_id);});
     if (it == m_loadingAppList.end())
         return;
 
@@ -1415,13 +1468,17 @@ void AppLifeManager::addTimerForLastLoadingApp(const std::string& app_id)
     if ((m_lastLoadingAppTimerSet.first != 0) && (m_lastLoadingAppTimerSet.second == app_id))
         return;
 
-    auto it = std::find_if(m_loadingAppList.begin(), m_loadingAppList.end(), [&app_id](const LoadingAppItem& loading_app) {return (std::get<0>(loading_app) == app_id);});
+    auto it = std::find_if(m_loadingAppList.begin(), m_loadingAppList.end(),
+                          [&app_id](const LoadingAppItem& loading_app) {return (std::get<0>(loading_app) == app_id);});
     if (it == m_loadingAppList.end())
         return;
 
     AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "cannot_add_timer_for_last_loading_app"), PMLOGKS("reason", "null description"), "");
+        LOG_ERROR(MSGID_LAUNCH_LASTAPP_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("status", "cannot_add_timer_for_last_loading_app"),
+                  PMLOGKS("reason", "null description"), "");
         return;
     }
 
@@ -1482,7 +1539,7 @@ void AppLifeManager::resetLastAppCandidates()
 bool AppLifeManager::hasOnlyPreloadedItems(const std::string& app_id)
 {
     for (auto& launching_item : m_launchItemList) {
-        if (launching_item->app_id() == app_id && launching_item->preload().empty())
+        if (launching_item->appId() == app_id && launching_item->preload().empty())
             return false;
     }
 
@@ -1491,7 +1548,7 @@ bool AppLifeManager::hasOnlyPreloadedItems(const std::string& app_id)
             return false;
     }
 
-    if (AppInfoManager::instance().is_running(app_id) && !AppInfoManager::instance().preload_mode_on(app_id)) {
+    if (AppInfoManager::instance().isRunning(app_id) && !AppInfoManager::instance().preloadModeOn(app_id)) {
         return false;
     }
 
@@ -1501,7 +1558,7 @@ bool AppLifeManager::hasOnlyPreloadedItems(const std::string& app_id)
 bool AppLifeManager::isLaunchingItemExpired(AppLaunchingItemPtr item)
 {
     double current_time = get_current_time();
-    double elapsed_time = current_time - item->launch_start_time();
+    double elapsed_time = current_time - item->launchStartTime();
 
     if (elapsed_time > SettingsImpl::instance().GetLaunchExpiredTimeout())
         return true;
@@ -1520,7 +1577,9 @@ bool AppLifeManager::isLoadingAppExpired(const std::string& app_id)
     }
 
     if (loading_start_time == 0) {
-        LOG_WARNING(MSGID_LAUNCH_LASTAPP, 2, PMLOGKS("status", "invalid_loading_start_time"), PMLOGKS("app_id", app_id.c_str()), "");
+        LOG_WARNING(MSGID_LAUNCH_LASTAPP, 2,
+                    PMLOGKS("status", "invalid_loading_start_time"),
+                    PMLOGKS("app_id", app_id.c_str()), "");
         return true;
     }
 
@@ -1537,7 +1596,10 @@ AppLifeHandlerInterface* AppLifeManager::getLifeHandlerForApp(const std::string&
 {
     AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", __FUNCTION__), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "null_description"),
+                  PMLOGKS("where", __FUNCTION__), "");
         return nullptr;
     }
 

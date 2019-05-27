@@ -19,7 +19,7 @@
 #include "core/base/logging.h"
 
 PrerequisiteItem::PrerequisiteItem() :
-        status_(PrerequisiteItemStatus::Ready)
+        m_status(PrerequisiteItemStatus::Ready)
 {
     LOG_DEBUG("[PrerequisiteItem] Created");
 }
@@ -39,9 +39,9 @@ void PrerequisiteItem::SetStatus(PrerequisiteItemStatus status)
     default:
         break;
     }
-    status_ = status;
-    if (status_notifier_)
-        status_notifier_(status_);
+    m_status = status;
+    if (m_status_notifier)
+        m_status_notifier(m_status);
 }
 
 ////////////////////////////////////
@@ -52,47 +52,47 @@ PrerequisiteMonitor::~PrerequisiteMonitor()
     LOG_DEBUG("[PrerequisiteMonitor] Released in destructor");
 }
 
-PrerequisiteMonitor& PrerequisiteMonitor::Create(std::function<void(PrerequisiteResult)> result_handler)
+PrerequisiteMonitor& PrerequisiteMonitor::create(std::function<void(PrerequisiteResult)> result_handler)
 {
     PrerequisiteMonitor* monitor = new PrerequisiteMonitor(result_handler);
     return *monitor;
 }
 
-void PrerequisiteMonitor::AddItem(PrerequisiteItemPtr item)
+void PrerequisiteMonitor::addItem(PrerequisiteItemPtr item)
 {
     if (item == nullptr)
         return;
 
     LOG_DEBUG("[PrerequisiteMonitor] Item Added");
-    item->status_notifier_ = std::bind(&PrerequisiteMonitor::HandleItemStatus, this, std::placeholders::_1);
-    prerequisites_.push_back(item);
+    item->m_status_notifier = std::bind(&PrerequisiteMonitor::handleItemStatus, this, std::placeholders::_1);
+    m_prerequisites.push_back(item);
 }
 
-void PrerequisiteMonitor::Run()
+void PrerequisiteMonitor::run()
 {
-    if (prerequisites_.empty()) {
-        if (result_handler_ != nullptr)
-            result_handler_(PrerequisiteResult::Passed);
+    if (m_prerequisites.empty()) {
+        if (m_resultHandler != nullptr)
+            m_resultHandler(PrerequisiteResult::Passed);
         return;
     }
 
-    for (auto item : prerequisites_) {
+    for (auto item : m_prerequisites) {
         LOG_DEBUG("[PrerequisiteMonitor] Item Starting");
-        item->status_ = PrerequisiteItemStatus::Doing;
-        item->Start();
+        item->m_status = PrerequisiteItemStatus::Doing;
+        item->start();
     }
 }
 
-void PrerequisiteMonitor::HandleItemStatus(PrerequisiteItemStatus status)
+void PrerequisiteMonitor::handleItemStatus(PrerequisiteItemStatus status)
 {
 
     LOG_DEBUG("[PrerequisiteMonitor] Item Status Changed: %d", (int ) status);
 
     PrerequisiteResult result = PrerequisiteResult::Passed;
 
-    for (auto item : prerequisites_) {
-        LOG_DEBUG("item checking: %d", (int ) item->Status());
-        switch (item->Status()) {
+    for (auto item : m_prerequisites) {
+        LOG_DEBUG("item checking: %d", (int ) item->status());
+        switch (item->status()) {
         case PrerequisiteItemStatus::Ready:
         case PrerequisiteItemStatus::Doing:
             return;
@@ -106,10 +106,10 @@ void PrerequisiteMonitor::HandleItemStatus(PrerequisiteItemStatus status)
     }
 
     LOG_DEBUG("[PrerequisiteMonitor] All Item Ready. Now call result handler");
-    result_handler_(result);
+    m_resultHandler(result);
 
     LOG_DEBUG("[PrerequisiteMonitor] Done all duty. Now Releasing itself");
-    prerequisites_.clear();
+    m_prerequisites.clear();
 
     // TODO: PrerequisiteMonitor doesn't guarantee item's timing issue
     //       Currently it focuses on high level multi condition checking before doing something
@@ -121,13 +121,13 @@ void PrerequisiteMonitor::HandleItemStatus(PrerequisiteItemStatus status)
 }
 
 // For later use in case when it needs
-gboolean PrerequisiteMonitor::AsyncDelete(gpointer data)
+gboolean PrerequisiteMonitor::asyncDelete(gpointer data)
 {
     PrerequisiteMonitor *p = static_cast<PrerequisiteMonitor*>(data);
     if (!p)
         return FALSE;
 
-    p->prerequisites_.clear();
+    p->m_prerequisites.clear();
 
     delete p;
     return FALSE;

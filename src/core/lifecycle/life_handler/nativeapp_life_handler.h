@@ -27,23 +27,26 @@ typedef std::vector<pid_t> PidVector;
 
 class KillingData {
 public:
-    KillingData(const std::string& app_id, const std::string& pid, const PidVector& all_pids) :
-            app_id_(app_id), pid_(pid), all_pids_(all_pids), timer_source_(0)
+    KillingData(const std::string& app_id, const std::string& pid, const PidVector& all_pids)
+        : m_appId(app_id),
+          m_pid(pid),
+          m_allPids(all_pids),
+          m_timerSource(0)
     {
     }
     ~KillingData()
     {
-        if (timer_source_ != 0) {
-            g_source_remove(timer_source_);
-            timer_source_ = 0;
+        if (m_timerSource != 0) {
+            g_source_remove(m_timerSource);
+            m_timerSource = 0;
         }
     }
 
 public:
-    std::string app_id_;
-    std::string pid_;
-    PidVector all_pids_;
-    guint timer_source_;
+    std::string m_appId;
+    std::string m_pid;
+    PidVector m_allPids;
+    guint m_timerSource;
 };
 typedef std::shared_ptr<KillingData> KillingDataPtr;
 
@@ -60,36 +63,36 @@ public:
     virtual ~NativeAppLifeCycleInterface();
 
     // Main methods
-    void Launch(NativeClientInfoPtr client, AppLaunchingItemPtr item);
-    void Close(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
-    void Pause(NativeClientInfoPtr, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
+    void launch(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    void close(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
+    void pause(NativeClientInfoPtr, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
 
-    NativeAppLifeHandler* Parent() const
+    NativeAppLifeHandler* parent() const
     {
-        return parent_;
+        return m_parent;
     }
-    void AddLaunchHandler(RuntimeStatus status, NativeAppLaunchHandler handler);
+    void addLaunchHandler(RuntimeStatus status, NativeAppLaunchHandler handler);
 
     // launch template method
-    void LaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item);
-    virtual void LaunchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item) = 0;
-    virtual void LaunchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item) = 0;
-    virtual bool CheckLaunchCondition(AppLaunchingItemPtr item) = 0;
-    virtual std::string MakeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc) = 0;
+    void launchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual void launchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item) = 0;
+    virtual void launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item) = 0;
+    virtual bool checkLaunchCondition(AppLaunchingItemPtr item) = 0;
+    virtual std::string makeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc) = 0;
 
     // relaunch template method
-    void RelaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item);
-    virtual void MakeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params) = 0;
+    void relaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual void makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params) = 0;
 
     // close template method
-    virtual void CloseAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text) = 0;
+    virtual void closeAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text) = 0;
 
     // pause template method
-    virtual void PauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event) = 0;
+    virtual void pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event) = 0;
 
 private:
-    NativeAppLifeHandler* parent_;
-    std::map<RuntimeStatus, NativeAppLaunchHandler> launch_handler_map_;
+    NativeAppLifeHandler* m_parent;
+    std::map<RuntimeStatus, NativeAppLaunchHandler> m_launchHandlerMap;
 
 };
 
@@ -102,19 +105,19 @@ public:
 
 private:
     // launch
-    virtual bool CheckLaunchCondition(AppLaunchingItemPtr item);
-    virtual std::string MakeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc);
-    virtual void LaunchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
-    virtual void LaunchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual bool checkLaunchCondition(AppLaunchingItemPtr item);
+    virtual std::string makeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc);
+    virtual void launchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual void launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
 
     // relaunch
-    virtual void MakeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params);
+    virtual void makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params);
 
     // close
-    virtual void CloseAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
+    virtual void closeAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
 
     // pause
-    virtual void PauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
+    virtual void pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
 };
 
 class NativeAppLifeCycleInterfaceVer2: public NativeAppLifeCycleInterface {
@@ -126,22 +129,20 @@ public:
 
 private:
     // launch
-    virtual bool CheckLaunchCondition(AppLaunchingItemPtr item);
-    virtual std::string MakeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc);
-    virtual void LaunchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
-    virtual void LaunchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual bool checkLaunchCondition(AppLaunchingItemPtr item);
+    virtual std::string makeForkArguments(AppLaunchingItemPtr item, AppDescPtr app_desc);
+    virtual void launchAfterClosedAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
+    virtual void launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, AppLaunchingItemPtr item);
 
     // relaunch
-    virtual void MakeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params);
+    virtual void makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& j_params);
 
     // close
-    virtual void CloseAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
+    virtual void closeAsPolicy(NativeClientInfoPtr client, AppCloseItemPtr item, std::string& err_text);
 
     // pause
-    virtual void PauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
+    virtual void pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
 };
-
-/////////////////////////////////////////////////////////////////
 
 class NativeClientInfo {
 public:
@@ -158,49 +159,49 @@ public:
     void SetLifeCycleHandler(int ver, NativeAppLifeCycleInterface* handler);
     NativeAppLifeCycleInterface* GetLifeCycleHandler() const
     {
-        return life_cycle_handler_;
+        return m_lifeCycleHandler;
     }
     bool SendEvent(pbnjson::JValue& payload);
     void SetAppId(const std::string& app_id)
     {
-        app_id_ = app_id;
+        m_appId = app_id;
     }
     void SetPid(const std::string& pid)
     {
-        pid_ = pid;
+        m_pid = pid;
     }
 
     const std::string& AppId() const
     {
-        return app_id_;
+        return m_appId;
     }
     const std::string& Pid() const
     {
-        return pid_;
+        return m_pid;
     }
     int InterfaceVersion() const
     {
-        return interface_version_;
+        return m_interfaceVersion;
     }
     bool IsRegistered() const
     {
-        return is_registered_;
+        return m_isRegistered;
     }
     bool IsRegistrationExpired() const
     {
-        return is_registration_expired_;
+        return m_isRegistrationExpired;
     }
 
 private:
-    std::string app_id_;
-    std::string pid_;
-    int interface_version_;
-    bool is_registered_;
-    bool is_registration_expired_;
-    LSMessage* lsmsg_;
-    guint registration_check_timer_source_;
-    double registration_check_start_time_;
-    NativeAppLifeCycleInterface* life_cycle_handler_;
+    std::string m_appId;
+    std::string m_pid;
+    int m_interfaceVersion;
+    bool m_isRegistered;
+    bool m_isRegistrationExpired;
+    LSMessage* m_lsmsg;
+    guint m_registrationCheckTimerSource;
+    double m_registrationCheckStartTime;
+    NativeAppLifeCycleInterface* m_lifeCycleHandler;
 };
 
 class NativeAppLifeHandler: public AppLifeHandlerInterface {
@@ -208,10 +209,9 @@ public:
     NativeAppLifeHandler();
     virtual ~NativeAppLifeHandler();
 
-    virtual void launch(AppLaunchingItemPtr item);
-    virtual void close(AppCloseItemPtr item, std::string& err_text);
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true);
-    virtual void clear_handling_item(const std::string& app_id);
+    virtual void launch(AppLaunchingItemPtr item) override;
+    virtual void close(AppCloseItemPtr item, std::string& err_text) override;
+    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
     void RegisterApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
     bool ChangeRunningAppId(const std::string& current_id, const std::string& target_id, ErrorInfo& err_info);
@@ -257,12 +257,12 @@ private:
     void CancelLaunchPendingItemAndMakeItDone(const std::string& app_id);
 
     // variables
-    std::list<KillingDataPtr> killing_list_;
-    std::list<AppLaunchingItemPtr> launch_pending_queue_;
-    std::vector<NativeClientInfoPtr> active_clients_;
+    std::list<KillingDataPtr> m_killingList;
+    std::list<AppLaunchingItemPtr> m_launchPendingQueue;
+    std::vector<NativeClientInfoPtr> m_activeClients;
 
-    NativeAppLifeCycleInterfaceVer1 native_handler_v1_;
-    NativeAppLifeCycleInterfaceVer2 native_handler_v2_;
+    NativeAppLifeCycleInterfaceVer1 m_nativeHandlerV1;
+    NativeAppLifeCycleInterfaceVer2 m_nativeHandlerV2;
 };
 
 #endif

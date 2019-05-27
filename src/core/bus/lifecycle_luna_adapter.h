@@ -23,48 +23,47 @@
 class LifeCycleLunaAdapter {
 public:
     LifeCycleLunaAdapter();
-    ~LifeCycleLunaAdapter();
+    virtual ~LifeCycleLunaAdapter();
 
-    void Init();
+    void init();
 
 private:
-    void InitLunaApiHandler();
-    void NoHandler(LunaTaskPtr task);
-    void RequestController(LunaTaskPtr task);
-    void HandleRequest(LunaTaskPtr task);
-    void OnReady();
-    void OnScanFinished(ScanMode mode, const AppDescMaps& scannced_apps);
+    void initLunaApiHandler();
+    void noHandler(LunaTaskPtr task);
+    void requestController(LunaTaskPtr task);
+    void handleRequest(LunaTaskPtr task);
+    void onReady();
+    void onScanFinished(ScanMode mode, const AppDescMaps& scannced_apps);
 
     // api handler
-    void Launch(LunaTaskPtr task);
-    void Open(LunaTaskPtr task);
-    void Pause(LunaTaskPtr task);
-    void CloseByAppId(LunaTaskPtr task);
-    void CloseByAppIdForDev(LunaTaskPtr task);
-    void CloseAllApps(LunaTaskPtr task);
-    void Running(LunaTaskPtr task);
-    void RunningForDev(LunaTaskPtr task);
-    void ChangeRunningAppId(LunaTaskPtr task);
-    void GetAppLifeEvents(LunaTaskPtr task);
-    void GetAppLifeStatus(LunaTaskPtr task);
-    void GetForegroundAppInfo(LunaTaskPtr task);
-    void LockApp(LunaTaskPtr task);
-    void RegisterApp(LunaTaskPtr task);
-    void RegisterNativeApp(LunaTaskPtr task);
-    void NotifyAlertClosed(LunaTaskPtr task);
+    void launch(LunaTaskPtr task);
+    void pause(LunaTaskPtr task);
+    void closeByAppId(LunaTaskPtr task);
+    void closeByAppIdForDev(LunaTaskPtr task);
+    void closeAllApps(LunaTaskPtr task);
+    void running(LunaTaskPtr task);
+    void runningForDev(LunaTaskPtr task);
+    void changeRunningAppId(LunaTaskPtr task);
+    void getAppLifeEvents(LunaTaskPtr task);
+    void getAppLifeStatus(LunaTaskPtr task);
+    void getForegroundAppInfo(LunaTaskPtr task);
+    void lockApp(LunaTaskPtr task);
+    void registerApp(LunaTaskPtr task);
+    void registerNativeApp(LunaTaskPtr task);
+    void notifyAlertClosed(LunaTaskPtr task);
 
-    void OnForegroundAppChanged(const std::string& app_id);
-    void OnExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info);
-    void OnLifeCycleEventGenarated(const pbnjson::JValue& event);
+    void onForegroundAppChanged(const std::string& app_id);
+    void onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info);
+    void onLifeCycleEventGenarated(const pbnjson::JValue& event);
 
     // TODO : make them retired via sangria
     // api handler which should be deprecated
-    void Close(LunaTaskPtr task);
-    void NotifySplashTimeout(LunaTaskPtr task);
-    void OnLaunch(LunaTaskPtr task);
+    void close(LunaTaskPtr task);
+    void notifySplashTimeout(LunaTaskPtr task);
+    void onLaunch(LunaTaskPtr task);
 
-    std::vector<LunaTaskPtr> pending_tasks_on_ready_;
-    std::vector<LunaTaskPtr> pending_tasks_on_scanner_;
+    std::vector<LunaTaskPtr> m_pendingTasksOnReady;
+    std::vector<LunaTaskPtr> m_pendingTasksOnScanner;
 };
 
 #endif  // CORE_LIFECYCLE_LIFECYCLE_LUNA_ADAPTER_H_

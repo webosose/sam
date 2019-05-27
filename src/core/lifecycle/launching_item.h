@@ -27,11 +27,17 @@
 const std::string SYS_LAUNCHING_UID = "alertId";
 
 enum class AppLaunchRequestType {
-    INTERNAL = 0, EXTERNAL, EXTERNAL_FOR_VIRTUALAPP,
+    INTERNAL = 0,
+    EXTERNAL,
+    EXTERNAL_FOR_VIRTUALAPP,
 };
 
 enum class AppLaunchingStage {
-    NONE = 0, PRELAUNCH, MEMORY_CHECK, LAUNCH, DONE,
+    NONE = 0,
+    PRELAUNCH,
+    MEMORY_CHECK,
+    LAUNCH,
+    DONE,
 };
 
 class AppLaunchingItem {
@@ -43,19 +49,19 @@ public:
     {
         return m_uid;
     }
-    const std::string& app_id() const
+    const std::string& appId() const
     {
-        return m_app_id;
+        return m_appId;
     }
     const std::string& pid() const
     {
         return m_pid;
     }
-    const std::string& requested_app_id() const
+    const std::string& requestedAppId() const
     {
-        return m_requested_app_id;
+        return m_requestedAppId;
     }
-    bool is_redirected() const
+    bool isRedirected() const
     {
         return m_redirected;
     }
@@ -63,180 +69,180 @@ public:
     {
         return m_stage;
     }
-    const int& sub_stage() const
+    const int& subStage() const
     {
-        return m_sub_stage;
+        return m_subStage;
     }
-    const std::string& caller_id() const
+    const std::string& callerId() const
     {
-        return m_caller_id;
+        return m_callerId;
     }
-    const std::string& caller_pid() const
+    const std::string& callerPid() const
     {
-        return m_caller_pid;
+        return m_callerPid;
     }
-    bool show_splash() const
+    bool showSplash() const
     {
-        return m_show_splash;
+        return m_showSplash;
     }
-    bool show_spinner() const
+    bool showSpinner() const
     {
-        return m_show_spinner;
+        return m_showSpinner;
     }
     const std::string& preload() const
     {
         return m_preload;
     }
-    bool keep_alive() const
+    bool keepAlive() const
     {
-        return m_keep_alive;
+        return m_keepAlive;
     }
-    bool automatic_launch() const
+    bool automaticLaunch() const
     {
-        return m_automatic_launch;
+        return m_automaticLaunch;
     }
     const pbnjson::JValue& params() const
     {
-        return m_params;
+        return mParams;
     }
     LSMessage* lsmsg() const
     {
         return m_lsmsg;
     }
-    LSMessageToken return_token() const
+    LSMessageToken returnToken() const
     {
-        return m_return_token;
+        return m_returnToken;
     }
-    const pbnjson::JValue& return_jmsg() const
+    const pbnjson::JValue& returnJmsg() const
     {
-        return m_return_jmsg;
+        return m_returnJmsg;
     }
-    int err_code() const
+    int errCode() const
     {
-        return m_err_code;
+        return m_errCode;
     }
-    const std::string& err_text() const
+    const std::string& errText() const
     {
-        return m_err_text;
+        return m_errText;
     }
-    const double& launch_start_time() const
+    const double& launchStartTime() const
     {
-        return m_launch_start_time;
+        return m_launchStartTime;
     }
-    const std::string& launch_reason() const
+    const std::string& launchReason() const
     {
-        return m_launch_reason;
+        return m_launchReason;
     }
-    bool is_last_input_app() const
+    bool isLastInputApp() const
     {
-        return m_last_input_app;
+        return m_isLastInputApp;
     }
 
     // re-code redirection for app_desc and consider other values again
-    bool set_redirection(const std::string& target_app_id, const pbnjson::JValue& new_params);
-    void set_stage(AppLaunchingStage stage)
+    bool setRedirection(const std::string& target_app_id, const pbnjson::JValue& new_params);
+    void setStage(AppLaunchingStage stage)
     {
         m_stage = stage;
     }
-    void set_sub_stage(const int stage)
+    void setSubStage(const int stage)
     {
-        m_sub_stage = stage;
+        m_subStage = stage;
     }
-    void set_pid(const std::string& pid)
+    void setPid(const std::string& pid)
     {
         m_pid = pid;
     }
-    void set_caller_id(const std::string& id)
+    void setCallerId(const std::string& id)
     {
-        m_caller_id = id;
+        m_callerId = id;
     }
-    void set_caller_pid(const std::string& pid)
+    void setCallerPid(const std::string& pid)
     {
-        m_caller_pid = pid;
+        m_callerPid = pid;
     }
-    void set_show_splash(bool v)
+    void setShowSplash(bool v)
     {
-        m_show_splash = v;
+        m_showSplash = v;
     }
-    void set_show_spinner(bool v)
+    void setShowSpinner(bool v)
     {
-        m_show_spinner = v;
+        m_showSpinner = v;
     }
-    void set_preload(const std::string& preload)
+    void setPreload(const std::string& preload)
     {
         m_preload = preload;
     }
-    void set_keep_alive(bool v)
+    void setKeepAlive(bool v)
     {
-        m_keep_alive = v;
+        m_keepAlive = v;
     }
-    void set_automatic_launch(bool v)
+    void setAutomaticLaunch(bool v)
     {
-        m_automatic_launch = v;
+        m_automaticLaunch = v;
     }
-    void set_return_token(LSMessageToken token)
+    void setReturnToken(LSMessageToken token)
     {
-        m_return_token = token;
+        m_returnToken = token;
     }
-    void reset_return_token()
+    void resetReturnToken()
     {
-        m_return_token = 0;
+        m_returnToken = 0;
     }
-    void set_call_return_jmsg(const pbnjson::JValue& jmsg)
+    void setCallReturnJmsg(const pbnjson::JValue& jmsg)
     {
-        m_return_jmsg = jmsg.duplicate();
+        m_returnJmsg = jmsg.duplicate();
     }
-    void set_err_code_text(int code, std::string err)
+    void setErrCodeText(int code, std::string err)
     {
-        m_err_code = code;
-        m_err_text = err;
+        m_errCode = code;
+        m_errText = err;
     }
-    void set_err_code(int code)
+    void setErrCode(int code)
     {
-        m_err_code = code;
+        m_errCode = code;
     }
-    void set_err_text(std::string err)
+    void setErrText(std::string err)
     {
-        m_err_text = err;
+        m_errText = err;
     }
-    void set_launch_start_time(const double& start_time)
+    void setLaunchStartTime(const double& start_time)
     {
-        m_launch_start_time = start_time;
+        m_launchStartTime = start_time;
     }
-    void set_launch_reason(const std::string& launch_reason)
+    void setLaunchReason(const std::string& launch_reason)
     {
-        m_launch_reason = launch_reason;
+        m_launchReason = launch_reason;
     }
-    void set_last_input_app(bool v)
+    void setLastInputApp(bool v)
     {
-        m_last_input_app = v;
+        m_isLastInputApp = v;
     }
 
 private:
     std::string m_uid;
-    std::string m_app_id;
+    std::string m_appId;
     std::string m_pid;
-    std::string m_requested_app_id;
+    std::string m_requestedAppId;
     bool m_redirected;
     AppLaunchRequestType m_rtype;
     AppLaunchingStage m_stage;
-    int m_sub_stage;
-    pbnjson::JValue m_params;
+    int m_subStage;
+    pbnjson::JValue mParams;
     LSMessage* m_lsmsg;
-    std::string m_caller_id;
-    std::string m_caller_pid;
-    bool m_show_splash;
-    bool m_show_spinner;
+    std::string m_callerId;
+    std::string m_callerPid;
+    bool m_showSplash;
+    bool m_showSpinner;
     std::string m_preload;
-    bool m_keep_alive;
-    bool m_automatic_launch;
-    LSMessageToken m_return_token;
-    pbnjson::JValue m_return_jmsg;
-    int m_err_code;
-    std::string m_err_text;
-    double m_launch_start_time;
-    std::string m_launch_reason;
-    bool m_last_input_app;
+    bool m_keepAlive;
+    bool m_automaticLaunch;
+    LSMessageToken m_returnToken;
+    pbnjson::JValue m_returnJmsg;
+    int m_errCode;
+    std::string m_errText;
+    double m_launchStartTime;
+    std::string m_launchReason;
+    bool m_isLastInputApp;
 };
 
 typedef std::shared_ptr<AppLaunchingItem> AppLaunchingItemPtr;

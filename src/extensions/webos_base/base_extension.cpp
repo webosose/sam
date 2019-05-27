@@ -80,7 +80,7 @@ void BaseExtension::OnLaunchingFinished(AppLaunchingItemPtr item)
 {
     AppLaunchingItem4BasePtr basic_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
 
-    if (basic_item->err_text().empty())
-        AppLifeManager::instance().setLastLoadingApp(basic_item->app_id());
+    if (basic_item->errText().empty())
+        AppLifeManager::instance().setLastLoadingApp(basic_item->appId());
 }
 

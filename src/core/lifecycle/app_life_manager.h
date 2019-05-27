@@ -130,7 +130,7 @@ private:
     void finishLaunching(AppLaunchingItemPtr item);
 
     void launchApp(AppLaunchingItemPtr item);
-    void closeApp(const std::string& appId, const std::string& callerId, const std::string& reason, std::string& err_text, bool clearAllItems = false);
+    void closeApp(const std::string& appId, const std::string& callerId, const std::string& reason, std::string& errText, bool clearAllItems = false);
     void pauseApp(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool report_event = true);
 
     void replyWithResult(LSMessage* lsmsg, const std::string& pid, bool result, const int& err_code, const std::string& err_text);

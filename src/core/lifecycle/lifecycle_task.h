@@ -54,7 +54,7 @@ public:
     }
     void SetError(int32_t code, const std::string& text)
     {
-        luna_task_->SetError(code, text);
+        luna_task_->setError(code, text);
     }
     const std::string& app_id() const
     {
@@ -70,7 +70,7 @@ public:
     }
     void Finalize()
     {
-        luna_task_->ReplyResult();
+        luna_task_->replyResult();
     }
     void Finalize(const pbnjson::JValue& payload)
     {
