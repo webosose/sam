@@ -50,9 +50,9 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
     }
 
     // parse caller info
-    std::string caller = GetCallerFromMessage(lsmsg);
-    std::string caller_id = GetCallerID(caller);
-    std::string caller_pid = GetCallerPID(caller);
+    std::string caller = getCallerFromMessage(lsmsg);
+    std::string caller_id = getCallerID(caller);
+    std::string caller_pid = getCallerPID(caller);
 
     pbnjson::JValue params4app = (params.hasKey("params") && params["params"].isObject()) ? params["params"].duplicate() : pbnjson::Object();
 

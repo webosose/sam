@@ -27,16 +27,16 @@ public:
 
     void start();
     void stop();
-    void create_instance();
-    void destroy_instance();
-    void run_thread();
-    void stop_thread();
+    void createInstance();
+    void destroyInstance();
+    void runThread();
+    void stopThread();
 
 protected:
     virtual bool initialize() = 0;
     virtual bool terminate() = 0;
 
-    GMainLoop* main_loop()
+    GMainLoop* mainLoop()
     {
         return m_main_loop;
     }

@@ -31,87 +31,85 @@ const std::string UPDATE_TYPE_REQUIRED = "F";
 const std::string UPDATE_TYPE_AUTO_REQUIRED = "K";
 const std::string OUT_OF_SERVICE = "D";
 
-class AppInfo;
-
-typedef std::shared_ptr<const AppInfo> AppInfoConstPtr;
-typedef std::shared_ptr<AppInfo> AppInfoPtr;
-typedef std::map<std::string, AppInfoPtr> AppInfoList;
-
 class AppInfo {
 public:
     AppInfo(const std::string& app_id);
-    ~AppInfo();
+    virtual ~AppInfo();
 
     // getter list
-    bool can_execute() const
+    bool executionLock() const
     {
-        return !m_execution_lock;
+        return !m_executionLock;
     }
-    const std::string& app_id() const
+    const std::string& appId() const
     {
-        return m_app_id;
+        return m_appId;
     }
-    bool is_remove_flagged() const
+    bool isRemoveFlagged() const
     {
-        return m_removal_flag;
+        return m_removalFlag;
     }
     bool preload_mode_on() const
     {
-        return m_preload_mode_on;
+        return m_preloadModeOn;
     }
     double last_launch_time() const
     {
-        return m_last_launch_time;
+        return m_lastLaunchTime;
     }
     LifeStatus life_status() const
     {
-        return m_life_status;
+        return m_lifeStatus;
     }
     RuntimeStatus runtime_status() const
     {
-        return m_runtime_status;
+        return m_runtimeStatus;
     }
     const pbnjson::JValue& virtual_launch_params() const
     {
-        return m_virtual_launch_params;
+        return m_virtualLaunchParams;
     }
 
     // setter list
     void set_execution_lock(bool v = true)
     {
-        m_execution_lock = v;
+        m_executionLock = v;
     }
     void set_removal_flag(bool v = true)
     {
-        m_removal_flag = v;
+        m_removalFlag = v;
     }
     void set_preload_mode(bool mode)
     {
-        m_preload_mode_on = mode;
+        m_preloadModeOn = mode;
     }
     void set_last_launch_time(double launch_time)
     {
-        m_last_launch_time = launch_time;
+        m_lastLaunchTime = launch_time;
     }
     void set_life_status(const LifeStatus& status);
     void set_runtime_status(RuntimeStatus status)
     {
-        m_runtime_status = status;
+        m_runtimeStatus = status;
     }
     void set_virtual_launch_params(const pbnjson::JValue& params)
     {
-        m_virtual_launch_params = params.duplicate();
+        m_virtualLaunchParams = params.duplicate();
     }
 
 private:
-    std::string m_app_id;
-    bool m_execution_lock;
-    bool m_removal_flag;
-    bool m_preload_mode_on;
-    double m_last_launch_time;
-    LifeStatus m_life_status;
-    RuntimeStatus m_runtime_status;
-    pbnjson::JValue m_virtual_launch_params;
+    std::string m_appId;
+    bool m_executionLock;
+    bool m_removalFlag;
+    bool m_preloadModeOn;
+    double m_lastLaunchTime;
+    LifeStatus m_lifeStatus;
+    RuntimeStatus m_runtimeStatus;
+    pbnjson::JValue m_virtualLaunchParams;
 };
+
+typedef std::shared_ptr<const AppInfo> AppInfoConstPtr;
+typedef std::shared_ptr<AppInfo> AppInfoPtr;
+typedef std::map<std::string, AppInfoPtr> AppInfoList;
 
 #endif

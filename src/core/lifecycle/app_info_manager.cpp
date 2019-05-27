@@ -24,175 +24,175 @@ const std::string& NULL_STR = "";
 const std::string& DEFAULT_NULL_APP = "@APP_INFO_DEFAULT_APP@";
 
 AppInfoManager::AppInfoManager() :
-        m_json_foreground_info(pbnjson::Array())
+        m_jsonForegroundInfo(pbnjson::Array())
 {
-    m_default_app_info = std::make_shared<AppInfo>(DEFAULT_NULL_APP);
+    m_defaultAppInfo = std::make_shared<AppInfo>(DEFAULT_NULL_APP);
 }
 
 AppInfoManager::~AppInfoManager()
 {
 }
 
-void AppInfoManager::Init()
+void AppInfoManager::init()
 {
-    ApplicationManager::instance().signalAllAppRosterChanged.connect(boost::bind(&AppInfoManager::OnAllAppRosterChanged, this, _1));
+    ApplicationManager::instance().signalAllAppRosterChanged.connect(boost::bind(&AppInfoManager::onAllAppRosterChanged, this, _1));
 }
 
-AppInfoPtr AppInfoManager::get_app_info_for_setter(const std::string& app_id)
+AppInfoPtr AppInfoManager::getAppInfoForSetter(const std::string& appId)
 {
-    if (app_id.empty()) {
+    if (appId.empty()) {
         LOG_ERROR(MSGID_APPINFO_ERR, 1, PMLOGKS("reason", "empty_app_id"), "");
         return NULL;
     }
 
-    AppInfoPtr app_info = get_app_info(app_id);
-    if (app_info == NULL) {
-        app_info = std::make_shared<AppInfo>(app_id);
-        if (app_info == NULL) {
+    AppInfoPtr appInfo = getAppInfo(appId);
+    if (appInfo == NULL) {
+        appInfo = std::make_shared<AppInfo>(appId);
+        if (appInfo == NULL) {
             LOG_ERROR(MSGID_APPINFO_ERR, 1, PMLOGKS("reason", "failed_create_new_app_info"), "");
             return NULL;
         }
-        m_appinfo_list[app_id] = app_info;
-        LOG_INFO(MSGID_APPINFO, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "item_added"), "");
+        m_appinfoList[appId] = appInfo;
+        LOG_INFO(MSGID_APPINFO, 2,
+                 PMLOGKS("app_id", appId.c_str()),
+                 PMLOGKS("status", "item_added"), "");
     }
-    return app_info;
+    return appInfo;
 }
 
-AppInfoPtr AppInfoManager::get_app_info_for_getter(const std::string& app_id)
+AppInfoPtr AppInfoManager::getAppInfoForGetter(const std::string& app_id)
 {
-    AppInfoPtr app_info = get_app_info(app_id);
-    if (app_info == NULL)
-        return m_default_app_info;
-    return app_info;
+    AppInfoPtr appInfo = getAppInfo(app_id);
+    if (appInfo == NULL)
+        return m_defaultAppInfo;
+    return appInfo;
 }
 
-AppInfoPtr AppInfoManager::get_app_info(const std::string& app_id)
+AppInfoPtr AppInfoManager::getAppInfo(const std::string& app_id)
 {
-    auto it = m_appinfo_list.find(app_id);
-    if (it == m_appinfo_list.end())
+    auto it = m_appinfoList.find(app_id);
+    if (it == m_appinfoList.end())
         return NULL;
-    return m_appinfo_list[app_id];
+    return m_appinfoList[app_id];
 }
 
-void AppInfoManager::remove_app_info(const std::string& app_id)
+void AppInfoManager::removeAppInfo(const std::string& app_id)
 {
-    LifeStatus current_status = life_status(app_id);
+    LifeStatus current_status = lifeStatus(app_id);
     if (LifeStatus::INVALID == current_status || LifeStatus::STOP == current_status) {
-        LOG_INFO(MSGID_APPINFO, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "item_removed"), "");
-        m_appinfo_list.erase(app_id);
+        LOG_INFO(MSGID_APPINFO, 2,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("status", "item_removed"), "");
+        m_appinfoList.erase(app_id);
     } else {
-        LOG_INFO(MSGID_APPINFO, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "set_removed_flag_for_lazy_release"), "");
-        set_removal_flag(app_id, true);
+        LOG_INFO(MSGID_APPINFO, 2,
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKS("status", "set_removed_flag_for_lazy_release"), "");
+        setRemovalFlag(app_id, true);
     }
 }
 
-//////////////////////////////////////////////////////////////////
-/// setters
-//////////////////////////////////////////////////////////////////
-void AppInfoManager::set_execution_lock(const std::string& app_id, bool v)
+void AppInfoManager::setExecutionLock(const std::string& app_id, bool v)
 {
     AppInfoPtr app_info = NULL;
     if (v == false) {
-        app_info = get_app_info(app_id);
+        app_info = getAppInfo(app_id);
         if (app_info == NULL)
             return;
     } else {
-        app_info = get_app_info_for_setter(app_id);
+        app_info = getAppInfoForSetter(app_id);
         if (app_info == NULL)
             return;
     }
     app_info->set_execution_lock(v);
 }
 
-void AppInfoManager::set_removal_flag(const std::string& app_id, bool v)
+void AppInfoManager::setRemovalFlag(const std::string& app_id, bool v)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_removal_flag(v);
 }
 
-void AppInfoManager::set_preload_mode(const std::string& app_id, bool mode)
+void AppInfoManager::setPreloadMode(const std::string& app_id, bool mode)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_preload_mode(mode);
 }
 
-void AppInfoManager::set_last_launch_time(const std::string& app_id, double launch_time)
+void AppInfoManager::setLastLaunchTime(const std::string& app_id, double launch_time)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_last_launch_time(launch_time);
 }
 
-void AppInfoManager::set_life_status(const std::string& app_id, const LifeStatus& status)
+void AppInfoManager::setLifeStatus(const std::string& app_id, const LifeStatus& status)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_life_status(status);
-    if (app_info->is_remove_flagged())
-        remove_app_info(app_id);
+    if (app_info->isRemoveFlagged())
+        removeAppInfo(app_id);
 }
 
-void AppInfoManager::set_runtime_status(const std::string& app_id, RuntimeStatus status)
+void AppInfoManager::setRuntimeStatus(const std::string& app_id, RuntimeStatus status)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_runtime_status(status);
 }
 
-void AppInfoManager::set_virtual_launch_params(const std::string& app_id, const pbnjson::JValue& params)
+void AppInfoManager::setVirtualLaunchParams(const std::string& app_id, const pbnjson::JValue& params)
 {
-    AppInfoPtr app_info = get_app_info_for_setter(app_id);
+    AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
     app_info->set_virtual_launch_params(params);
 }
 
-//////////////////////////////////////////////////////////////////
-/// getters
-//////////////////////////////////////////////////////////////////
-bool AppInfoManager::can_execute(const std::string& app_id)
+bool AppInfoManager::canExecute(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->can_execute();
+    return getAppInfoForGetter(app_id)->executionLock();
 }
 
-bool AppInfoManager::is_remove_flagged(const std::string& app_id)
+bool AppInfoManager::isRemoveFlagged(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->is_remove_flagged();
+    return getAppInfoForGetter(app_id)->isRemoveFlagged();
 }
 
-bool AppInfoManager::preload_mode_on(const std::string& app_id)
+bool AppInfoManager::preloadModeOn(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->preload_mode_on();
+    return getAppInfoForGetter(app_id)->preload_mode_on();
 }
 
-bool AppInfoManager::is_out_of_service(const std::string& app_id)
+bool AppInfoManager::isOutOfService(const std::string& app_id)
 {
-    for (auto& it : m_out_of_service_info_list) {
+    for (auto& it : m_outOfServiceInfoList) {
         if (it == app_id)
             return true;
     }
     return false;
 }
 
-bool AppInfoManager::has_update(const std::string& app_id)
+bool AppInfoManager::hasUpdate(const std::string& app_id)
 {
-    for (auto& it : m_update_info_list) {
+    for (auto& it : m_updateInfoList) {
         if (it.first == app_id)
             return true;
     }
     return false;
 }
 
-const std::string AppInfoManager::update_category(const std::string& app_id)
+const std::string AppInfoManager::updateCategory(const std::string& app_id)
 {
-    for (auto& it : m_update_info_list) {
+    for (auto& it : m_updateInfoList) {
         if (it.first == app_id) {
             pbnjson::JValue json = it.second;
             std::string category = json["category"].asString();
@@ -202,9 +202,9 @@ const std::string AppInfoManager::update_category(const std::string& app_id)
     return NULL_STR;
 }
 
-const std::string AppInfoManager::update_type(const std::string& app_id)
+const std::string AppInfoManager::updateType(const std::string& app_id)
 {
-    for (auto& it : m_update_info_list) {
+    for (auto& it : m_updateInfoList) {
         if (it.first == app_id) {
             pbnjson::JValue json = it.second;
             std::string type = json["type"].asString();
@@ -214,9 +214,9 @@ const std::string AppInfoManager::update_type(const std::string& app_id)
     return NULL_STR;
 }
 
-const std::string AppInfoManager::update_version(const std::string& app_id)
+const std::string AppInfoManager::updateVersion(const std::string& app_id)
 {
-    for (auto& it : m_update_info_list) {
+    for (auto& it : m_updateInfoList) {
         if (it.first == app_id) {
             pbnjson::JValue json = it.second;
             std::string version = json["version"].asString();
@@ -226,51 +226,48 @@ const std::string AppInfoManager::update_version(const std::string& app_id)
     return NULL_STR;
 }
 
-double AppInfoManager::last_launch_time(const std::string& app_id)
+double AppInfoManager::lastLaunchTime(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->last_launch_time();
+    return getAppInfoForGetter(app_id)->last_launch_time();
 }
 
-LifeStatus AppInfoManager::life_status(const std::string& app_id)
+LifeStatus AppInfoManager::lifeStatus(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->life_status();
+    return getAppInfoForGetter(app_id)->life_status();
 }
 
-RuntimeStatus AppInfoManager::runtime_status(const std::string& app_id)
+RuntimeStatus AppInfoManager::runtimeStatus(const std::string& appId)
 {
-    return get_app_info_for_getter(app_id)->runtime_status();
+    return getAppInfoForGetter(appId)->runtime_status();
 }
 
-const pbnjson::JValue& AppInfoManager::virtual_launch_params(const std::string& app_id)
+const pbnjson::JValue& AppInfoManager::virtualLaunchParams(const std::string& app_id)
 {
-    return get_app_info_for_getter(app_id)->virtual_launch_params();
+    return getAppInfoForGetter(app_id)->virtual_launch_params();
 }
 
-//////////////////////////////////////////////////////////////////
-/// get_foreground_apps
-//////////////////////////////////////////////////////////////////
-bool AppInfoManager::is_app_on_fullscreen(const std::string& app_id)
+bool AppInfoManager::isAppOnFullscreen(const std::string& app_id)
 {
     if (app_id.empty())
         return false;
-    return (m_current_foreground_app_id == app_id);
+    return (m_currentForegroundAppId == app_id);
 }
 
-bool AppInfoManager::is_app_on_foreground(const std::string& app_id)
+bool AppInfoManager::isAppOnForeground(const std::string& app_id)
 {
-    for (auto& foreground_app_id : m_foreground_apps) {
+    for (auto& foreground_app_id : m_foregroundApps) {
         if (foreground_app_id == app_id)
             return true;
     }
     return false;
 }
 
-void AppInfoManager::get_json_foreground_info_by_id(const std::string& app_id, pbnjson::JValue& info)
+void AppInfoManager::getJsonForegroundInfoById(const std::string& app_id, pbnjson::JValue& info)
 {
-    if (!m_json_foreground_info.isArray() || m_json_foreground_info.arraySize() < 1)
+    if (!m_jsonForegroundInfo.isArray() || m_jsonForegroundInfo.arraySize() < 1)
         return;
 
-    for (auto item : m_json_foreground_info.items()) {
+    for (auto item : m_jsonForegroundInfo.items()) {
         if (!item.hasKey("appId") || !item["appId"].isString())
             continue;
 
@@ -281,59 +278,45 @@ void AppInfoManager::get_json_foreground_info_by_id(const std::string& app_id, p
     }
 }
 
-////////////////////////////////////////////////////////////////////
-/// handling app info list
-////////////////////////////////////////////////////////////////////
-// remove app_info item if the app is not valid anymore after full scanning done
-void AppInfoManager::OnAllAppRosterChanged(const AppDescMaps& all_apps)
+void AppInfoManager::onAllAppRosterChanged(const AppDescMaps& all_apps)
 {
     std::vector<std::string> removed_apps;
-    for (const auto& app_info : m_appinfo_list) {
+    for (const auto& app_info : m_appinfoList) {
         if (all_apps.count(app_info.first) == 0)
             removed_apps.push_back(app_info.first);
     }
 
     for (const auto& app_id : removed_apps) {
-        remove_app_info(app_id);
+        removeAppInfo(app_id);
     }
 }
 
-////////////////////////////////////////////////////////////////////
-/// handling out of service info list
-////////////////////////////////////////////////////////////////////
-void AppInfoManager::reset_all_out_of_service_info()
+void AppInfoManager::resetAllOutOfServiceInfo()
 {
-    m_out_of_service_info_list.clear();
+    m_outOfServiceInfoList.clear();
 }
 
-////////////////////////////////////////////////////////////////////
-/// handling update info list
-////////////////////////////////////////////////////////////////////
-
-void AppInfoManager::add_update_info(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version)
+void AppInfoManager::addUpdateInfo(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version)
 {
     pbnjson::JValue info = pbnjson::Object();
     info.put("type", type);
     info.put("category", category);
     info.put("version", version);
 
-    m_update_info_list.insert(std::make_pair(app_id, info));
+    m_updateInfoList.insert(std::make_pair(app_id, info));
 }
 
-void AppInfoManager::reset_all_update_info()
+void AppInfoManager::resetAllUpdateInfo()
 {
-    m_update_info_list.clear();
+    m_updateInfoList.clear();
 }
 
-////////////////////////////////////////////////////////////////////
-/// handling running list
-////////////////////////////////////////////////////////////////////
-void AppInfoManager::add_running_info(const std::string& app_id, const std::string& pid, const std::string& webprocid)
+void AppInfoManager::addRunningInfo(const std::string& app_id, const std::string& pid, const std::string& webprocid)
 {
-    for (auto& running_data : m_running_list) {
-        if (running_data->app_id == app_id) {
-            running_data->pid = pid;
-            running_data->webprocid = webprocid;
+    for (auto& running_data : m_runningList) {
+        if (running_data->m_appId == app_id) {
+            running_data->m_pid = pid;
+            running_data->m_webprocid = webprocid;
             return;
         }
     }
@@ -346,36 +329,36 @@ void AppInfoManager::add_running_info(const std::string& app_id, const std::stri
 
     LOG_INFO(MSGID_RUNNING_LIST, 4, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("pid", pid.c_str()), PMLOGKS("webprocid", webprocid.c_str()), PMLOGKS("status", "added"), "");
 
-    m_running_list.push_back(new_running_item);
+    m_runningList.push_back(new_running_item);
 }
 
-void AppInfoManager::remove_running_info(const std::string& app_id)
+void AppInfoManager::removeRunningInfo(const std::string& app_id)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&app_id](RunningInfoPtr running_data) {return (running_data->app_id == app_id);});
-    if (it == m_running_list.end()) {
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
+    if (it == m_runningList.end()) {
         LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2, PMLOGKS("status", "failed_to_remove"), PMLOGKS("app_id", app_id.c_str()), "not found app_id in running_list");
         return;
     }
 
-    m_running_list.erase(it);
+    m_runningList.erase(it);
 
     LOG_INFO(MSGID_RUNNING_LIST, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("action", "removed"), "");
 }
 
-void AppInfoManager::get_running_app_ids(std::vector<std::string>& running_app_ids)
+void AppInfoManager::getRunningAppIds(std::vector<std::string>& running_app_ids)
 {
-    for (auto& running_data : m_running_list)
-        running_app_ids.push_back(running_data->app_id);
+    for (auto& running_data : m_runningList)
+        running_app_ids.push_back(running_data->m_appId);
 }
 
-void AppInfoManager::get_running_list(pbnjson::JValue& running_list, bool devmode_only)
+void AppInfoManager::getRunningList(pbnjson::JValue& running_list, bool devmode_only)
 {
     if (!running_list.isArray())
         return;
 
-    for (auto& running_data : m_running_list) {
+    for (auto& running_data : m_runningList) {
         pbnjson::JValue running_info = pbnjson::Object();
-        AppDescPtr app_desc = ApplicationManager::instance().getAppById(running_data->app_id);
+        AppDescPtr app_desc = ApplicationManager::instance().getAppById(running_data->m_appId);
         if (app_desc == NULL)
             continue;
 
@@ -383,9 +366,9 @@ void AppInfoManager::get_running_list(pbnjson::JValue& running_list, bool devmod
             continue;
 
         std::string app_type = ApplicationDescription::appTypeToString(app_desc->type());
-        running_info.put("id", running_data->app_id);
-        running_info.put("processid", running_data->pid);
-        running_info.put("webprocessid", running_data->webprocid);
+        running_info.put("id", running_data->m_appId);
+        running_info.put("processid", running_data->m_pid);
+        running_info.put("webprocessid", running_data->m_webprocid);
         running_info.put("defaultWindowType", app_desc->defaultWindowType());
         running_info.put("appType", app_type);
 
@@ -393,50 +376,47 @@ void AppInfoManager::get_running_list(pbnjson::JValue& running_list, bool devmod
     }
 }
 
-RunningInfoPtr AppInfoManager::get_running_data(const std::string& app_id)
+RunningInfoPtr AppInfoManager::getRunningData(const std::string& app_id)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->app_id == app_id);});
-    if (it != m_running_list.end())
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
+    if (it != m_runningList.end())
         return (*it);
     return NULL;
 }
 
-bool AppInfoManager::is_running(const std::string& app_id)
+bool AppInfoManager::isRunning(const std::string& app_id)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->app_id == app_id);});
-    if (it == m_running_list.end())
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
+    if (it == m_runningList.end())
         return false;
     return true;
 }
 
-const std::string& AppInfoManager::get_app_id_by_pid(const std::string& pid)
+const std::string& AppInfoManager::getAppIdByPid(const std::string& pid)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&pid](const RunningInfoPtr running_data) {return (running_data->pid == pid);});
-    if (it == m_running_list.end())
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&pid](const RunningInfoPtr running_data) {return (running_data->m_pid == pid);});
+    if (it == m_runningList.end())
         return NULL_STR;
-    return (*it)->app_id;
+    return (*it)->m_appId;
 }
 
 const std::string& AppInfoManager::pid(const std::string& app_id)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->app_id == app_id);});
-    if (it == m_running_list.end())
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
+    if (it == m_runningList.end())
         return NULL_STR;
-    return (*it)->pid;
+    return (*it)->m_pid;
 }
 
 const std::string& AppInfoManager::webprocid(const std::string& app_id)
 {
-    auto it = std::find_if(m_running_list.begin(), m_running_list.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->app_id == app_id);});
-    if (it == m_running_list.end())
+    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
+    if (it == m_runningList.end())
         return NULL_STR;
-    return (*it)->webprocid;
+    return (*it)->m_webprocid;
 }
 
-////////////////////////////////////////////////////////////////////
-/// handling list status
-////////////////////////////////////////////////////////////////////
-std::string AppInfoManager::life_status_to_string(const LifeStatus& status)
+std::string AppInfoManager::toString(const LifeStatus& status)
 {
     std::string str_status;
 
@@ -473,16 +453,17 @@ std::string AppInfoManager::life_status_to_string(const LifeStatus& status)
     return str_status;
 }
 
-////////////////////////////////////////////////////////////////////
-/// get life status
-////////////////////////////////////////////////////////////////////
-void AppInfoManager::get_app_ids_by_life_status(const LifeStatus& status, std::vector<std::string>& app_ids)
+void AppInfoManager::getAppIdsByLifeStatus(const LifeStatus& status, std::vector<std::string>& app_ids)
 {
-    if (LifeStatus::LAUNCHING != status && LifeStatus::RELAUNCHING != status && LifeStatus::CLOSING != status && LifeStatus::FOREGROUND != status && LifeStatus::BACKGROUND != status) {
+    if (LifeStatus::LAUNCHING != status &&
+        LifeStatus::RELAUNCHING != status &&
+        LifeStatus::CLOSING != status &&
+        LifeStatus::FOREGROUND != status &&
+        LifeStatus::BACKGROUND != status) {
         return;
     }
 
-    for (auto& it : m_appinfo_list) {
+    for (auto& it : m_appinfoList) {
         if (it.second->life_status() == status)
             app_ids.push_back(it.first);
     }

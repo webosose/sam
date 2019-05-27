@@ -42,7 +42,7 @@ QmlAppLifeHandler::~QmlAppLifeHandler()
 void QmlAppLifeHandler::on_service_ready()
 {
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.bus/signal/addmatch", R"({"category":"/booster","method":"processFinished"})", qml_process_watcher, this, NULL,
+    if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.bus/signal/addmatch", R"({"category":"/booster","method":"processFinished"})", qml_process_watcher, this, NULL,
             &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", R"({"category":"/booster","method":"processFinished"})"), PMLOGKS("where", "booster_addmatch"), "err: %s",
                 lserror.message);
@@ -66,7 +66,7 @@ void QmlAppLifeHandler::launch(AppLaunchingItemPtr item)
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
                         "luna://com.webos.booster/launch",
                         payload.stringify().c_str(),
                         cb_return_booster_launch,
@@ -177,7 +177,7 @@ void QmlAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
     payload.put("appId", item->getAppId());
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
+    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
                         "luna://com.webos.booster/close",
                         payload.stringify().c_str(),
                         cb_return_booster_close,
@@ -239,7 +239,7 @@ bool QmlAppLifeHandler::qml_process_watcher(LSHandle* handle, LSMessage* lsmsg, 
     }
 
     std::string pid = boost::lexical_cast<std::string>(jmsg["pid"].asNumber<int>());
-    std::string app_id = AppInfoManager::instance().get_app_id_by_pid(pid);
+    std::string app_id = AppInfoManager::instance().getAppIdByPid(pid);
     if (app_id.empty()) {
         LOG_ERROR(MSGID_APPCLOSE_ERR, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("pid", pid.c_str()), "err: no app_id matched by pid");
         return true;
@@ -273,10 +273,5 @@ void QmlAppLifeHandler::remove_item_from_lscall_request_list(const std::string& 
     LOG_INFO(MSGID_APPLAUNCH, 2, PMLOGKS("app_id", (*it)->appId().c_str()), PMLOGKS("uid", uid.c_str()), "removed from checking queue");
 
     m_lscall_request_list.erase(it);
-}
-
-void QmlAppLifeHandler::clear_handling_item(const std::string& app_id)
-{
-
 }
 

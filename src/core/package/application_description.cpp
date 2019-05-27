@@ -29,13 +29,27 @@
 #include "core/base/logging.h"
 #include "core/base/utils.h"
 #include "core/module/locale_preferences.h"
-#include "core/package/mime_system.h"
 #include "core/setting/settings.h"
 
-ApplicationDescription::ApplicationDescription() :
-        app_type_(AppType::None), type_by_dir_(AppTypeByDir::None), handler_type_(LifeHandlerType::None), version_("1.0.0"), // default version
-        int_version_(1, 0, 0), native_interface_version_(1), is_builtin_based_app_(false), flagged_for_removal_(false), removable_(false), visible_(true), required_memory_(0), window_group_(false), window_group_owner_(
-                false), is_locked_for_excution_(false), lockable_(true), splash_on_launch_(true), spinner_on_launch_(false), boot_params_(pbnjson::JValue())
+ApplicationDescription::ApplicationDescription()
+    : app_type_(AppType::None),
+      type_by_dir_(AppTypeByDir::None),
+      handler_type_(LifeHandlerType::None),
+      version_("1.0.0"), // default version
+      int_version_(1, 0, 0),
+      native_interface_version_(1),
+      is_builtin_based_app_(false),
+      flagged_for_removal_(false),
+      removable_(false),
+      visible_(true),
+      required_memory_(0),
+      window_group_(false),
+      window_group_owner_(false),
+      is_locked_for_excution_(false),
+      lockable_(true),
+      splash_on_launch_(true),
+      spinner_on_launch_(false),
+      boot_params_(pbnjson::JValue())
 {
     m_deviceId = pbnjson::Object();
     redirection_ = pbnjson::Object();
@@ -43,16 +57,6 @@ ApplicationDescription::ApplicationDescription() :
 
 ApplicationDescription::~ApplicationDescription()
 {
-}
-
-const std::list<ResourceHandler>& ApplicationDescription::mimeTypes() const
-{
-    return mime_types_;
-}
-
-const std::list<RedirectHandler>& ApplicationDescription::redirectTypes() const
-{
-    return redirect_types_;
 }
 
 std::string ApplicationDescription::appTypeToString(AppType type)
@@ -301,8 +305,6 @@ bool ApplicationDescription::LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir
     if (jdesc.hasKey("enyoVersion"))
         enyo_version_ = jdesc["enyoVersion"].asString();
 
-    keywords_.addKeywords(jdesc["keywords"]);
-
     // Set installed time to 0 for built-in apps and dev apps
     if (!jdesc.hasKey("installTime"))
         jdesc.put("installTime", 0);
@@ -428,16 +430,6 @@ bool ApplicationDescription::getSelectedPropsFromApps(const pbnjson::JValue& app
     return true;
 }
 
-bool ApplicationDescription::doesMatchKeywordExact(const gchar* keyword) const
-{
-    return keywords_.hasMatch(keyword, true);
-}
-
-bool ApplicationDescription::doesMatchKeywordPartial(const gchar* keyword) const
-{
-    return keywords_.hasMatch(keyword, false);
-}
-
 bool ApplicationDescription::isPrivileged() const
 {
     if (app_id_.find("com.palm.") == 0 || app_id_.find("com.webos.") == 0 || app_id_.find("com.lge.") == 0)
@@ -511,66 +503,6 @@ AppVersion ApplicationDescription::GetAppVersionStruct(std::string strVersion)
         structVersion.micro = boost::lexical_cast<int>(parsingVersion[2]);
     }
     return structVersion;
-}
-
-void ApplicationDescription::setMimeData()
-{
-    //MIME HANDLING REGISTRATIONS: optional
-    if (appinfo_json_.hasKey("mimeTypes")) {
-        pbnjson::JValue label = appinfo_json_["mimeTypes"];
-        std::vector<MimeRegInfo> extractedMimeTypes;
-        if (ExtractMimeTypes(label, extractedMimeTypes)) {
-            //found some!
-            for (auto it = extractedMimeTypes.begin(); it != extractedMimeTypes.end(); ++it) {
-                if (!isPrivileged()) {
-                    // TODO: create reserved table for extension, scheme
-                    //       improve validation for it
-                    if (SettingsImpl::instance().isReservedMime((*it).mimeType)) {
-                        LOG_WARNING(MSGID_RESERVED_FOR_PRIVILEGED, 2, PMLOGKS("APP_ID", id().c_str()), PMLOGKS("MIME", (*it).mimeType.c_str()), "reserved for privileged apps");
-                        continue;
-                    }
-                }
-
-                if ((*it).mimeType.size()) {
-                    // ADD BY MIME TYPE.  The extension that is appropriate
-                    //     for this mimeType will be automatically filled in into "extension" if successful
-                    if (MimeSystemImpl::instance().addResourceHandler((*it).extension, (*it).mimeType, !((*it).stream), app_id_, NULL, false) > 0) {
-                        //success adding to mime system, so add it to this app descriptor for bookeeping purposes
-                        mime_types_.push_back(ResourceHandler((*it).extension, (*it).mimeType, app_id_, (*it).stream));
-                    }
-                } else if ((*it).extension.size()) {
-                    // ADD BY EXTENSION... count on the extension->mime mapping to already exist, or this will fail
-                    if (MimeSystemImpl::instance().addResourceHandler((*it).extension, !((*it).stream), app_id_, NULL, false) > 0) {
-                        //get the mime type
-                        MimeSystemImpl::instance().getMimeTypeByExtension((*it).extension, (*it).mimeType);
-                        mime_types_.push_back(ResourceHandler((*it).extension, (*it).mimeType, app_id_, (*it).stream));
-                    }
-                } else if ((*it).scheme.size()) {
-                    //TODO: fix this so it's more robust;
-                    //  it should check if the way the appinfo file specified the scheme is in fact a valid
-                    //  "scheme form" regexp and if not, make it one
-                    // ADD REDIRECT: THIS IS A SCHEME or "COMMAND" FORM.... (e.g. "tel://")
-                    (*it).scheme = CreateRegexpFromSchema((*it).scheme);
-                    if (MimeSystemImpl::instance().addRedirectHandler((*it).scheme, app_id_, NULL, true, false) > 0) {
-                        redirect_types_.push_back(RedirectHandler((*it).scheme, app_id_, true));
-                    }
-                } else if ((*it).urlPattern.size()) {
-                    // ADD REDIRECT: THIS IS A PURE REDIRECT FORM... (e.g. "^[^:]+://www.youtube.com/watch\\?v="
-                    if (MimeSystemImpl::instance().addRedirectHandler((*it).urlPattern, app_id_, NULL, false, false) > 0) {
-                        redirect_types_.push_back(RedirectHandler((*it).urlPattern, app_id_, false));
-                    }
-                }
-            }
-        }
-    }
-}
-
-void ApplicationDescription::clearMimeData()
-{
-    MimeSystemImpl::instance().removeAllForAppId(app_id_);
-    // TODO: need to remove extensions related to this app_id_ from m_extensionToMimeMap
-    // make a function like MimeSystemImpl::instance().removeAllExtensionForAppId()
-    mime_types_.clear();
 }
 
 bool ApplicationDescription::IsHigherVersionThanMe(AppDescPtr me, AppDescPtr another)
