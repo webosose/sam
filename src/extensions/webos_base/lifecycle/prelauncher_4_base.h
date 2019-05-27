@@ -25,28 +25,28 @@ public:
     Prelauncher4Base();
     virtual ~Prelauncher4Base();
 
-    virtual void add_item(AppLaunchingItemPtr item);
-    virtual void remove_item(const std::string& app_uid);
-    virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
-    virtual void cancel_all();
+    virtual void addItem(AppLaunchingItemPtr item);
+    virtual void removeItem(const std::string& app_uid);
+    virtual void inputBridgedReturn(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
+    virtual void cancelAll();
 
 private:
-    static bool cb_return_lscall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_return_lscall_for_bridged_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool cbReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool cbReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    void run_stages(AppLaunchingItem4BasePtr prelaunching_item);
-    void handle_stages(AppLaunchingItem4BasePtr prelaunching_item);
+    void runStages(AppLaunchingItem4BasePtr prelaunching_item);
+    void handleStages(AppLaunchingItem4BasePtr prelaunching_item);
 
-    void redirect_to_another(AppLaunchingItem4BasePtr prelaunching_item);
-    void finish_prelaunching(AppLaunchingItem4BasePtr prelaunching_item);
+    void redirectToAnother(AppLaunchingItem4BasePtr prelaunching_item);
+    void finishPrelaunching(AppLaunchingItem4BasePtr prelaunching_item);
 
-    AppLaunchingItem4BasePtr get_lscall_request_item_by_token(const LSMessageToken& token);
-    AppLaunchingItem4BasePtr get_item_by_uid(const std::string& uid);
-    void remove_item_from_lscall_request_list(const std::string& uid);
+    AppLaunchingItem4BasePtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    AppLaunchingItem4BasePtr getItemByUid(const std::string& uid);
+    void removeItemFromLSCallRequestList(const std::string& uid);
 
 private:
-    AppLaunchingItem4BaseList item_queue_;
-    AppLaunchingItem4BaseList lscall_request_list_;
+    AppLaunchingItem4BaseList m_itemQueue;
+    AppLaunchingItem4BaseList m_lscallRequestList;
 
 };
 

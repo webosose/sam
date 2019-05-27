@@ -21,16 +21,15 @@
 
 #include "core/lifecycle/launching_item.h"
 
-class PrelauncherInterface
-{
+class PrelauncherInterface {
 public:
     PrelauncherInterface() {}
     virtual ~PrelauncherInterface() {}
 
-    virtual void add_item(AppLaunchingItemPtr item) = 0;
-    virtual void remove_item(const std::string& item_uid) = 0;
-    virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg) = 0;
-    virtual void cancel_all() = 0;
+    virtual void addItem(AppLaunchingItemPtr item) = 0;
+    virtual void removeItem(const std::string& item_uid) = 0;
+    virtual void inputBridgedReturn(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg) = 0;
+    virtual void cancelAll() = 0;
 
 public:
     boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
