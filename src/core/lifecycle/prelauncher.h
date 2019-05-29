@@ -14,26 +14,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef PRELAUNCHER_INTERFACE_H_
-#define PRELAUNCHER_INTERFACE_H_
-
-#include <boost/signals2.hpp>
+#ifndef PRELAUNCHER_H_
+#define PRELAUNCHER_H_
 
 #include "core/lifecycle/launching_item.h"
+#include "interface/lifecycle/prelauncher_interface.h"
 
-class PrelauncherInterface
-{
+class Prelauncher: public PrelauncherInterface {
 public:
-    PrelauncherInterface() {}
-    virtual ~PrelauncherInterface() {}
+    Prelauncher();
+    ~Prelauncher();
 
-    virtual void add_item(AppLaunchingItemPtr item) = 0;
-    virtual void remove_item(const std::string& item_uid) = 0;
-    virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg) = 0;
-    virtual void cancel_all() = 0;
-
-public:
-    boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
+    virtual void add_item(AppLaunchingItemPtr item);
+    virtual void remove_item(const std::string& item_uid);
+    virtual void input_bridged_return(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
+    virtual void cancel_all();
 };
 
 #endif
