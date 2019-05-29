@@ -19,7 +19,7 @@
 
 #include <boost/signals2.hpp>
 
-#include "core/lifecycle/launching_item.h"
+#include <core/lifecycle/app_launching_item.h>
 
 class PrelauncherInterface {
 public:

@@ -20,9 +20,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+#include <core/package/package_manager.h>
+#include <core/util/logging.h>
 
-#include "core/base/logging.h"
-#include "core/package/application_manager.h"
 
 AppCloseItem::AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason) :
         m_app_id(app_id), m_pid(pid), m_caller(caller), m_is_memory_reclaim(false), m_reason(reason), m_close_start_time(0)

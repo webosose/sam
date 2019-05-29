@@ -18,7 +18,7 @@
 
 #include <boost/bind.hpp>
 
-#include "core/base/logging.h"
+#include <core/util/logging.h>
 
 DbHandler4Base::DbHandler4Base() :
         db_loaded_(false), db_load_count_(0)

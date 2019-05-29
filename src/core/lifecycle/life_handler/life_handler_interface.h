@@ -18,10 +18,10 @@
 #define APP_LIFE_HANDLER_INTERFACE_H_
 
 #include <boost/signals2.hpp>
+#include <core/lifecycle/app_launching_item.h>
 
 #include "core/lifecycle/application_errors.h"
 #include "core/lifecycle/app_info.h"
-#include "core/lifecycle/launching_item.h"
 #include "core/lifecycle/app_close_item.h"
 
 class AppLifeHandlerInterface {

@@ -19,12 +19,12 @@
 
 #include <boost/bind.hpp>
 #include <boost/signals.hpp>
+#include <core/util/jutil.h>
+#include <core/util/singleton.h>
 #include <glib.h>
 #include <luna-service2/lunaservice.h>
 
 #include "core/base/db_base.h"
-#include "core/base/jutil.h"
-#include "core/base/singleton.h"
 #include "core/launch_point/handler/db_handler.h"
 #include "core/launch_point/handler/ordering_handler.h"
 #include "core/launch_point/launch_point/launch_point.h"

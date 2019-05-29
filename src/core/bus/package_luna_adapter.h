@@ -17,9 +17,9 @@
 #ifndef CORE_BUS_PACKAGE_LUNA_ADATER_H_
 #define CORE_BUS_PACKAGE_LUNA_ADATER_H_
 
+#include <core/package/package_manager.h>
 #include "core/bus/luna_task.h"
 #include "core/package/application_description.h"
-#include "core/package/application_manager.h"
 #include "core/package/app_scanner.h"
 
 class PackageLunaAdapter {
@@ -44,9 +44,6 @@ private:
     void getAppStatus(LunaTaskPtr task);
     void getAppInfo(LunaTaskPtr task);
     void getAppBasePath(LunaTaskPtr task);
-    void launchVirtualApp(LunaTaskPtr task);
-    void addVirtualApp(LunaTaskPtr task);
-    void removeVirtualApp(LunaTaskPtr task);
 
     std::vector<LunaTaskPtr> m_pendingTasksOnReady;
     std::vector<LunaTaskPtr> m_pendingTasksOnScanner;

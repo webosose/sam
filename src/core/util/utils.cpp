@@ -14,8 +14,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "core/base/utils.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -38,6 +36,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+#include <core/util/utils.h>
 
 const double NANO_SECOND = 1000000000;
 

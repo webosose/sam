@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "core/base/lsutils.h"
+#include <core/util/lsutils.h>
 
 std::string getCallerFromMessage(LSMessage* message)
 {

@@ -17,13 +17,13 @@
 #ifndef CORE_BUS_LUNA_TASK_H_
 #define CORE_BUS_LUNA_TASK_H_
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
 #include <luna-service2/lunaservice.h>
 #include <memory>
 #include <pbnjson.hpp>
 #include <string>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
 
 class LunaTask {
 public:

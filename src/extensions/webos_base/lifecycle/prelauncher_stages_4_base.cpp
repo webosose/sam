@@ -14,14 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/package/package_manager.h>
+#include <core/util/jutil.h>
 #include "extensions/webos_base/lifecycle/prelauncher_stages_4_base.h"
 
-#include "core/base/jutil.h"
 #include "core/bus/appmgr_service.h"
 #include "core/lifecycle/app_info_manager.h"
 #include "core/module/notification.h"
 #include "core/module/service_observer.h"
-#include "core/package/application_manager.h"
 #include "core/setting/settings.h"
 #include "extensions/webos_base/base_extension.h"
 #include "extensions/webos_base/base_logs.h"

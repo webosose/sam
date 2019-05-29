@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2018 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef FAKE_CRIUE_H_
-#define FAKE_CRIUE_H_
+#include <core/util/logging.h>
 
-#include <iostream>
-
-bool criue_check_images(const char* fork_params)
+extern PmLogContext GetSAMPmLogContext()
 {
-  return false;
-}
+    static PmLogContext samLogContext = 0;
+    if (0 == samLogContext) {
+        PmLogGetContext("SAM", &samLogContext);
+    }
 
-int criue_restore_app(const std::string& id, int argc, char **fork_params)
-{
-  return -1;
+    return samLogContext;
 }
-
-#endif /* FAKE_CRIUE_H_ */

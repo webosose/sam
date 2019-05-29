@@ -19,9 +19,9 @@
 
 #include <luna-service2/lunaservice.h>
 #include <boost/signals2.hpp>
+#include <core/util/singleton.h>
 
 #include "core/base/related_luna_service_roster.h"
-#include "core/base/singleton.h"
 
 class ServiceObserver: public Singleton<ServiceObserver> {
     struct ObserverItem {

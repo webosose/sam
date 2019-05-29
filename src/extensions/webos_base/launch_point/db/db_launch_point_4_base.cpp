@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include "extensions/webos_base/launch_point/db/db_launch_point_4_base.h"
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
 #include "extensions/webos_base/base_settings.h"
 
 DBLaunchPoint4Base::DBLaunchPoint4Base()

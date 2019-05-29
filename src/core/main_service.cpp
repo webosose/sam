@@ -26,20 +26,20 @@
 
 #include <glib.h>
 #include <boost/bind.hpp>
+#include <core/lifecycle/lifecycle_manager.h>
+#include <core/package/package_manager.h>
+#include <core/util/logging.h>
 
-#include "core/base/logging.h"
 #include "core/base/prerequisite_monitor.h"
 #include "core/bus/appmgr_service.h"
 #include "core/bus/sysmgr_service.h"
 #include "core/launch_point/launch_point_manager.h"
-#include "core/lifecycle/app_life_manager.h"
 #include "core/module/locale_preferences.h"
 #include "core/module/service_observer.h"
 #include "core/module/subscriber_of_bootd.h"
 #include "core/module/subscriber_of_configd.h"
 #include "core/module/subscriber_of_lsm.h"
 #include "core/module/subscriber_of_appinstalld.h"
-#include "core/package/application_manager.h"
 #include "core/product/product_abstract_factory.h"
 #include "core/setting/settings.h"
 
@@ -55,6 +55,7 @@ public:
     ConfigInfo()
     {
     }
+
     virtual ~ConfigInfo()
     {
         config_info_connection_.disconnect();
@@ -124,7 +125,10 @@ public:
     {
         LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1, PMLOGJSON("Payload", jmsg.duplicate().stringify().c_str()), "");
 
-        if (!jmsg.hasKey("signals") || !jmsg["signals"].isObject() || !jmsg["signals"].hasKey("core-boot-done") || !jmsg["signals"]["core-boot-done"].asBool())
+        if (!jmsg.hasKey("signals") ||
+            !jmsg["signals"].isObject() ||
+            !jmsg["signals"].hasKey("core-boot-done") ||
+            !jmsg["signals"]["core-boot-done"].asBool())
             return;
 
         boot_status_connection_.disconnect();
@@ -142,9 +146,9 @@ static void OnReady(PrerequisiteResult result)
     LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "all_precondition_ready"), "");
 
     SettingsImpl::instance().onRestLoad();
-    LocalePreferences::instance().OnRestInit();
+    LocalePreferences::instance().onRestInit();
     ProductAbstractFactory::instance().OnReady();
-    ApplicationManager::instance().StartPostInit();
+    PackageManager::instance().startPostInit();
 
     AppMgrService::instance().setServiceStatus(true);
     AppMgrService::instance().onServiceReady();
@@ -152,9 +156,6 @@ static void OnReady(PrerequisiteResult result)
 
 }   // namespace CorePrerequisites
 
-////////////////////////////////////////////////////////////////////
-// Main Service
-////////////////////////////////////////////////////////////////////
 MainService::~MainService()
 {
 }
@@ -165,10 +166,10 @@ bool MainService::initialize()
     SettingsImpl::instance().load(NULL);    //load default setting file
 
     // Load managers (lifecycle, package, launchpoint)
-    ApplicationManager::instance().Init();
-    AppLifeManager::instance().init();
+    PackageManager::instance().init();
+    LifecycleManager::instance().init();
     LaunchPointManager::instance().Init();
-    LocalePreferences::instance().Init();   //load locale info
+    LocalePreferences::instance().init();   //load locale info
 
     // service attach
     SysMgrService::instance()->attach(mainLoop());
@@ -194,7 +195,7 @@ bool MainService::initialize()
     service_prerequisite_monitor.run();
     ServiceObserver::instance().Run();
 
-    ApplicationManager::instance().ScanInitialApps();
+    PackageManager::instance().scanInitialApps();
 
     return true;
 }

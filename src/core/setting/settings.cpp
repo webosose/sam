@@ -14,6 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/utils.h>
 #include "core/setting/settings.h"
 
 #include <errno.h>
@@ -21,9 +24,6 @@
 
 #include <string>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/utils.h"
 #include "core/lifecycle/app_info_manager.h"
 #include "core/setting/settings_conf.h"   //generated from cmake
 
@@ -252,22 +252,6 @@ bool Settings::LoadStaticConfig(const char* filePath)
         app_store_id_ = root["StoreApp"].asString();
     }
 
-    if (root["ReservedResource"].isObject()) {
-        pbnjson::JValue reservedRoot = root["ReservedResource"];
-        pbnjson::JValue subList;
-        int arraySize;
-        std::string str;
-        if (reservedRoot["mime"].isArray()) {
-            subList = reservedRoot["mime"];
-            arraySize = subList.arraySize();
-            for (int i = 0; i < arraySize; ++i) {
-                if (subList[i].asString(str) != CONV_OK)
-                    continue;
-                reservedMimes.push_back(str);
-            }
-        }
-    }
-
     return true;
 }
 
@@ -352,14 +336,6 @@ bool Settings::checkAppAgainstNoJailAppList(const std::string& appId) const
 {
     auto it = std::find(noJailApps.begin(), noJailApps.end(), appId);
     if (it != noJailApps.end())
-        return true;
-    return false;
-}
-
-bool Settings::isReservedMime(const std::string& mime) const
-{
-    auto it = std::find(reservedMimes.begin(), reservedMimes.end(), mime);
-    if (it != reservedMimes.end())
         return true;
     return false;
 }

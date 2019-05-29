@@ -14,10 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "core/base/jutil.h"
-
-#include "core/base/logging.h"
-#include "core/base/utils.h"
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/utils.h>
 #include "core/setting/settings.h"
 
 JUtil::Error::Error() :

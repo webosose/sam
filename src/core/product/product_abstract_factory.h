@@ -17,8 +17,8 @@
 #ifndef CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_
 #define CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_
 
+#include <core/util/singleton.h>
 #include "core/base/prerequisite_monitor.h"
-#include "core/base/singleton.h"
 
 class ProductAbstractFactory: public Singleton<ProductAbstractFactory> {
 public:

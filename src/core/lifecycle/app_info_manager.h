@@ -17,11 +17,11 @@
 #ifndef APP_INFO_MANAGER_H_
 #define APP_INFO_MANAGER_H_
 
+#include <core/package/package_manager.h>
+#include <core/util/singleton.h>
 #include <pbnjson.hpp>
 
-#include "core/base/singleton.h"
 #include "core/lifecycle/app_info.h"
-#include "core/package/application_manager.h"
 
 struct RunningInfo {
     std::string m_appId;

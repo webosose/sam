@@ -17,8 +17,8 @@
 #include "core/launch_point/handler/db_handler.h"
 
 #include <boost/bind.hpp>
+#include <core/util/logging.h>
 
-#include "core/base/logging.h"
 #include "core/bus/appmgr_service.h"
 
 DbHandler::DbHandler() :

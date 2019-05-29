@@ -19,7 +19,7 @@
 
 #include <boost/function.hpp>
 
-#include "core/lifecycle/launching_item.h"
+#include <core/lifecycle/app_launching_item.h>
 
 enum class StageHandlerReturn4Base
     : int {

@@ -17,13 +17,13 @@
 #ifndef APP_LIFE_MANAGER_H_
 #define APP_LIFE_MANAGER_H_
 
+#include <core/lifecycle/app_launching_item.h>
+#include <core/util/singleton.h>
 #include <luna-service2/lunaservice.h>
 #include <tuple>
 
-#include "core/base/singleton.h"
 #include "core/lifecycle/app_info_manager.h"
 #include "core/lifecycle/app_life_status.h"
-#include "core/lifecycle/launching_item.h"
 #include "core/lifecycle/life_handler/nativeapp_life_handler.h"
 #include "core/lifecycle/life_handler/qmlapp_life_handler.h"
 #include "core/lifecycle/life_handler/webapp_life_handler.h"
@@ -37,11 +37,11 @@
 
 typedef std::tuple<std::string, AppType, double> LoadingAppItem;
 
-class AppLifeManager: public Singleton<AppLifeManager> {
-friend class Singleton<AppLifeManager> ;
+class LifecycleManager: public Singleton<LifecycleManager> {
+friend class Singleton<LifecycleManager> ;
 public:
-    AppLifeManager();
-    virtual ~AppLifeManager();
+    LifecycleManager();
+    virtual ~LifecycleManager();
 
     void init();
 

@@ -14,6 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
+#include <core/util/utils.h>
 #include <signal.h>
 #include <stdlib.h>
 
@@ -22,8 +24,6 @@
 
 #include <gio/gio.h>
 
-#include "core/base/logging.h"
-#include "core/base/utils.h"
 #include "core/main_service.h"
 
 MainService service;

@@ -14,15 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "core/lifecycle/launching_item.h"
-
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+#include <core/lifecycle/app_launching_item.h>
+#include <core/package/package_manager.h>
+#include <core/util/logging.h>
 
-#include "core/base/logging.h"
-#include "core/package/application_manager.h"
 
 AppLaunchingItem::AppLaunchingItem(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg)
     : m_appId(app_id),
@@ -75,7 +74,7 @@ bool AppLaunchingItem::setRedirection(const std::string& target_app_id, const pb
         return false;
     }
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(target_app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(target_app_id);
     if (app_desc == NULL) {
         return false;
     }

@@ -17,12 +17,12 @@
 #ifndef BASE_EXTENSION_H
 #define BASE_EXTENSION_H
 
+#include <core/util/singleton.h>
 #include <set>
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.hpp>
 
 #include "core/base/prerequisite_monitor.h"
-#include "core/base/singleton.h"
 #include "extensions/webos_base/launch_point/handler/db_handler_4_base.h"
 #include "extensions/webos_base/launch_point/handler/ordering_handler_4_base.h"
 #include "extensions/webos_base/launch_point/launch_point/launch_point_4_base.h"

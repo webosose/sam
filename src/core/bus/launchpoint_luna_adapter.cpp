@@ -17,8 +17,8 @@
 #include "core/bus/launchpoint_luna_adapter.h"
 
 #include <boost/bind.hpp>
+#include <core/util/logging.h>
 
-#include "core/base/logging.h"
 #include "core/bus/appmgr_service.h"
 #include "core/bus/lunaservice_api.h"
 #include "core/launch_point/launch_point_manager.h"
@@ -58,8 +58,6 @@ void LaunchPointLunaAdapter::LaunchPointLunaAdapter::initLunaApiHandler()
     AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_MOVE_LAUNCHPOINT, "applicationManager.moveLaunchPoint", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
 
     AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_LIST_LAUNCHPOINTS, "applicationManager.listLaunchPoints", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
-
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_SEARCH_APPS, "applicationManager.searchApps", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
 }
 
 void LaunchPointLunaAdapter::requestController(LunaTaskPtr task)
@@ -96,8 +94,6 @@ void LaunchPointLunaAdapter::handleRequest(LunaTaskPtr task)
             moveLaunchPoint(task);
         else if (API_LIST_LAUNCHPOINTS == task->method())
             listLaunchPoints(task);
-        else if (API_SEARCH_APPS == task->method())
-            searchApps(task);
     }
 }
 

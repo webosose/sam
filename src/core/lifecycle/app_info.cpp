@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
 #include "core/lifecycle/app_info.h"
 
-#include "core/base/logging.h"
 
 AppInfo::AppInfo(const std::string& app_id) :
         m_appId(app_id), m_executionLock(false), m_removalFlag(false), m_preloadModeOn(false), m_lastLaunchTime(0), m_lifeStatus(LifeStatus::STOP), m_runtimeStatus(RuntimeStatus::STOP), m_virtualLaunchParams(

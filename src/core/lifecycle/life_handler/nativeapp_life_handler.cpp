@@ -16,19 +16,18 @@
 
 #include "core/lifecycle/life_handler/nativeapp_life_handler.h"
 
-#include <criue.h>
 #include <ext/stdio_filebuf.h>
 #include <proc/readproc.h>
 #include <boost/lexical_cast.hpp>
+#include <core/package/package_manager.h>
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
+#include <core/util/utils.h>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
-#include "core/base/utils.h"
 #include "core/lifecycle/app_info_manager.h"
 #include "core/lifecycle/application_errors.h"
 #include "core/package/application_description.h"
-#include "core/package/application_manager.h"
 #include "core/setting/settings.h"
 
 #define TIMEOUT_FOR_FORCE_KILL      1000  // 1 sec
@@ -106,7 +105,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
              PMLOGKS("start_native_handler", __FUNCTION__),
              "ver: %d", client->InterfaceVersion());
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->appId());
+    AppDescPtr app_desc = PackageManager::instance().getAppById(item->appId());
     if (app_desc == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
                   PMLOGKS("reason", "null_description"),
@@ -208,37 +207,12 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
 
     }
 
-    int pid = -1;
-
     if (item->preload().empty())
         parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
     else
         parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
 
-    // TODO: define whether CRIU is common feature or not
-    //       If CRIU is tv specific feature, redesign for this codes
-    // In GLD4TV, only support input common apps. Also those are jail apps
-    if (SettingsImpl::instance().SupportCRIU(app_desc->id()) && criue_check_images(fork_params[0])) {
-        int argc = 0;
-        while (fork_params[argc] != NULL)
-            argc++;
-
-        // arguments: appid, argc, argv
-        pid = criue_restore_app(app_desc->id().c_str(), argc, (char **) fork_params);
-        if (pid <= 0) {
-            LOG_WARNING(MSGID_HANDLE_CRIU, 2,
-                        PMLOGKS("app_id", app_desc->id().c_str()),
-                        PMLOGKS("status", "failed_to_restore"), "pid: %d", pid);
-        } else {
-            LOG_INFO(MSGID_HANDLE_CRIU, 2,
-                     PMLOGKS("app_id", app_desc->id().c_str()),
-                     PMLOGKS("status", "restored_image"), "pid: %d", pid);
-        }
-    }
-
-    if (pid <= 0) {
-        pid = fork_process(fork_params, NULL);
-    }
+    int pid = fork_process(fork_params, NULL);
 
     if (pid <= 0) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
@@ -751,7 +725,7 @@ NativeAppLifeHandler::~NativeAppLifeHandler()
 
 NativeClientInfoPtr NativeAppLifeHandler::MakeNewClientInfo(const std::string& app_id)
 {
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
     if (app_desc == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
                   PMLOGKS("app_id", app_id.c_str()),

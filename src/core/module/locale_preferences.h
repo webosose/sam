@@ -21,52 +21,50 @@
 
 #include <luna-service2/lunaservice.h>
 #include <boost/signals2.hpp>
+#include <core/util/singleton.h>
 #include <pbnjson.hpp>
 
-#include "core/base/singleton.h"
-
 class LocalePreferences: public Singleton<LocalePreferences> {
+friend class Singleton<LocalePreferences> ;
 public:
-    void Init();
-    void OnRestInit();
+    void init();
+    void onRestInit();
 
-    const std::string& UIlocale() const
+    const std::string& localeInfo() const
     {
-        return locale_info_;
+        return m_localeInfo;
     }
-    const std::string& Language() const
+    const std::string& language() const
     {
-        return language_;
+        return m_language;
     }
-    const std::string& Script() const
+    const std::string& script() const
     {
-        return script_;
+        return m_script;
     }
-    const std::string& Region() const
+    const std::string& region() const
     {
-        return region_;
+        return m_region;
     }
 
     boost::signals2::signal<void(std::string, std::string, std::string)> signalLocaleChanged;
 
 private:
-    friend class Singleton<LocalePreferences> ;
-
     LocalePreferences();
-    ~LocalePreferences();
+    virtual ~LocalePreferences();
 
-    void OnSettingServiceStatusChanaged(bool connection);
-    static bool OnLocaleInfoReceived(LSHandle *sh, LSMessage *message, void *user_data);
+    void onSettingServiceStatusChanaged(bool connection);
+    static bool onLocaleInfoReceived(LSHandle *sh, LSMessage *message, void *user_data);
 
-    void UpdateLocaleInfo(const pbnjson::JValue& j_locale);
-    void SetLocaleInfo(const std::string& locale);
+    void updateLocaleInfo(const pbnjson::JValue& j_locale);
+    void setLocaleInfo(const std::string& locale);
 
-    std::string locale_info_;
-    std::string language_;
-    std::string script_;
-    std::string region_;
+    std::string m_localeInfo;
+    std::string m_language;
+    std::string m_script;
+    std::string m_region;
 
-    LSMessageToken locale_info_token_;
+    LSMessageToken m_localeInfoToken;
 };
 #endif // CORE_MODULE_LOCALE_PREFERENCES_H_
 

@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
 #include "extensions/webos_base/lifecycle/app_launching_item_factory_4_base.h"
 
-#include "core/base/jutil.h"
 #include "core/setting/settings.h"
 #include "extensions/webos_base/base_extension.h"
 #include "extensions/webos_base/base_logs.h"

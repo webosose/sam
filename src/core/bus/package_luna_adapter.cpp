@@ -14,13 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/lifecycle/lifecycle_manager.h>
+#include <core/util/logging.h>
 #include "core/bus/package_luna_adapter.h"
 
-#include "core/base/logging.h"
 #include "core/bus/appmgr_service.h"
 #include "core/bus/lunaservice_api.h"
-#include "core/lifecycle/app_life_manager.h"
-#include "core/package/virtual_app_manager.h"
 
 #define SUBSKEY_LIST_APPS             "listApps"
 #define SUBSKEY_LIST_APPS_COMPACT     "listAppsCompact"
@@ -39,13 +38,13 @@ void PackageLunaAdapter::PackageLunaAdapter::init()
 {
     initLunaApiHandler();
 
-    ApplicationManager::instance().appScanner().signalAppScanFinished.connect(boost::bind(&PackageLunaAdapter::onScanFinished, this, _1, _2));
+    PackageManager::instance().appScanner().signalAppScanFinished.connect(boost::bind(&PackageLunaAdapter::onScanFinished, this, _1, _2));
 
-    ApplicationManager::instance().signalListAppsChanged.connect(boost::bind(&PackageLunaAdapter::onListAppsChanged, this, _1, _2, _3));
+    PackageManager::instance().signalListAppsChanged.connect(boost::bind(&PackageLunaAdapter::onListAppsChanged, this, _1, _2, _3));
 
-    ApplicationManager::instance().signalOneAppChanged.connect(boost::bind(&PackageLunaAdapter::onOneAppChanged, this, _1, _2, _3, _4));
+    PackageManager::instance().signalOneAppChanged.connect(boost::bind(&PackageLunaAdapter::onOneAppChanged, this, _1, _2, _3, _4));
 
-    ApplicationManager::instance().signal_app_status_changed.connect(boost::bind(&PackageLunaAdapter::onAppStatusChanged, this, _1, _2));
+    PackageManager::instance().signal_app_status_changed.connect(boost::bind(&PackageLunaAdapter::onAppStatusChanged, this, _1, _2));
 
     AppMgrService::instance().signalOnServiceReady.connect(std::bind(&PackageLunaAdapter::onReady, this));
 }
@@ -56,9 +55,6 @@ void PackageLunaAdapter::PackageLunaAdapter::initLunaApiHandler()
     AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_APP_STATUS, "applicationManager.getAppStatus", boost::bind(&PackageLunaAdapter::requestController, this, _1));
     AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_APP_INFO, "applicationManager.getAppInfo", boost::bind(&PackageLunaAdapter::requestController, this, _1));
     AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_APP_BASE_PATH, "applicationManager.getAppBasePath", boost::bind(&PackageLunaAdapter::requestController, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_LAUNCH_VIRTUAL_APP, "applicationManager.launchVirtualApp", boost::bind(&PackageLunaAdapter::requestController, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_ADD_VIRTUAL_APP, "applicationManager.addVirtualApp", boost::bind(&PackageLunaAdapter::requestController, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_REMOVE_VIRTUAL_APP, "applicationManager.removeVirtualApp", boost::bind(&PackageLunaAdapter::requestController, this, _1));
 
     // dev category
     AppMgrService::instance().registerApiHandler(API_CATEGORY_DEV, API_LIST_APPS, "applicationManager.listApps", boost::bind(&PackageLunaAdapter::requestController, this, _1));
@@ -74,7 +70,7 @@ void PackageLunaAdapter::requestController(LunaTaskPtr task)
             return;
         }
     } else {
-        if (!AppMgrService::instance().isServiceReady() || ApplicationManager::instance().appScanner().isRunning()) {
+        if (!AppMgrService::instance().isServiceReady() || PackageManager::instance().appScanner().isRunning()) {
             LOG_INFO(MSGID_API_REQUEST, 4, PMLOGKS("category", task->category().c_str()), PMLOGKS("method", task->method().c_str()), PMLOGKS("status", "pending"),
                     PMLOGKS("caller", task->caller().c_str()), "received message, but will handle later");
             m_pendingTasksOnScanner.push_back(task);
@@ -114,12 +110,6 @@ void PackageLunaAdapter::handleRequest(LunaTaskPtr task)
             getAppInfo(task);
         else if (API_GET_APP_BASE_PATH == task->method())
             getAppBasePath(task);
-        else if (API_LAUNCH_VIRTUAL_APP == task->method())
-            launchVirtualApp(task);
-        else if (API_ADD_VIRTUAL_APP == task->method())
-            addVirtualApp(task);
-        else if (API_REMOVE_VIRTUAL_APP == task->method())
-            removeVirtualApp(task);
     } else if (API_CATEGORY_DEV == task->category()) {
         if (API_LIST_APPS == task->method())
             listAppsForDev(task);
@@ -129,7 +119,7 @@ void PackageLunaAdapter::handleRequest(LunaTaskPtr task)
 void PackageLunaAdapter::listApps(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
-    const std::map<std::string, AppDescPtr>& apps = ApplicationManager::instance().allApps();
+    const std::map<std::string, AppDescPtr>& apps = PackageManager::instance().allApps();
 
     pbnjson::JValue payload = pbnjson::Object();
     pbnjson::JValue apps_info = pbnjson::Array();
@@ -160,7 +150,7 @@ void PackageLunaAdapter::listApps(LunaTaskPtr task)
 void PackageLunaAdapter::listAppsForDev(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
-    const std::map<std::string, AppDescPtr>& apps = ApplicationManager::instance().allApps();
+    const std::map<std::string, AppDescPtr>& apps = PackageManager::instance().allApps();
 
     pbnjson::JValue payload = pbnjson::Object();
     pbnjson::JValue apps_info = pbnjson::Array();
@@ -220,7 +210,7 @@ void PackageLunaAdapter::getAppStatus(LunaTaskPtr task)
     payload.put("appId", app_id);
     payload.put("event", "nothing");
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
     if (!app_desc) {
         payload.put("status", "notExist");
         payload.put("exist", false);
@@ -257,7 +247,7 @@ void PackageLunaAdapter::getAppInfo(LunaTaskPtr task)
         return;
     }
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
     if (!app_desc) {
         task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + app_id);
         return;
@@ -294,7 +284,7 @@ void PackageLunaAdapter::getAppBasePath(LunaTaskPtr task)
         return;
     }
 
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
     if (!app_desc) {
         task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified: " + app_id);
         return;
@@ -304,36 +294,6 @@ void PackageLunaAdapter::getAppBasePath(LunaTaskPtr task)
     payload.put("basePath", app_desc->entryPoint());
 
     task->ReplyResult(payload);
-}
-
-void PackageLunaAdapter::launchVirtualApp(LunaTaskPtr task)
-{
-    const pbnjson::JValue& jmsg = task->jmsg();
-    std::string app_id = !jmsg.hasKey("id") || !jmsg["id"].isString() ? "" : jmsg["id"].asString();
-
-    LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("caller_id", task->caller().c_str()), PMLOGKS("mode", "virtual"), "");
-
-    VirtualAppManager::instance().InstallTmpVirtualAppOnLaunch(jmsg, task->lsmsg());
-}
-
-void PackageLunaAdapter::addVirtualApp(LunaTaskPtr task)
-{
-    const pbnjson::JValue& jmsg = task->jmsg();
-    std::string app_id = !jmsg.hasKey("id") || !jmsg["id"].isString() ? "" : jmsg["id"].asString();
-
-    LOG_INFO(MSGID_ADD_VIRTUAL_APP, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "received_request"), PMLOGKS("caller_id", task->caller().c_str()), "");
-
-    VirtualAppManager::instance().InstallVirtualApp(jmsg, task->lsmsg());
-}
-
-void PackageLunaAdapter::removeVirtualApp(LunaTaskPtr task)
-{
-    const pbnjson::JValue& jmsg = task->jmsg();
-    std::string app_id = !jmsg.hasKey("id") || !jmsg["id"].isString() ? "" : jmsg["id"].asString();
-
-    LOG_INFO(MSGID_REMOVE_VIRTUAL_APP, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "received_request"), PMLOGKS("caller_id", task->caller().c_str()), "");
-
-    VirtualAppManager::instance().UninstallVirtualApp(jmsg, task->lsmsg());
 }
 
 void PackageLunaAdapter::onListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev)
@@ -451,7 +411,7 @@ void PackageLunaAdapter::onAppStatusChanged(AppStatusChangeEvent event, AppDescP
     }
 
     pbnjson::JValue payload = pbnjson::Object();
-    std::string str_event = ApplicationManager::instance().AppStatusChangeEventToString(event);
+    std::string str_event = PackageManager::instance().appStatusChangeEventToString(event);
 
     switch (event) {
     case AppStatusChangeEvent::APP_INSTALLED:

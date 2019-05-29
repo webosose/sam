@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
 #include "extensions/webos_base/package/application_description_4_base.h"
 
-#include "core/base/jutil.h"
 #include "extensions/webos_base/base_logs.h"
 #include "extensions/webos_base/base_settings.h"
 
@@ -37,15 +37,15 @@ bool ApplicationDescription4Base::LoadJson(pbnjson::JValue& jdesc, const AppType
 
     // TODO: Below keys are product specific values.
     // They should be moved into 'extension'
-    appinfo_json_.remove("lockable");
-    appinfo_json_.remove("bootLaunchParams");
-    appinfo_json_.remove("checkUpdateOnLaunch");
-    appinfo_json_.remove("hasPromotion");
-    appinfo_json_.remove("inAppSetting");
-    appinfo_json_.remove("installTime");
-    appinfo_json_.remove("disableBackHistoryAPI");
-    appinfo_json_.remove("accessibility");
-    appinfo_json_.remove("tileSize");
+    m_appinfoJson.remove("lockable");
+    m_appinfoJson.remove("bootLaunchParams");
+    m_appinfoJson.remove("checkUpdateOnLaunch");
+    m_appinfoJson.remove("hasPromotion");
+    m_appinfoJson.remove("inAppSetting");
+    m_appinfoJson.remove("installTime");
+    m_appinfoJson.remove("disableBackHistoryAPI");
+    m_appinfoJson.remove("accessibility");
+    m_appinfoJson.remove("tileSize");
 
     return true;
 }

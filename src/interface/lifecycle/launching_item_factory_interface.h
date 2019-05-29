@@ -17,7 +17,7 @@
 #ifndef APP_LAUNCHING_ITEM_FACTORY_INTERFACE_H_
 #define APP_LAUNCHING_ITEM_FACTORY_INTERFACE_H_
 
-#include "core/lifecycle/launching_item.h"
+#include <core/lifecycle/app_launching_item.h>
 
 class AppLaunchingItemFactoryInterface {
  public:

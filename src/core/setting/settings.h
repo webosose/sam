@@ -17,6 +17,7 @@
 #ifndef __Settings_h__
 #define __Settings_h__
 
+#include <core/util/singleton.h>
 #include <map>
 #include <string>
 #include <utility>
@@ -25,13 +26,11 @@
 #include <glib.h>
 #include <pbnjson.hpp>
 
-#include "core/base/singleton.h"
 #include "core/package/application_description.h"
 #include "core/package/app_scanner.h"
 
 class Settings {
 public:
-    // common setting
     const std::string& getConfPath()
     {
         return m_confPath;
@@ -80,7 +79,6 @@ public:
     void setSystemAppAsRemoved(const std::string& appId);
     bool isDeletedSystemApp(const std::string& appId) const;
     bool is_in_host_apps_list(const std::string& app_id) const;
-    bool isReservedMime(const std::string& mime) const;
     const std::vector<std::string>& GetBootTimeApps() const
     {
         return boot_time_apps_;
@@ -128,7 +126,6 @@ public:
     std::vector<std::string> m_assetFallbackPrecedence;
     std::string package_asset_variant_;
     bool usePartialKeywordAppSearch;
-    std::vector<std::string> reservedMimes;
     std::string lunaCmdHandlerSavedPath;  // TODO: make it deprecated or restructured
 
 private:

@@ -18,15 +18,15 @@
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
+#include <core/lifecycle/lifecycle_manager.h>
+#include <core/package/package_manager.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include <iterator>
 #include <sys/time.h>
 
-#include "core/base/lsutils.h"
-#include "core/base/logging.h"
 #include "core/bus/appmgr_service.h"
-#include "core/lifecycle/app_life_manager.h"
 #include "core/module/service_observer.h"
-#include "core/package/application_manager.h"
 
 LaunchPointManager::LaunchPointManager() :
         lpm_ready_(false), db_connected_(false), db_loaded_(false), apps_loaded_(false), ordered_list_ready_(false), list_apps_changes_(pbnjson::Array()), launch_points_db_data_(pbnjson::Array()), db_handler_(
@@ -45,9 +45,9 @@ void LaunchPointManager::Init()
 
     AppinstalldSubscriber::instance().SubscribeInstallStatus(boost::bind(&LaunchPointManager::OnPackageStatusChanged, this, _1, _2));
 
-    ApplicationManager::instance().signalListAppsChanged.connect(boost::bind(&LaunchPointManager::OnListAppsChanged, this, _1, _2, _3));
+    PackageManager::instance().signalListAppsChanged.connect(boost::bind(&LaunchPointManager::OnListAppsChanged, this, _1, _2, _3));
 
-    ApplicationManager::instance().signalOneAppChanged.connect(boost::bind(&LaunchPointManager::OnOneAppChanged, this, _1, _2, _3, _4));
+    PackageManager::instance().signalOneAppChanged.connect(boost::bind(&LaunchPointManager::OnOneAppChanged, this, _1, _2, _3, _4));
 }
 
 /**********************************************************/
@@ -661,7 +661,7 @@ void LaunchPointManager::RemoveLaunchPoint(const pbnjson::JValue& data, std::str
     LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3, PMLOGKS("status", "remove_launch_point"), PMLOGKS("app_id", (lp->Id()).c_str()), PMLOGKFV("lp_type", "%d", static_cast<int>(lp->LpType())), "");
 
     if (LPType::DEFAULT == lp->LpType()) {
-        ApplicationManager::instance().UninstallApp(lp->Id(), err_text);
+        PackageManager::instance().uninstallApp(lp->Id(), err_text);
         ordering_handler_->DeleteLpInOrder(lp->LaunchPointId());
     } else if (LPType::BOOKMARK == lp->LpType()) {
         pbnjson::JValue delete_json = pbnjson::Object();
@@ -674,7 +674,7 @@ void LaunchPointManager::RemoveLaunchPoint(const pbnjson::JValue& data, std::str
         if (IsLastVisibleLp(lp)) {
             std::string error_text;
             LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3, PMLOGKS("status", "remove_launch_point"), PMLOGKS("last_visible_app", (lp->Id()).c_str()), PMLOGKS("status", "closed"), "");
-            AppLifeManager::instance().closeByAppId(lp->Id(), "", "", error_text, false, true);
+            LifecycleManager::instance().closeByAppId(lp->Id(), "", "", error_text, false, true);
         }
 
         launch_point_list_.remove_if([=](LaunchPointPtr p) {return p->LaunchPointId() == lp->LaunchPointId();});

@@ -17,11 +17,11 @@
 #ifndef JUTIL_H
 #define JUTIL_H
 
+#include <core/util/singleton.h>
 #include <pbnjson.hpp>
 #include <string>
 #include <map>
 
-#include "core/base/singleton.h"
 
 //! List of utilites for pbnjson
 class JUtil: public Singleton<JUtil> {

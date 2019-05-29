@@ -14,6 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include "core/module/locale_preferences.h"
 
 #include <stdlib.h>
@@ -21,16 +24,13 @@
 
 #include <pbnjson.hpp>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
 #include "core/bus/appmgr_service.h"
 #include "core/module/notification.h"
 #include "core/module/service_observer.h"
 #include "core/setting/settings.h"
 
 LocalePreferences::LocalePreferences() :
-        locale_info_token_(0)
+        m_localeInfoToken(0)
 {
 }
 
@@ -38,37 +38,37 @@ LocalePreferences::~LocalePreferences()
 {
 }
 
-void LocalePreferences::Init()
+void LocalePreferences::init()
 {
 }
 
-void LocalePreferences::OnRestInit()
+void LocalePreferences::onRestInit()
 {
 
     pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::instance().localeInfoPath, std::string(""));
-    UpdateLocaleInfo(locale_info);
+    updateLocaleInfo(locale_info);
 
-    ServiceObserver::instance().Add(WEBOS_SERVICE_SETTINGS, std::bind(&LocalePreferences::OnSettingServiceStatusChanaged, this, std::placeholders::_1));
+    ServiceObserver::instance().Add(WEBOS_SERVICE_SETTINGS, std::bind(&LocalePreferences::onSettingServiceStatusChanaged, this, std::placeholders::_1));
 }
 
-void LocalePreferences::OnSettingServiceStatusChanaged(bool connection)
+void LocalePreferences::onSettingServiceStatusChanaged(bool connection)
 {
     if (connection) {
-        if (locale_info_token_ == 0) {
+        if (m_localeInfoToken == 0) {
             std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
-            if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), OnLocaleInfoReceived, this, &locale_info_token_, NULL)) {
+            if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), onLocaleInfoReceived, this, &m_localeInfoToken, NULL)) {
                 LOG_WARNING(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "lscall"), PMLOGKS("where", __FUNCTION__), "failed_subscribing_settings");
             }
         }
     } else {
-        if (0 != locale_info_token_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), locale_info_token_, NULL);
-            locale_info_token_ = 0;
+        if (0 != m_localeInfoToken) {
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), m_localeInfoToken, NULL);
+            m_localeInfoToken = 0;
         }
     }
 }
 
-bool LocalePreferences::OnLocaleInfoReceived(LSHandle* sh, LSMessage* message, void* user_data)
+bool LocalePreferences::onLocaleInfoReceived(LSHandle* sh, LSMessage* message, void* user_data)
 {
     LocalePreferences* s_this = static_cast<LocalePreferences*>(user_data);
     if (s_this == NULL)
@@ -83,12 +83,12 @@ bool LocalePreferences::OnLocaleInfoReceived(LSHandle* sh, LSMessage* message, v
         return true;
     }
 
-    s_this->UpdateLocaleInfo(json["settings"]);
+    s_this->updateLocaleInfo(json["settings"]);
 
     return true;
 }
 
-void LocalePreferences::UpdateLocaleInfo(const pbnjson::JValue& j_locale)
+void LocalePreferences::updateLocaleInfo(const pbnjson::JValue& j_locale)
 {
 
     std::string ui_locale_info;
@@ -101,15 +101,15 @@ void LocalePreferences::UpdateLocaleInfo(const pbnjson::JValue& j_locale)
         ui_locale_info = j_locale["localeInfo"]["locales"]["UI"].asString();
     }
 
-    if (!ui_locale_info.empty() && ui_locale_info != locale_info_) {
-        locale_info_ = ui_locale_info;
-        SetLocaleInfo(locale_info_);
+    if (!ui_locale_info.empty() && ui_locale_info != m_localeInfo) {
+        m_localeInfo = ui_locale_info;
+        setLocaleInfo(m_localeInfo);
     }
 
 }
 
 /// separate the substrings of BCP-47 (langauge-Script-COUNTRY)
-void LocalePreferences::SetLocaleInfo(const std::string& locale)
+void LocalePreferences::setLocaleInfo(const std::string& locale)
 {
 
     std::string language;
@@ -128,16 +128,16 @@ void LocalePreferences::SetLocaleInfo(const std::string& locale)
         region = icu_UI_locale.getCountry();
     }
 
-    if (language == language_ && script == script_ && region == region_) {
+    if (language == m_language && script == m_script && region == m_region) {
         return;
     }
 
-    language_ = language;
-    script_ = script;
-    region_ = region;
+    m_language = language;
+    m_script = script;
+    m_region = region;
 
-    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4, PMLOGKS("locale", locale.c_str()), PMLOGKS("language", language_.c_str()), PMLOGKS("script", script_.c_str()), PMLOGKS("region", region_.c_str()), "");
+    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4, PMLOGKS("locale", locale.c_str()), PMLOGKS("language", m_language.c_str()), PMLOGKS("script", m_script.c_str()), PMLOGKS("region", m_region.c_str()), "");
 
     ResBundleAdaptor::instance().setLocale(locale);
-    signalLocaleChanged(language_, script_, region_);
+    signalLocaleChanged(m_language, m_script, m_region);
 }

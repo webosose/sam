@@ -17,12 +17,12 @@
 #ifndef ORDERING_HANDLER_H
 #define ORDERING_HANDLER_H
 
+#include <core/util/jutil.h>
+#include <core/util/lsutils.h>
 #include "interface/launch_point/ordering_handler_interface.h"
 
 #include <pbnjson.hpp>
 
-#include "core/base/jutil.h"
-#include "core/base/lsutils.h"
 #include "core/launch_point/launch_point/launch_point.h"
 
 const int DEFAULT_POSITION_INVALID = -1;

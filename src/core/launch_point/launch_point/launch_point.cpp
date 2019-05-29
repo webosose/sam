@@ -14,12 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/utils.h>
 #include "core/launch_point/launch_point/launch_point.h"
 #include "core/launch_point/launch_point/launch_point_factory.h"
 
-#include "core/base/utils.h"
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
 
 const char* LOCAL_FILE_URI = "file://";
 

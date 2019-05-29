@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
 #include "core/lifecycle/app_info_manager.h"
 
 #include <algorithm>
 
-#include "core/base/logging.h"
 
 const std::string& NULL_STR = "";
 const std::string& DEFAULT_NULL_APP = "@APP_INFO_DEFAULT_APP@";
@@ -35,7 +35,7 @@ AppInfoManager::~AppInfoManager()
 
 void AppInfoManager::init()
 {
-    ApplicationManager::instance().signalAllAppRosterChanged.connect(boost::bind(&AppInfoManager::onAllAppRosterChanged, this, _1));
+    PackageManager::instance().signalAllAppRosterChanged.connect(boost::bind(&AppInfoManager::onAllAppRosterChanged, this, _1));
 }
 
 AppInfoPtr AppInfoManager::getAppInfoForSetter(const std::string& appId)
@@ -358,7 +358,7 @@ void AppInfoManager::getRunningList(pbnjson::JValue& running_list, bool devmode_
 
     for (auto& running_data : m_runningList) {
         pbnjson::JValue running_info = pbnjson::Object();
-        AppDescPtr app_desc = ApplicationManager::instance().getAppById(running_data->m_appId);
+        AppDescPtr app_desc = PackageManager::instance().getAppById(running_data->m_appId);
         if (app_desc == NULL)
             continue;
 

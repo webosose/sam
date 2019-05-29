@@ -14,13 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
 #include "core/package/app_scanner.h"
 
 #include <dirent.h>
 #include <sys/stat.h>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
 #include "core/setting/settings.h"
 
 static void TrimPath(std::string &path)

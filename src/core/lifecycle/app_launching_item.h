@@ -28,8 +28,7 @@ const std::string SYS_LAUNCHING_UID = "alertId";
 
 enum class AppLaunchRequestType {
     INTERNAL = 0,
-    EXTERNAL,
-    EXTERNAL_FOR_VIRTUALAPP,
+    EXTERNAL
 };
 
 enum class AppLaunchingStage {

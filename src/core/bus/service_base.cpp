@@ -14,13 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include "core/bus/service_base.h"
 
 #include <glib.h>
 #include <luna-service2/lunaservice.h>
 
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
 
 ServiceBase::ServiceBase(const std::string& name) :
         m_name(name), m_handle(NULL)

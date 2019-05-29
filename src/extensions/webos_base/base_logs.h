@@ -16,7 +16,7 @@
 #ifndef BASE_LOGS_H
 #define BASE_LOGS_H
 
-#include "core/base/logging.h"
+#include <core/util/logging.h>
 
 #define MSGID_TV_CONFIGURATION                  "TV_CONFIGURATION"
 #define MSGID_GET_LASTINPUT_FAIL                "GET_LASTINPUT_FAIL" /** Failed to request getLastInput to tvservice */

@@ -19,9 +19,9 @@
 
 #include <luna-service2/lunaservice.h>
 #include <boost/signals2.hpp>
+#include <core/util/singleton.h>
 #include <pbnjson.hpp>
 
-#include "core/base/singleton.h"
 
 class BootdSubscriber: public Singleton<BootdSubscriber> {
 public:

@@ -18,14 +18,14 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/signals2.hpp>
+#include <core/package/package_manager.h>
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
+#include <core/util/utils.h>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
-#include "core/base/utils.h"
 #include "core/bus/appmgr_service.h"
 #include "core/lifecycle/app_info_manager.h"
-#include "core/package/application_manager.h"
 
 static QmlAppLifeHandler* g_this = NULL;
 
@@ -51,7 +51,7 @@ void QmlAppLifeHandler::on_service_ready()
 
 void QmlAppLifeHandler::launch(AppLaunchingItemPtr item)
 {
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->appId());
+    AppDescPtr app_desc = PackageManager::instance().getAppById(item->appId());
     if (app_desc == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->appId().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "qmlapp_launch"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");

@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/singleton.h>
 #include <luna-service2/lunaservice.h>
 #include <webosi18n.h>
 #include <memory>
 
-#include "core/base/singleton.h"
 
 class ResBundleAdaptor: public Singleton<ResBundleAdaptor> {
 private:

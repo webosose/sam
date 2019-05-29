@@ -14,16 +14,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/package/package_manager.h>
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
+#include <core/util/utils.h>
 #include "core/lifecycle/life_handler/webapp_life_handler.h"
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
-#include "core/base/utils.h"
 #include "core/bus/appmgr_service.h"
 #include "core/module/service_observer.h"
 #include "core/lifecycle/app_info_manager.h"
-#include "core/package/application_manager.h"
 
 const std::string INVALID_PROCESS_ID = "-1";
 const std::string PROCESS_ID_ZERO = "0";
@@ -48,7 +48,7 @@ WebAppLifeHandler::~WebAppLifeHandler()
 //////////////////////////////////////////////////////////////
 void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
 {
-    AppDescPtr app_desc = ApplicationManager::instance().getAppById(item->appId());
+    AppDescPtr app_desc = PackageManager::instance().getAppById(item->appId());
     if (app_desc == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", item->appId().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "webapp_launch"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");

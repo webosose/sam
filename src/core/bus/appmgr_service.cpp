@@ -14,14 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include "core/bus/appmgr_service.h"
 
 #include <pbnjson.hpp>
 #include <string>
 #include <vector>
 
-#include "core/base/lsutils.h"
-#include "core/base/logging.h"
 #include "core/bus/lunaservice_api.h"
 #include "core/setting/settings.h"
 
@@ -74,28 +74,18 @@ LSMethod* AppMgrService::getMethods(std::string category) const
             { API_LAUNCH, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_PAUSE, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_CLOSE_BY_APPID, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_CLOSE_ALL_APPS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_CLOSE, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_RUNNING, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_CHANGE_RUNNING_APPID, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_APP_LIFE_EVENTS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_APP_LIFE_STATUS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_FOREGROUND_APPINFO, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_LOCK_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_REGISTER_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_REGISTER_NATIVE_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_NOTIFY_ALERT_CLOSED, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_NOTIFY_SPLASH_TIMEOUT, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_ON_LAUNCH, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
 
             // core: package
             { API_LIST_APPS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_APP_STATUS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_APP_INFO, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_GET_APP_BASE_PATH, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_LAUNCH_VIRTUAL_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_ADD_VIRTUAL_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-            { API_REMOVE_VIRTUAL_APP, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
 
             // core: launchpoint
             { API_ADD_LAUNCHPOINT, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
@@ -103,9 +93,6 @@ LSMethod* AppMgrService::getMethods(std::string category) const
             { API_REMOVE_LAUNCHPOINT, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_MOVE_LAUNCHPOINT, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { API_LIST_LAUNCHPOINTS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
-
-            // TODO: this is API for package. Now make it deprecated temporarily.
-            { API_SEARCH_APPS, AppMgrService::onApiCalled, LUNA_METHOD_FLAGS_NONE },
             { 0, 0, LUNA_METHOD_FLAGS_NONE }
         };
         return s_methods;

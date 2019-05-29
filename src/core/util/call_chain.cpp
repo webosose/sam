@@ -14,14 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "core/base/call_chain.h"
-
 #include <algorithm>
 
 #include <boost/bind.hpp>
 
-#include "core/base/jutil.h"
-#include "core/base/lsutils.h"
+#include <core/util/call_chain.h>
+#include <core/util/jutil.h>
+#include <core/util/lsutils.h>
 
 CallItem::CallItem() :
         m_chainData(pbnjson::Object())

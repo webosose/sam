@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
 #include "core/lifecycle/app_life_status.h"
 
-#include "core/base/logging.h"
 #include "core/lifecycle/app_info_manager.h"
 
 const LifeCycleRoutePolicy LifeCycleRouter::m_invalidRoutePolicy = { LifeStatus::INVALID, RouteAction::IGNORE, RouteLog::ERROR };

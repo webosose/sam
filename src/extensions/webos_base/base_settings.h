@@ -17,12 +17,12 @@
 #ifndef BASE_SETTINGS_H
 #define BASE_SETTINGS_H
 
+#include <core/util/singleton.h>
 #include <map>
 #include <string>
 #include <vector>
 #include <pbnjson.hpp>
 
-#include "core/base/singleton.h"
 
 class BaseSettings {
 public:

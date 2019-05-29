@@ -17,6 +17,7 @@
 #ifndef CORE_PACKAGE_APPLICATION_DESCRIPTION_H_
 #define CORE_PACKAGE_APPLICATION_DESCRIPTION_H_
 
+#include <core/util/utils.h>
 #include <stdint.h>
 
 #include <string>
@@ -25,7 +26,6 @@
 #include <tuple>
 #include <pbnjson.hpp>
 
-#include "core/base/utils.h"
 //#include "core/package/keyword_map.h"
 
 const unsigned int APP_VERSION_DIGIT = 3;
@@ -73,115 +73,115 @@ public:
     // getter
     AppType type() const
     {
-        return app_type_;
+        return m_appType;
     }
     AppTypeByDir getTypeByDir() const
     {
-        return type_by_dir_;
+        return m_typeByDir;
     }
     LifeHandlerType handler_type() const
     {
-        return handler_type_;
+        return m_handlerType;
     }
     const std::string& folderPath() const
     {
-        return folder_path_;
+        return m_folderPath;
     }
     const std::string& id() const
     {
-        return app_id_;
+        return m_appId;
     }
     const std::string& title() const
     {
-        return title_;
+        return m_title;
     }
     const std::string& entryPoint() const
     {
-        return entry_point_;
+        return m_entryPoint;
     }
     const std::string& version() const
     {
-        return version_;
+        return m_version;
     }
     const AppIntVersion& IntVersion() const
     {
-        return int_version_;
+        return m_intVersion;
     }
     const std::string& trustLevel() const
     {
-        return trust_level_;
+        return m_trustLevel;
     }
     const std::string& splashBackground() const
     {
-        return splash_background_;
+        return m_splashBackground;
     }
     int NativeInterfaceVersion() const
     {
-        return native_interface_version_;
+        return m_nativeInterfaceVersion_;
     }
     bool IsBuiltinBasedApp() const
     {
-        return is_builtin_based_app_;
+        return m_isBuiltinBasedApp;
     }
     bool isRemoveFlagged() const
     {
-        return flagged_for_removal_;
+        return m_flaggedForRemoval;
     }
     bool isRemovable() const
     {
-        return removable_;
+        return m_removable;
     }
     bool isVisible() const
     {
-        return visible_;
+        return m_visible;
     }
     int requiredMemory() const
     {
-        return required_memory_;
+        return m_requiredMemory;
     }
     const std::string& defaultWindowType() const
     {
-        return default_window_type_;
+        return m_defaultWindowType;
     }
     bool window_group() const
     {
-        return window_group_;
+        return m_windowGroup;
     }
     bool window_group_owner() const
     {
-        return window_group_owner_;
+        return m_windowGroupOwner;
     }
     bool is_child_window() const
     {
-        return (window_group_ && !window_group_owner_);
+        return (m_windowGroup && !m_windowGroupOwner);
     }
     const std::string& window_group_owner_id() const
     {
-        return window_group_owner_id_;
+        return m_windowGroupOwnerId;
     }
     bool canExecute() const
     {
-        return !is_locked_for_excution_;
+        return !m_isLockedForExcution;
     }
     const pbnjson::JValue& redirection()
     {
-        return redirection_;
+        return m_redirection;
     }
     bool isLockable() const
     {
-        return lockable_;
+        return m_lockable;
     }
     bool splashOnLaunch() const
     {
-        return splash_on_launch_;
+        return m_splashOnLaunch;
     }
     bool spinnerOnLaunch() const
     {
-        return spinner_on_launch_;
+        return m_spinnerOnLaunch;
     }
     const pbnjson::JValue& getBootParams()
     {
-        return boot_params_;
+        return m_bootParams;
     }
     const pbnjson::JValue& launchParams() const
     {
@@ -189,11 +189,11 @@ public:
     }
     const std::string& containerJS() const
     {
-        return container_js_;
+        return m_containerJS;
     }
     const std::string& enyoVersion() const
     {
-        return enyo_version_;
+        return m_enyoVersion;
     }
     const pbnjson::JValue& getDeviceId() const
     {
@@ -202,30 +202,27 @@ public:
 
     pbnjson::JValue toJValue() const
     {
-        return appinfo_json_;
+        return m_appinfoJson;
     }
 
     // setter
     void SetIntVersion(uint16_t major, uint16_t minor, uint16_t micro)
     {
-        int_version_ = {major, minor, micro};}
-    void flagForRemoval(bool rf=true) {flagged_for_removal_ = rf;}
-    void executionLock(bool xp=true) {is_locked_for_excution_ = xp;}
+        m_intVersion = {major, minor, micro};}
+    void flagForRemoval(bool rf=true) {m_flaggedForRemoval = rf;}
+    void executionLock(bool xp=true) {m_isLockedForExcution = xp;}
     void setLaunchParams(const pbnjson::JValue& launchParams)
     {
         launch_params_ = launchParams.duplicate();
-        appinfo_json_.put("launchParams", launch_params_);
+        m_appinfoJson.put("launchParams", launch_params_);
     }
-    void setDeviceId (const pbnjson::JValue& deviceId) {m_deviceId = deviceId;}
+    void setDeviceId(const pbnjson::JValue& deviceId) {m_deviceId = deviceId;}
 
     // feature functions
     bool isPrivileged() const;
     bool securityChecksVerified();
     bool doesMatchKeywordExact(const gchar* keyword) const;
     bool doesMatchKeywordPartial(const gchar* keyword) const;
-
-    void setMimeData();
-    void clearMimeData();
 
     static std::string appTypeToString(AppType type);
     static bool getSelectedPropsFromAppInfo(const pbnjson::JValue& appinfo,
@@ -242,64 +239,41 @@ protected:
     ApplicationDescription& operator=(const ApplicationDescription& appDesc) = delete;
     ApplicationDescription(const ApplicationDescription& appDesc) = delete;
 
-    class MimeRegInfo {
-    public:
-        MimeRegInfo() : stream(false) {}
-        MimeRegInfo& operator=(const MimeRegInfo& c) {
-            if (this == &c)
-            return *this;
-            mimeType = c.mimeType;
-            extension = c.extension;
-            urlPattern = c.urlPattern;
-            scheme = c.scheme;
-            stream = c.stream;
-            return *this;
-        }
-        std::string mimeType;
-        std::string extension;
-        std::string urlPattern;
-        std::string scheme;
-        bool stream;
-    };
-
     virtual bool LoadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_by_dir);
     void LoadAsset(pbnjson::JValue& jdesc);
-    static int ExtractMimeTypes(const pbnjson::JValue& jsonMimeTypeArray,
-            std::vector<MimeRegInfo>& extractedMimeTypes);
-    static std::string CreateRegexpFromSchema(const std::string& schema);
 
-    AppType app_type_;
-    AppTypeByDir type_by_dir_;
-    LifeHandlerType handler_type_;
-    std::string folder_path_;
-    std::string app_id_;
-    std::string title_;    //copy of default launch point's title
-    std::string entry_point_;
-    std::string version_;
-    AppIntVersion int_version_;
-    std::string trust_level_;
-    std::string splash_background_;
-    int native_interface_version_;
-    bool is_builtin_based_app_;
-    bool flagged_for_removal_;
-    bool removable_;
-    bool visible_;
-    int required_memory_;
-    std::string default_window_type_;
-    bool window_group_;
-    bool window_group_owner_;
-    std::string window_group_owner_id_;
-    bool is_locked_for_excution_;
-    pbnjson::JValue redirection_;
-    bool lockable_;
-    bool splash_on_launch_;
-    bool spinner_on_launch_;
-    pbnjson::JValue boot_params_;
+    AppType m_appType;
+    AppTypeByDir m_typeByDir;
+    LifeHandlerType m_handlerType;
+    std::string m_folderPath;
+    std::string m_appId;
+    std::string m_title;    //copy of default launch point's title
+    std::string m_entryPoint;
+    std::string m_version;
+    AppIntVersion m_intVersion;
+    std::string m_trustLevel;
+    std::string m_splashBackground;
+    int m_nativeInterfaceVersion_;
+    bool m_isBuiltinBasedApp;
+    bool m_flaggedForRemoval;
+    bool m_removable;
+    bool m_visible;
+    int m_requiredMemory;
+    std::string m_defaultWindowType;
+    bool m_windowGroup;
+    bool m_windowGroupOwner;
+    std::string m_windowGroupOwnerId;
+    bool m_isLockedForExcution;
+    pbnjson::JValue m_redirection;
+    bool m_lockable;
+    bool m_splashOnLaunch;
+    bool m_spinnerOnLaunch;
+    pbnjson::JValue m_bootParams;
     pbnjson::JValue launch_params_;
-    std::string container_js_;
-    std::string enyo_version_;
+    std::string m_containerJS;
+    std::string m_enyoVersion;
     pbnjson::JValue m_deviceId;
-    pbnjson::JValue appinfo_json_;
+    pbnjson::JValue m_appinfoJson;
 
 };
 

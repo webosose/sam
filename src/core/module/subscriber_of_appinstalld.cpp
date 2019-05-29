@@ -14,13 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
 #include "core/module/subscriber_of_appinstalld.h"
 
 #include <pbnjson.hpp>
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
 #include "core/base/related_luna_service_roster.h"
 #include "core/bus/appmgr_service.h"
 #include "core/module/service_observer.h"

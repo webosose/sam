@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/utils.h>
 #include "extensions/webos_base/launch_point/launch_point/launch_point_bookmark_4_base.h"
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/utils.h"
 
 LaunchPointPtr LaunchPointBookmark4Base::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
 {

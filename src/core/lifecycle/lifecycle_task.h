@@ -20,20 +20,27 @@
 #include "core/bus/appmgr_service.h"
 #include "core/package/application_description.h"
 
-enum class LifeCycleTaskType
-    : int8_t {
-        Launch = 1, Pause, Close, CloseAll,
+enum class LifeCycleTaskType : int8_t {
+    Launch = 1,
+    Pause,
+    Close,
+    CloseAll,
 };
 
-enum class LifeCycleTaskStatus
-    : int8_t {
-        Ready = 1, Pending, Waiting, Done,
+enum class LifeCycleTaskStatus : int8_t {
+    Ready = 1,
+    Pending,
+    Waiting,
+    Done,
 };
 
 class LifeCycleTask {
 public:
-    LifeCycleTask(LifeCycleTaskType type, LunaTaskPtr luna_task, AppDescPtr app_desc = nullptr) :
-            life_cycle_task_type_(type), status_(LifeCycleTaskStatus::Ready), app_desc_(app_desc), luna_task_(luna_task)
+    LifeCycleTask(LifeCycleTaskType type, LunaTaskPtr luna_task, AppDescPtr app_desc = nullptr)
+        : m_lifecycleTaskType(type),
+          m_status(LifeCycleTaskStatus::Ready),
+          m_appDesc(app_desc),
+          m_lunaTask(luna_task)
     {
     }
     virtual ~LifeCycleTask()
@@ -42,39 +49,39 @@ public:
 
     LifeCycleTaskType type() const
     {
-        return life_cycle_task_type_;
+        return m_lifecycleTaskType;
     }
     LifeCycleTaskStatus status() const
     {
-        return status_;
+        return m_status;
     }
     void set_status(LifeCycleTaskStatus status)
     {
-        status_ = status;
+        m_status = status;
     }
     void SetError(int32_t code, const std::string& text)
     {
-        luna_task_->setError(code, text);
+        m_lunaTask->setError(code, text);
     }
     const std::string& app_id() const
     {
-        return app_id_;
+        return m_appId;
     }
     void SetAppId(const std::string& app_id)
     {
-        app_id_ = app_id;
+        m_appId = app_id;
     }
     LunaTaskPtr LunaTask() const
     {
-        return luna_task_;
+        return m_lunaTask;
     }
     void Finalize()
     {
-        luna_task_->replyResult();
+        m_lunaTask->replyResult();
     }
     void Finalize(const pbnjson::JValue& payload)
     {
-        luna_task_->ReplyResult(payload);
+        m_lunaTask->ReplyResult(payload);
     }
     void FinalizeWithError(int32_t code, const std::string& text)
     {
@@ -83,11 +90,11 @@ public:
     }
 
 private:
-    LifeCycleTaskType life_cycle_task_type_;
-    LifeCycleTaskStatus status_;
-    AppDescPtr app_desc_;
-    std::string app_id_;
-    LunaTaskPtr luna_task_;
+    LifeCycleTaskType m_lifecycleTaskType;
+    LifeCycleTaskStatus m_status;
+    AppDescPtr m_appDesc;
+    std::string m_appId;
+    LunaTaskPtr m_lunaTask;
 };
 
 typedef std::shared_ptr<LifeCycleTask> LifeCycleTaskPtr;

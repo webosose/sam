@@ -19,13 +19,13 @@
 
 #include <boost/function.hpp>
 #include <boost/signals2.hpp>
+#include <core/util/jutil.h>
+#include <core/util/singleton.h>
 #include <map>
 #include <memory>
 #include <pbnjson.hpp>
 #include <string>
 
-#include "core/base/jutil.h"
-#include "core/base/singleton.h"
 #include "core/bus/launchpoint_luna_adapter.h"
 #include "core/bus/lifecycle_luna_adapter.h"
 #include "core/bus/package_luna_adapter.h"

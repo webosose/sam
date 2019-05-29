@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/logging.h>
 #include "core/base/prerequisite_monitor.h"
 
-#include "core/base/logging.h"
 
 PrerequisiteItem::PrerequisiteItem() :
         m_status(PrerequisiteItemStatus::Ready)

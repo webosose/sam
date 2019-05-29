@@ -148,7 +148,6 @@
 #define MSGID_LSCALL_ERR                    "LSCALL_ERR" /** ls call error */
 #define MSGID_LSCALL_RETURN_FAIL            "LSCALL_RETURN_FAIL" /** ls call return fail */
 #define MSGID_GENERAL_JSON_PARSING_ERROR    "GENERAL_JSON_PARSING_ERROR" /** General luna bus related error log */
-#define MSGID_MIME_PARSE_FAIL               "MIME_PARSE_FAIL" /** Failure to parse mime info */
 #define MSGID_DEPRECATED_API                "DEPRECATED_API" /** Call of a deprecated api */
 #define MSGID_SRVC_REGISTER_FAIL            "SRVC_REGISTER_FAIL" /** Failure to register for ls2 bus */
 #define MSGID_SRVC_CATEGORY_FAIL            "SRVC_CATEGORY_FAIL" /** Failure to register category for ls2 bus */

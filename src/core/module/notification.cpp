@@ -14,12 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
+#include <core/util/utils.h>
 #include "core/module/notification.h"
 
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
-#include "core/base/utils.h"
 
 ResBundleAdaptor::ResBundleAdaptor()
 {

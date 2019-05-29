@@ -27,13 +27,13 @@
 #include <string>
 
 #include <boost/filesystem.hpp>
+#include <core/package/package_manager.h>
+#include <core/util/jutil.h>
+#include <core/util/logging.h>
+#include <core/util/lsutils.h>
+#include <core/util/utils.h>
 #include <pbnjson.hpp>
 
-#include "core/package/application_manager.h"
-#include "core/base/jutil.h"
-#include "core/base/logging.h"
-#include "core/base/lsutils.h"
-#include "core/base/utils.h"
 #include "core/module/subscriber_of_bootd.h"
 #include "core/setting/settings.h"
 
