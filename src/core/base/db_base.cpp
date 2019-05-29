@@ -25,8 +25,8 @@
 namespace CallChain_DBConfig {
 class CheckKind: public LSCallItem {
 public:
-    CheckKind(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
+    CheckKind(LSHandle *handle, const char *uri, const char *payload) :
+            LSCallItem(handle, uri, payload)
     {
     }
 
@@ -57,8 +57,8 @@ protected:
 
 class RegKind: public LSCallItem {
 public:
-    RegKind(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
+    RegKind(LSHandle *handle, const char *uri, const char *payload) :
+            LSCallItem(handle, uri, payload)
     {
     }
 
@@ -80,8 +80,8 @@ protected:
 
 class RegPermission: public LSCallItem {
 public:
-    RegPermission(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
+    RegPermission(LSHandle *handle, const char *uri, const char *payload) :
+            LSCallItem(handle, uri, payload)
     {
     }
 
@@ -104,109 +104,96 @@ protected:
 
 DBBase::DBBase()
 {
-    m_permissions = pbnjson::Object();
-    m_kind = pbnjson::Object();
+    db_permissions_ = pbnjson::Object();
+    db_kind_ = pbnjson::Object();
 }
 
 DBBase::~DBBase()
 {
 }
 
-void DBBase::init()
+void DBBase::Init()
 {
 }
 
-void DBBase::loadDb()
+void DBBase::LoadDb()
 {
-    LOG_INFO(MSGID_DB_LOAD, 2, PMLOGKS("where", "LoadDb"), PMLOGKS("name", m_name.c_str()), "");
+
+    LOG_INFO(MSGID_DB_LOAD, 2, PMLOGKS("where", "LoadDb"), PMLOGKS("name", db_name_.c_str()), "");
 
     //using call chain
-    CallChain& call_chain = CallChain::acquire(std::bind(&DBBase::onReadyToUseDb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), NULL, NULL);
+    CallChain& call_chain = CallChain::acquire(std::bind(&DBBase::OnReadyToUseDb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), NULL, NULL);
 
-    std::string qry = "{\"query\":{\"from\":\"" + m_name + "\", \"orderBy\":\"_rev\"}}";
+    std::string qry = "{\"query\":{\"from\":\"" + db_name_ + "\", \"orderBy\":\"_rev\"}}";
     const char* qry_ptr = qry.c_str();
 
     //1. check key from DB
-    auto check_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/find", qry_ptr);
+    auto check_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/find", qry_ptr);
 
     call_chain.add(check_kind);
 
     //2. register kind to DB
-    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putKind", m_kind.stringify().c_str());
+    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/putKind", db_kind_.stringify().c_str());
 
     call_chain.add_if(check_kind, false, reg_kind);
 
     //3. register permisson
     pbnjson::JValue permission_data = pbnjson::Object();
-    permission_data.put("permissions", m_permissions);
+    permission_data.put("permissions", db_permissions_);
 
-    auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putPermissions",
+    auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/putPermissions",
             permission_data.stringify().c_str());
 
     call_chain.add_if(reg_kind, true, reg_permission);
 
-    auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/find", qry_ptr);
+    auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().ServiceHandle(), "luna://com.webos.service.db/find", qry_ptr);
 
     call_chain.add_if(reg_permission, true, get_kind);
 
     call_chain.run();
 }
 
-bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data)
+bool DBBase::OnReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data)
 {
     if (!result.hasKey("returnValue")) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", "returnValue_does_not_exist"), "%s", err_info.errorText.c_str());
+        LOG_ERROR(MSGID_DB_LOAD_ERR, 2, PMLOGKS("status", "on_ready_to_use_db"), PMLOGKS("result", "returnValue_does_not_exist"), "%s", err_info.errorText.c_str());
         return false;
     }
 
     if (!result["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  "%s", err_info.errorText.c_str());
+        LOG_ERROR(MSGID_DB_LOAD_ERR, 2, PMLOGKS("status", "on_ready_to_use_db"), PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"), "%s", err_info.errorText.c_str());
         return false;
     }
 
     if (!result.hasKey("find_results") || !result["find_results"].isArray()) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 3,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  PMLOGKS("reason", "loaded_db_results_is_not_valid"), "");
+        LOG_ERROR(MSGID_DB_LOAD_ERR, 3, PMLOGKS("status", "on_ready_to_use_db"), PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
+                PMLOGKS("reason", "loaded_db_results_is_not_valid"), "");
         return false;
     }
 
     pbnjson::JValue loaded_db_result = result["find_results"];
 
-    LOG_INFO(MSGID_DB_LOAD, 2,
-             PMLOGKS("status", "on_ready_to_use_db"),
-             PMLOGKS("reason", "received_find_db"), "");
+    LOG_INFO(MSGID_DB_LOAD, 2, PMLOGKS("status", "on_ready_to_use_db"), PMLOGKS("reason", "received_find_db"), "");
     signal_db_loaded_(loaded_db_result);
 
     return true;
 }
 
-bool DBBase::query(const std::string& cmd, const std::string& query)
+bool DBBase::Db8Query(const std::string& cmd, const std::string& query)
 {
 
-    LOG_INFO(MSGID_DB_LOAD, 2,
-             PMLOGKS("api", cmd.c_str()),
-             PMLOGKS("name", m_name.c_str()), "");
+    LOG_INFO(MSGID_DB_LOAD, 2, PMLOGKS("api", cmd.c_str()), PMLOGKS("name", db_name_.c_str()), "");
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(), cmd.c_str(), query.c_str(), cbReturnQueryResult, this, NULL, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS("type", "lscall_one_reply"),
-                  PMLOGKS("service_name", "com.webos.service.db"),
-                  PMLOGKS("api", cmd.c_str()), "err: %s", lserror.message);
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), cmd.c_str(), query.c_str(), CB_ReturnQueryResult, this, NULL, &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall_one_reply"), PMLOGKS("service_name", "com.webos.service.db"), PMLOGKS("api", cmd.c_str()), "err: %s", lserror.message);
         return false;
     }
 
     return true;
 }
 
-bool DBBase::cbReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data)
+bool DBBase::CB_ReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data)
 {
     pbnjson::JValue result = JUtil::parse(LSMessageGetPayload(message), std::string(""));
 
@@ -215,24 +202,26 @@ bool DBBase::cbReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* u
     }
 
     if (!result["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1,
-                  PMLOGKFV("db errorText", "%s", result["errorText"].asString().c_str()), "");
+        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1, PMLOGKFV("db errorText", "%s", result["errorText"].asString().c_str()), "");
     }
 
     return true;
 }
 
-bool DBBase::insertData(const pbnjson::JValue& json)
+bool DBBase::InsertData(const pbnjson::JValue& json)
 {
+    // Virtual Func
     return true;
 }
 
-bool DBBase::updateData(const pbnjson::JValue& json)
+bool DBBase::UpdateData(const pbnjson::JValue& json)
 {
+    // Virtual Func
     return true;
 }
 
-bool DBBase::deleteData(const pbnjson::JValue& json)
+bool DBBase::DeleteData(const pbnjson::JValue& json)
 {
+    // Virtual Func
     return true;
 }

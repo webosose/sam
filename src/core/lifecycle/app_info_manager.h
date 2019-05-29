@@ -24,14 +24,11 @@
 #include "core/package/application_manager.h"
 
 struct RunningInfo {
-    std::string m_appId;
-    std::string m_pid;
-    std::string m_webprocid;
-
-    RunningInfo(const std::string& _app_id, const std::string& _pid, const std::string& _webprocid)
-        : m_appId(_app_id),
-          m_pid(_pid),
-          m_webprocid(_webprocid)
+    std::string app_id;
+    std::string pid;
+    std::string webprocid;
+    RunningInfo(const std::string& _app_id, const std::string& _pid, const std::string& _webprocid) :
+            app_id(_app_id), pid(_pid), webprocid(_webprocid)
     {
     }
 };
@@ -43,129 +40,129 @@ typedef std::map<std::string, pbnjson::JValue> UpdateInfoList;
 class AppInfoManager: public Singleton<AppInfoManager> {
 public:
     AppInfoManager();
-    virtual ~AppInfoManager();
+    ~AppInfoManager();
 
-    void init();
+    void Init();
 
     ////////////////////////////////////////////////////
     /// information per app
     ////////////////////////////////////////////////////
 
     // getter list
-    bool canExecute(const std::string& app_id);
-    bool isRemoveFlagged(const std::string& app_id);
+    bool can_execute(const std::string& app_id);
+    bool is_remove_flagged(const std::string& app_id);
     const std::string& pid(const std::string& app_id);
     const std::string& webprocid(const std::string& app_id);
-    bool preloadModeOn(const std::string& app_id);
-    bool isOutOfService(const std::string& app_id);
-    bool hasUpdate(const std::string& app_id);
-    const std::string updateCategory(const std::string& app_id);
-    const std::string updateType(const std::string& app_id);
-    const std::string updateVersion(const std::string& app_id);
-    double lastLaunchTime(const std::string& app_id);
-    LifeStatus lifeStatus(const std::string& app_id);
-    RuntimeStatus runtimeStatus(const std::string& app_id);
-    const pbnjson::JValue& virtualLaunchParams(const std::string& app_id);
+    bool preload_mode_on(const std::string& app_id);
+    bool is_out_of_service(const std::string& app_id);
+    bool has_update(const std::string& app_id);
+    const std::string update_category(const std::string& app_id);
+    const std::string update_type(const std::string& app_id);
+    const std::string update_version(const std::string& app_id);
+    double last_launch_time(const std::string& app_id);
+    LifeStatus life_status(const std::string& app_id);
+    RuntimeStatus runtime_status(const std::string& app_id);
+    const pbnjson::JValue& virtual_launch_params(const std::string& app_id);
 
     // setter list
-    void setExecutionLock(const std::string& app_id, bool v = true);
-    void setRemovalFlag(const std::string& app_id, bool v = true);
-    void setPreloadMode(const std::string& app_id, bool mode);
-    void setLastLaunchTime(const std::string& app_id, double launch_time);
-    void setLifeStatus(const std::string& app_id, const LifeStatus& status);
-    void setRuntimeStatus(const std::string& app_id, RuntimeStatus status);
-    void setVirtualLaunchParams(const std::string& app_id, const pbnjson::JValue& params);
+    void set_execution_lock(const std::string& app_id, bool v = true);
+    void set_removal_flag(const std::string& app_id, bool v = true);
+    void set_preload_mode(const std::string& app_id, bool mode);
+    void set_last_launch_time(const std::string& app_id, double launch_time);
+    void set_life_status(const std::string& app_id, const LifeStatus& status);
+    void set_runtime_status(const std::string& app_id, RuntimeStatus status);
+    void set_virtual_launch_params(const std::string& app_id, const pbnjson::JValue& params);
 
     ////////////////////////////////////////////////////
     /// common functions
     ////////////////////////////////////////////////////
-    void removeAppInfo(const std::string& app_id);
+    void remove_app_info(const std::string& app_id);
 
     // life status
-    std::string toString(const LifeStatus& status);
-    void getAppIdsByLifeStatus(const LifeStatus& status, std::vector<std::string>& app_list);
+    std::string life_status_to_string(const LifeStatus& status);
+    void get_app_ids_by_life_status(const LifeStatus& status, std::vector<std::string>& app_list);
 
     ////////////////////////////////////////////////////
     /// information list
     ////////////////////////////////////////////////////
 
     // out of service info
-    void addOutOfServiceInfo(const std::string& app_id)
+    void add_out_of_service_info(const std::string& app_id)
     {
-        m_outOfServiceInfoList.push_back(app_id);
+        m_out_of_service_info_list.push_back(app_id);
     }
-    void resetAllOutOfServiceInfo();
+    void reset_all_out_of_service_info();
 
     // update info
-    void addUpdateInfo(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version);
-    void resetAllUpdateInfo();
+    void add_update_info(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version);
+    void reset_all_update_info();
 
     // running info
-    const std::string& getAppIdByPid(const std::string& pid);
-    void getRunningList(pbnjson::JValue& running_list, bool devmode_only = false);
-    void getRunningAppIds(std::vector<std::string>& running_app_ids);
-    RunningInfoPtr getRunningData(const std::string& app_id);
-    void addRunningInfo(const std::string& app_id, const std::string& pid, const std::string& webprocid);
-    void removeRunningInfo(const std::string& app_id);
-    bool isRunning(const std::string& app_id);
+    const std::string& get_app_id_by_pid(const std::string& pid);
+    void get_running_list(pbnjson::JValue& running_list, bool devmode_only = false);
+    void get_running_app_ids(std::vector<std::string>& running_app_ids);
+    RunningInfoPtr get_running_data(const std::string& app_id);
+    void add_running_info(const std::string& app_id, const std::string& pid, const std::string& webprocid);
+    void remove_running_info(const std::string& app_id);
+    bool is_running(const std::string& app_id);
 
     // foreground info
-    const std::string& getLastForegroundAppId() const
+    const std::string& get_last_foreground_app_id() const
     {
-        return m_lastForegroundAppId;
+        return m_last_foreground_app_id;
     }
-    const std::string& getCurrentForegroundAppId() const
+    const std::string& get_current_foreground_app_id() const
     {
-        return m_currentForegroundAppId;
+        return m_current_foreground_app_id;
     }
-    const pbnjson::JValue& getJsonForegroundInfo() const
+    const pbnjson::JValue& get_json_foreground_info() const
     {
-        return m_jsonForegroundInfo;
+        return m_json_foreground_info;
     }
-    void getJsonForegroundInfoById(const std::string& app_id, pbnjson::JValue& info);
-    const std::vector<std::string>& getForegroundApps() const
+    void get_json_foreground_info_by_id(const std::string& app_id, pbnjson::JValue& info);
+    const std::vector<std::string>& get_foreground_apps() const
     {
-        return m_foregroundApps;
+        return m_foreground_apps;
     }
-    bool isAppOnFullscreen(const std::string& app_id);
-    bool isAppOnForeground(const std::string& app_id);
+    bool is_app_on_fullscreen(const std::string& app_id);
+    bool is_app_on_foreground(const std::string& app_id);
 
-    void setLastForegroundAppId(const std::string& app_id)
+    void set_last_foreground_app_id(const std::string& app_id)
     {
-        m_lastForegroundAppId = app_id;
+        m_last_foreground_app_id = app_id;
     }
-    void setCurrentForegroundAppId(const std::string& app_id)
+    void set_current_foreground_app_id(const std::string& app_id)
     {
-        m_currentForegroundAppId = app_id;
+        m_current_foreground_app_id = app_id;
     }
-    void setForegroundInfo(const pbnjson::JValue& new_info)
+    void set_foreground_info(const pbnjson::JValue& new_info)
     {
-        m_jsonForegroundInfo = new_info.duplicate();
+        m_json_foreground_info = new_info.duplicate();
     }
-    void setForegroundApps(const std::vector<std::string>& new_apps)
+    void set_foreground_apps(const std::vector<std::string>& new_apps)
     {
-        m_foregroundApps = new_apps;
+        m_foreground_apps = new_apps;
     }
 
 private:
     friend class Singleton<AppInfoManager> ;
 
-    void onAllAppRosterChanged(const AppDescMaps& allApps);
-    AppInfoPtr getAppInfo(const std::string& appId);
-    AppInfoPtr getAppInfoForSetter(const std::string& appId);
-    AppInfoPtr getAppInfoForGetter(const std::string& appId);
+    void OnAllAppRosterChanged(const AppDescMaps& all_apps);
+    AppInfoPtr get_app_info(const std::string& app_id);
+    AppInfoPtr get_app_info_for_setter(const std::string& app_id);
+    AppInfoPtr get_app_info_for_getter(const std::string& app_id);
 
-    AppInfoPtr m_defaultAppInfo;
-    AppInfoList m_appinfoList;
-    RunningInfoList m_runningList;
-    UpdateInfoList m_updateInfoList;
+    AppInfoPtr m_default_app_info;
+    AppInfoList m_appinfo_list;
+    RunningInfoList m_running_list;
+    UpdateInfoList m_update_info_list;
 
-    std::string m_lastForegroundAppId;
-    std::string m_currentForegroundAppId;
-    pbnjson::JValue m_jsonForegroundInfo;
+    std::string m_last_foreground_app_id;
+    std::string m_current_foreground_app_id;
+    pbnjson::JValue m_json_foreground_info;
 
-    std::vector<std::string> m_foregroundApps;
-    std::vector<std::string> m_outOfServiceInfoList;
+    std::vector<std::string> m_foreground_apps;
+    std::vector<std::string> m_out_of_service_info_list;
 };
 
 #endif

@@ -26,9 +26,10 @@ public:
     WebAppLifeHandler();
     virtual ~WebAppLifeHandler();
 
-    virtual void launch(AppLaunchingItemPtr item) override;
-    virtual void close(AppCloseItemPtr item, std::string& err_text) override;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
+    virtual void launch(AppLaunchingItemPtr item);
+    virtual void close(AppCloseItemPtr item, std::string& err_text);
+    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true);
+    virtual void clear_handling_item(const std::string& app_id);
 
     boost::signals2::signal<void()> signal_service_disconnected;
     boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;

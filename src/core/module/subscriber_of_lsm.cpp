@@ -58,7 +58,7 @@ void LSMSubscriber::on_server_status_changed(bool connection)
         payload.put("subscribe", true);
 
         LSErrorSafe lserror;
-        if (!LSCall(AppMgrService::instance().serviceHandle(),
+        if (!LSCall(AppMgrService::instance().ServiceHandle(),
                     "luna://com.webos.service.bus/signal/registerServiceCategory",
                     payload.stringify().c_str(),
                     category_watcher,
@@ -75,7 +75,7 @@ void LSMSubscriber::on_server_status_changed(bool connection)
         //cancel LSM registerServiceCategory subscription
         if (0 != m_token_category_watcher) {
             LSErrorSafe lserror;
-            LSCallCancel(AppMgrService::instance().serviceHandle(), m_token_category_watcher, &lserror);
+            LSCallCancel(AppMgrService::instance().ServiceHandle(), m_token_category_watcher, &lserror);
             if (LSErrorIsSet(&lserror))
                 LSErrorPrint(&lserror, stderr);
             m_token_category_watcher = 0;
@@ -84,7 +84,7 @@ void LSMSubscriber::on_server_status_changed(bool connection)
         //init m_lsmGetForgrndAppInfoReq
         if (0 != m_token_foreground_info) {
             LSErrorSafe lserror;
-            LSCallCancel(AppMgrService::instance().serviceHandle(), m_token_foreground_info, &lserror);
+            LSCallCancel(AppMgrService::instance().ServiceHandle(), m_token_foreground_info, &lserror);
             if (LSErrorIsSet(&lserror))
                 LSErrorPrint(&lserror, stderr);
             m_token_foreground_info = 0;
@@ -130,7 +130,7 @@ void LSMSubscriber::subscribe_foreground_info()
         return;
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.surfacemanager/getForegroundAppInfo", "{\"subscribe\":true}", cb_foreground_info, NULL, &m_token_foreground_info,
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.surfacemanager/getForegroundAppInfo", "{\"subscribe\":true}", cb_foreground_info, NULL, &m_token_foreground_info,
             &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", "lsm_get_foreground_info"), "err: %s", lserror.message);
     }
@@ -153,7 +153,7 @@ void LSMSubscriber::subscribe_recent_list()
         return;
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.surfacemanager/getRecentsAppList", "{\"subscribe\":true}", cb_recent_list, NULL, &m_token_recent_list, &lserror)) {
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.surfacemanager/getRecentsAppList", "{\"subscribe\":true}", cb_recent_list, NULL, &m_token_recent_list, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", "lsm_get_recent_list"), "err: %s", lserror.message);
     }
 }

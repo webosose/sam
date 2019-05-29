@@ -23,6 +23,7 @@
 #include "core/bus/lunaservice_api.h"
 #include "core/lifecycle/app_life_manager.h"
 #include "core/package/application_manager.h"
+#include "core/package/mime_system.h"
 
 #define SUBSKEY_RUNNING              "running"
 #define SUBSKEY_DEV_RUNNING          "dev_running"
@@ -40,106 +41,109 @@ LifeCycleLunaAdapter::~LifeCycleLunaAdapter()
 {
 }
 
-void LifeCycleLunaAdapter::init()
+void LifeCycleLunaAdapter::Init()
 {
-    initLunaApiHandler();
+    InitLunaApiHandler();
 
-    AppMgrService::instance().signalOnServiceReady.connect(std::bind(&LifeCycleLunaAdapter::onReady, this));
+    AppMgrService::instance().signalOnServiceReady.connect(std::bind(&LifeCycleLunaAdapter::OnReady, this));
 
-    ApplicationManager::instance().appScanner().signalAppScanFinished.connect(boost::bind(&LifeCycleLunaAdapter::onScanFinished, this, _1, _2));
+    ApplicationManager::instance().appScanner().signalAppScanFinished.connect(boost::bind(&LifeCycleLunaAdapter::OnScanFinished, this, _1, _2));
 
-    AppLifeManager::instance().signal_foreground_app_changed.connect(boost::bind(&LifeCycleLunaAdapter::onForegroundAppChanged, this, _1));
+    AppLifeManager::instance().signal_foreground_app_changed.connect(boost::bind(&LifeCycleLunaAdapter::OnForegroundAppChanged, this, _1));
 
-    AppLifeManager::instance().signal_foreground_extra_info_changed.connect(boost::bind(&LifeCycleLunaAdapter::onExtraForegroundInfoChanged, this, _1));
+    AppLifeManager::instance().signal_foreground_extra_info_changed.connect(boost::bind(&LifeCycleLunaAdapter::OnExtraForegroundInfoChanged, this, _1));
 
-    AppLifeManager::instance().signal_lifecycle_event.connect(boost::bind(&LifeCycleLunaAdapter::onLifeCycleEventGenarated, this, _1));
+    AppLifeManager::instance().signal_lifecycle_event.connect(boost::bind(&LifeCycleLunaAdapter::OnLifeCycleEventGenarated, this, _1));
 }
 
-void LifeCycleLunaAdapter::initLunaApiHandler()
+void LifeCycleLunaAdapter::InitLunaApiHandler()
 {
     // general category (/)
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_LAUNCH, "applicationManager.launch", boost::bind(&LifeCycleLunaAdapter::requestController, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_PAUSE, "", boost::bind(&LifeCycleLunaAdapter::pause, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_CLOSE_BY_APPID, "applicationManager.closeByAppId", boost::bind(&LifeCycleLunaAdapter::closeByAppId, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_CLOSE_ALL_APPS, "", boost::bind(&LifeCycleLunaAdapter::closeAllApps, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_RUNNING, "applicationManager.running", boost::bind(&LifeCycleLunaAdapter::running, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_CHANGE_RUNNING_APPID, "", boost::bind(&LifeCycleLunaAdapter::requestController, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_APP_LIFE_EVENTS, "", boost::bind(&LifeCycleLunaAdapter::getAppLifeEvents, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_APP_LIFE_STATUS, "", boost::bind(&LifeCycleLunaAdapter::getAppLifeStatus, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_GET_FOREGROUND_APPINFO, "applicationManager.getForegroundAppInfo",
-            boost::bind(&LifeCycleLunaAdapter::getForegroundAppInfo, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_LOCK_APP, "applicationManager.lockApp", boost::bind(&LifeCycleLunaAdapter::lockApp, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_REGISTER_APP, "", boost::bind(&LifeCycleLunaAdapter::registerApp, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_REGISTER_NATIVE_APP, "", boost::bind(&LifeCycleLunaAdapter::registerNativeApp, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_NOTIFY_ALERT_CLOSED, "", boost::bind(&LifeCycleLunaAdapter::notifyAlertClosed, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_LAUNCH, "applicationManager.launch", boost::bind(&LifeCycleLunaAdapter::RequestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_OPEN, "applicationManager.open", boost::bind(&LifeCycleLunaAdapter::RequestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_PAUSE, "", boost::bind(&LifeCycleLunaAdapter::Pause, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_CLOSE_BY_APPID, "applicationManager.closeByAppId", boost::bind(&LifeCycleLunaAdapter::CloseByAppId, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_CLOSE_ALL_APPS, "", boost::bind(&LifeCycleLunaAdapter::CloseAllApps, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_RUNNING, "applicationManager.running", boost::bind(&LifeCycleLunaAdapter::Running, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_CHANGE_RUNNING_APPID, "", boost::bind(&LifeCycleLunaAdapter::RequestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_GET_APP_LIFE_EVENTS, "", boost::bind(&LifeCycleLunaAdapter::GetAppLifeEvents, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_GET_APP_LIFE_STATUS, "", boost::bind(&LifeCycleLunaAdapter::GetAppLifeStatus, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_GET_FOREGROUND_APPINFO, "applicationManager.getForegroundAppInfo",
+            boost::bind(&LifeCycleLunaAdapter::GetForegroundAppInfo, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_LOCK_APP, "applicationManager.lockApp", boost::bind(&LifeCycleLunaAdapter::LockApp, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_REGISTER_APP, "", boost::bind(&LifeCycleLunaAdapter::RegisterApp, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_REGISTER_NATIVE_APP, "", boost::bind(&LifeCycleLunaAdapter::RegisterNativeApp, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_NOTIFY_ALERT_CLOSED, "", boost::bind(&LifeCycleLunaAdapter::NotifyAlertClosed, this, _1));
 
     // dev category
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_DEV, API_CLOSE_BY_APPID, "applicationManager.closeByAppId", boost::bind(&LifeCycleLunaAdapter::closeByAppIdForDev, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_DEV, API_RUNNING, "applicationManager.running", boost::bind(&LifeCycleLunaAdapter::runningForDev, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_DEV, API_CLOSE_BY_APPID, "applicationManager.closeByAppId", boost::bind(&LifeCycleLunaAdapter::CloseByAppIdForDev, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_DEV, API_RUNNING, "applicationManager.running", boost::bind(&LifeCycleLunaAdapter::RunningForDev, this, _1));
 
     // deperecated api
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_CLOSE, "", boost::bind(&LifeCycleLunaAdapter::close, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_NOTIFY_SPLASH_TIMEOUT, "", boost::bind(&LifeCycleLunaAdapter::notifySplashTimeout, this, _1));
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_ON_LAUNCH, "", boost::bind(&LifeCycleLunaAdapter::onLaunch, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_CLOSE, "", boost::bind(&LifeCycleLunaAdapter::Close, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_NOTIFY_SPLASH_TIMEOUT, "", boost::bind(&LifeCycleLunaAdapter::NotifySplashTimeout, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_ON_LAUNCH, "", boost::bind(&LifeCycleLunaAdapter::OnLaunch, this, _1));
 }
 
-void LifeCycleLunaAdapter::requestController(LunaTaskPtr task)
+void LifeCycleLunaAdapter::RequestController(LunaTaskPtr task)
 {
     if (API_LAUNCH == task->method()) {
         std::string app_id = task->jmsg()["id"].asString();
         AppDescPtr app_desc = ApplicationManager::instance().getAppById(app_id);
-        if (app_desc == NULL && !AppMgrService::instance().isServiceReady()) {
+        if (app_desc == NULL && !AppMgrService::instance().IsServiceReady()) {
             LOG_INFO(MSGID_API_REQUEST, 4, PMLOGKS("category", task->category().c_str()), PMLOGKS("method", task->method().c_str()), PMLOGKS("status", "pending"),
                     PMLOGKS("caller", task->caller().c_str()), "received message, but will handle later");
-            m_pendingTasksOnReady.push_back(task);
+            pending_tasks_on_ready_.push_back(task);
             return;
         }
     } else {
-        if (!AppMgrService::instance().isServiceReady() || ApplicationManager::instance().appScanner().isRunning()) {
-            m_pendingTasksOnScanner.push_back(task);
+        if (!AppMgrService::instance().IsServiceReady() || ApplicationManager::instance().appScanner().isRunning()) {
+            pending_tasks_on_scanner_.push_back(task);
             return;
         }
     }
 
-    handleRequest(task);
+    HandleRequest(task);
 }
 
-void LifeCycleLunaAdapter::onReady()
+void LifeCycleLunaAdapter::OnReady()
 {
-    auto it = m_pendingTasksOnReady.begin();
-    while (it != m_pendingTasksOnReady.end()) {
-        handleRequest(*it);
-        it = m_pendingTasksOnReady.erase(it);
+    auto it = pending_tasks_on_ready_.begin();
+    while (it != pending_tasks_on_ready_.end()) {
+        HandleRequest(*it);
+        it = pending_tasks_on_ready_.erase(it);
     }
 }
 
-void LifeCycleLunaAdapter::onScanFinished(ScanMode mode, const AppDescMaps& scannced_apps)
+void LifeCycleLunaAdapter::OnScanFinished(ScanMode mode, const AppDescMaps& scannced_apps)
 {
-    auto it = m_pendingTasksOnScanner.begin();
-    while (it != m_pendingTasksOnScanner.end()) {
-        handleRequest(*it);
-        it = m_pendingTasksOnScanner.erase(it);
+    auto it = pending_tasks_on_scanner_.begin();
+    while (it != pending_tasks_on_scanner_.end()) {
+        HandleRequest(*it);
+        it = pending_tasks_on_scanner_.erase(it);
     }
 }
 
-void LifeCycleLunaAdapter::handleRequest(LunaTaskPtr task)
+void LifeCycleLunaAdapter::HandleRequest(LunaTaskPtr task)
 {
     if (API_CATEGORY_GENERAL == task->category()) {
         if (API_LAUNCH == task->method())
-            launch(task);
+            Launch(task);
+        else if (API_OPEN == task->method())
+            Open(task);
         else if (API_CHANGE_RUNNING_APPID == task->method())
-            changeRunningAppId(task);
+            ChangeRunningAppId(task);
     }
 }
 
-void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
+void LifeCycleLunaAdapter::Launch(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
     std::string id = jmsg["id"].asString();
     if (id.length() == 0) {
         pbnjson::JValue payload = pbnjson::Object();
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
 
@@ -154,14 +158,137 @@ void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
     AppLifeManager::instance().Launch(lifecycle_task);
 }
 
-void LifeCycleLunaAdapter::pause(LunaTaskPtr task)
+// TODO: open api codes might need to be restructured.
+void LifeCycleLunaAdapter::Open(LunaTaskPtr task)
+{
+    pbnjson::JValue jmsg = task->jmsg();
+
+    std::string app_id = jmsg["id"].asString();
+    std::string targetUri = jmsg["target"].asString();
+    std::string strMime = jmsg["mime"].asString();
+    std::string ovrHandlerAppId = jmsg["overrideHandlerAppId"].asString();
+    std::string trueFileName = jmsg["fileName"].asString();
+
+    if (!jmsg.hasKey("params")) {
+        jmsg.put("params", pbnjson::Object());
+    }
+
+    if (!targetUri.empty()) {
+        jmsg["params"].put("target", targetUri);
+    }
+
+    ResourceHandler resourceHandler;
+    RedirectHandler redirectHandler;
+
+    if (!app_id.empty()) {
+        LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+        lifecycle_task->SetAppId(app_id);
+        AppLifeManager::instance().Launch(lifecycle_task);
+        return;
+    }
+
+    // Previously, if targetUri was empty, we returned error
+    // We just redirect app with parameters now
+    // TODO: We need new definition to redirect without URI scheme (e.g: open category)
+    if (targetUri.empty()) {
+        resourceHandler = MimeSystemImpl::instance().getActiveHandlerForResource(strMime);
+        if (resourceHandler.valid()) {
+            app_id = resourceHandler.appId();
+
+            LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("caller_id", task->caller().c_str()), PMLOGKS("mode", "open_mime"), "");
+
+            LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+            lifecycle_task->SetAppId(app_id);
+            AppLifeManager::instance().Launch(lifecycle_task);
+            return;
+        }
+    }
+
+    // We have a resource URL to open. Try to find the correct application to launch
+    if (!trueFileName.empty()) {
+        jmsg["params"].put("fileName", trueFileName);
+    }
+
+    //true argument limits to only redirects (and not command (scheme) handlers)
+    redirectHandler = MimeSystemImpl::instance().getActiveHandlerForRedirect(targetUri, false, true);
+    if (redirectHandler.valid()) {
+        app_id = redirectHandler.appId();
+
+        // A redirected URL implies streaming.
+        LOG_DEBUG("Launch redirected for app id %s, target URI %s", app_id.c_str(), targetUri.c_str());
+
+        LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+        lifecycle_task->SetAppId(app_id);
+        AppLifeManager::instance().Launch(lifecycle_task);
+        return;
+    }
+    LOG_DEBUG("No redirect handler");
+
+    std::string strExtn;
+    if (strMime.empty()) {
+        getExtensionFromUrl(targetUri, strExtn);
+        //map to mime type
+        MimeSystemImpl::instance().getMimeTypeByExtension(strExtn, strMime);
+    }
+
+    resourceHandler = MimeSystemImpl::instance().getActiveHandlerForResource(strMime);
+    if (resourceHandler.valid()) {
+        if (resourceHandler.stream()) {
+            // In the appinfo.json file of the application, the "streamable" argument currently means the following:
+            // "Don't try to download the resource...just launch the given app and pass { "target":<passed in URL/URI> } as the parameter
+            if (ovrHandlerAppId.empty())
+                app_id = resourceHandler.appId();
+            else
+                app_id = ovrHandlerAppId;
+
+            jmsg["params"].put("mimeType", strMime);
+
+            LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+            lifecycle_task->SetAppId(app_id);
+            AppLifeManager::instance().Launch(lifecycle_task);
+            return;
+        } else {
+            // We got a local file in URL
+            app_id = resourceHandler.appId();
+
+            LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+            lifecycle_task->SetAppId(app_id);
+            AppLifeManager::instance().Launch(lifecycle_task);
+            return;
+        }
+    }
+
+    redirectHandler = MimeSystemImpl::instance().getActiveHandlerForRedirect(targetUri, false, false);
+    //false parameter allows searching for command (scheme) handlers in the mime system
+    // (It will only find command handlers at this point because redirect handlers were already
+    //    searched for earlier)
+    if (redirectHandler.valid()) {
+        LOG_DEBUG("Command handler detected");
+        app_id = redirectHandler.appId();
+
+        LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
+        lifecycle_task->SetAppId(app_id);
+        AppLifeManager::instance().Launch(lifecycle_task);
+        return;
+    }
+
+    // exhausted all choices
+    task->ReplyResultWithError(HANDLER_ERR_NO_HANDLE, "No handler for " + targetUri);
+
+    LOG_WARNING(MSGID_API_REQUEST_ERR, 3, PMLOGKS("request", "open"), PMLOGKFV("errorCode", "%d", (int)HANDLER_ERR_NO_HANDLE), PMLOGKS("errorText", std::string("No handler for " + targetUri).c_str()),
+            "");
+
+    return;
+}
+
+void LifeCycleLunaAdapter::Pause(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
     std::string id = jmsg["id"].asString();
     if (id.length() == 0) {
         pbnjson::JValue payload = pbnjson::Object();
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
 
@@ -170,13 +297,13 @@ void LifeCycleLunaAdapter::pause(LunaTaskPtr task)
     AppLifeManager::instance().Pause(lifecycle_task);
 }
 
-void LifeCycleLunaAdapter::closeByAppId(LunaTaskPtr task)
+void LifeCycleLunaAdapter::CloseByAppId(LunaTaskPtr task)
 {
     LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Close, task);
     AppLifeManager::instance().Close(lifecycle_task);
 }
 
-void LifeCycleLunaAdapter::closeByAppIdForDev(LunaTaskPtr task)
+void LifeCycleLunaAdapter::CloseByAppIdForDev(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
     std::string app_id = jmsg["id"].asString();
@@ -184,7 +311,7 @@ void LifeCycleLunaAdapter::closeByAppIdForDev(LunaTaskPtr task)
 
     if (AppTypeByDir::Dev != app_desc->getTypeByDir()) {
         LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", app_id.c_str()), "only dev apps should be closed in devmode");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Only Dev app should be closed using /dev category_API");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "Only Dev app should be closed using /dev category_API");
         return;
     }
 
@@ -192,18 +319,18 @@ void LifeCycleLunaAdapter::closeByAppIdForDev(LunaTaskPtr task)
     AppLifeManager::instance().Close(lifecycle_task);
 }
 
-void LifeCycleLunaAdapter::closeAllApps(LunaTaskPtr task)
+void LifeCycleLunaAdapter::CloseAllApps(LunaTaskPtr task)
 {
     LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::CloseAll, task);
     AppLifeManager::instance().CloseAll(lifecycle_task);
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LifeCycleLunaAdapter::running(LunaTaskPtr task)
+void LifeCycleLunaAdapter::Running(LunaTaskPtr task)
 {
     pbnjson::JValue payload = pbnjson::Object();
     pbnjson::JValue running_list = pbnjson::Array();
-    AppInfoManager::instance().getRunningList(running_list);
+    AppInfoManager::instance().get_running_list(running_list);
 
     payload.put("returnValue", true);
     payload.put("running", running_list);
@@ -214,11 +341,11 @@ void LifeCycleLunaAdapter::running(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::runningForDev(LunaTaskPtr task)
+void LifeCycleLunaAdapter::RunningForDev(LunaTaskPtr task)
 {
     pbnjson::JValue payload = pbnjson::Object();
     pbnjson::JValue running_list = pbnjson::Array();
-    AppInfoManager::instance().getRunningList(running_list, true);
+    AppInfoManager::instance().get_running_list(running_list, true);
 
     payload.put("returnValue", true);
     payload.put("running", running_list);
@@ -229,7 +356,7 @@ void LifeCycleLunaAdapter::runningForDev(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::changeRunningAppId(LunaTaskPtr task)
+void LifeCycleLunaAdapter::ChangeRunningAppId(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
@@ -239,62 +366,62 @@ void LifeCycleLunaAdapter::changeRunningAppId(LunaTaskPtr task)
     ErrorInfo err_info;
 
     if (caller_id != "com.webos.app.inputcommon") {
-        task->replyResultWithError(PERMISSION_DENIED, "only 'com.webos.app.inputcommon' can call this API");
+        task->ReplyResultWithError(PERMISSION_DENIED, "only 'com.webos.app.inputcommon' can call this API");
         return;
     }
 
     if (NULL == ApplicationManager::instance().getAppById(target_id)) {
-        task->replyResultWithError(APP_ERR_INVALID_APPID, "Cannot find target appId.");
+        task->ReplyResultWithError(APP_ERR_INVALID_APPID, "Cannot find target appId.");
         return;
     }
 
     if (!AppLifeManager::instance().changeRunningAppId(caller_id, target_id, err_info)) {
-        task->replyResultWithError(err_info.errorCode, err_info.errorText);
+        task->ReplyResultWithError(err_info.errorCode, err_info.errorText);
         return;
     }
 
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LifeCycleLunaAdapter::getAppLifeEvents(LunaTaskPtr task)
+void LifeCycleLunaAdapter::GetAppLifeEvents(LunaTaskPtr task)
 {
     pbnjson::JValue payload = pbnjson::Object();
 
     if (LSMessageIsSubscription(task->lsmsg())) {
         if (!LSSubscriptionAdd(task->lshandle(), SUBSKEY_GET_APP_LIFE_EVENTS, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
+            task->SetError(API_ERR_CODE_GENERAL, "Subscription failed");
             payload.put("subscribed", false);
         } else {
             payload.put("subscribed", true);
         }
     } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
+        task->SetError(API_ERR_CODE_GENERAL, "subscription is required");
         payload.put("subscribed", false);
     }
 
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::getAppLifeStatus(LunaTaskPtr task)
+void LifeCycleLunaAdapter::GetAppLifeStatus(LunaTaskPtr task)
 {
     pbnjson::JValue payload = pbnjson::Object();
 
     if (LSMessageIsSubscription(task->lsmsg())) {
         if (!LSSubscriptionAdd(task->lshandle(), SUBSKEY_GET_APP_LIFE_STATUS, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
+            task->SetError(API_ERR_CODE_GENERAL, "Subscription failed");
             payload.put("subscribed", false);
         } else {
             payload.put("subscribed", true);
         }
     } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
+        task->SetError(API_ERR_CODE_GENERAL, "subscription is required");
         payload.put("subscribed", false);
     }
 
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::getForegroundAppInfo(LunaTaskPtr task)
+void LifeCycleLunaAdapter::GetForegroundAppInfo(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
@@ -302,12 +429,12 @@ void LifeCycleLunaAdapter::getForegroundAppInfo(LunaTaskPtr task)
     payload.put("returnValue", true);
 
     if (jmsg["extraInfo"].asBool() == true) {
-        payload.put("foregroundAppInfo", AppInfoManager::instance().getJsonForegroundInfo());
+        payload.put("foregroundAppInfo", AppInfoManager::instance().get_json_foreground_info());
         if (LSMessageIsSubscription(task->lsmsg())) {
             payload.put("subscribed", LSSubscriptionAdd(task->lshandle(), SUBSKEY_FOREGROUND_INFO_EX, task->lsmsg(), NULL));
         }
     } else {
-        payload.put("appId", AppInfoManager::instance().getCurrentForegroundAppId());
+        payload.put("appId", AppInfoManager::instance().get_current_foreground_app_id());
         payload.put("windowId", "");
         payload.put("processId", "");
         if (LSMessageIsSubscription(task->lsmsg())) {
@@ -318,7 +445,7 @@ void LifeCycleLunaAdapter::getForegroundAppInfo(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::lockApp(LunaTaskPtr task)
+void LifeCycleLunaAdapter::LockApp(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
@@ -330,7 +457,7 @@ void LifeCycleLunaAdapter::lockApp(LunaTaskPtr task)
     (void) ApplicationManager::instance().LockAppForUpdate(app_id, lock, error_text);
 
     if (!error_text.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, error_text);
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, error_text);
         return;
     }
 
@@ -341,11 +468,11 @@ void LifeCycleLunaAdapter::lockApp(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LifeCycleLunaAdapter::registerApp(LunaTaskPtr task)
+void LifeCycleLunaAdapter::RegisterApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "register_app"), "");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
         return;
     }
 
@@ -353,16 +480,16 @@ void LifeCycleLunaAdapter::registerApp(LunaTaskPtr task)
     AppLifeManager::instance().registerApp(task->caller(), task->lsmsg(), error_text);
 
     if (!error_text.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, error_text);
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, error_text);
         return;
     }
 }
 
-void LifeCycleLunaAdapter::registerNativeApp(LunaTaskPtr task)
+void LifeCycleLunaAdapter::RegisterNativeApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "register_native_app"), "");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
         return;
     }
 
@@ -370,42 +497,42 @@ void LifeCycleLunaAdapter::registerNativeApp(LunaTaskPtr task)
     AppLifeManager::instance().connectNativeApp(task->caller(), task->lsmsg(), error_text);
 
     if (!error_text.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, error_text);
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, error_text);
         return;
     }
 }
 
-void LifeCycleLunaAdapter::notifyAlertClosed(LunaTaskPtr task)
+void LifeCycleLunaAdapter::NotifyAlertClosed(LunaTaskPtr task)
 {
     AppLifeManager::instance().handleBridgedLaunchRequest(task->jmsg());
-    task->replyResult();
+    task->ReplyResult();
 }
 
 // TODO: make below APIs retired
-void LifeCycleLunaAdapter::close(LunaTaskPtr task)
+void LifeCycleLunaAdapter::Close(LunaTaskPtr task)
 {
     LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Close, task);
     AppLifeManager::instance().CloseByPid(lifecycle_task);
 }
 
-void LifeCycleLunaAdapter::notifySplashTimeout(LunaTaskPtr task)
+void LifeCycleLunaAdapter::NotifySplashTimeout(LunaTaskPtr task)
 {
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LifeCycleLunaAdapter::onLaunch(LunaTaskPtr task)
+void LifeCycleLunaAdapter::OnLaunch(LunaTaskPtr task)
 {
 
     pbnjson::JValue payload = pbnjson::Object();
     if (LSMessageIsSubscription(task->lsmsg())) {
         if (!LSSubscriptionAdd(task->lshandle(), SUBSKEY_ON_LAUNCH, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
+            task->SetError(API_ERR_CODE_GENERAL, "Subscription failed");
             payload.put("subscribed", false);
         } else {
             payload.put("subscribed", true);
         }
     } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
+        task->SetError(API_ERR_CODE_GENERAL, "subscription is required");
         payload.put("subscribed", false);
     }
 
@@ -413,7 +540,7 @@ void LifeCycleLunaAdapter::onLaunch(LunaTaskPtr task)
 }
 
 // subscription adapter to reply
-void LifeCycleLunaAdapter::onForegroundAppChanged(const std::string& app_id)
+void LifeCycleLunaAdapter::OnForegroundAppChanged(const std::string& app_id)
 {
 
     pbnjson::JValue payload = pbnjson::Object();
@@ -427,7 +554,7 @@ void LifeCycleLunaAdapter::onForegroundAppChanged(const std::string& app_id)
              PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO),
              PMLOGJSON("payload", payload.stringify().c_str()), "");
 
-    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
     SUBSKEY_FOREGROUND_INFO, payload.stringify().c_str(), NULL)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
                   PMLOGKS("type", "subscriptionreply"),
@@ -437,7 +564,7 @@ void LifeCycleLunaAdapter::onForegroundAppChanged(const std::string& app_id)
     }
 }
 
-void LifeCycleLunaAdapter::onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info)
+void LifeCycleLunaAdapter::OnExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info)
 {
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("returnValue", true);
@@ -447,7 +574,7 @@ void LifeCycleLunaAdapter::onExtraForegroundInfoChanged(const pbnjson::JValue& f
     LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
              PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO_EX),
              PMLOGJSON("payload", payload.stringify().c_str()), "");
-    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
                              SUBSKEY_FOREGROUND_INFO_EX,
                              payload.stringify().c_str(),
                              NULL)) {
@@ -459,7 +586,7 @@ void LifeCycleLunaAdapter::onExtraForegroundInfoChanged(const pbnjson::JValue& f
     }
 }
 
-void LifeCycleLunaAdapter::onLifeCycleEventGenarated(const pbnjson::JValue& event)
+void LifeCycleLunaAdapter::OnLifeCycleEventGenarated(const pbnjson::JValue& event)
 {
 
     pbnjson::JValue payload = event.duplicate();
@@ -468,7 +595,7 @@ void LifeCycleLunaAdapter::onLifeCycleEventGenarated(const pbnjson::JValue& even
     LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
              PMLOGKS("skey", SUBSKEY_GET_APP_LIFE_EVENTS),
              PMLOGJSON("payload", payload.stringify().c_str()), "");
-    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
                              SUBSKEY_GET_APP_LIFE_EVENTS,
                              payload.stringify().c_str(),
                              NULL)) {

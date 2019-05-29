@@ -29,22 +29,22 @@ void WebOSService::stop()
         g_main_loop_quit(m_main_loop);
 }
 
-void WebOSService::createInstance()
+void WebOSService::create_instance()
 {
     init();
 }
 
-void WebOSService::destroyInstance()
+void WebOSService::destroy_instance()
 {
     cleanup();
 }
 
-void WebOSService::runThread()
+void WebOSService::run_thread()
 {
     initialize();
 }
 
-void WebOSService::stopThread()
+void WebOSService::stop_thread()
 {
     terminate();
 }

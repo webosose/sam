@@ -23,10 +23,10 @@ public:
     DBLaunchPoint();
     virtual ~DBLaunchPoint();
 
-    virtual void init() override;
-    virtual bool insertData(const pbnjson::JValue& json) override;
-    virtual bool updateData(const pbnjson::JValue& json) override;
-    virtual bool deleteData(const pbnjson::JValue& json) override;
+    virtual void Init() override;
+    virtual bool InsertData(const pbnjson::JValue& json) override;
+    virtual bool UpdateData(const pbnjson::JValue& json) override;
+    virtual bool DeleteData(const pbnjson::JValue& json) override;
 
 private:
 };

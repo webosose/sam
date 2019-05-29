@@ -56,13 +56,13 @@ void LocalePreferences::OnSettingServiceStatusChanaged(bool connection)
     if (connection) {
         if (locale_info_token_ == 0) {
             std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
-            if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), OnLocaleInfoReceived, this, &locale_info_token_, NULL)) {
+            if (!LSCall(AppMgrService::instance().ServiceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), OnLocaleInfoReceived, this, &locale_info_token_, NULL)) {
                 LOG_WARNING(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "lscall"), PMLOGKS("where", __FUNCTION__), "failed_subscribing_settings");
             }
         }
     } else {
         if (0 != locale_info_token_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), locale_info_token_, NULL);
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), locale_info_token_, NULL);
             locale_info_token_ = 0;
         }
     }

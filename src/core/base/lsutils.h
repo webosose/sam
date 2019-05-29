@@ -34,10 +34,10 @@ public:
     }
 };
 
-std::string getCallerFromMessage(LSMessage* message);
-std::string getCallerID(const std::string& caller);
-std::string getCallerPID(const std::string& caller);
-std::string getCategoryFromMessage(LSMessage* message);
-std::string getMethodFromMessage(LSMessage* message);
+std::string GetCallerFromMessage(LSMessage* message);
+std::string GetCallerID(const std::string& caller);
+std::string GetCallerPID(const std::string& caller);
+std::string GetCategoryFromMessage(LSMessage* message);
+std::string GetMethodFromMessage(LSMessage* message);
 
 #endif

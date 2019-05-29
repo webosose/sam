@@ -34,7 +34,7 @@ private:
     static bool cbReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     static bool cbReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    void runStages(AppLaunchingItem4BasePtr item);
+    void runStages(AppLaunchingItem4BasePtr prelaunching_item);
     void handleStages(AppLaunchingItem4BasePtr prelaunching_item);
 
     void redirectToAnother(AppLaunchingItem4BasePtr prelaunching_item);

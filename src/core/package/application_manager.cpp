@@ -29,6 +29,7 @@
 #include "core/lifecycle/app_info_manager.h"
 #include "core/lifecycle/app_life_manager.h"
 #include "core/module/locale_preferences.h"
+#include "core/package/mime_system.h"
 #include "core/package/virtual_app_manager.h"
 #include "core/setting/settings.h"
 
@@ -40,7 +41,7 @@ namespace CallChainEventHandler {
 class CheckAppLockStatus: public LSCallItem {
 public:
     CheckAppLockStatus(const std::string& appId) :
-            LSCallItem(AppMgrService::instance().serviceHandle(), "luna://com.webos.settingsservice/batch", "{}")
+            LSCallItem(AppMgrService::instance().ServiceHandle(), "luna://com.webos.settingsservice/batch", "{}")
     {
         std::string query =
                 std::string(
@@ -100,7 +101,7 @@ protected:
 class CheckPin: public LSCallItem {
 public:
     CheckPin() :
-            LSCallItem(AppMgrService::instance().serviceHandle(), "luna://com.webos.notification/createPincodePrompt", R"({"promptType":"parental"})")
+            LSCallItem(AppMgrService::instance().ServiceHandle(), "luna://com.webos.notification/createPincodePrompt", R"({"promptType":"parental"})")
     {
     }
 protected:
@@ -143,6 +144,7 @@ void ApplicationManager::SetAppDescriptionFactory(AppDescriptionFactoryInterface
 void ApplicationManager::Clear()
 {
     app_roster_.clear();
+    MimeSystemImpl::instance().clearMimeTable();
 }
 
 void ApplicationManager::Init()
@@ -210,7 +212,7 @@ void ApplicationManager::Rescan(const std::vector<std::string>& reason)
 void ApplicationManager::OnAppInstalled(const std::string& app_id)
 {
 
-    AppInfoManager::instance().setExecutionLock(app_id, false);
+    AppInfoManager::instance().set_execution_lock(app_id, false);
 
     AppDescPtr new_desc = app_scanner_.ScanForOneApp(app_id);
     if (!new_desc) {
@@ -231,7 +233,7 @@ void ApplicationManager::OnAppInstalled(const std::string& app_id)
 
     // clear web app cache
     if (AppTypeByDir::Dev == new_desc->getTypeByDir() && AppType::Web == new_desc->type()) {
-        (void) LSCallOneReply(AppMgrService::instance().serviceHandle(), "luna://com.palm.webappmanager/discardCodeCache", "{\"force\":true}", NULL, NULL, NULL, NULL);
+        (void) LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.palm.webappmanager/discardCodeCache", "{\"force\":true}", NULL, NULL, NULL, NULL);
     }
 }
 
@@ -256,12 +258,16 @@ AppDescPtr ApplicationManager::getAppById(const std::string& app_id)
 
 void ApplicationManager::ReplaceAppDesc(const std::string& app_id, AppDescPtr new_desc)
 {
+
     if (app_roster_.count(app_id) == 0) {
         app_roster_[app_id] = new_desc;
+        new_desc->setMimeData();
         return;
     }
 
+    app_roster_[app_id]->clearMimeData();
     app_roster_[app_id] = new_desc;
+    new_desc->setMimeData();
 }
 
 void ApplicationManager::RemoveAppsOnUSB(const std::string& app_dir, const AppTypeByDir& app_type)
@@ -291,6 +297,7 @@ void ApplicationManager::AddApp(const std::string& app_id, AppDescPtr new_desc, 
     // new app
     if (!current_desc) {
         app_roster_[app_id] = new_desc;
+        new_desc->setMimeData();
         PublishOneAppChange(new_desc, APP_CHANGE_ADDED, event);
         return;
     }
@@ -314,7 +321,8 @@ void ApplicationManager::RemoveApp(const std::string& app_id, bool rescan, AppSt
     if (!current_desc)
         return;
 
-    AppInfoManager::instance().setExecutionLock(app_id, false);
+    current_desc->clearMimeData();
+    AppInfoManager::instance().set_execution_lock(app_id, false);
 
     if (current_desc->IsBuiltinBasedApp() && AppStatusChangeEvent::APP_UNINSTALLED == event) {
         LOG_INFO(MSGID_UNINSTALL_APP, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("app_type", "system"), PMLOGKS("location", "rw"), "remove system-app in read-write area");
@@ -325,7 +333,7 @@ void ApplicationManager::RemoveApp(const std::string& app_id, bool rescan, AppSt
     if (!rescan) {
         PublishOneAppChange(current_desc, APP_CHANGE_REMOVED, event);
         app_roster_.erase(app_id);
-        AppInfoManager::instance().removeAppInfo(app_id);
+        AppInfoManager::instance().remove_app_info(app_id);
         return;
     }
 
@@ -334,7 +342,7 @@ void ApplicationManager::RemoveApp(const std::string& app_id, bool rescan, AppSt
     if (!rescanned_desc) {
         PublishOneAppChange(current_desc, APP_CHANGE_REMOVED, event);
         app_roster_.erase(app_id);
-        AppInfoManager::instance().removeAppInfo(app_id);
+        AppInfoManager::instance().remove_app_info(app_id);
         return;
     }
 
@@ -361,13 +369,13 @@ void ApplicationManager::ReloadApp(const std::string& app_id)
         return;
     }
 
-    AppInfoManager::instance().setExecutionLock(app_id, false);
+    AppInfoManager::instance().set_execution_lock(app_id, false);
 
     AppDescPtr rescanned_desc = app_scanner_.ScanForOneApp(app_id);
     if (!rescanned_desc) {
         PublishOneAppChange(current_desc, APP_CHANGE_REMOVED, AppStatusChangeEvent::APP_UNINSTALLED);
         app_roster_.erase(app_id);
-        AppInfoManager::instance().removeAppInfo(app_id);
+        AppInfoManager::instance().remove_app_info(app_id);
         LOG_INFO(MSGID_PACKAGE_STATUS, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("action", "reload"), "no app package left, just remove");
         return;
     }
@@ -392,7 +400,7 @@ bool ApplicationManager::LockAppForUpdate(const std::string& appId, bool lock, s
     }
 
     LOG_INFO(MSGID_APPLAUNCH_LOCK, 2, PMLOGKS("app_id", appId.c_str()), PMLOGKS("lock_status", (lock?"locked":"unlocked")), "");
-    AppInfoManager::instance().setExecutionLock(appId, lock);
+    AppInfoManager::instance().set_execution_lock(appId, lock);
     return true;
 }
 
@@ -405,6 +413,7 @@ void ApplicationManager::OnLocaleChanged(const std::string& lang, const std::str
 
 void ApplicationManager::OnAppScanFinished(ScanMode mode, const AppDescMaps& scanned_apps)
 {
+
     if (ScanMode::FULL_SCAN == mode) {
 
         // check changes after rescan
@@ -429,6 +438,11 @@ void ApplicationManager::OnAppScanFinished(ScanMode mode, const AppDescMaps& sca
 
         Clear();
         app_roster_ = scanned_apps;
+
+        for (const auto& it : app_roster_) {
+            (it.second)->setMimeData();
+        }
+
         signalAllAppRosterChanged(app_roster_);
         PublishListApps();
         scan_reason_.clear();
@@ -534,7 +548,7 @@ void ApplicationManager::UninstallApp(const std::string& id, std::string& errorR
 
         LSErrorSafe lserror;
 
-        if (!LSCallOneReply(AppMgrService::instance().serviceHandle(),
+        if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(),
                             "luna://com.webos.appInstallService/remove",
                             payload.stringify().c_str(),
                             cbAppUninstalled,

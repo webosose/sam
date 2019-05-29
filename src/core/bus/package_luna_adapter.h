@@ -25,31 +25,47 @@
 class PackageLunaAdapter {
 public:
     PackageLunaAdapter();
-    virtual ~PackageLunaAdapter();
+    ~PackageLunaAdapter();
 
-    void init();
+    void Init();
 
 private:
-    void initLunaApiHandler();
-    void requestController(LunaTaskPtr task);
-    void handleRequest(LunaTaskPtr task);
-    void onReady();
-    void onScanFinished(ScanMode mode, const AppDescMaps& scannced_apps);
-    void onListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev);
-    void onOneAppChanged(const pbnjson::JValue& app, const std::string& change, const std::string& reason, bool dev);
-    void onAppStatusChanged(AppStatusChangeEvent event, AppDescPtr app_desc);
+    void InitLunaApiHandler();
+    void RequestController(LunaTaskPtr task);
+    void HandleRequest(LunaTaskPtr task);
+    void OnReady();
+    void OnScanFinished(ScanMode mode, const AppDescMaps& scannced_apps);
+    void OnListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev);
+    void OnOneAppChanged(const pbnjson::JValue& app, const std::string& change, const std::string& reason, bool dev);
+    void OnAppStatusChanged(AppStatusChangeEvent event, AppDescPtr app_desc);
 
-    void listApps(LunaTaskPtr task);
-    void listAppsForDev(LunaTaskPtr task);
-    void getAppStatus(LunaTaskPtr task);
-    void getAppInfo(LunaTaskPtr task);
-    void getAppBasePath(LunaTaskPtr task);
-    void launchVirtualApp(LunaTaskPtr task);
-    void addVirtualApp(LunaTaskPtr task);
-    void removeVirtualApp(LunaTaskPtr task);
+    void ListApps(LunaTaskPtr task);
+    void ListAppsForDev(LunaTaskPtr task);
+    void GetAppStatus(LunaTaskPtr task);
+    void GetAppInfo(LunaTaskPtr task);
+    void GetAppBasePath(LunaTaskPtr task);
+    void LaunchVirtualApp(LunaTaskPtr task);
+    void AddVirtualApp(LunaTaskPtr task);
+    void RemoveVirtualApp(LunaTaskPtr task);
+    void RegisterVerbsForRedirect(LunaTaskPtr task);
+    void RegisterVerbsForResource(LunaTaskPtr task);
+    void GetHandlerForExtension(LunaTaskPtr task);
+    void ListExtensionMap(LunaTaskPtr task);
+    void MimeTypeForExtension(LunaTaskPtr task);
+    void GetHandlerForMimeType(LunaTaskPtr task);
+    void GetHandlerForMimeTypeByVerb(LunaTaskPtr task);
+    void GetHandlerForUrl(LunaTaskPtr task);
+    void GetHandlerForUrlByVerb(LunaTaskPtr task);
+    void ListAllHandlersForMime(LunaTaskPtr task);
+    void ListAllHandlersForMimeByVerb(LunaTaskPtr task);
+    void ListAllHandlersForUrl(LunaTaskPtr task);
+    void ListAllHandlersForUrlByVerb(LunaTaskPtr task);
+    void ListAllHandlersForUrlPattern(LunaTaskPtr task);
+    void ListAllHandlersForMultipleMime(LunaTaskPtr task);
+    void ListAllHandlersForMultipleUrlPattern(LunaTaskPtr task);
 
-    std::vector<LunaTaskPtr> m_pendingTasksOnReady;
-    std::vector<LunaTaskPtr> m_pendingTasksOnScanner;
+    std::vector<LunaTaskPtr> pending_tasks_on_ready_;
+    std::vector<LunaTaskPtr> pending_tasks_on_scanner_;
 };
 
 #endif  // CORE_BUS_PACKGE_LUNA_ADAPTER_H_

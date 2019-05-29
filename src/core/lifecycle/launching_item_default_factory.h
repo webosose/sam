@@ -14,39 +14,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef WEBOS_SERVICE_BASE_H
-#define WEBOS_SERVICE_BASE_H
+#ifndef APP_LAUNCHING_ITEM_DEFAULT_FACTORY_H_
+#define APP_LAUNCHING_ITEM_DEFAULT_FACTORY_H_
 
-#include <glib.h>
+#include "interface/lifecycle/launching_item_factory_interface.h"
 
-class WebOSService {
+class AppLaunchingItemDefaultFactory: public AppLaunchingItemFactoryInterface {
 public:
-    virtual ~WebOSService()
-    {
-    }
-
-    void start();
-    void stop();
-    void create_instance();
-    void destroy_instance();
-    void run_thread();
-    void stop_thread();
-
-protected:
-    virtual bool initialize() = 0;
-    virtual bool terminate() = 0;
-
-    GMainLoop* main_loop()
-    {
-        return m_main_loop;
-    }
-
-private:
-    void init();
-    void run();
-    void cleanup();
-
-    GMainLoop* m_main_loop;
+    AppLaunchingItemDefaultFactory();
+    virtual ~AppLaunchingItemDefaultFactory();
+    virtual AppLaunchingItemPtr Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text);
 };
 
 #endif

@@ -61,7 +61,7 @@ bool ServiceObserver::IsConnected(const std::string& service_name) const
 void ServiceObserver::Run()
 {
 
-    LSHandle* lsHandle = AppMgrService::instance().serviceHandle();
+    LSHandle* lsHandle = AppMgrService::instance().ServiceHandle();
     for (auto it : watching_services_) {
 
         if (it->token_ != 0)
@@ -83,7 +83,7 @@ void ServiceObserver::Run()
 void ServiceObserver::Stop()
 {
 
-    LSHandle* lsHandle = AppMgrService::instance().serviceHandle();
+    LSHandle* lsHandle = AppMgrService::instance().ServiceHandle();
     for (auto it : watching_services_) {
         it->connection_ = false;
         it->signalStatusChanged.disconnect_all_slots();

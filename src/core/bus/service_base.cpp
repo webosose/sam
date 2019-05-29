@@ -23,27 +23,27 @@
 #include "core/base/lsutils.h"
 
 ServiceBase::ServiceBase(const std::string& name) :
-        m_name(name), m_handle(NULL)
+        name_(name), handle_(NULL)
 {
-    m_services.push_back( { name, NULL });
+    services_.push_back( { name, NULL });
 }
 
 ServiceBase::~ServiceBase()
 {
 }
 
-void ServiceBase::addCompatibleNames(const std::vector<std::string>& names)
+void ServiceBase::AddCompatibleNames(const std::vector<std::string>& names)
 {
     for (const auto& n : names) {
-        m_services.push_back( { n, NULL });
+        services_.push_back( { n, NULL });
     }
 }
 
-bool ServiceBase::attach(GMainLoop * gml)
+bool ServiceBase::Attach(GMainLoop * gml)
 {
 
     bool first_handle = true;
-    for (auto& it : m_services) {
+    for (auto& it : services_) {
         LSErrorSafe lse;
         const std::string& name = it.first;
 
@@ -53,10 +53,10 @@ bool ServiceBase::attach(GMainLoop * gml)
         }
 
         std::vector<std::string> categories;
-        getCategories(categories);
+        get_categories(categories);
 
         for (const auto& category : categories) {
-            if (!LSRegisterCategory(it.second, category.c_str(), getMethods(category), NULL, NULL, &lse)) {
+            if (!LSRegisterCategory(it.second, category.c_str(), get_methods(category), NULL, NULL, &lse)) {
                 LOG_ERROR(MSGID_SRVC_CATEGORY_FAIL, 1, PMLOGKS("service", name.c_str()), "err: %s", lse.message);
                 return false;
             }
@@ -73,7 +73,7 @@ bool ServiceBase::attach(GMainLoop * gml)
         }
 
         if (first_handle) {
-            m_handle = it.second;
+            handle_ = it.second;
             first_handle = false;
         }
     }
@@ -81,10 +81,10 @@ bool ServiceBase::attach(GMainLoop * gml)
     return true;
 }
 
-void ServiceBase::detach()
+void ServiceBase::Detach()
 {
 
-    for (auto& it : m_services) {
+    for (auto& it : services_) {
         LSErrorSafe lse;
         if (!LSUnregister(it.second, &lse)) {
             LOG_WARNING(MSGID_SRVC_DETACH_FAIL, 1, PMLOGKS("service", it.first.c_str()), "err: %s", lse.message);
@@ -94,10 +94,10 @@ void ServiceBase::detach()
         it.second = NULL;
     }
 
-    m_handle = NULL;
+    handle_ = NULL;
 }
 
-bool ServiceBase::isAttached()
+bool ServiceBase::IsAttached()
 {
-    return (NULL != m_handle);
+    return (NULL != handle_);
 }

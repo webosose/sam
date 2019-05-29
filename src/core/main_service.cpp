@@ -60,7 +60,7 @@ public:
         config_info_connection_.disconnect();
     }
 
-    virtual void start()
+    virtual void Start()
     {
         ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_FALLBACK_PRECEDENCE);
         ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_KEEPALIVE_APPS);
@@ -115,7 +115,7 @@ public:
         boot_status_connection_.disconnect();
     }
 
-    virtual void start()
+    virtual void Start()
     {
         boot_status_connection_ = BootdSubscriber::instance().SubscribeBootStatus(boost::bind(&CorePrerequisites::BootStatus::HandleStatus, this, _1));
     }
@@ -136,7 +136,7 @@ private:
 
 static void OnReady(PrerequisiteResult result)
 {
-    if (AppMgrService::instance().isServiceReady())
+    if (AppMgrService::instance().IsServiceReady())
         return;
 
     LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "all_precondition_ready"), "");
@@ -146,8 +146,8 @@ static void OnReady(PrerequisiteResult result)
     ProductAbstractFactory::instance().OnReady();
     ApplicationManager::instance().StartPostInit();
 
-    AppMgrService::instance().setServiceStatus(true);
-    AppMgrService::instance().onServiceReady();
+    AppMgrService::instance().SetServiceStatus(true);
+    AppMgrService::instance().OnServiceReady();
 }
 
 }   // namespace CorePrerequisites
@@ -171,27 +171,27 @@ bool MainService::initialize()
     LocalePreferences::instance().Init();   //load locale info
 
     // service attach
-    SysMgrService::instance()->attach(mainLoop());
-    AppMgrService::instance().attach(mainLoop());
+    SysMgrService::instance()->Attach(main_loop());
+    AppMgrService::instance().Attach(main_loop());
 
     ConfigdSubscriber::instance().Init();
     BootdSubscriber::instance().Init();
     LSMSubscriber::instance().init();
     AppinstalldSubscriber::instance().Init();
 
-    PrerequisiteMonitor& service_prerequisite_monitor = PrerequisiteMonitor::create(CorePrerequisites::OnReady);
+    PrerequisiteMonitor& service_prerequisite_monitor = PrerequisiteMonitor::Create(CorePrerequisites::OnReady);
 
     PrerequisiteItemPtr core_ready_condition1 = std::make_shared<CorePrerequisites::ConfigInfo>();
     PrerequisiteItemPtr core_ready_condition2 = std::make_shared<CorePrerequisites::BootStatus>();
-    service_prerequisite_monitor.addItem(core_ready_condition1);
-    service_prerequisite_monitor.addItem(core_ready_condition2);
+    service_prerequisite_monitor.AddItem(core_ready_condition1);
+    service_prerequisite_monitor.AddItem(core_ready_condition2);
 
     // TODO: reorgarnize all instances according to their characteristics (core/extension)
     //       then, put product recipes codes into each extension main
     // Abstract Factory for product recipes
     ProductAbstractFactory::instance().Initialize(service_prerequisite_monitor);
 
-    service_prerequisite_monitor.run();
+    service_prerequisite_monitor.Run();
     ServiceObserver::instance().Run();
 
     ApplicationManager::instance().ScanInitialApps();
@@ -203,8 +203,8 @@ bool MainService::terminate()
 {
     ServiceObserver::instance().Stop();
 
-    SysMgrService::instance()->detach();
-    AppMgrService::instance().detach();
+    SysMgrService::instance()->Detach();
+    AppMgrService::instance().Detach();
 
     ProductAbstractFactory::instance().Terminate();
 

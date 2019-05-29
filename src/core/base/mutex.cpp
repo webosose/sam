@@ -14,39 +14,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef WEBOS_SERVICE_BASE_H
-#define WEBOS_SERVICE_BASE_H
+#include "core/base/mutex.h"
 
-#include <glib.h>
+Mutex::Mutex()
+{
+    m_mutex = g_new0(GRecMutex, 1);
+    g_rec_mutex_init(m_mutex);
+}
 
-class WebOSService {
-public:
-    virtual ~WebOSService()
-    {
-    }
+Mutex::~Mutex()
+{
+    g_rec_mutex_clear(m_mutex);
+    g_free(m_mutex);
+}
 
-    void start();
-    void stop();
-    void create_instance();
-    void destroy_instance();
-    void run_thread();
-    void stop_thread();
+void Mutex::lock()
+{
+    g_rec_mutex_lock(m_mutex);
+}
 
-protected:
-    virtual bool initialize() = 0;
-    virtual bool terminate() = 0;
+bool Mutex::tryLock()
+{
+    return g_rec_mutex_trylock(m_mutex);
+}
 
-    GMainLoop* main_loop()
-    {
-        return m_main_loop;
-    }
-
-private:
-    void init();
-    void run();
-    void cleanup();
-
-    GMainLoop* m_main_loop;
-};
-
-#endif
+void Mutex::unlock()
+{
+    g_rec_mutex_unlock(m_mutex);
+}

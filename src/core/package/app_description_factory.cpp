@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2018 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,39 +14,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef WEBOS_SERVICE_BASE_H
-#define WEBOS_SERVICE_BASE_H
+#include "core/package/app_description_factory.h"
 
-#include <glib.h>
+AppDescriptionFactory::AppDescriptionFactory()
+{
+}
 
-class WebOSService {
-public:
-    virtual ~WebOSService()
-    {
-    }
+AppDescriptionFactory::~AppDescriptionFactory()
+{
+}
 
-    void start();
-    void stop();
-    void create_instance();
-    void destroy_instance();
-    void run_thread();
-    void stop_thread();
-
-protected:
-    virtual bool initialize() = 0;
-    virtual bool terminate() = 0;
-
-    GMainLoop* main_loop()
-    {
-        return m_main_loop;
-    }
-
-private:
-    void init();
-    void run();
-    void cleanup();
-
-    GMainLoop* m_main_loop;
-};
-
-#endif
+AppDescPtr AppDescriptionFactory::Create(AppTypeByDir type_by_dir, pbnjson::JValue& jdesc, std::string& err_text)
+{
+    return nullptr;
+}

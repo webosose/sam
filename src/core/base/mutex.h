@@ -14,39 +14,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef WEBOS_SERVICE_BASE_H
-#define WEBOS_SERVICE_BASE_H
+#ifndef MUTEX_H
+#define MUTEX_H
 
 #include <glib.h>
 
-class WebOSService {
+#include "core/base/sptr.h"
+
+class Mutex: public RefCounted {
 public:
-    virtual ~WebOSService()
-    {
-    }
+    Mutex();
+    virtual ~Mutex();
 
-    void start();
-    void stop();
-    void create_instance();
-    void destroy_instance();
-    void run_thread();
-    void stop_thread();
-
-protected:
-    virtual bool initialize() = 0;
-    virtual bool terminate() = 0;
-
-    GMainLoop* main_loop()
-    {
-        return m_main_loop;
-    }
+    void lock();
+    bool tryLock();
+    void unlock();
 
 private:
-    void init();
-    void run();
-    void cleanup();
 
-    GMainLoop* m_main_loop;
+    GRecMutex* m_mutex;
 };
 
-#endif
+#endif /* MUTEX_H */

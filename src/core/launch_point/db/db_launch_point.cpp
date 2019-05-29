@@ -22,21 +22,21 @@
 
 DBLaunchPoint::DBLaunchPoint()
 {
-    m_name = "com.webos.applicationManager.launchPoints:1";
+    db_name_ = "com.webos.applicationManager.launchPoints:1";
 
-    m_permissions = pbnjson::Object();
-    m_kind = pbnjson::Object();
+    db_permissions_ = pbnjson::Object();
+    db_kind_ = pbnjson::Object();
 }
 
 DBLaunchPoint::~DBLaunchPoint()
 {
 }
 
-void DBLaunchPoint::init()
+void DBLaunchPoint::Init()
 {
 }
 
-bool DBLaunchPoint::insertData(const pbnjson::JValue& json)
+bool DBLaunchPoint::InsertData(const pbnjson::JValue& json)
 {
     std::string db8_api = "luna://com.webos.service.db/put";
     std::string db8_qry;
@@ -74,17 +74,17 @@ bool DBLaunchPoint::insertData(const pbnjson::JValue& json)
     if (json_db_qry.isNull())
         return false;
 
-    json_db_qry.put("_kind", m_name);
+    json_db_qry.put("_kind", db_name_);
     json_db_qry.put("id", json["id"]);
     json_db_qry.put("lptype", json["lptype"]);
     json_db_qry.put("launchPointId", json["launchPointId"]);
 
     db8_qry = "{\"objects\":[" + json_db_qry.stringify() + "]}";
 
-    return query(db8_api, db8_qry);
+    return Db8Query(db8_api, db8_qry);
 }
 
-bool DBLaunchPoint::updateData(const pbnjson::JValue& json)
+bool DBLaunchPoint::UpdateData(const pbnjson::JValue& json)
 {
     std::string db8_api = "luna://com.webos.service.db/merge";
     std::string db8_qry;
@@ -126,7 +126,7 @@ bool DBLaunchPoint::updateData(const pbnjson::JValue& json)
         return false;
 
     json_db_qry.put("query", pbnjson::Object());
-    json_db_qry["query"].put("from", m_name);
+    json_db_qry["query"].put("from", db_name_);
     json_db_qry["query"].put("where", pbnjson::Array());
 
     json_where.put("prop", "launchPointId");
@@ -136,10 +136,10 @@ bool DBLaunchPoint::updateData(const pbnjson::JValue& json)
 
     db8_qry = json_db_qry.stringify();
 
-    return query(db8_api, db8_qry);
+    return Db8Query(db8_api, db8_qry);
 }
 
-bool DBLaunchPoint::deleteData(const pbnjson::JValue& json)
+bool DBLaunchPoint::DeleteData(const pbnjson::JValue& json)
 {
     std::string db8_api = "luna://com.webos.service.db/del";
     std::string db8_qry;
@@ -147,7 +147,7 @@ bool DBLaunchPoint::deleteData(const pbnjson::JValue& json)
     pbnjson::JValue json_where = pbnjson::Object();
 
     json_db_qry.put("query", pbnjson::Object());
-    json_db_qry["query"].put("from", m_name);
+    json_db_qry["query"].put("from", db_name_);
     json_db_qry["query"].put("where", pbnjson::Array());
 
     json_where.put("prop", "launchPointId");
@@ -157,5 +157,5 @@ bool DBLaunchPoint::deleteData(const pbnjson::JValue& json)
 
     db8_qry = json_db_qry.stringify();
 
-    return query(db8_api, db8_qry);
+    return Db8Query(db8_api, db8_qry);
 }

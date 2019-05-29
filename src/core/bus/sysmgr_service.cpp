@@ -58,9 +58,9 @@ SysMgrService::~SysMgrService()
 {
 }
 
-bool SysMgrService::attach(GMainLoop* gml)
+bool SysMgrService::Attach(GMainLoop* gml)
 {
-    if (!ServiceBase::attach(gml))
+    if (!ServiceBase::Attach(gml))
         return false;
 
     (void) BootdSubscriber::instance().SubscribeBootStatus(boost::bind(&SysMgrService::postBootStatus, this, _1));
@@ -68,9 +68,9 @@ bool SysMgrService::attach(GMainLoop* gml)
     return true;
 }
 
-void SysMgrService::detach()
+void SysMgrService::Detach()
 {
-    ServiceBase::detach();
+    ServiceBase::Detach();
 }
 
 //->Start of API documentation comment block
@@ -100,7 +100,7 @@ void SysMgrService::detach()
  @}
  */
 //->End of API documentation comment block
-bool SysMgrService::cbGetBootStatus(LSHandle* lshandle, LSMessage* message, void* user_data)
+bool SysMgrService::cb_getBootStatus(LSHandle* lshandle, LSMessage* message, void* user_data)
 {
     LSErrorSafe lserror;
     pbnjson::JValue reply = pbnjson::Object();
@@ -108,7 +108,7 @@ bool SysMgrService::cbGetBootStatus(LSHandle* lshandle, LSMessage* message, void
     bool subscribed = false;
 
     LOG_WARNING(MSGID_DEPRECATED_API, 4, PMLOGKS("SENDER", LSMessageGetSender(message)), PMLOGKS("SENDER_SERVICE", LSMessageGetSenderServiceName(message)),
-            PMLOGKS("SERVICE_NAME", SysMgrService::instance()->m_name.c_str()), PMLOGKS("METHOD", LSMessageGetMethod(message)), "");
+            PMLOGKS("SERVICE_NAME", SysMgrService::instance()->name_.c_str()), PMLOGKS("METHOD", LSMessageGetMethod(message)), "");
 
     if (LSMessageIsSubscription(message)) {
         if (!LSSubscriptionProcess(lshandle, message, &subscribed, &lserror)) {
@@ -147,29 +147,29 @@ void SysMgrService::postBootStatus(const pbnjson::JValue& jmsg)
     request.put("finished", status);
 
     std::vector<std::string> categories;
-    getCategories(categories);
+    get_categories(categories);
 
     std::string category;
     for (auto it = categories.begin(); it != categories.end(); ++it) {
         category = *it;
 
-        if (!LSSubscriptionReply(SysMgrService::instance()->serviceHandle(), (category + "getBootStatus").c_str(), request.stringify().c_str(), &lserror))
+        if (!LSSubscriptionReply(SysMgrService::instance()->ServiceHandle(), (category + "getBootStatus").c_str(), request.stringify().c_str(), &lserror))
             return;
     }
 }
 
-bool SysMgrService::cbNoOp(LSHandle* lshandle, LSMessage *msg, void *user_data)
+bool SysMgrService::cb_no_op(LSHandle* lshandle, LSMessage *msg, void *user_data)
 {
     return false;
 }
 
-LSMethod * SysMgrService::getMethods(std::string category) const
+LSMethod * SysMgrService::get_methods(std::string category) const
 {
-    static LSMethod s_methods[] = { { "getBootStatus", SysMgrService::cbGetBootStatus }, { 0, 0 } };
+    static LSMethod s_methods[] = { { "getBootStatus", SysMgrService::cb_getBootStatus }, { 0, 0 } };
     return s_methods;
 }
 
-void SysMgrService::getCategories(std::vector<std::string> &categories) const
+void SysMgrService::get_categories(std::vector<std::string> &categories) const
 {
     categories.push_back("/");
 }

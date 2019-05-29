@@ -16,7 +16,7 @@
 
 #include "core/base/lsutils.h"
 
-std::string getCallerFromMessage(LSMessage* message)
+std::string GetCallerFromMessage(LSMessage* message)
 {
     std::string caller = "";
     if (!message)
@@ -29,21 +29,21 @@ std::string getCallerFromMessage(LSMessage* message)
     return caller;
 }
 
-std::string getCallerID(const std::string& caller)
+std::string GetCallerID(const std::string& caller)
 {
     if (std::string::npos == caller.find(" "))
         return caller;
     return caller.substr(0, caller.find(" "));
 }
 
-std::string getCallerPID(const std::string& caller)
+std::string GetCallerPID(const std::string& caller)
 {
     if (std::string::npos == caller.find(" "))
         return "";
     return caller.substr(caller.find(" ") + 1);
 }
 
-std::string getCategoryFromMessage(LSMessage* message)
+std::string GetCategoryFromMessage(LSMessage* message)
 {
     if (!message)
         return std::string("");
@@ -53,7 +53,7 @@ std::string getCategoryFromMessage(LSMessage* message)
     return std::string(category);
 }
 
-std::string getMethodFromMessage(LSMessage* message)
+std::string GetMethodFromMessage(LSMessage* message)
 {
     if (!message)
         return "";

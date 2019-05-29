@@ -36,6 +36,8 @@ public:
     virtual void launch(AppLaunchingItemPtr item) = 0;
     virtual void close(AppCloseItemPtr item, std::string& err_text) = 0;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) = 0;
+
+    virtual void clear_handling_item(const std::string& app_id) = 0;
 };
 
 #endif

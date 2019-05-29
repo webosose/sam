@@ -49,7 +49,7 @@ void ConfigdSubscriber::OnServerStatusChanged(bool connection)
         RequestConfigInfo();
     } else {
         if (0 != token_config_info_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_config_info_, NULL);
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_config_info_, NULL);
             token_config_info_ = 0;
         }
     }
@@ -74,7 +74,7 @@ void ConfigdSubscriber::RequestConfigInfo()
     std::string method = std::string("luna://") + WEBOS_SERVICE_CONFIGD + std::string("/getConfigs");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(),
+    if (!LSCall(AppMgrService::instance().ServiceHandle(),
                 method.c_str(),
                 payload.stringify().c_str(),
                 ConfigInfoCallback,

@@ -22,49 +22,29 @@
 #include <tuple>
 #include <vector>
 
-enum class LifeStatus : int8_t {
-    INVALID = -1,
-    STOP = 0,
-    PRELOADING,
-    LAUNCHING,
-    RELAUNCHING,
-    FOREGROUND,
-    BACKGROUND,
-    CLOSING,
-    PAUSING,
-    RUNNING, // internal event
+enum class LifeStatus
+    : int8_t {
+        INVALID = -1, STOP = 0, PRELOADING, LAUNCHING, RELAUNCHING, FOREGROUND, BACKGROUND, CLOSING, PAUSING, RUNNING, // internal event
 };
 
-enum class LifeEvent : int8_t {
-    INVALID = -1,
-    SPLASH = 0,
-    PRELOAD,
-    LAUNCH,
-    FOREGROUND,
-    BACKGROUND,
-    PAUSE,
-    CLOSE,
-    STOP,
+enum class LifeEvent
+    : int8_t {
+        INVALID = -1, SPLASH = 0, PRELOAD, LAUNCH, FOREGROUND, BACKGROUND, PAUSE, CLOSE, STOP,
 };
 
-enum class RuntimeStatus : int8_t {
-    STOP = 0,
-    LAUNCHING,
-    PRELOADING,
-    RUNNING,
-    REGISTERED,
-    CLOSING,
-    PAUSING, // internal status
+enum class RuntimeStatus
+    : int8_t {
+        STOP = 0, LAUNCHING, PRELOADING, RUNNING, REGISTERED, CLOSING, PAUSING, // internal status
 };
 
-enum class RouteAction : int8_t {
-    SET = 0,
-    IGNORE,
-    CONVERT,
+enum class RouteAction
+    : int8_t {
+        SET = 0, IGNORE, CONVERT,
 };
 
-enum class RouteLog : int8_t {
-    NONE = 0,   // normal flow as expected
+enum class RouteLog
+    : int8_t {
+        NONE = 0,   // normal flow as expected
     CHECK,      // for checking improvement point later
     WARN,       // can happen
     ERROR,      // should not happen
@@ -79,21 +59,21 @@ public:
     LifeCycleRouter();
     ~LifeCycleRouter();
 
-    void init();
-    const LifeCycleRoutePolicy& getLifeCycleRoutePolicy(LifeStatus current, LifeStatus next);
-    void setRuntimeStatus(const std::string& app_id, RuntimeStatus next);
-    LifeStatus getLifeStatusFromRuntimeStatus(RuntimeStatus runtime_status);
-    LifeEvent getLifeEventFromLifeStatus(LifeStatus status);
+    void Init();
+    const LifeCycleRoutePolicy& GetLifeCycleRoutePolicy(LifeStatus current, LifeStatus next);
+    void SetRuntimeStatus(const std::string& app_id, RuntimeStatus next);
+    LifeStatus GetLifeStatusFromRuntimeStatus(RuntimeStatus runtime_status);
+    LifeEvent GetLifeEventFromLifeStatus(LifeStatus status);
 
 private:
-    const LifeCycleRoutePolicy& getConvRoutePolilcy(LifeStatus current, LifeStatus next);
+    const LifeCycleRoutePolicy& GetConvRoutePolilcy(LifeStatus current, LifeStatus next);
 
-    std::map<LifeStatus, std::vector<LifeCycleRoutePolicy>> m_lifecycleRouteMap;
-    std::map<LifeStatus, LifeStatusConvertPolicy> m_lifestatusConvMap;
-    std::map<RuntimeStatus, std::vector<RuntimeRoutePolicy>> m_runtimeRouteMap;
-    std::map<RuntimeStatus, LifeStatus> m_runtimeStatusConvMap;
-    std::map<LifeStatus, LifeEvent> m_lifeEventConvMap;
-    static const LifeCycleRoutePolicy m_invalidRoutePolicy;
+    std::map<LifeStatus, std::vector<LifeCycleRoutePolicy>> lifecycle_route_map_;
+    std::map<LifeStatus, LifeStatusConvertPolicy> lifestatus_conv_map_;
+    std::map<RuntimeStatus, std::vector<RuntimeRoutePolicy>> runtime_route_map_;
+    std::map<RuntimeStatus, LifeStatus> runtime_status_conv_map_;
+    std::map<LifeStatus, LifeEvent> lifeevent_conv_map_;
+    static const LifeCycleRoutePolicy invalid_route_policy_;
 };
 
 #endif // APP_LIFE_STATUS_H_

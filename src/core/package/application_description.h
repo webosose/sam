@@ -23,16 +23,16 @@
 #include <list>
 #include <memory>
 #include <tuple>
-#include <pbnjson.hpp>
 
 #include "core/base/utils.h"
-//#include "core/package/keyword_map.h"
+#include "core/package/cmd_resource_handlers.h"
+#include "core/package/keyword_map.h"
 
 const unsigned int APP_VERSION_DIGIT = 3;
 
-enum class AppType : int8_t {
-    None = 0,
-    Web,             // Web app
+enum class AppType
+    : int8_t {
+        None = 0, Web,             // Web app
     Stub,            // StubApp (this is dummy type of apps)
     Native,          // Native app (general native apps)
     Native_Builtin,  // Native app (more special than general native app: e.g. Isis2, Chrome,...)
@@ -42,16 +42,14 @@ enum class AppType : int8_t {
     Qml,             // Qml app (launch via booster)
 };
 
-enum class LifeHandlerType : int8_t {
-    None = 0,
-    Native,
-    Web,
-    Qml,
+enum class LifeHandlerType
+    : int8_t {
+        None = 0, Native, Web, Qml,
 };
 
-enum class AppTypeByDir : int8_t {
-    None = 0,
-    External_Shared,  // {usb}/sharedcryptofs/apps/usr/palm/applications
+enum class AppTypeByDir
+    : int8_t {
+        None = 0, External_Shared,  // {usb}/sharedcryptofs/apps/usr/palm/applications
     Store,            // /media/crptofs/apps/usr/palm/applications
     External_Store,   // {usb}/cryptofs/apps/usr/palm/applications
     System_Updatable, // /media/system/apps/usr/palm/applications
@@ -68,7 +66,7 @@ typedef std::tuple<uint16_t, uint16_t, uint16_t> AppIntVersion;
 class ApplicationDescription {
 public:
     ApplicationDescription();
-    virtual ~ApplicationDescription();
+    ~ApplicationDescription();
 
     // getter
     AppType type() const
@@ -199,7 +197,12 @@ public:
     {
         return m_deviceId;
     }
-
+    const std::list<gchar*>& keywords() const
+    {
+        return keywords_.allKeywords();
+    }
+    const std::list<ResourceHandler>& mimeTypes() const;
+    const std::list<RedirectHandler>& redirectTypes() const;
     pbnjson::JValue toJValue() const
     {
         return appinfo_json_;
@@ -211,11 +214,8 @@ public:
         int_version_ = {major, minor, micro};}
     void flagForRemoval(bool rf=true) {flagged_for_removal_ = rf;}
     void executionLock(bool xp=true) {is_locked_for_excution_ = xp;}
-    void setLaunchParams(const pbnjson::JValue& launchParams)
-    {
-        launch_params_ = launchParams.duplicate();
-        appinfo_json_.put("launchParams", launch_params_);
-    }
+    void setLaunchParams(const pbnjson::JValue& launchParams) {
+        launch_params_ = launchParams.duplicate(); appinfo_json_.put("launchParams", launch_params_);}
     void setDeviceId (const pbnjson::JValue& deviceId) {m_deviceId = deviceId;}
 
     // feature functions
@@ -300,7 +300,9 @@ protected:
     std::string enyo_version_;
     pbnjson::JValue m_deviceId;
     pbnjson::JValue appinfo_json_;
-
+    KeywordMap keywords_;
+    std::list<ResourceHandler> mime_types_;
+    std::list<RedirectHandler> redirect_types_;
 };
 
 #endif // CORE_PACKAGE_APPLICATION_DESCRIPTION_H_

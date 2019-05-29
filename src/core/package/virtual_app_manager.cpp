@@ -528,7 +528,7 @@ bool VirtualAppManager::CreateLSConfig(const std::string& app_id, const std::str
     std::string payload = std::string("{\"id\":\"") + app_id + std::string("\",\"target\":{\"deviceId\":\"") + device_id + std::string("\"}}");
     msg_token = 0;
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(), "luna://com.webos.appInstallService/createLSConfigFiles", payload.c_str(), cb_func, NULL, &msg_token, &lserror)) {
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.webos.appInstallService/createLSConfigFiles", payload.c_str(), cb_func, NULL, &msg_token, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallonereply"), PMLOGKS("service_name", "com.webos.appInstallService"), PMLOGKS("request", "create_ls_config"), "err: %s", lserror.message);
         return false;
     }
@@ -539,7 +539,7 @@ bool VirtualAppManager::RemoveLSConfig(const std::string& app_id, const std::str
 {
     std::string payload = std::string("{\"id\":\"") + app_id + std::string("\",\"target\":{\"deviceId\":\"") + device_id + std::string("\"}}");
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(), "luna://com.webos.appInstallService/removeLSConfigFiles", payload.c_str(), cb_func, NULL, msg_token, &lserror)) {
+    if (!LSCallOneReply(AppMgrService::instance().ServiceHandle(), "luna://com.webos.appInstallService/removeLSConfigFiles", payload.c_str(), cb_func, NULL, msg_token, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscallonereply"), PMLOGKS("service_name", "com.webos.appInstallService"), PMLOGKS("request", "remove_ls_config"), "err: %s", lserror.message);
         return false;
     }

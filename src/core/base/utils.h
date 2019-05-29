@@ -30,7 +30,6 @@ struct AppVersion {
     int major;
     int minor;
     int micro;
-
     AppVersion()
     {
         major = 0;

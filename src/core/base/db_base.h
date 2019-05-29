@@ -30,30 +30,30 @@ public:
     DBBase();
     virtual ~DBBase();
 
-    virtual void init();
-    virtual bool insertData(const pbnjson::JValue& json);
-    virtual bool updateData(const pbnjson::JValue& json);
-    virtual bool deleteData(const pbnjson::JValue& json);
+    virtual void Init();
+    virtual bool InsertData(const pbnjson::JValue& json);
+    virtual bool UpdateData(const pbnjson::JValue& json);
+    virtual bool DeleteData(const pbnjson::JValue& json);
 
-    virtual std::string name() const
+    virtual std::string Name() const
     {
-        return m_name;
+        return db_name_;
     }
 
-    void loadDb();
-    bool query(const std::string& cmd, const std::string& query);
+    void LoadDb();
+    bool Db8Query(const std::string& cmd, const std::string& query);
 
     boost::signals2::signal<void(const pbnjson::JValue& loaded_db_result)> signal_db_loaded_;
 
 protected:
-    std::string m_name;
-    pbnjson::JValue m_permissions;
-    pbnjson::JValue m_kind;
+    std::string db_name_;
+    pbnjson::JValue db_permissions_;
+    pbnjson::JValue db_kind_;
 
 private:
-    static bool cbReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data);
+    static bool CB_ReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data);
 
-    bool onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data);
+    bool OnReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data);
 };
 
 #endif

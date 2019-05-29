@@ -24,9 +24,10 @@ public:
     QmlAppLifeHandler();
     virtual ~QmlAppLifeHandler();
 
-    virtual void launch(AppLaunchingItemPtr item) override;
-    virtual void close(AppCloseItemPtr item, std::string& err_text) override;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
+    virtual void launch(AppLaunchingItemPtr item);
+    virtual void close(AppCloseItemPtr item, std::string& err_text);
+    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true);
+    virtual void clear_handling_item(const std::string& app_id);
 
     AppLaunchingItemPtr get_lscall_request_item_by_token(const LSMessageToken& token);
     void remove_item_from_lscall_request_list(const std::string& uid);

@@ -58,7 +58,7 @@ void AppinstalldSubscriber::OnInstallServiceStatusChanged(bool connection)
         RequestInstallStatus();
     } else {
         if (0 != token_install_status_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_install_status_, NULL);
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_install_status_, NULL);
             token_install_status_ = 0;
         }
     }
@@ -72,7 +72,7 @@ void AppinstalldSubscriber::RequestInstallStatus()
     std::string method = std::string("luna://") + WEBOS_SERVICE_APPINSTALL + std::string("/status");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnInstallStatusCallback, this, &token_install_status_, &lserror)) {
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), method.c_str(), "{\"subscribe\":true}", OnInstallStatusCallback, this, &token_install_status_, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }
@@ -171,7 +171,7 @@ void AppinstalldSubscriber::OnUpdateServiceStatusChanged(bool connection)
         RequestUpdateInfo();
     } else {
         if (0 != token_update_info_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_update_info_, NULL);
+            (void) LSCallCancel(AppMgrService::instance().ServiceHandle(), token_update_info_, NULL);
             token_update_info_ = 0;
         }
     }
@@ -185,7 +185,7 @@ void AppinstalldSubscriber::RequestUpdateInfo()
     std::string method = std::string("luna://") + WEBOS_SERVICE_APPUPDATE + std::string("/statusAll");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnUpdateInfoCallback, this, &token_update_info_, &lserror)) {
+    if (!LSCall(AppMgrService::instance().ServiceHandle(), method.c_str(), "{\"subscribe\":true}", OnUpdateInfoCallback, this, &token_update_info_, &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }

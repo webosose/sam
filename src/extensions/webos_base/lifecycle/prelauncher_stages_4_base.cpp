@@ -29,30 +29,23 @@
 
 bool set_prelaunching_stages_4_base(AppLaunchingItem4BasePtr item)
 {
-    AppDesc4BasicPtr appDesc = BaseExtension::instance().GetAppDesc(item->appId());
-    if (!appDesc) {
-        LOG_ERROR(MSGID_APPLAUNCH, 3,
-                  PMLOGKS("app_id", item->appId().c_str()),
-                  PMLOGKS("reason", "null_description"),
-                  PMLOGKS("where", "set_prelaunching_stage"), "");
+    AppDesc4BasicPtr app_desc = BaseExtension::instance().GetAppDesc(item->appId());
+    if (!app_desc) {
+        LOG_ERROR(MSGID_APPLAUNCH, 3, PMLOGKS("app_id", item->appId().c_str()), PMLOGKS("reason", "null_description"), PMLOGKS("where", "set_prelaunching_stage"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return false;
     }
 
     // execution lock
-    item->add_stage(StageItem4Base(StageHandlerType4Base::DIRECT_CHECK,
-                                   "",
-                                   NULL,
-                                   handle_execution_lock_status,
-                                   AppLaunchingStage4Base::CHECK_EXECUTE)
-    );
+    item->add_stage(StageItem4Base(StageHandlerType4Base::DIRECT_CHECK, "",
+    NULL, handle_execution_lock_status, AppLaunchingStage4Base::CHECK_EXECUTE));
     return true;
 }
 
 StageHandlerReturn4Base handle_execution_lock_status(AppLaunchingItem4BasePtr prelaunching_item)
 {
     const std::string& app_id = prelaunching_item->appId();
-    if (AppInfoManager::instance().canExecute(app_id) == false) {
+    if (AppInfoManager::instance().can_execute(app_id) == false) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "execution_lock"), PMLOGKS("where", "handle_execution_lock_status"), "");
         prelaunching_item->setErrCodeText(APP_ERR_LOCKED, "app is locked");
         return StageHandlerReturn4Base::ERROR;

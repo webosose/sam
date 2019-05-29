@@ -34,8 +34,8 @@ public:
     SysMgrService();
     ~SysMgrService();
 
-    virtual bool attach(GMainLoop* gml);
-    virtual void detach();
+    virtual bool Attach(GMainLoop* gml);
+    virtual void Detach();
 
     bool getBootStatus()
     {
@@ -49,12 +49,12 @@ public:
     void postBootStatus(const pbnjson::JValue& jmsg);
 
 protected:
-    LSMethod* getMethods(std::string category) const;
-    void getCategories(std::vector<std::string> &categories) const;
+    LSMethod* get_methods(std::string category) const;
+    void get_categories(std::vector<std::string> &categories) const;
 
 private:
-    static bool cbNoOp(LSHandle* lshandle, LSMessage *massage, void *user_data);
-    static bool cbGetBootStatus(LSHandle* lshandle, LSMessage *message, void *user_data);
+    static bool cb_no_op(LSHandle* lshandle, LSMessage *massage, void *user_data);
+    static bool cb_getBootStatus(LSHandle* lshandle, LSMessage *message, void *user_data);
 
     bool m_bootStatus;
 };

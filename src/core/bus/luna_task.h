@@ -27,115 +27,103 @@
 
 class LunaTask {
 public:
-    LunaTask(LSHandle* lshandle, const std::string& category, const std::string& method, const std::string& caller, LSMessage* lsmsg, const pbnjson::JValue& jmsg)
-        : m_lshandle(lshandle),
-          m_category(category),
-          m_method(method),
-          m_caller(caller),
-          m_lsmsg(lsmsg),
-          m_jmsg(pbnjson::JValue()),
-          m_returnPayload(pbnjson::Object()),
-          m_errorCode(0)
+    LunaTask(LSHandle* lshandle, const std::string& category, const std::string& method, const std::string& caller, LSMessage* lsmsg, const pbnjson::JValue& jmsg) :
+            lshandle_(lshandle), category_(category), method_(method), caller_(caller), lsmsg_(lsmsg), jmsg_(pbnjson::JValue()), return_payload_(pbnjson::Object()), error_code_(0)
     {
         if (!jmsg.isNull())
-            m_jmsg = jmsg.duplicate();
-        LSMessageRef(m_lsmsg);
+            jmsg_ = jmsg.duplicate();
+        LSMessageRef(lsmsg_);
+    }
+    ~LunaTask()
+    {
+        if (lsmsg_ == NULL)
+            return;
+        LSMessageUnref(lsmsg_);
     }
 
-    virtual ~LunaTask()
+    void Reply(const pbnjson::JValue& payload)
     {
-        if (m_lsmsg == NULL)
+        if (!lsmsg_)
             return;
-        LSMessageUnref(m_lsmsg);
+        if (!LSMessageIsSubscription(lsmsg_))
+            return;
+        LSMessageRespond(lsmsg_, payload.duplicate().stringify().c_str(), NULL);
     }
-
-    void reply(const pbnjson::JValue& payload)
+    void ReplyResult()
     {
-        if (!m_lsmsg)
+        if (!lsmsg_)
             return;
-        if (!LSMessageIsSubscription(m_lsmsg))
-            return;
-        LSMessageRespond(m_lsmsg, payload.duplicate().stringify().c_str(), NULL);
-    }
-    void replyResult()
-    {
-        if (!m_lsmsg)
-            return;
-        if (!m_returnPayload.hasKey("returnValue") ||
-            !m_returnPayload["returnValue"].isBoolean()) {
-            m_returnPayload.put("returnValue", (m_errorText.empty() ? true : false));
+        if (!return_payload_.hasKey("returnValue") || !return_payload_["returnValue"].isBoolean()) {
+            return_payload_.put("returnValue", (error_text_.empty() ? true : false));
         }
-        if (!m_errorText.empty()) {
-            m_returnPayload.put("errorCode", m_errorCode);
-            m_returnPayload.put("errorText", m_errorText);
-            LOG_INFO(MSGID_API_RETURN_FALSE, 4,
-                     PMLOGKS("category", m_category.c_str()),
-                     PMLOGKS("method", m_method.c_str()),
-                     PMLOGKFV("err_code", "%d", m_errorCode),
-                     PMLOGKS("err_text", m_errorText.c_str()), "");
+        if (!error_text_.empty()) {
+            return_payload_.put("errorCode", error_code_);
+            return_payload_.put("errorText", error_text_);
+            LOG_INFO(MSGID_API_RETURN_FALSE, 4, PMLOGKS("category", category_.c_str()), PMLOGKS("method", method_.c_str()), PMLOGKFV("err_code", "%d", error_code_),
+                    PMLOGKS("err_text", error_text_.c_str()), "");
         }
-        (void) LSMessageRespond(m_lsmsg, m_returnPayload.stringify().c_str(), NULL);
+        (void) LSMessageRespond(lsmsg_, return_payload_.stringify().c_str(), NULL);
     }
     void ReplyResult(const pbnjson::JValue& payload)
     {
-        setReturnPayload(payload);
-        replyResult();
+        SetReturnPayload(payload);
+        ReplyResult();
     }
-    void replyResultWithError(int32_t code, const std::string& text)
+    void ReplyResultWithError(int32_t code, const std::string& text)
     {
-        setError(code, text);
-        replyResult();
+        SetError(code, text);
+        ReplyResult();
     }
 
     LSHandle* lshandle() const
     {
-        return m_lshandle;
+        return lshandle_;
     }
     const std::string& category() const
     {
-        return m_category;
+        return category_;
     }
     const std::string& method() const
     {
-        return m_method;
+        return method_;
     }
     const std::string& caller() const
     {
-        return m_caller;
+        return caller_;
     }
     LSMessage* lsmsg() const
     {
-        return m_lsmsg;
+        return lsmsg_;
     }
     const pbnjson::JValue& jmsg() const
     {
-        return m_jmsg;
+        return jmsg_;
     }
-    void setJmsg(const pbnjson::JValue& params)
+    void set_jmsg(const pbnjson::JValue& params)
     {
-        m_jmsg = params.duplicate();
-    }
-    void setReturnPayload(const pbnjson::JValue& payload)
-    {
-        m_returnPayload = payload.duplicate();
+        jmsg_ = params.duplicate();
     }
 
-    void setError(int32_t code, const std::string& text)
+    void SetReturnPayload(const pbnjson::JValue& payload)
     {
-        m_errorCode = code;
-        m_errorText = text;
+        return_payload_ = payload.duplicate();
+    }
+    void SetError(int32_t code, const std::string& text)
+    {
+        error_code_ = code;
+        error_text_ = text;
     }
 
 private:
-    LSHandle* m_lshandle;
-    std::string m_category;
-    std::string m_method;
-    std::string m_caller;
-    LSMessage* m_lsmsg;
-    pbnjson::JValue m_jmsg;
-    pbnjson::JValue m_returnPayload;
-    int32_t m_errorCode;
-    std::string m_errorText;
+    LSHandle* lshandle_;
+    std::string category_;
+    std::string method_;
+    std::string caller_;
+    LSMessage* lsmsg_;
+    pbnjson::JValue jmsg_;
+    pbnjson::JValue return_payload_;
+    int32_t error_code_;
+    std::string error_text_;
 };
 typedef std::shared_ptr<LunaTask> LunaTaskPtr;
 

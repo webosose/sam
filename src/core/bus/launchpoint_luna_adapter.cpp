@@ -34,74 +34,74 @@ LaunchPointLunaAdapter::~LaunchPointLunaAdapter()
 {
 }
 
-void LaunchPointLunaAdapter::LaunchPointLunaAdapter::init()
+void LaunchPointLunaAdapter::LaunchPointLunaAdapter::Init()
 {
-    initLunaApiHandler();
+    InitLunaApiHandler();
 
-    LaunchPointManager::instance().signal_on_launch_point_ready_.connect(boost::bind(&LaunchPointLunaAdapter::onReady, this));
+    LaunchPointManager::instance().signal_on_launch_point_ready_.connect(boost::bind(&LaunchPointLunaAdapter::OnReady, this));
 
-    LaunchPointManager::instance().SubscribeListChange(boost::bind(&LaunchPointLunaAdapter::onLaunchPointsListChanged, this, _1));
+    LaunchPointManager::instance().SubscribeListChange(boost::bind(&LaunchPointLunaAdapter::OnLaunchPointsListChanged, this, _1));
 
-    LaunchPointManager::instance().SubscribeLaunchPointChange(boost::bind(&LaunchPointLunaAdapter::onLaunchPointChanged, this, _1, _2));
+    LaunchPointManager::instance().SubscribeLaunchPointChange(boost::bind(&LaunchPointLunaAdapter::OnLaunchPointChanged, this, _1, _2));
 }
 
-void LaunchPointLunaAdapter::LaunchPointLunaAdapter::initLunaApiHandler()
+void LaunchPointLunaAdapter::LaunchPointLunaAdapter::InitLunaApiHandler()
 {
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_ADD_LAUNCHPOINT, "applicationManager.addLaunchPoint", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_ADD_LAUNCHPOINT, "applicationManager.addLaunchPoint", boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_UPDATE_LAUNCHPOINT, "applicationManager.updateLaunchPoint",
-            boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_UPDATE_LAUNCHPOINT, "applicationManager.updateLaunchPoint",
+            boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_REMOVE_LAUNCHPOINT, "applicationManager.removeLaunchPoint",
-            boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_REMOVE_LAUNCHPOINT, "applicationManager.removeLaunchPoint",
+            boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_MOVE_LAUNCHPOINT, "applicationManager.moveLaunchPoint", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_MOVE_LAUNCHPOINT, "applicationManager.moveLaunchPoint", boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_LIST_LAUNCHPOINTS, "applicationManager.listLaunchPoints", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_LIST_LAUNCHPOINTS, "applicationManager.listLaunchPoints", boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 
-    AppMgrService::instance().registerApiHandler(API_CATEGORY_GENERAL, API_SEARCH_APPS, "applicationManager.searchApps", boost::bind(&LaunchPointLunaAdapter::requestController, this, _1));
+    AppMgrService::instance().RegisterApiHandler(API_CATEGORY_GENERAL, API_SEARCH_APPS, "applicationManager.searchApps", boost::bind(&LaunchPointLunaAdapter::RequestController, this, _1));
 }
 
-void LaunchPointLunaAdapter::requestController(LunaTaskPtr task)
+void LaunchPointLunaAdapter::RequestController(LunaTaskPtr task)
 {
     if (!LaunchPointManager::instance().Ready()) {
-        m_pendingTasks.push_back(task);
+        pending_tasks_.push_back(task);
         LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 4, PMLOGKS("category", task->category().c_str()), PMLOGKS("method", task->method().c_str()), PMLOGKS("status", "pending"),
                 PMLOGKS("caller", task->caller().c_str()), "received message, but will handle later");
         return;
     }
 
-    handleRequest(task);
+    HandleRequest(task);
 }
 
-void LaunchPointLunaAdapter::onReady()
+void LaunchPointLunaAdapter::OnReady()
 {
-    auto it = m_pendingTasks.begin();
-    while (it != m_pendingTasks.end()) {
-        handleRequest(*it);
-        it = m_pendingTasks.erase(it);
+    auto it = pending_tasks_.begin();
+    while (it != pending_tasks_.end()) {
+        HandleRequest(*it);
+        it = pending_tasks_.erase(it);
     }
 }
 
-void LaunchPointLunaAdapter::handleRequest(LunaTaskPtr task)
+void LaunchPointLunaAdapter::HandleRequest(LunaTaskPtr task)
 {
     if (API_CATEGORY_GENERAL == task->category()) {
         if (API_ADD_LAUNCHPOINT == task->method())
-            addLaunchPoint(task);
+            AddLaunchPoint(task);
         else if (API_UPDATE_LAUNCHPOINT == task->method())
-            updateLaunchPoint(task);
+            UpdateLaunchPoint(task);
         else if (API_REMOVE_LAUNCHPOINT == task->method())
-            removeLaunchPoint(task);
+            RemoveLaunchPoint(task);
         else if (API_MOVE_LAUNCHPOINT == task->method())
-            moveLaunchPoint(task);
+            MoveLaunchPoint(task);
         else if (API_LIST_LAUNCHPOINTS == task->method())
-            listLaunchPoints(task);
+            ListLaunchPoints(task);
         else if (API_SEARCH_APPS == task->method())
-            searchApps(task);
+            SearchApps(task);
     }
 }
 
-void LaunchPointLunaAdapter::addLaunchPoint(LunaTaskPtr task)
+void LaunchPointLunaAdapter::AddLaunchPoint(LunaTaskPtr task)
 {
 
     bool result = false;
@@ -121,7 +121,7 @@ void LaunchPointLunaAdapter::addLaunchPoint(LunaTaskPtr task)
     LOG_NORMAL(NLID_LAUNCH_POINT_ADDED, 4, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", result?"done":"fail"), PMLOGKS("app_id", app_id.c_str()), PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!result) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, err_text);
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, err_text);
         return;
     }
 
@@ -131,7 +131,7 @@ void LaunchPointLunaAdapter::addLaunchPoint(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LaunchPointLunaAdapter::updateLaunchPoint(LunaTaskPtr task)
+void LaunchPointLunaAdapter::UpdateLaunchPoint(LunaTaskPtr task)
 {
 
     bool result = false;
@@ -152,12 +152,12 @@ void LaunchPointLunaAdapter::updateLaunchPoint(LunaTaskPtr task)
             "");
 
     if (!result)
-        task->setError(API_ERR_CODE_GENERAL, err_text);
+        task->SetError(API_ERR_CODE_GENERAL, err_text);
 
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LaunchPointLunaAdapter::removeLaunchPoint(LunaTaskPtr task)
+void LaunchPointLunaAdapter::RemoveLaunchPoint(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
@@ -169,12 +169,12 @@ void LaunchPointLunaAdapter::removeLaunchPoint(LunaTaskPtr task)
     LOG_INFO(MSGID_LAUNCH_POINT_REMOVED, 3, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", (err_text.empty()?"done":"failed")), PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!err_text.empty())
-        task->setError(API_ERR_CODE_GENERAL, err_text);
+        task->SetError(API_ERR_CODE_GENERAL, err_text);
 
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LaunchPointLunaAdapter::moveLaunchPoint(LunaTaskPtr task)
+void LaunchPointLunaAdapter::MoveLaunchPoint(LunaTaskPtr task)
 {
 
     bool result = false;
@@ -195,12 +195,12 @@ void LaunchPointLunaAdapter::moveLaunchPoint(LunaTaskPtr task)
             "");
 
     if (!err_text.empty())
-        task->setError(API_ERR_CODE_GENERAL, err_text);
+        task->SetError(API_ERR_CODE_GENERAL, err_text);
 
-    task->replyResult();
+    task->ReplyResult();
 }
 
-void LaunchPointLunaAdapter::listLaunchPoints(LunaTaskPtr task)
+void LaunchPointLunaAdapter::ListLaunchPoints(LunaTaskPtr task)
 {
 
     pbnjson::JValue payload = pbnjson::Object();
@@ -220,13 +220,13 @@ void LaunchPointLunaAdapter::listLaunchPoints(LunaTaskPtr task)
     task->ReplyResult(payload);
 }
 
-void LaunchPointLunaAdapter::searchApps(LunaTaskPtr task)
+void LaunchPointLunaAdapter::SearchApps(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
     std::string keyword = jmsg["keyword"].asString();
     if (keyword.length() < 2) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "keyword should be longer than 1");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "keyword should be longer than 1");
         return;
     }
 
@@ -234,7 +234,7 @@ void LaunchPointLunaAdapter::searchApps(LunaTaskPtr task)
     LaunchPointManager::instance().SearchLaunchPoints(results, keyword);
 
     if (0 == results.arraySize()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "There is no match for the keyword");
+        task->ReplyResultWithError(API_ERR_CODE_GENERAL, "There is no match for the keyword");
         return;
     }
 
@@ -248,7 +248,7 @@ void LaunchPointLunaAdapter::searchApps(LunaTaskPtr task)
 // Publisher for subscribers
 ///////////////////////////////////////////////////////////////////
 
-void LaunchPointLunaAdapter::onLaunchPointsListChanged(const pbnjson::JValue& launch_points)
+void LaunchPointLunaAdapter::OnLaunchPointsListChanged(const pbnjson::JValue& launch_points)
 {
 
     pbnjson::JValue payload = pbnjson::Object();
@@ -259,7 +259,7 @@ void LaunchPointLunaAdapter::onLaunchPointsListChanged(const pbnjson::JValue& la
     LOG_INFO(MSGID_LAUNCH_POINT_REPLY_SUBSCRIBER, 1, PMLOGKS("status", "reply_lp_list_to_subscribers"), "");
 
     LSErrorSafe lserror;
-    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
                              LP_SUBSCRIPTION_KEY,
                              payload.stringify().c_str(),
                              &lserror)) {
@@ -267,7 +267,7 @@ void LaunchPointLunaAdapter::onLaunchPointsListChanged(const pbnjson::JValue& la
     }
 }
 
-void LaunchPointLunaAdapter::onLaunchPointChanged(const std::string& change, const pbnjson::JValue& launch_point)
+void LaunchPointLunaAdapter::OnLaunchPointChanged(const std::string& change, const pbnjson::JValue& launch_point)
 {
 
     pbnjson::JValue payload = launch_point.duplicate();
@@ -277,7 +277,7 @@ void LaunchPointLunaAdapter::onLaunchPointChanged(const std::string& change, con
     LOG_INFO(MSGID_LAUNCH_POINT_REPLY_SUBSCRIBER, 3, PMLOGKS("status", "reply_lp_change_to_subscribers"), PMLOGKS("reason", change.c_str()),
             PMLOGKFV("position", "%d", launch_point.hasKey("position") ? launch_point["position"].asNumber<int>():-1), "");
     LSErrorSafe lserror;
-    if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
+    if (!LSSubscriptionReply(AppMgrService::instance().ServiceHandle(),
                              LP_SUBSCRIPTION_KEY,
                              payload.stringify().c_str(),
                              &lserror)) {
