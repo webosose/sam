@@ -17,7 +17,7 @@
 #ifndef DB_LAUNCH_POINT_4_BASE_H
 #define DB_LAUNCH_POINT_4_BASE_H
 
-#include <base/db_base.h>
+#include <base/DBBase.h>
 #include <string>
 
 class DBLaunchPoint: public DBBase {

@@ -17,8 +17,8 @@
 #ifndef MEMORY_CHECKER_4_BASE_H
 #define MEMORY_CHECKER_4_BASE_H
 
-#include <lifecycle/app_launching_item_4_base.h>
 #include <boost/signals2.hpp>
+#include <lifecycle/AppLaunchingItem4Base.h>
 
 class MemoryChecker {
 public:

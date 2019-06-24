@@ -21,9 +21,9 @@
 #include <memory>
 #include <pbnjson.hpp>
 #include <stdint.h>
+#include <util/Utils.h>
 #include <string>
 #include <tuple>
-#include <util/utils.h>
 
 const unsigned int APP_VERSION_DIGIT = 3;
 

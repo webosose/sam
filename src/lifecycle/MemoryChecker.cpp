@@ -15,7 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <lifecycle/MemoryChecker.h>
-#include <util/base_logs.h>
+#include <util/BaseLogs.h>
 
 MemoryChecker::MemoryChecker()
 {

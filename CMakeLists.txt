@@ -98,12 +98,9 @@ webos_add_linker_options(ALL --no-undefined)
 
 # Build the sam executable
 include_directories(src/fake/criu)
-file(GLOB_RECURSE common_src src/core/*.cpp)
-file(GLOB_RECURSE extension_src src/extensions/webos_base/*.cpp)
-set(SOURCES ${common_src} ${extension_src})
+file(GLOB_RECURSE SOURCES src/*.cpp)
 
-webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/core/setting/settings_conf.h)
-webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/extensions/webos_base/base_settings_conf.h)
+webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/setting/SettingsConf.h)
 
 include_directories(src)
 include_directories(${PROJECT_BINARY_DIR}/Configured/src)

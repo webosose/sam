@@ -21,12 +21,12 @@
 #include <cstring>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <module/locale_preferences.h>
+#include <module/LocalePreferences.h>
 #include <package/AppDescription.h>
-#include <setting/settings.h>
-#include <util/jutil.h>
-#include <util/logging.h>
-#include <util/utils.h>
+#include <setting/Settings.h>
+#include <util/JUtil.h>
+#include <util/Logging.h>
+#include <util/Utils.h>
 #include <string>
 
 

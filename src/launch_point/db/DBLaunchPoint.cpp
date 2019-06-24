@@ -15,10 +15,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <launch_point/db/DBLaunchPoint.h>
-#include <setting/base_settings.h>
-#include <util/jutil.h>
-#include <util/logging.h>
-#include <util/lsutils.h>
+#include <setting/Settings.h>
+#include <util/JUtil.h>
+#include <util/Logging.h>
+#include <util/LSUtils.h>
 
 DBLaunchPoint::DBLaunchPoint()
 {
@@ -34,8 +34,8 @@ DBLaunchPoint::~DBLaunchPoint()
 
 void DBLaunchPoint::init()
 {
-    m_kind = BaseSettingsImpl::instance().launch_point_dbkind_;
-    m_permissions = BaseSettingsImpl::instance().launch_point_permissions_;
+    m_kind = SettingsImpl::instance().launch_point_dbkind_;
+    m_permissions = SettingsImpl::instance().launch_point_permissions_;
 }
 
 bool DBLaunchPoint::insertData(const pbnjson::JValue& json)

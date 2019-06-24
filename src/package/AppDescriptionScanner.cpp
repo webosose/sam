@@ -16,11 +16,10 @@
 
 #include <dirent.h>
 #include <package/AppDescriptionScanner.h>
-#include <setting/settings.h>
+#include <setting/Settings.h>
 #include <sys/stat.h>
-
-#include <util/jutil.h>
-#include <util/logging.h>
+#include <util/JUtil.h>
+#include <util/Logging.h>
 
 static void TrimPath(std::string &path)
 {

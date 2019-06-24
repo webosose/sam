@@ -14,19 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/appmgr_service.h>
-#include <lifecycle/app_info_manager.h>
-#include <lifecycle/lifecycle_manager.h>
-#include <module/locale_preferences.h>
+#include <bus/AppMgrService.h>
+#include <lifecycle/AppInfoManager.h>
+#include <lifecycle/LifecycleManager.h>
+#include <module/LocalePreferences.h>
 #include <package/PackageManager.h>
-#include <setting/settings.h>
+#include <setting/Settings.h>
 #include <algorithm>
 #include <sys/types.h>
-#include <util/call_chain.h>
-#include <util/jutil.h>
-#include <util/logging.h>
-#include <util/lsutils.h>
-#include <util/utils.h>
+#include <util/CallChain.h>
+#include <util/JUtil.h>
+#include <util/Logging.h>
+#include <util/LSUtils.h>
+#include <util/Utils.h>
 #include <utime.h>
 
 
