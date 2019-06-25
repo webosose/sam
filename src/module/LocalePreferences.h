@@ -27,7 +27,7 @@
 class LocalePreferences: public Singleton<LocalePreferences> {
 friend class Singleton<LocalePreferences> ;
 public:
-    void init();
+    void initialize();
     void onRestInit();
 
     const std::string& localeInfo() const

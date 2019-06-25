@@ -15,65 +15,66 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <boost/bind.hpp>
-#include <launch_point/handler/DBHandler4Base.h>
+#include <launch_point/handler/DBHandler.h>
 #include <util/Logging.h>
 #include <util/Logging.h>
 
-DbHandler4Base::DbHandler4Base() :
-        db_loaded_(false), db_load_count_(0)
+DBHandler::DBHandler()
+    : m_isDBLoaded(false),
+      m_DBLoadCount(0)
 {
 }
 
-DbHandler4Base::~DbHandler4Base()
+DBHandler::~DBHandler()
 {
 }
 
-void DbHandler4Base::Init()
+void DBHandler::init()
 {
-    launch_point_db_.init();
-    launch_point_db_.signalDbLoaded.connect(boost::bind(&DbHandler4Base::OnLaunchPointDbLoaded, this, _1));
+    m_launchPointDB.init();
+    m_launchPointDB.signalDbLoaded.connect(boost::bind(&DBHandler::onLaunchPointDbLoaded, this, _1));
 }
 
-void DbHandler4Base::HandleDbState(bool connection)
+void DBHandler::handleDbState(bool connection)
 {
     LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 3,
              PMLOGKS("status", "handle_launch_points_db_state"),
              PMLOGKS("db_connected", connection?"done":"not_ready_yet"),
-             PMLOGKFV("db_load_count", "%d", db_load_count_), "");
+             PMLOGKFV("db_load_count", "%d", m_DBLoadCount), "");
 
-    if (!db_loaded_)
-        launch_point_db_.loadDb();
+    if (!m_isDBLoaded)
+        m_launchPointDB.loadDb();
 }
 
-void DbHandler4Base::OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
+void DBHandler::onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
 {
-    db_loaded_ = true;
-    ++db_load_count_;
+    m_isDBLoaded = true;
+    ++m_DBLoadCount;
 
     signal_db_loaded_(loaded_db_result);
 }
 
-void DbHandler4Base::ReloadDbData(bool connection)
+void DBHandler::reloadDbData(bool connection)
 {
     LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 2,
              PMLOGKS("status", "reload_db_data"),
              PMLOGKS("db_connected", connection ? "done" : "not_ready_yet"), "");
 
-    db_loaded_ = false;
-    HandleDbState(connection);
+    m_isDBLoaded = false;
+    handleDbState(connection);
 }
 
-bool DbHandler4Base::InsertData(const pbnjson::JValue& json)
+bool DBHandler::insertData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.insertData(json);
+    return m_launchPointDB.insertData(json);
 }
 
-bool DbHandler4Base::UpdateData(const pbnjson::JValue& json)
+bool DBHandler::updateData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.updateData(json);
+    return m_launchPointDB.updateData(json);
 }
 
-bool DbHandler4Base::DeleteData(const pbnjson::JValue& json)
+bool DBHandler::deleteData(const pbnjson::JValue& json)
 {
-    return launch_point_db_.deleteData(json);
+    return m_launchPointDB.deleteData(json);
 }

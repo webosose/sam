@@ -28,16 +28,16 @@ public:
     LSMSubscriber();
     ~LSMSubscriber();
 
-    void init();
-    void on_server_status_changed(bool connection);
+    void initialize();
+    void onServerStatusChanged(bool connection);
 
-    static bool category_watcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_foreground_info(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_recent_list(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool categoryWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onForegroundInfo(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onRecentList(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
 private:
-    void subscribe_foreground_info();
-    void subscribe_recent_list();
+    void subscribeForegroundInfo();
+    void subscribeRecentList();
 
 public:
     boost::signals2::signal<void(const pbnjson::JValue&)> signal_foreground_info;

@@ -42,7 +42,7 @@ LifecycleManager::~LifecycleManager()
 {
 }
 
-void LifecycleManager::init()
+void LifecycleManager::initialize()
 {
     m_lifecycleRouter.init();
     AppInfoManager::instance().init();
@@ -72,7 +72,7 @@ void LifecycleManager::init()
     LSMSubscriber::instance().signal_foreground_info.connect(boost::bind(&LifecycleManager::onForegroundInfoChanged, this, _1));
 
     // set fullscreen window type
-    m_fullscreenWindowTypes = SettingsImpl::instance().fullscreen_window_types;
+    m_fullscreenWindowTypes = SettingsImpl::instance().m_fullscreenWindowTypes;
 }
 
 void LifecycleManager::Launch(LifeCycleTaskPtr task)
@@ -162,12 +162,12 @@ void LifecycleManager::CloseAll(LifeCycleTaskPtr task)
     closeAllApps();
 }
 
-void LifecycleManager::setApplifeitemFactory(IAppLaunchingItemFactory& factory)
+void LifecycleManager::setApplifeitemFactory(AppLaunchingItemFactory& factory)
 {
     m_launchItemFactory = &factory;
 }
 
-void LifecycleManager::setPrelauncherHandler(IPrelauncher& prelauncher)
+void LifecycleManager::setPrelauncherHandler(Prelauncher& prelauncher)
 {
     m_prelauncher = &prelauncher;
     prelauncher.signal_prelaunching_done.connect(boost::bind(&LifecycleManager::onPrelaunchingDone, this, _1));
@@ -180,7 +180,7 @@ void LifecycleManager::setMemoryCheckerHandler(MemoryChecker& memory_checker)
     memory_checker.signal_memory_checking_done.connect(boost::bind(&LifecycleManager::onMemoryCheckingDone, this, _1));
 }
 
-void LifecycleManager::setLastappHandler(ILastAppHandler& lastapp_handler)
+void LifecycleManager::setLastappHandler(LastAppHandler& lastapp_handler)
 {
     m_lastappHandler = &lastapp_handler;
 }
@@ -721,7 +721,7 @@ void LifecycleManager::launch(AppLaunchRequestType rtype, const std::string& app
 
     int errCode = 0;
     std::string errText = "";
-    AppLaunchingItemPtr newItem = m_launchItemFactory->Create(appId, rtype, params, lsmsg, errCode, errText);
+    AppLaunchingItemPtr newItem = m_launchItemFactory->create(appId, rtype, params, lsmsg, errCode, errText);
     if (newItem == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
                   PMLOGKS("app_id", appId.c_str()),
@@ -882,7 +882,7 @@ void LifecycleManager::closeByAppId(const std::string& app_id, const std::string
     // keepAlive app policy
     // swith close request to pause request
     // except for below cases
-    if (SettingsImpl::instance().IsKeepAliveApp(app_id) &&
+    if (SettingsImpl::instance().isKeepAliveApp(app_id) &&
         caller_id != "com.webos.memorymanager" &&
         caller_id != "com.webos.appInstallService" &&
         (caller_id != "com.webos.surfacemanager.windowext" || reason != "recent") &&
@@ -1008,7 +1008,7 @@ void LifecycleManager::closeApp(const std::string& appId, const std::string& cal
         return;
     }
 
-    std::string close_reason = SettingsImpl::instance().GetCloseReason(callerId, reason);
+    std::string close_reason = SettingsImpl::instance().getCloseReason(callerId, reason);
 
     if (AppInfoManager::instance().isRunning(appId) && m_closeReasonInfo.count(appId) == 0) {
         m_closeReasonInfo[appId] = close_reason;
@@ -1481,7 +1481,7 @@ void LifecycleManager::addTimerForLastLoadingApp(const std::string& app_id)
 
     removeTimerForLastLoadingApp(false);
 
-    guint timer = g_timeout_add(SettingsImpl::instance().GetLastLoadingAppTimeout(), runLastLoadingAppTimeoutHandler, NULL);
+    guint timer = g_timeout_add(SettingsImpl::instance().getLastLoadingAppTimeout(), runLastLoadingAppTimeoutHandler, NULL);
     m_lastLoadingAppTimerSet = std::make_pair(timer, app_id);
 }
 
@@ -1557,7 +1557,7 @@ bool LifecycleManager::isLaunchingItemExpired(AppLaunchingItemPtr item)
     double current_time = get_current_time();
     double elapsed_time = current_time - item->launchStartTime();
 
-    if (elapsed_time > SettingsImpl::instance().GetLaunchExpiredTimeout())
+    if (elapsed_time > SettingsImpl::instance().getLaunchExpiredTimeout())
         return true;
 
     return false;
@@ -1583,7 +1583,7 @@ bool LifecycleManager::isLoadingAppExpired(const std::string& app_id)
     double current_time = get_current_time();
     double elapsed_time = current_time - loading_start_time;
 
-    if (elapsed_time > SettingsImpl::instance().GetLoadingExpiredTimeout())
+    if (elapsed_time > SettingsImpl::instance().getLoadingExpiredTimeout())
         return true;
 
     return false;

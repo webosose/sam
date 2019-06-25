@@ -65,7 +65,6 @@ public:
     double lastLaunchTime(const std::string& app_id);
     LifeStatus lifeStatus(const std::string& app_id);
     RuntimeStatus runtimeStatus(const std::string& app_id);
-    const pbnjson::JValue& virtualLaunchParams(const std::string& app_id);
 
     // setter list
     void setExecutionLock(const std::string& app_id, bool v = true);
@@ -74,7 +73,6 @@ public:
     void setLastLaunchTime(const std::string& app_id, double launch_time);
     void setLifeStatus(const std::string& app_id, const LifeStatus& status);
     void setRuntimeStatus(const std::string& app_id, RuntimeStatus status);
-    void setVirtualLaunchParams(const std::string& app_id, const pbnjson::JValue& params);
 
     ////////////////////////////////////////////////////
     /// common functions

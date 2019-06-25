@@ -21,7 +21,7 @@
 #include <boost/bind.hpp>
 #include <boost/signals.hpp>
 #include <glib.h>
-#include <launch_point/handler/DBHandler4Base.h>
+#include <launch_point/handler/DBHandler.h>
 #include <launch_point/handler/OrderingHandler.h>
 #include <launch_point/launch_point/LaunchPoint.h>
 #include <launch_point/launch_point/LaunchPointFactory.h>
@@ -57,7 +57,7 @@ public:
     LaunchPointManager();
     virtual ~LaunchPointManager();
 
-    void init();
+    void initialize();
 
     LaunchPointPtr addLaunchPoint(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
     LaunchPointPtr updateLaunchPoint(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
@@ -68,9 +68,9 @@ public:
     void removeAllLaunchPointsByAppId(const std::string& id);
     void launchPointsAsJson(pbnjson::JValue& array);
 
-    void setDbHandler(DbHandler4Base& db_handler);
-    void setOrderingHandler(OrderingHandlerInterface& ordering_handler);
-    void setLaunchPointFactory(ILaunchPointFactory& lp_factory);
+    void setDbHandler(DBHandler& db_handler);
+    void setOrderingHandler(OrderingHandler& ordering_handler);
+    void setLaunchPointFactory(LaunchPointFactory& lp_factory);
 
     bool ready() const
     {
@@ -124,9 +124,9 @@ private:
     pbnjson::JValue m_launchPointsDBData;
     LaunchPointList m_launchPointList;
 
-    DbHandler4Base* m_DBHandler;
-    ILaunchPointFactory* m_lpFactory;
-    OrderingHandlerInterface* m_orderingHandler;
+    DBHandler* m_DBHandler;
+    LaunchPointFactory* m_lpFactory;
+    OrderingHandler* m_orderingHandler;
 };
 
 #endif

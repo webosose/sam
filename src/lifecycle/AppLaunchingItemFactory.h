@@ -17,13 +17,13 @@
 #ifndef APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
 #define APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
 
-#include <lifecycle/IAppLaunchingItemFactory.h>
+#include "AppLaunchingItem.h"
 
-class AppLaunchingItemFactory4Base: public IAppLaunchingItemFactory {
+class AppLaunchingItemFactory {
 public:
-    AppLaunchingItemFactory4Base();
-    virtual ~AppLaunchingItemFactory4Base();
-    virtual AppLaunchingItemPtr Create(const std::string& initial_app_id, AppLaunchRequestType rtype, const pbnjson::JValue& initial_params, LSMessage* lsmsg, int& err_code, std::string& err_text);
+    AppLaunchingItemFactory();
+    virtual ~AppLaunchingItemFactory();
+    virtual AppLaunchingItemPtr create(const std::string& initial_app_id, AppLaunchRequestType rtype, const pbnjson::JValue& initial_params, LSMessage* lsmsg, int& err_code, std::string& err_text);
 };
 
 #endif

@@ -14,39 +14,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef PRELAUNCHER_4_BASE_H
-#define PRELAUNCHER_4_BASE_H
+#ifndef PRELAUNCHER_H
+#define PRELAUNCHER_H
 
-#include <lifecycle/AppLaunchingItem4Base.h>
-#include <lifecycle/IPrelauncher.h>
+#include <lifecycle/AppLaunchingItem.h>
 
-class Prelauncher4Base: public IPrelauncher {
+class Prelauncher {
 public:
-    Prelauncher4Base();
-    virtual ~Prelauncher4Base();
+    Prelauncher();
+    virtual ~Prelauncher();
 
     virtual void addItem(AppLaunchingItemPtr item);
     virtual void removeItem(const std::string& app_uid);
     virtual void inputBridgedReturn(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
     virtual void cancelAll();
 
+    boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
+
 private:
-    static bool cbReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cbReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    void runStages(AppLaunchingItem4BasePtr item);
-    void handleStages(AppLaunchingItem4BasePtr prelaunching_item);
+    void runStages(AppLaunchingItemPtr item);
+    void handleStages(AppLaunchingItemPtr prelaunching_item);
 
-    void redirectToAnother(AppLaunchingItem4BasePtr prelaunching_item);
-    void finishPrelaunching(AppLaunchingItem4BasePtr prelaunching_item);
+    void redirectToAnother(AppLaunchingItemPtr prelaunching_item);
+    void finishPrelaunching(AppLaunchingItemPtr prelaunching_item);
 
-    AppLaunchingItem4BasePtr getLSCallRequestItemByToken(const LSMessageToken& token);
-    AppLaunchingItem4BasePtr getItemByUid(const std::string& uid);
+    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    AppLaunchingItemPtr getItemByUid(const std::string& uid);
     void removeItemFromLSCallRequestList(const std::string& uid);
 
 private:
-    AppLaunchingItem4BaseList m_itemQueue;
-    AppLaunchingItem4BaseList m_lscallRequestList;
+    AppLaunchingItemList m_itemQueue;
+    AppLaunchingItemList m_lscallRequestList;
 
 };
 

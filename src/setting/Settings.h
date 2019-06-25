@@ -40,97 +40,97 @@ public:
         m_confPath = path;
     }
     bool load(const char* filePath);
-    bool LoadSAMConf();
+    bool loadSAMConf();
     void onRestLoad();
 
     // lifecycle related
     void setKeepAliveApps(const pbnjson::JValue& apps);
-    void set_support_qml_booster(bool value);
-    bool IsKeepAliveApp(const std::string&) const;
+    void setSupportQMLBooster(bool value);
+    bool isKeepAliveApp(const std::string&) const;
     bool checkAppAgainstNoJailAppList(const std::string&) const;
-    void SetLifeCycleReason(const pbnjson::JValue& data);
-    void AddLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason);
-    std::string GetLaunchReason(const std::string& caller_id, const std::string& reason);
-    void AddCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason);
-    std::string GetCloseReason(const std::string& caller_id, const std::string& reason);
-    void AddCRIUSupportApp(const std::string& app_id);
-    bool SupportCRIU(const std::string& app_id) const;
-    unsigned long long int GetLaunchExpiredTimeout() const
+    void setLifeCycleReason(const pbnjson::JValue& data);
+    void addLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason);
+    std::string getLaunchReason(const std::string& caller_id, const std::string& reason);
+    void addCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason);
+    std::string getCloseReason(const std::string& caller_id, const std::string& reason);
+    void addCRIUSupportApp(const std::string& app_id);
+    bool supportCRIU(const std::string& app_id) const;
+    unsigned long long int getLaunchExpiredTimeout() const
     {
-        return launch_expired_timeout_;
+        return m_launchExpiredTimeout;
     }
-    unsigned long long int GetLoadingExpiredTimeout() const
+    unsigned long long int getLoadingExpiredTimeout() const
     {
-        return loading_expired_timeout_;
+        return m_loadingExpiredTimeout;
     }
-    guint GetLastLoadingAppTimeout() const
+    guint getLastLoadingAppTimeout() const
     {
-        return last_loading_app_timeout_;
+        return m_lastLoadingAppTimeout;
     }
 
     // package related
-    void AddBaseAppDirPath(const std::string& path, AppTypeByDir type);
-    const BaseScanPaths& GetBaseAppDirs() const
+    void addBaseAppDirPath(const std::string& path, AppTypeByDir type);
+    const BaseScanPaths& getBaseAppDirs() const
     {
-        return base_app_dirs_;
+        return m_baseAppDirs;
     }
     std::string getAppInstallBase(bool verified = true) const;
     void setAssetFallbackKeys(const pbnjson::JValue& keys);
     void deletedSystemAppsToStringVector(std::vector<std::string>& apps);
     void setSystemAppAsRemoved(const std::string& appId);
     bool isDeletedSystemApp(const std::string& appId) const;
-    bool is_in_host_apps_list(const std::string& app_id) const;
-    const std::vector<std::string>& GetBootTimeApps() const
+    bool isInHostAppsList(const std::string& app_id) const;
+    const std::vector<std::string>& getBootTimeApps() const
     {
-        return boot_time_apps_;
+        return m_bootTimeApps;
     }
-    void AddBootTimeApp(const std::string& app_id);
-    bool IsBootTimeApp(const std::string& app_id);
+    void addBootTimeApp(const std::string& app_id);
+    bool isBootTimeApp(const std::string& app_id);
 
     // common settings
-    std::string appMgrPreferenceDir;      // /var/preferences/com.webos.applicationManager/
-    std::string deletedSystemAppListPath; // /var/preferences/com.webos.applicationManager/deletedSystemAppList.json
-    std::string devModePath;              // /var/luna/preferences/devmode_enabled
-    std::string localeInfoPath;           // /var/luna/preferences/localeInfo
-    std::string schemaPath;               // /etc/palm/schemas/sam/
-    std::string respawnedPath;            // /tmp/sam-respawned
-    std::string jailModePath;             // /var/luna/preferences/jailer_disabled
-    std::string log_path_;
-    bool isRespawned;
-    bool isDevMode;
-    bool isJailMode;
-    bool isRestLoaded;
+    std::string m_appMgrPreferenceDir;      // /var/preferences/com.webos.applicationManager/
+    std::string m_deletedSystemAppListPath; // /var/preferences/com.webos.applicationManager/deletedSystemAppList.json
+    std::string m_devModePath;              // /var/luna/preferences/devmode_enabled
+    std::string m_localeInfoPath;           // /var/luna/preferences/localeInfo
+    std::string m_schemaPath;               // /etc/palm/schemas/sam/
+    std::string m_respawnedPath;            // /tmp/sam-respawned
+    std::string m_jailModePath;             // /var/luna/preferences/jailer_disabled
+    std::string m_logPath;
+    bool m_isRespawned;
+    bool m_isDevMode;
+    bool m_isJailMode;
+    bool m_isRestLoaded;
 
     // lifecycle related
-    std::vector<std::string> fullscreen_window_types;
-    std::vector<std::string> keepAliveApps;
-    std::vector<std::string> noJailApps;
-    std::vector<std::string> host_apps_for_alias;
-    std::string app_store_id_;
-    std::string qmlRunnerPath; // /usr/bin/qml-runner
-    std::string appshellRunnerPath; // /usr/bin/app-shell/run_appshell
-    std::string jailerPath;    // /usr/bin/jailer
-    bool use_qml_booster_;
-    std::map<std::string, std::string> launch_event_reason_map_;
-    std::map<std::string, std::string> close_event_reason_map_;
-    unsigned long long int launch_expired_timeout_;
-    unsigned long long int loading_expired_timeout_;
-    guint last_loading_app_timeout_;
+    std::vector<std::string> m_fullscreenWindowTypes;
+    std::vector<std::string> m_keepAliveApps;
+    std::vector<std::string> m_noJailApps;
+    std::vector<std::string> m_hostAppsForAlias;
+    std::string m_appStoreId;
+    std::string m_qmlRunnerPath; // /usr/bin/qml-runner
+    std::string m_appshellRunnerPath; // /usr/bin/app-shell/run_appshell
+    std::string m_jailerPath;    // /usr/bin/jailer
+    bool m_useQmlBooster;
+    std::map<std::string, std::string> m_launchEventReasonMap;
+    std::map<std::string, std::string> m_closeEventReasonMap;
+    unsigned long long int m_launchExpiredTimeout;
+    unsigned long long int m_loadingExpiredTimeout;
+    guint m_lastLoadingAppTimeout;
 
     // package related
-    std::string appInstallBase;       // /media/cryptofs/apps
-    std::string appInstallRelative;   // /usr/palm/applications
-    std::string devAppsBasePath;      // /media/developer/apps
-    std::string tempAliasAppBasePath; // /tmp/alias/apps
-    std::string aliasAppBasePath;     // /media/alias/apps
+    std::string m_appInstallBase;       // /media/cryptofs/apps
+    std::string m_appInstallRelative;   // /usr/palm/applications
+    std::string m_devAppsBasePath;      // /media/developer/apps
+    std::string m_tempAliasAppBasePath; // /tmp/alias/apps
+    std::string m_aliasAppBasePath;     // /media/alias/apps
     pbnjson::JValue m_deletedSystemApps;
     std::vector<std::string> m_assetFallbackPrecedence;
-    std::string package_asset_variant_;
-    bool usePartialKeywordAppSearch;
-    std::string lunaCmdHandlerSavedPath;  // TODO: make it deprecated or restructured
+    std::string m_packageAssetVariant;
+    bool m_usePartialKeywordAppSearch;
+    std::string m_lunaCmdHandlerSavedPath;  // TODO: make it deprecated or restructured
 
-    pbnjson::JValue launch_point_dbkind_;
-    pbnjson::JValue launch_point_permissions_;
+    pbnjson::JValue m_launchPointDbkind;
+    pbnjson::JValue m_launchPointPermissions;
 
 private:
     friend class Singleton<Settings> ;
@@ -138,14 +138,14 @@ private:
     Settings();
     ~Settings();
 
-    bool LoadStaticConfig(const char* filePath);
-    void LoadConfigOnRWFilesystemReady();
+    bool loadStaticConfig(const char* filePath);
+    void loadConfigOnRWFilesystemReady();
 
     std::string m_confPath;
-    BaseScanPaths base_app_dirs_;
-    std::vector<std::string> devAppsPaths;
-    std::vector<std::string> boot_time_apps_;
-    std::vector<std::string> criu_support_apps_;
+    BaseScanPaths m_baseAppDirs;
+    std::vector<std::string> m_devAppsPaths;
+    std::vector<std::string> m_bootTimeApps;
+    std::vector<std::string> m_criuSupportApps;
 
 };
 

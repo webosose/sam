@@ -128,7 +128,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
     bool is_on_nojail_list = SettingsImpl::instance().checkAppAgainstNoJailAppList(app_desc->id());
 
     if (AppType::AppType_Native_AppShell == app_desc->type()) {
-        fork_params[0] = SettingsImpl::instance().appshellRunnerPath.c_str();
+        fork_params[0] = SettingsImpl::instance().m_appshellRunnerPath.c_str();
         fork_params[1] = "--appid";
         fork_params[2] = app_desc->id().c_str();
         fork_params[3] = "--folder";
@@ -137,12 +137,12 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
         fork_params[6] = str_params.c_str();
         fork_params[7] = NULL;
         LOG_INFO(MSGID_APPLAUNCH, 4,
-                 PMLOGKS("appshellRunnderPath", SettingsImpl::instance().appshellRunnerPath.c_str()),
+                 PMLOGKS("appshellRunnderPath", SettingsImpl::instance().m_appshellRunnerPath.c_str()),
                  PMLOGKS("app_id", app_desc->id().c_str()),
                  PMLOGKS("app_folder_path", app_desc->folderPath().c_str()),
                  PMLOGJSON("params", str_params.c_str()), "launch with appshell_runner");
     } else if (AppType::AppType_Native_Qml == app_desc->type()) {
-        fork_params[0] = SettingsImpl::instance().qmlRunnerPath.c_str();
+        fork_params[0] = SettingsImpl::instance().m_qmlRunnerPath.c_str();
         fork_params[1] = str_params.c_str();
         fork_params[2] = NULL;
 
@@ -150,7 +150,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
                  PMLOGKS("app_id", app_desc->id().c_str()),
                  PMLOGKS("app_path", path.c_str()),
                  PMLOGJSON("params", str_params.c_str()), "launch with qml_runner");
-    } else if (SettingsImpl::instance().isJailMode && !is_on_nojail_list) {
+    } else if (SettingsImpl::instance().m_isJailMode && !is_on_nojail_list) {
         if (AppTypeByDir::AppTypeByDir_Dev == app_desc->getTypeByDir()) {
             jailer_type = "native_devmode";
         } else {
@@ -173,7 +173,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
             }
         }
 
-        fork_params[0] = SettingsImpl::instance().jailerPath.c_str();
+        fork_params[0] = SettingsImpl::instance().m_jailerPath.c_str();
         fork_params[1] = "-t";
         fork_params[2] = jailer_type;
         fork_params[3] = "-i";
@@ -187,7 +187,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
         // This log shows whether native app's launched via Jailer or not
         // Do not remove this log, until jailer become stable
         LOG_INFO(MSGID_APPLAUNCH, 6,
-                 PMLOGKS("jailer_path", SettingsImpl::instance().jailerPath.c_str()),
+                 PMLOGKS("jailer_path", SettingsImpl::instance().m_jailerPath.c_str()),
                  PMLOGKS("jailer_type", jailer_type),
                  PMLOGKS("app_id", app_desc->id().c_str()),
                  PMLOGKS("app_folder_path", app_desc->folderPath().c_str()),

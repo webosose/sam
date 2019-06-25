@@ -41,7 +41,7 @@ public:
     }
 
 protected:
-    void SetStatus(PrerequisiteItemStatus status);
+    void setStatus(PrerequisiteItemStatus status);
 
 private:
     friend class PrerequisiteMonitor;

@@ -18,9 +18,14 @@
 #include <util/Logging.h>
 
 
-AppInfo::AppInfo(const std::string& app_id) :
-        m_appId(app_id), m_executionLock(false), m_removalFlag(false), m_preloadModeOn(false), m_lastLaunchTime(0), m_lifeStatus(LifeStatus::STOP), m_runtimeStatus(RuntimeStatus::STOP), m_virtualLaunchParams(
-                pbnjson::Object())
+AppInfo::AppInfo(const std::string& app_id)
+    : m_appId(app_id),
+      m_executionLock(false),
+      m_removalFlag(false),
+      m_preloadModeOn(false),
+      m_lastLaunchTime(0),
+      m_lifeStatus(LifeStatus::STOP),
+      m_runtimeStatus(RuntimeStatus::STOP)
 {
 }
 
@@ -28,7 +33,7 @@ AppInfo::~AppInfo()
 {
 }
 
-void AppInfo::set_life_status(const LifeStatus& status)
+void AppInfo::setLifeStatus(const LifeStatus& status)
 {
     LOG_DEBUG("[AppInfo] (%s) app_id: %s, status: %d", __FUNCTION__, m_appId.c_str(), (int ) status);
     m_lifeStatus = status;

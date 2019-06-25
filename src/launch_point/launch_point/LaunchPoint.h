@@ -33,7 +33,7 @@ typedef std::shared_ptr<const LaunchPoint> LaunchPointConstPtr;
 typedef std::shared_ptr<LaunchPoint> LaunchPointPtr;
 typedef std::function<LaunchPointPtr(const std::string&, const pbnjson::JValue&, std::string&)> CreateLaunchPointFunc;
 
-enum LPType {
+enum class LPType : int8_t {
     UNKNOWN = 0,
     DEFAULT,
     BOOKMARK
@@ -44,199 +44,225 @@ public:
     LaunchPoint(const std::string& id, const std::string& lp_id);
     virtual ~LaunchPoint();
 
-    void ConvertPath(std::string& path);
+    void convertPath(std::string& path);
 
-    void SetLpType(const LPType lp_type)
+    void setLpType(const LPType lp_type)
     {
-        lp_type_ = lp_type;
+        m_LPType = lp_type;
     }
-    void SetFolderPath(const std::string& path)
+    void setFolderPath(const std::string& path)
     {
-        folder_path_ = path;
+        m_folderPath = path;
     }
-    void SetTitle(const std::string& title_str);
-    void SetIcon(const std::string& icon);
-    void SetBgImage(const std::string& bg_image);
-    void SetBgImages(const pbnjson::JValue& bg_images);
-    void SetBgColor(const std::string& bg_color);
-    void SetImageForRecents(const std::string& image_for_recents);
-    void SetIconColor(const std::string& icon_color);
-    void SetLargeIcon(const std::string& large_icon);
-    void SetAppDescription(const std::string& app_description);
-    void SetUserData(const std::string& user_data);
-    void SetParams(const pbnjson::JValue& params);
-    void SetMiniIcon(const std::string& mini_icon)
+    void setTitle(const std::string& title_str);
+    void setIcon(const std::string& icon);
+    void setBgImage(const std::string& bg_image);
+    void setBgImages(const pbnjson::JValue& bg_images);
+    void setBgColor(const std::string& bg_color);
+    void setImageForRecents(const std::string& image_for_recents);
+    void setIconColor(const std::string& icon_color);
+    void setLargeIcon(const std::string& large_icon);
+    void setAppDescription(const std::string& app_description);
+    void setUserData(const std::string& user_data);
+    void setParams(const pbnjson::JValue& params);
+    void setMiniIcon(const std::string& mini_icon)
     {
-        mini_icon_ = mini_icon;
+        m_miniIcon = mini_icon;
     }
-    void SetDefaultLp(bool val)
+    void setDefaultLp(bool val)
     {
-        default_ = val;
+        m_default = val;
     }
-    void SetSystemApp(bool val)
+    void setSystemApp(bool val)
     {
-        system_app_ = val;
+        m_systemApp = val;
     }
-    void SetRemovable(bool val)
+    void setRemovable(bool val)
     {
-        removable_ = val;
+        m_removable = val;
     }
-    void SetVisible(bool val)
+    void setVisible(bool val)
     {
-        visible_ = val;
+        m_visible = val;
     }
-    void SetUnmovable(bool val)
+    void setUnmovable(bool val)
     {
-        unmovable_ = val;
+        m_unmovable = val;
     }
-    void SetStoredInDb(bool val)
+    void setStoredInDb(bool val)
     {
-        stored_in_db_ = val;
+        m_storedInDB = val;
     }
 
-    LPType LpType() const
+    LPType getLPType() const
     {
-        return lp_type_;
+        return m_LPType;
     }
-    std::string LpTypeAsString() const;
+    std::string LPTypeAsString() const;
     const std::string& Id() const
     {
-        return id_;
+        return m_appId;
     }
-    const std::string& LaunchPointId() const
+    const std::string& getLunchPointId() const
     {
-        return launch_point_id_;
+        return m_launchPointId;
     }
-    const std::string& Title() const
+    const std::string& getTitle() const
     {
-        return title_;
+        return m_title;
     }
-    const std::string& Icon() const
+    const std::string& getIcon() const
     {
-        return icon_;
+        return m_icon;
     }
-    const std::string& BgImage() const
+    const std::string& getBgImage() const
     {
-        return bg_image_;
+        return m_bgImage;
     }
-    const pbnjson::JValue& BgImages() const
+    const pbnjson::JValue& getBgImages() const
     {
-        return bg_images_;
+        return m_bgImages;
     }
-    const std::string& BgColor() const
+    const std::string& getBgColor() const
     {
-        return bg_color_;
+        return m_bgColor;
     }
-    const std::string& ImageForRecents() const
+    const std::string& getImageForRecents() const
     {
-        return image_for_recents_;
+        return m_imageForRecents;
     }
-    const std::string& IconColor() const
+    const std::string& getIconColor() const
     {
-        return icon_color_;
+        return m_iconColor;
     }
-    const std::string& LargeIcon() const
+    const std::string& getLargeIcon() const
     {
-        return large_icon_;
+        return m_largeIcon;
     }
-    const std::string& AppDescription() const
+    const std::string& getAppDescription() const
     {
-        return app_description_;
+        return m_appDescription;
     }
-    const std::string& UserData() const
+    const std::string& getUserData() const
     {
-        return user_data_;
+        return m_userData;
     }
-    const pbnjson::JValue& Params() const
+    const pbnjson::JValue& getParams() const
     {
-        return params_;
+        return m_params;
     }
-    const std::string& MiniIcon() const
+    const std::string& getMiniIcon() const
     {
-        return mini_icon_;
+        return m_miniIcon;
     }
-    bool IsSystemApp() const
+    bool isSystemApp() const
     {
-        return system_app_;
+        return m_systemApp;
     }
-    bool IsDefault() const
+    bool isDefault() const
     {
-        return default_;
+        return m_default;
     }
-    bool IsRemovable() const
+    bool isRemovable() const
     {
-        return removable_;
+        return m_removable;
     }
-    bool IsVisible() const
+    bool isVisible() const
     {
-        return visible_;
+        return m_visible;
     }
-    bool IsUnmovable() const
+    bool isUnmovable() const
     {
-        return unmovable_;
+        return m_unmovable;
     }
-    bool IsStoredInDb() const
+    bool isStoredInDb() const
     {
-        return stored_in_db_;
+        return m_storedInDB;
     }
 
-    void UpdateIfEmptyTitle(LaunchPointPtr lp);
+    void updateIfEmptyTitle(LaunchPointPtr lp);
 
-    virtual pbnjson::JValue ToJValue() const;
-    virtual std::string Update(const pbnjson::JValue& data);
-    virtual void UpdateIfEmpty(LaunchPointPtr lp);
-    virtual void SetAttrWithJson(const pbnjson::JValue& data);
+    virtual pbnjson::JValue toJValue() const;
+    virtual std::string update(const pbnjson::JValue& data);
+    virtual void updateIfEmpty(LaunchPointPtr lp);
+    virtual void setAttrWithJson(const pbnjson::JValue& data);
 
-private:
+
+    void setFavicon(const std::string& favicon);
+    void setIcons(const pbnjson::JValue& icons);
+    void setRelaunch(bool val)
+    {
+        m_relaunch = val;
+    }
+
+    const std::string& getFavicon() const
+    {
+        return m_favicon;
+    }
+
+    const pbnjson::JValue& getIcons() const
+    {
+        return m_icons;
+    }
+
+    bool isRelaunch() const
+    {
+        return m_relaunch;
+    }
+
+protected:
     // prevent object copy
     LaunchPoint(const LaunchPoint&);
     LaunchPoint& operator=(const LaunchPoint&) const;
 
-    LPType lp_type_;
-    std::string folder_path_;
-    std::string id_;
-    std::string launch_point_id_;
-    std::string title_;
-    std::string icon_;
-    std::string bg_image_;
-    pbnjson::JValue bg_images_;
-    std::string bg_color_;
-    std::string image_for_recents_;
-    std::string icon_color_;
-    std::string large_icon_;
-    std::string app_description_;
-    std::string user_data_;
-    pbnjson::JValue params_;
-    std::string install_time_;
-    std::string mini_icon_;
-    bool system_app_;
-    bool removable_;
-    bool default_;
-    bool visible_;
-    bool unmovable_;
-    bool stored_in_db_;
+    LPType m_LPType;
+    std::string m_folderPath;
+    std::string m_appId;
+    std::string m_launchPointId;
+    std::string m_title;
+    std::string m_icon;
+    std::string m_bgImage;
+    pbnjson::JValue m_bgImages;
+    std::string m_bgColor;
+    std::string m_imageForRecents;
+    std::string m_iconColor;
+    std::string m_largeIcon;
+    std::string m_appDescription;
+    std::string m_userData;
+    pbnjson::JValue m_params;
+    std::string m_installTime;
+    std::string m_miniIcon;
+    bool m_systemApp;
+    bool m_removable;
+    bool m_default;
+    bool m_visible;
+    bool m_unmovable;
+    bool m_storedInDB;
+    std::string m_favicon;
+    pbnjson::JValue m_icons;
+    bool m_relaunch;
 };
 
 class LPDefault: public LaunchPoint {
 public:
-    LPDefault(const std::string& id, const std::string& lp_id) :
-            LaunchPoint(id, lp_id)
+    LPDefault(const std::string& id, const std::string& lp_id)
+        : LaunchPoint(id, lp_id)
     {
     }
 
-    static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
-    virtual std::string Update(const pbnjson::JValue& data);
+    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string update(const pbnjson::JValue& data);
 };
 
 class LPBookmark: public LaunchPoint {
 public:
-    LPBookmark(const std::string& id, const std::string& lp_id) :
-            LaunchPoint(id, lp_id)
+    LPBookmark(const std::string& id, const std::string& lp_id)
+        : LaunchPoint(id, lp_id)
     {
     }
 
-    static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
-    virtual std::string Update(const pbnjson::JValue& data);
+    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string update(const pbnjson::JValue& data);
 };
 
 typedef std::list<LaunchPointPtr> LaunchPointList;

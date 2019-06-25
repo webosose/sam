@@ -47,7 +47,7 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
         return;
     }
 
-    AppLaunchingItem4BasePtr new_item = std::static_pointer_cast<AppLaunchingItem4Base>(item);
+    AppLaunchingItemPtr new_item = std::static_pointer_cast<AppLaunchingItem>(item);
     if (new_item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
                   PMLOGKS("app_id", item->appId().c_str()),
@@ -73,7 +73,7 @@ void MemoryChecker::run()
     while (!m_queue.empty()) {
         auto it = m_queue.begin();
 
-        (*it)->setSubStage(static_cast<int>(AppLaunchingStage4Base::MEMORY_CHECK_DONE));
+        (*it)->setSubStage(static_cast<int>(AppLaunchingStage::MEMORY_CHECK_DONE));
 
         std::string uid = (*it)->uid();
         signal_memory_checking_done((*it)->uid());

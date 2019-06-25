@@ -18,8 +18,8 @@
 #include <util/Logging.h>
 
 
-PrerequisiteItem::PrerequisiteItem() :
-        m_status(PrerequisiteItemStatus::Ready)
+PrerequisiteItem::PrerequisiteItem()
+    : m_status(PrerequisiteItemStatus::Ready)
 {
     LOG_DEBUG("[PrerequisiteItem] Created");
 }
@@ -29,7 +29,7 @@ PrerequisiteItem::~PrerequisiteItem()
     LOG_DEBUG("[PrerequisiteItem] Released");
 }
 
-void PrerequisiteItem::SetStatus(PrerequisiteItemStatus status)
+void PrerequisiteItem::setStatus(PrerequisiteItemStatus status)
 {
     switch (status) {
     case PrerequisiteItemStatus::Ready:

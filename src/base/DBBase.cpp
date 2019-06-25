@@ -129,7 +129,7 @@ void DBBase::loadDb()
     //2. register kind to DB
     auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putKind", m_kind.stringify().c_str());
 
-    call_chain.add_if(check_kind, false, reg_kind);
+    call_chain.addIf(check_kind, false, reg_kind);
 
     //3. register permisson
     pbnjson::JValue permission_data = pbnjson::Object();
@@ -138,11 +138,11 @@ void DBBase::loadDb()
     auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putPermissions",
             permission_data.stringify().c_str());
 
-    call_chain.add_if(reg_kind, true, reg_permission);
+    call_chain.addIf(reg_kind, true, reg_permission);
 
     auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/find", qry_ptr);
 
-    call_chain.add_if(reg_permission, true, get_kind);
+    call_chain.addIf(reg_permission, true, get_kind);
 
     call_chain.run();
 }

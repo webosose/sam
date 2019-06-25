@@ -23,7 +23,7 @@
 #include <util/LSUtils.h>
 
 BootdSubscriber::BootdSubscriber()
-    : token_boot_status_(0)
+    : m_tokenBootStatus(0)
 {
 }
 
@@ -31,42 +31,52 @@ BootdSubscriber::~BootdSubscriber()
 {
 }
 
-void BootdSubscriber::Init()
+void BootdSubscriber::initialize()
 {
-    ServiceObserver::instance().Add(WEBOS_SERVICE_BOOTMGR, std::bind(&BootdSubscriber::OnServerStatusChanged, this, std::placeholders::_1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_BOOTMGR, std::bind(&BootdSubscriber::onServerStatusChanged, this, std::placeholders::_1));
 }
 
-boost::signals2::connection BootdSubscriber::SubscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func)
+boost::signals2::connection BootdSubscriber::subscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func)
 {
     return notify_boot_status.connect(func);
 }
 
-void BootdSubscriber::OnServerStatusChanged(bool connection)
+void BootdSubscriber::onServerStatusChanged(bool connection)
 {
     if (connection) {
-        RequestBootStatus();
+        requestBootStatus();
     } else {
-        if (0 != token_boot_status_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_boot_status_, NULL);
-            token_boot_status_ = 0;
+        if (0 != m_tokenBootStatus) {
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), m_tokenBootStatus, NULL);
+            m_tokenBootStatus = 0;
         }
     }
 }
 
-void BootdSubscriber::RequestBootStatus()
+void BootdSubscriber::requestBootStatus()
 {
-    if (token_boot_status_ != 0)
+    if (m_tokenBootStatus != 0)
         return;
 
     std::string method = std::string("luna://") + WEBOS_SERVICE_BOOTMGR + std::string("/getBootStatus");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnBootStatusCallback, this, &token_boot_status_, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().serviceHandle(),
+                method.c_str(),
+                "{\"subscribe\":true}",
+                onBootStatusCallback,
+                this,
+                &m_tokenBootStatus,
+                &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscall"),
+                  PMLOGJSON("payload", "{\"subscribe\":true}"),
+                  PMLOGKS("where", __FUNCTION__),
+                  "err: %s", lserror.message);
     }
 }
 
-bool BootdSubscriber::OnBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool BootdSubscriber::onBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
 {
     BootdSubscriber* subscriber = static_cast<BootdSubscriber*>(user_data);
     if (!subscriber)
@@ -78,7 +88,7 @@ bool BootdSubscriber::OnBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, v
 
     if (jmsg.hasKey("bootStatus")) {
         // factory, normal, firstUse
-        subscriber->boot_status_str_ = jmsg["bootStatus"].asString();
+        subscriber->m_bootStatusStr = jmsg["bootStatus"].asString();
     }
 
     subscriber->notify_boot_status(jmsg);

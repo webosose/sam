@@ -37,7 +37,6 @@
 #include <module/ServiceObserver.h>
 #include <MainService.h>
 #include <package/PackageManager.h>
-#include <product/ProductAbstractFactory.h>
 #include <setting/Settings.h>
 #include <util/Logging.h>
 
@@ -61,11 +60,11 @@ public:
 
     virtual void start()
     {
-        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_FALLBACK_PRECEDENCE);
-        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_KEEPALIVE_APPS);
-        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER);
-        ConfigdSubscriber::instance().AddRequiredKey(CONFIGD_KEY_LIFECYCLE_REASON);
-        config_info_connection_ = ConfigdSubscriber::instance().SubscribeConfigInfo(boost::bind(&CorePrerequisites::ConfigInfo::HandleStatus, this, _1));
+        ConfigdSubscriber::instance().addRequiredKey(CONFIGD_KEY_FALLBACK_PRECEDENCE);
+        ConfigdSubscriber::instance().addRequiredKey(CONFIGD_KEY_KEEPALIVE_APPS);
+        ConfigdSubscriber::instance().addRequiredKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER);
+        ConfigdSubscriber::instance().addRequiredKey(CONFIGD_KEY_LIFECYCLE_REASON);
+        config_info_connection_ = ConfigdSubscriber::instance().subscribeConfigInfo(boost::bind(&CorePrerequisites::ConfigInfo::HandleStatus, this, _1));
     }
 
     void HandleStatus(const pbnjson::JValue& jmsg)
@@ -75,7 +74,9 @@ public:
                  "%s", jmsg.duplicate().stringify().c_str());
 
         if (!jmsg.hasKey("configs") || !jmsg["configs"].isObject()) {
-            LOG_WARNING(MSGID_INTERNAL_ERROR, 2, PMLOGKS("func", __FUNCTION__), PMLOGKFV("line", "%d", __LINE__), "");
+            LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
+                        PMLOGKS("func", __FUNCTION__),
+                        PMLOGKFV("line", "%d", __LINE__), "");
         }
 
         if (jmsg["configs"].hasKey(CONFIGD_KEY_FALLBACK_PRECEDENCE) && jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE].isArray())
@@ -85,10 +86,10 @@ public:
             SettingsImpl::instance().setKeepAliveApps(jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS]);
 
         if (jmsg["configs"].hasKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER) && jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].isBoolean())
-            SettingsImpl::instance().set_support_qml_booster(jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
+            SettingsImpl::instance().setSupportQMLBooster(jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
 
         if (jmsg["configs"].hasKey(CONFIGD_KEY_LIFECYCLE_REASON) && jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON].isObject())
-            SettingsImpl::instance().SetLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
+            SettingsImpl::instance().setLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
 
         if (jmsg.hasKey("missingConfigs") && jmsg["missingConfigs"].isArray() && jmsg["missingConfigs"].arraySize() > 0) {
             LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
@@ -97,7 +98,7 @@ public:
         }
 
         config_info_connection_.disconnect();
-        SetStatus(PrerequisiteItemStatus::Passed);
+        setStatus(PrerequisiteItemStatus::Passed);
     }
 
 private:
@@ -116,7 +117,7 @@ public:
 
     virtual void start()
     {
-        boot_status_connection_ = BootdSubscriber::instance().SubscribeBootStatus(boost::bind(&CorePrerequisites::BootStatus::HandleStatus, this, _1));
+        boot_status_connection_ = BootdSubscriber::instance().subscribeBootStatus(boost::bind(&CorePrerequisites::BootStatus::HandleStatus, this, _1));
     }
 
     void HandleStatus(const pbnjson::JValue& jmsg)
@@ -130,13 +131,13 @@ public:
             return;
 
         boot_status_connection_.disconnect();
-        SetStatus(PrerequisiteItemStatus::Passed);
+        setStatus(PrerequisiteItemStatus::Passed);
     }
 private:
     boost::signals2::connection boot_status_connection_;
 };
 
-static void OnReady(PrerequisiteResult result)
+static void onReady(PrerequisiteResult result)
 {
     if (AppMgrService::instance().isServiceReady())
         return;
@@ -145,7 +146,6 @@ static void OnReady(PrerequisiteResult result)
 
     SettingsImpl::instance().onRestLoad();
     LocalePreferences::instance().onRestInit();
-    ProductAbstractFactory::instance().OnReady();
     PackageManager::instance().startPostInit();
 
     AppMgrService::instance().setServiceStatus(true);
@@ -164,20 +164,20 @@ bool MainService::initialize()
     SettingsImpl::instance().load(NULL);    //load default setting file
 
     // Load managers (lifecycle, package, launchpoint)
-    PackageManager::instance().init();
-    LifecycleManager::instance().init();
-    LaunchPointManager::instance().init();
-    LocalePreferences::instance().init();   //load locale info
+    PackageManager::instance().initialize();
+    LifecycleManager::instance().initialize();
+    LaunchPointManager::instance().initialize();
+    LocalePreferences::instance().initialize();   //load locale info
 
     // service attach
     AppMgrService::instance().attach(mainLoop());
 
-    ConfigdSubscriber::instance().Init();
-    BootdSubscriber::instance().Init();
-    LSMSubscriber::instance().init();
-    AppinstalldSubscriber::instance().Init();
+    ConfigdSubscriber::instance().initialize();
+    BootdSubscriber::instance().initialize();
+    LSMSubscriber::instance().initialize();
+    AppinstalldSubscriber::instance().initialize();
 
-    PrerequisiteMonitor& service_prerequisite_monitor = PrerequisiteMonitor::create(CorePrerequisites::OnReady);
+    PrerequisiteMonitor& service_prerequisite_monitor = PrerequisiteMonitor::create(CorePrerequisites::onReady);
 
     PrerequisiteItemPtr core_ready_condition1 = std::make_shared<CorePrerequisites::ConfigInfo>();
     PrerequisiteItemPtr core_ready_condition2 = std::make_shared<CorePrerequisites::BootStatus>();
@@ -187,10 +187,24 @@ bool MainService::initialize()
     // TODO: reorgarnize all instances according to their characteristics (core/extension)
     //       then, put product recipes codes into each extension main
     // Abstract Factory for product recipes
-    ProductAbstractFactory::instance().Initialize(service_prerequisite_monitor);
+    SettingsImpl::instance().loadSAMConf();
+
+    // to check first app launch finished
+    LifecycleManager::instance().signal_launching_finished.connect(boost::bind(&MainService::onLaunchingFinished, this, _1));
+
+    // set extension handlers for lifecycle interface
+    LifecycleManager::instance().setApplifeitemFactory(m_appLaunchingItemFactory);
+    LifecycleManager::instance().setPrelauncherHandler(m_prelauncher);
+    LifecycleManager::instance().setMemoryCheckerHandler(m_memoryChecker);
+    LifecycleManager::instance().setLastappHandler(m_lastappHandler);
+
+    // set extension handlers for launch point interface
+    LaunchPointManager::instance().setDbHandler(m_dbHandler);
+    LaunchPointManager::instance().setOrderingHandler(m_orderingHandler);
+    LaunchPointManager::instance().setLaunchPointFactory(m_launchPointFactory);
 
     service_prerequisite_monitor.run();
-    ServiceObserver::instance().Run();
+    ServiceObserver::instance().run();
 
     PackageManager::instance().scanInitialApps();
 
@@ -199,12 +213,18 @@ bool MainService::initialize()
 
 bool MainService::terminate()
 {
-    ServiceObserver::instance().Stop();
+    ServiceObserver::instance().stop();
 
     AppMgrService::instance().detach();
 
-    ProductAbstractFactory::instance().Terminate();
-
     SingletonNS::destroyAll();
     return true;
+}
+
+void MainService::onLaunchingFinished(AppLaunchingItemPtr item)
+{
+    AppLaunchingItemPtr basic_item = std::static_pointer_cast<AppLaunchingItem>(item);
+
+    if (basic_item->errText().empty())
+        LifecycleManager::instance().setLastLoadingApp(basic_item->appId());
 }

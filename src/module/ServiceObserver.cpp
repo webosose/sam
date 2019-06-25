@@ -23,7 +23,7 @@
 #include <util/LSUtils.h>
 
 ServiceObserver::ServiceObserver() :
-        started_(false)
+        m_isStarted(false)
 {
 }
 
@@ -31,74 +31,74 @@ ServiceObserver::~ServiceObserver()
 {
 }
 
-void ServiceObserver::Add(const std::string& service_name, boost::function<void(bool)> func)
+void ServiceObserver::add(const std::string& service_name, boost::function<void(bool)> func)
 {
 
-    auto it = std::find_if(watching_services_.begin(), watching_services_.end(), [&service_name](ObserverItemPtr item) {return service_name == item->name_;});
+    auto it = std::find_if(m_watchingServices.begin(), m_watchingServices.end(), [&service_name](ObserverItemPtr item) {return service_name == item->m_name;});
 
-    if (it == watching_services_.end()) {
-        watching_services_.push_back(std::make_shared<ObserverItem>(service_name, func));
+    if (it == m_watchingServices.end()) {
+        m_watchingServices.push_back(std::make_shared<ObserverItem>(service_name, func));
     } else {
         (*it)->signalStatusChanged.connect(func);
     }
 
     LOG_INFO(MSGID_SERVICE_OBSERVER_INFORM, 1, PMLOGKS("event", "item_added"), "service: %s", service_name.c_str());
 
-    if (started_)
-        Run();
+    if (m_isStarted)
+        run();
 }
 
-bool ServiceObserver::IsConnected(const std::string& service_name) const
+bool ServiceObserver::isConnected(const std::string& service_name) const
 {
 
-    auto it = std::find_if(watching_services_.begin(), watching_services_.end(), [&service_name](ObserverItemPtr item) {return service_name == item->name_;});
-    if (it == watching_services_.end())
+    auto it = std::find_if(m_watchingServices.begin(), m_watchingServices.end(), [&service_name](ObserverItemPtr item) {return service_name == item->m_name;});
+    if (it == m_watchingServices.end())
         return false;
-    return (*it)->connection_;
+    return (*it)->m_connection;
 }
 
-void ServiceObserver::Run()
+void ServiceObserver::run()
 {
 
     LSHandle* lsHandle = AppMgrService::instance().serviceHandle();
-    for (auto it : watching_services_) {
+    for (auto it : m_watchingServices) {
 
-        if (it->token_ != 0)
+        if (it->m_token != 0)
             continue;
 
-        LOG_INFO(MSGID_SERVICE_OBSERVER_INFORM, 1, PMLOGKS("event", "enquiring"), "service: %s", it->name_.c_str());
-        std::string payload = "{\"serviceName\":\"" + it->name_ + "\"}";
+        LOG_INFO(MSGID_SERVICE_OBSERVER_INFORM, 1, PMLOGKS("event", "enquiring"), "service: %s", it->m_name.c_str());
+        std::string payload = "{\"serviceName\":\"" + it->m_name + "\"}";
 
         LSErrorSafe lserror;
-        if (!LSCall(lsHandle, "luna://com.webos.service.bus/signal/registerServerStatus", payload.c_str(), cbServerStatus, this, &(it->token_), &lserror)) {
-            LOG_WARNING(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGKS("where", "register_serv_status"), PMLOGKS("service_name", it->name_.c_str()), "%s", lserror.message);
+        if (!LSCall(lsHandle, "luna://com.webos.service.bus/signal/registerServerStatus", payload.c_str(), onServerStatus, this, &(it->m_token), &lserror)) {
+            LOG_WARNING(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGKS("where", "register_serv_status"), PMLOGKS("service_name", it->m_name.c_str()), "%s", lserror.message);
             return;
         }
     }
 
-    started_ = true;
+    m_isStarted = true;
 }
 
-void ServiceObserver::Stop()
+void ServiceObserver::stop()
 {
 
     LSHandle* lsHandle = AppMgrService::instance().serviceHandle();
-    for (auto it : watching_services_) {
-        it->connection_ = false;
+    for (auto it : m_watchingServices) {
+        it->m_connection = false;
         it->signalStatusChanged.disconnect_all_slots();
-        (void) LSCallCancel(lsHandle, it->token_, NULL);
+        (void) LSCallCancel(lsHandle, it->m_token, NULL);
     }
 }
 
-bool ServiceObserver::cbServerStatus(LSHandle* lshandle, LSMessage* message, void* user_data)
+bool ServiceObserver::onServerStatus(LSHandle* lshandle, LSMessage* message, void* user_data)
 {
 
     ServiceObserver* service_observer = static_cast<ServiceObserver*>(user_data);
     LSMessageToken token = LSMessageGetResponseToken(message);
 
-    auto it = std::find_if(service_observer->watching_services_.begin(), service_observer->watching_services_.end(), [&token](ObserverItemPtr item) {return token == item->token_;});
+    auto it = std::find_if(service_observer->m_watchingServices.begin(), service_observer->m_watchingServices.end(), [&token](ObserverItemPtr item) {return token == item->m_token;});
 
-    if (it == service_observer->watching_services_.end())
+    if (it == service_observer->m_watchingServices.end())
         return true;
 
     ObserverItemPtr watching_item = (*it);
@@ -113,9 +113,9 @@ bool ServiceObserver::cbServerStatus(LSHandle* lshandle, LSMessage* message, voi
 
     connection = json["connected"].asBool();
 
-    if (watching_item->connection_ != connection) {
-        LOG_INFO(MSGID_SERVICE_OBSERVER_INFORM, 2, PMLOGKS("service_name", watching_item->name_.c_str()), PMLOGKS("connection", connection?"on":"off"), "");
-        watching_item->connection_ = connection;
+    if (watching_item->m_connection != connection) {
+        LOG_INFO(MSGID_SERVICE_OBSERVER_INFORM, 2, PMLOGKS("service_name", watching_item->m_name.c_str()), PMLOGKS("connection", connection?"on":"off"), "");
+        watching_item->m_connection = connection;
         watching_item->signalStatusChanged(connection);
     }
 

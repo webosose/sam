@@ -40,7 +40,7 @@
 
 const double NANO_SECOND = 1000000000;
 
-std::string read_file(const std::string& file_name)
+std::string readFile(const std::string& file_name)
 {
     std::ifstream file(file_name.c_str(), std::ifstream::in);
     std::string file_contents;
@@ -118,7 +118,7 @@ bool removeDir(const std::string &path)
     return true;
 }
 
-bool dir_exists(const std::string& path)
+bool dirExists(const std::string& path)
 {
     struct stat st_buf;
     memset(&st_buf, 0, sizeof(st_buf));

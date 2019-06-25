@@ -28,8 +28,8 @@
 #include <util/Logging.h>
 #include <util/LSUtils.h>
 
-LocalePreferences::LocalePreferences() :
-        m_localeInfoToken(0)
+LocalePreferences::LocalePreferences()
+    : m_localeInfoToken(0)
 {
 }
 
@@ -37,17 +37,17 @@ LocalePreferences::~LocalePreferences()
 {
 }
 
-void LocalePreferences::init()
+void LocalePreferences::initialize()
 {
 }
 
 void LocalePreferences::onRestInit()
 {
 
-    pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::instance().localeInfoPath, std::string(""));
+    pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::instance().m_localeInfoPath, std::string(""));
     updateLocaleInfo(locale_info);
 
-    ServiceObserver::instance().Add(WEBOS_SERVICE_SETTINGS, std::bind(&LocalePreferences::onSettingServiceStatusChanaged, this, std::placeholders::_1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_SETTINGS, std::bind(&LocalePreferences::onSettingServiceStatusChanaged, this, std::placeholders::_1));
 }
 
 void LocalePreferences::onSettingServiceStatusChanaged(bool connection)
@@ -55,8 +55,17 @@ void LocalePreferences::onSettingServiceStatusChanaged(bool connection)
     if (connection) {
         if (m_localeInfoToken == 0) {
             std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
-            if (!LSCall(AppMgrService::instance().serviceHandle(), "luna://com.webos.settingsservice/getSystemSettings", payload.c_str(), onLocaleInfoReceived, this, &m_localeInfoToken, NULL)) {
-                LOG_WARNING(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "lscall"), PMLOGKS("where", __FUNCTION__), "failed_subscribing_settings");
+            if (!LSCall(AppMgrService::instance().serviceHandle(),
+                        "luna://com.webos.settingsservice/getSystemSettings",
+                        payload.c_str(),
+                        onLocaleInfoReceived,
+                        this,
+                        &m_localeInfoToken,
+                        NULL)) {
+                LOG_WARNING(MSGID_LSCALL_ERR, 2,
+                            PMLOGKS("type", "lscall"),
+                            PMLOGKS("where", __FUNCTION__),
+                            "failed_subscribing_settings");
             }
         }
     } else {
@@ -135,7 +144,11 @@ void LocalePreferences::setLocaleInfo(const std::string& locale)
     m_script = script;
     m_region = region;
 
-    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4, PMLOGKS("locale", locale.c_str()), PMLOGKS("language", m_language.c_str()), PMLOGKS("script", m_script.c_str()), PMLOGKS("region", m_region.c_str()), "");
+    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4,
+             PMLOGKS("locale", locale.c_str()),
+             PMLOGKS("language", m_language.c_str()),
+             PMLOGKS("script", m_script.c_str()),
+             PMLOGKS("region", m_region.c_str()), "");
 
     ResBundleAdaptor::instance().setLocale(locale);
     signalLocaleChanged(m_language, m_script, m_region);

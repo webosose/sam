@@ -19,15 +19,15 @@
 
 #include <lifecycle/AppInfoManager.h>
 #include <lifecycle/AppLaunchingItem.h>
+#include <lifecycle/AppLaunchingItemFactory.h>
 #include <lifecycle/AppLifeStatus.h>
-#include <lifecycle/IAppLaunchingItemFactory.h>
-#include <lifecycle/ILastAppHandler.h>
-#include <lifecycle/IPrelauncher.h>
 #include <lifecycle/life_handler/NativeAppLifeHandler.h>
 #include <lifecycle/life_handler/QmlAppLifeHandler.h>
 #include <lifecycle/life_handler/WebAppLifeHandler.h>
+#include <lifecycle/LastAppHandler.h>
 #include <lifecycle/LifecycleTask.h>
 #include <lifecycle/MemoryChecker.h>
+#include <lifecycle/Prelauncher.h>
 #include <luna-service2/lunaservice.h>
 #include <package/AppDescription.h>
 #include <util/Singleton.h>
@@ -42,7 +42,7 @@ public:
     LifecycleManager();
     virtual ~LifecycleManager();
 
-    void init();
+    void initialize();
 
     void Launch(LifeCycleTaskPtr task);
     void Pause(LifeCycleTaskPtr task);
@@ -66,10 +66,10 @@ public:
 
     void getLaunchingAppIds(std::vector<std::string>& app_ids);
 
-    void setApplifeitemFactory(IAppLaunchingItemFactory& factory);
-    void setPrelauncherHandler(IPrelauncher& prelauncher);
+    void setApplifeitemFactory(AppLaunchingItemFactory& factory);
+    void setPrelauncherHandler(Prelauncher& prelauncher);
     void setMemoryCheckerHandler(MemoryChecker& memory_checker);
-    void setLastappHandler(ILastAppHandler& lastapp_handler);
+    void setLastappHandler(LastAppHandler& lastapp_handler);
 
     boost::signals2::signal<void(const std::string& app_id, const LifeStatus& life_status)> signal_app_life_status_changed;
     boost::signals2::signal<void(const std::string& app_id)> signal_foreground_app_changed;
@@ -142,13 +142,13 @@ private:
 
 private:
     // extendable interface
-    IAppLaunchingItemFactory* m_launchItemFactory;
-    IPrelauncher* m_prelauncher;
+    AppLaunchingItemFactory* m_launchItemFactory;
+    Prelauncher* m_prelauncher;
     MemoryChecker* m_memoryChecker;
     NativeAppLifeHandler m_nativeLifecycleHandler;
     WebAppLifeHandler m_webLifecycleHandler;
     QmlAppLifeHandler m_qmlLifecycleHandler;
-    ILastAppHandler* m_lastappHandler;
+    LastAppHandler* m_lastappHandler;
     LifeCycleRouter m_lifecycleRouter;
 
     // member variables

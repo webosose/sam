@@ -41,20 +41,34 @@ void signal_handler(int signal, siginfo_t *siginfo, void *context)
     sender_cmdline = "/proc/" + sender_pid + "/cmdline";
     si_code = siginfo->si_code;
 
-    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4, PMLOGKFV("signal_no", "%d", signal), PMLOGKFV("signal_code", "%d", si_code), PMLOGKS("sender_pid", sender_pid.c_str()),
-            PMLOGKS("sender_cmdline", sender_cmdline.c_str()), "received signal");
+    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4,
+                PMLOGKFV("signal_no", "%d", signal),
+                PMLOGKFV("signal_code", "%d", si_code),
+                PMLOGKS("sender_pid", sender_pid.c_str()),
+                PMLOGKS("sender_cmdline", sender_cmdline.c_str()),
+                "received signal");
 
-    buf = read_file(sender_cmdline.c_str());
+    buf = readFile(sender_cmdline.c_str());
     if (buf.empty()) {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4, PMLOGKFV("signal_no", "%d", signal), PMLOGKFV("signal_code", "%d", si_code), PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid),
-                PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid), "fopen fail");
+        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4,
+                    PMLOGKFV("signal_no", "%d", signal),
+                    PMLOGKFV("signal_code", "%d", si_code),
+                    PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid),
+                    PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid),
+                    "fopen fail");
         goto Done;
     }
 
-    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 5, PMLOGKFV("signal_no", "%d", signal), PMLOGKFV("signal_code", "%d", si_code), PMLOGKS("sender_name", buf.c_str()),
-            PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid), PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid), "signal information");
+    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 5,
+                PMLOGKFV("signal_no", "%d", signal),
+                PMLOGKFV("signal_code", "%d", si_code),
+                PMLOGKS("sender_name", buf.c_str()),
+                PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid),
+                PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid),
+                "signal information");
 
-    Done: if (signal == SIGHUP || signal == SIGINT || signal == SIGPIPE) {
+Done:
+    if (signal == SIGHUP || signal == SIGINT || signal == SIGPIPE) {
         LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1, PMLOGKS("action", "ignore"), "just ignore");
         return;
     } else {

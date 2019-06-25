@@ -14,50 +14,75 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <boost/bind.hpp>
 #include <launch_point/handler/OrderingHandler.h>
+#include <setting/Settings.h>
+#include <util/BaseLogs.h>
 
-void OrderingHandler::Init()
+
+OrderingHandler::OrderingHandler()
 {
-    //virtual
 }
 
-/***********************************************************/
-/** handling DB (handle/reload/update) *********************/
-/***********************************************************/
-void OrderingHandler::HandleDbState(bool connection)
+OrderingHandler::~OrderingHandler()
 {
-    //virtual
 }
 
-void OrderingHandler::ReloadDbData(bool connection)
+void OrderingHandler::init()
 {
-    //virtual
 }
 
-/*******************************************************/
-/** handling ordered list (set/update/visibleLPs) ******/
-/*******************************************************/
-void OrderingHandler::MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason)
+void OrderingHandler::handleDBState(bool connection)
 {
-    //virtual
 }
 
-/*******************************************************/
-/*** handling data (insert/update/delete with DB) ******/
-/*******************************************************/
-int OrderingHandler::InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+void OrderingHandler::reloadDBData(bool connection)
 {
-    //virtual
-    return DEFAULT_POSITION_INVALID;
 }
 
-int OrderingHandler::UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+void OrderingHandler::makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason)
 {
-    //virtual
-    return DEFAULT_POSITION_INVALID;
+    m_visibleLPs = visible_lps;
+    reorder();
 }
 
-void OrderingHandler::DeleteLpInOrder(const std::string& lp_id)
+bool OrderingHandler::SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text)
 {
-    //virtual
+    return false;
+}
+
+int OrderingHandler::insertLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    int i = 0;
+    for (auto it = m_orderedList.begin(); it != m_orderedList.end(); ++it, ++i) {
+        if (*it > lp_id) {
+            m_orderedList.insert(it, lp_id);
+            return i;
+        }
+    }
+    m_orderedList.push_back(lp_id);
+    return m_orderedList.size() - 1;
+}
+
+int OrderingHandler::updateLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+{
+    return 0;
+}
+
+void OrderingHandler::deleteLPInOrder(const std::string& lp_id)
+{
+    auto it = std::find(m_orderedList.begin(), m_orderedList.end(), lp_id);
+
+    if (it != m_orderedList.end())
+        m_orderedList.erase(it);
+}
+
+void OrderingHandler::reorder()
+{
+    m_orderedList.clear();
+    for (auto it = m_visibleLPs.begin(); it != m_visibleLPs.end(); ++it) {
+        m_orderedList.push_back(it->get()->getLunchPointId());
+    }
+    std::sort(m_orderedList.begin(), m_orderedList.end(), [](const std::string& a, const std::string& b) -> bool {return (a < b);});
+    signal_launch_points_ordered_(OrderChangeState::FULL);
 }

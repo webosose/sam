@@ -37,7 +37,6 @@ public:
     virtual ~CallItem()
     {
     }
-    ;
 
     virtual bool Call() = 0;
 
@@ -93,14 +92,16 @@ class CallChain {
     typedef std::function<void(const std::string&, const std::string&, bool, void*)> CallNotifier;
 
     struct CallCondition {
-        CallCondition(CallItemPtr _condition_call, bool _expected_result, CallItemPtr _target_call) :
-                condition_call(_condition_call), expected_result(_expected_result), target_call(_target_call)
+        CallCondition(CallItemPtr _condition_call, bool _expected_result, CallItemPtr _target_call)
+            : m_conditionCall(_condition_call),
+              m_expectedResult(_expected_result),
+              m_targetCall(_target_call)
         {
         }
 
-        CallItemPtr condition_call;
-        bool expected_result;
-        CallItemPtr target_call;
+        CallItemPtr m_conditionCall;
+        bool m_expectedResult;
+        CallItemPtr m_targetCall;
     };
 
     typedef std::shared_ptr<CallCondition> CallConditionPtr;
@@ -109,7 +110,7 @@ public:
     static CallChain& acquire(CallCompleteHandler handler = nullptr, CallNotifier notifier = nullptr, void *user_data = NULL);
 
     CallChain& add(CallItemPtr call, bool push_front = false);
-    CallChain& add_if(CallItemPtr condition_call, bool expected_result, CallItemPtr target_call);
+    CallChain& addIf(CallItemPtr condition_call, bool expected_result, CallItemPtr target_call);
 
     bool run(pbnjson::JValue chainData = pbnjson::Object());
 

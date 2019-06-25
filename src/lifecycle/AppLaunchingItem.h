@@ -17,12 +17,12 @@
 #ifndef APP_LAUNCHING_ITEM_H_
 #define APP_LAUNCHING_ITEM_H_
 
+#include <boost/function.hpp>
 #include <lifecycle/ApplicationErrors.h>
 #include <luna-service2/lunaservice.h>
 #include <package/AppDescription.h>
 #include <list>
 #include <pbnjson.hpp>
-
 
 const std::string SYS_LAUNCHING_UID = "alertId";
 
@@ -32,12 +32,57 @@ enum class AppLaunchRequestType {
 };
 
 enum class AppLaunchingStage {
-    NONE = 0,
+    INVALID = -1,
+    PREPARE_PRELAUNCH = 0,
     PRELAUNCH,
     MEMORY_CHECK,
+    MEMORY_CHECK_DONE,
+    PRELAUNCH_DONE,
     LAUNCH,
     DONE,
+    CHECK_EXECUTE,
 };
+
+enum class StageHandlerReturn : int {
+    GO_NEXT_STAGE,
+    GO_DEPENDENT_STAGE,
+    REDIRECTED,
+    ERROR,
+};
+
+enum class StageHandlerType : int {
+    MAIN_CALL,
+    SUB_CALL,
+    SUB_BRIDGE_CALL,
+    BRIDGE_CALL,
+    DIRECT_CHECK,
+};
+
+class AppLaunchingItem;
+
+typedef std::shared_ptr<AppLaunchingItem> AppLaunchingItemPtr;
+typedef std::list<AppLaunchingItemPtr> AppLaunchingItemList;
+typedef boost::function<bool(AppLaunchingItemPtr, pbnjson::JValue&)> PayloadMaker;
+typedef boost::function<StageHandlerReturn(AppLaunchingItemPtr)> StageHandler;
+
+struct StageItem {
+    StageHandlerType m_handlerType;
+    std::string m_uri;
+    PayloadMaker m_payloadMaker;
+    StageHandler m_handler;
+    AppLaunchingStage m_launchingStage;
+
+    StageItem(StageHandlerType _type, const std::string& _uri, PayloadMaker _maker, StageHandler _handler, AppLaunchingStage _stage)
+        : m_handlerType(_type),
+          m_uri(_uri),
+          m_payloadMaker(_maker),
+          m_handler(_handler),
+          m_launchingStage(_stage)
+    {
+    }
+};
+
+typedef std::deque<StageItem> StageItemList;
 
 class AppLaunchingItem {
 public:
@@ -216,6 +261,20 @@ public:
     {
         m_isLastInputApp = v;
     }
+    StageItemList& stageList()
+    {
+        return m_stageList;
+    }
+
+    void addStage(StageItem item)
+    {
+        m_stageList.push_back(item);
+    }
+
+    void clearAllStages()
+    {
+        m_stageList.clear();
+    }
 
 private:
     std::string m_uid;
@@ -242,9 +301,8 @@ private:
     double m_launchStartTime;
     std::string m_launchReason;
     bool m_isLastInputApp;
-};
 
-typedef std::shared_ptr<AppLaunchingItem> AppLaunchingItemPtr;
-typedef std::list<AppLaunchingItemPtr> AppLaunchingItemList;
+    StageItemList m_stageList;
+};
 
 #endif

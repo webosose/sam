@@ -28,23 +28,23 @@ public:
     ConfigdSubscriber();
     ~ConfigdSubscriber();
 
-    void Init();
-    void AddRequiredKey(const std::string& key)
+    void initialize();
+    void addRequiredKey(const std::string& key)
     {
-        config_keys_.push_back(key);
+        m_configKeys.push_back(key);
     }
-    boost::signals2::connection SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func);
+    boost::signals2::connection subscribeConfigInfo(boost::function<void(pbnjson::JValue)> func);
 
-    void OnServerStatusChanged(bool connection);
-    static bool ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void onServerStatusChanged(bool connection);
+    static bool configInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
 private:
     friend class Singleton<ConfigdSubscriber> ;
 
-    void RequestConfigInfo();
+    void requestConfigInfo();
 
-    std::vector<std::string> config_keys_;
-    LSMessageToken token_config_info_;
+    std::vector<std::string> m_configKeys;
+    LSMessageToken m_tokenConfigInfo;
     boost::signals2::signal<void(const pbnjson::JValue&)> notify_config_info;
 };
 

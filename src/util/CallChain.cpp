@@ -159,7 +159,7 @@ CallChain& CallChain::add(CallItemPtr call, bool push_front)
     return *this;
 }
 
-CallChain& CallChain::add_if(CallItemPtr condition_call, bool expected_result, CallItemPtr target_call)
+CallChain& CallChain::addIf(CallItemPtr condition_call, bool expected_result, CallItemPtr target_call)
 {
     m_conditions.push_back(std::make_shared<CallCondition>(condition_call, expected_result, target_call));
     return *this;
@@ -238,10 +238,10 @@ void CallChain::onCallFinished(bool result, ErrorInfo errInfo)
 
     bool processNext = result;
 
-    std::vector<CallConditionPtr>::iterator it = std::find_if(m_conditions.begin(), m_conditions.end(), [=] (const CallConditionPtr p) -> bool {return p->condition_call == call;});
+    std::vector<CallConditionPtr>::iterator it = std::find_if(m_conditions.begin(), m_conditions.end(), [=] (const CallConditionPtr p) -> bool {return p->m_conditionCall == call;});
     if (it != m_conditions.end()) {
-        if (result == (*it)->expected_result) {
-            add((*it)->target_call, true);
+        if (result == (*it)->m_expectedResult) {
+            add((*it)->m_targetCall, true);
             processNext = true;
         }
 

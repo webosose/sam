@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2018 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,27 +14,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <BaseExtension.h>
-#include <product/ProductAbstractFactory.h>
+#ifndef LAST_APP_HANDLER_4_BASE_H
+#define LAST_APP_HANDLER_4_BASE_H
 
-ProductAbstractFactory::ProductAbstractFactory()
-{
-}
+#include <lifecycle/AppLifeStatus.h>
+#include <luna-service2/lunaservice.h>
+#include <pbnjson.hpp>
 
-ProductAbstractFactory::~ProductAbstractFactory()
-{
-}
 
-void ProductAbstractFactory::Initialize(PrerequisiteMonitor& prerequisite_monitor)
-{
-    BaseExtension::instance().init(prerequisite_monitor);
-}
+class LastAppHandler {
+public:
+    LastAppHandler();
+    virtual ~LastAppHandler();
 
-void ProductAbstractFactory::OnReady()
-{
-    BaseExtension::instance().OnReady();
-}
+    virtual void launch();
+    virtual void cancel();
 
-void ProductAbstractFactory::Terminate()
-{
-}
+};
+
+#endif

@@ -38,23 +38,23 @@ public:
     AppinstalldSubscriber();
     ~AppinstalldSubscriber();
 
-    void Init();
-    boost::signals2::connection SubscribeInstallStatus(boost::function<void(const std::string&, const PackageStatus&)> func);
-    boost::signals2::connection SubscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func);
+    void initialize();
+    boost::signals2::connection subscribeInstallStatus(boost::function<void(const std::string&, const PackageStatus&)> func);
+    boost::signals2::connection subscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func);
 
 private:
     friend class Singleton<AppinstalldSubscriber> ;
 
-    void OnInstallServiceStatusChanged(bool connection);
-    void RequestInstallStatus();
-    static bool OnInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void onInstallServiceStatusChanged(bool connection);
+    void requestInstallStatus();
+    static bool onInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    void OnUpdateServiceStatusChanged(bool connection);
-    void RequestUpdateInfo();
-    static bool OnUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void onUpdateServiceStatusChanged(bool connection);
+    void requestUpdateInfo();
+    static bool onUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    LSMessageToken token_install_status_;
-    LSMessageToken token_update_info_;
+    LSMessageToken m_tokenInstallStatus;
+    LSMessageToken m_tokenUpdateInfo;
     boost::signals2::signal<void(const std::string&, const PackageStatus&)> notify_install_status_;
     boost::signals2::signal<void(const pbnjson::JValue&)> notify_update_info_;
 };

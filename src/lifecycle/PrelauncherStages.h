@@ -14,20 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef LAUNCH_POINT_BOOKMARK_4_BASE_H
-#define LAUNCH_POINT_BOOKMARK_4_BASE_H
+#ifndef PRELAUNCHER_STAGES_H
+#define PRELAUNCHER_STAGES_H
 
-#include <launch_point/launch_point/LaunchPoint4Base.h>
+#include <lifecycle/AppLaunchingItem.h>
+#include <pbnjson.hpp>
 
-class LaunchPointBookmark4Base: public LaunchPoint4Base {
-public:
-    LaunchPointBookmark4Base(const std::string& id, const std::string& lp_id) :
-            LaunchPoint4Base(id, lp_id)
-    {
-    }
+bool setPrelaunchingStages(AppLaunchingItemPtr item);
+StageHandlerReturn handleExecutionLockStatus(AppLaunchingItemPtr prelaunching_item);
 
-    static LaunchPointPtr Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
-    virtual std::string Update(const pbnjson::JValue& data);
-};
-
-#endif /* LAUNCH_POINT_BOOKMARK_4_BASE_H */
+#endif

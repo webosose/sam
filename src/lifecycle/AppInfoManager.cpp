@@ -22,8 +22,8 @@
 const std::string& NULL_STR = "";
 const std::string& DEFAULT_NULL_APP = "@APP_INFO_DEFAULT_APP@";
 
-AppInfoManager::AppInfoManager() :
-        m_jsonForegroundInfo(pbnjson::Array())
+AppInfoManager::AppInfoManager()
+    : m_jsonForegroundInfo(pbnjson::Array())
 {
     m_defaultAppInfo = std::make_shared<AppInfo>(DEFAULT_NULL_APP);
 }
@@ -103,7 +103,7 @@ void AppInfoManager::setExecutionLock(const std::string& app_id, bool v)
         if (app_info == NULL)
             return;
     }
-    app_info->set_execution_lock(v);
+    app_info->setExecutionLock(v);
 }
 
 void AppInfoManager::setRemovalFlag(const std::string& app_id, bool v)
@@ -111,7 +111,7 @@ void AppInfoManager::setRemovalFlag(const std::string& app_id, bool v)
     AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
-    app_info->set_removal_flag(v);
+    app_info->setRemovalFlag(v);
 }
 
 void AppInfoManager::setPreloadMode(const std::string& app_id, bool mode)
@@ -119,7 +119,7 @@ void AppInfoManager::setPreloadMode(const std::string& app_id, bool mode)
     AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
-    app_info->set_preload_mode(mode);
+    app_info->setPreloadMode(mode);
 }
 
 void AppInfoManager::setLastLaunchTime(const std::string& app_id, double launch_time)
@@ -127,7 +127,7 @@ void AppInfoManager::setLastLaunchTime(const std::string& app_id, double launch_
     AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
-    app_info->set_last_launch_time(launch_time);
+    app_info->setLastLaunchTime(launch_time);
 }
 
 void AppInfoManager::setLifeStatus(const std::string& app_id, const LifeStatus& status)
@@ -135,7 +135,7 @@ void AppInfoManager::setLifeStatus(const std::string& app_id, const LifeStatus& 
     AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
-    app_info->set_life_status(status);
+    app_info->setLifeStatus(status);
     if (app_info->isRemoveFlagged())
         removeAppInfo(app_id);
 }
@@ -145,15 +145,7 @@ void AppInfoManager::setRuntimeStatus(const std::string& app_id, RuntimeStatus s
     AppInfoPtr app_info = getAppInfoForSetter(app_id);
     if (app_info == NULL)
         return;
-    app_info->set_runtime_status(status);
-}
-
-void AppInfoManager::setVirtualLaunchParams(const std::string& app_id, const pbnjson::JValue& params)
-{
-    AppInfoPtr app_info = getAppInfoForSetter(app_id);
-    if (app_info == NULL)
-        return;
-    app_info->set_virtual_launch_params(params);
+    app_info->setRuntimeStatus(status);
 }
 
 bool AppInfoManager::canExecute(const std::string& app_id)
@@ -168,7 +160,7 @@ bool AppInfoManager::isRemoveFlagged(const std::string& app_id)
 
 bool AppInfoManager::preloadModeOn(const std::string& app_id)
 {
-    return getAppInfoForGetter(app_id)->preload_mode_on();
+    return getAppInfoForGetter(app_id)->preloadModeOn();
 }
 
 bool AppInfoManager::isOutOfService(const std::string& app_id)
@@ -227,22 +219,17 @@ const std::string AppInfoManager::updateVersion(const std::string& app_id)
 
 double AppInfoManager::lastLaunchTime(const std::string& app_id)
 {
-    return getAppInfoForGetter(app_id)->last_launch_time();
+    return getAppInfoForGetter(app_id)->lastLaunchTime();
 }
 
 LifeStatus AppInfoManager::lifeStatus(const std::string& app_id)
 {
-    return getAppInfoForGetter(app_id)->life_status();
+    return getAppInfoForGetter(app_id)->lifeStatus();
 }
 
 RuntimeStatus AppInfoManager::runtimeStatus(const std::string& appId)
 {
-    return getAppInfoForGetter(appId)->runtime_status();
-}
-
-const pbnjson::JValue& AppInfoManager::virtualLaunchParams(const std::string& app_id)
-{
-    return getAppInfoForGetter(app_id)->virtual_launch_params();
+    return getAppInfoForGetter(appId)->runtimeStatus();
 }
 
 bool AppInfoManager::isAppOnFullscreen(const std::string& app_id)
@@ -322,11 +309,17 @@ void AppInfoManager::addRunningInfo(const std::string& app_id, const std::string
 
     RunningInfoPtr new_running_item = std::make_shared<RunningInfo>(app_id, pid, webprocid);
     if (new_running_item == NULL) {
-        LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("status", "make_shared_fail"), "");
+        LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("status", "make_shared_fail"), "");
         return;
     }
 
-    LOG_INFO(MSGID_RUNNING_LIST, 4, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("pid", pid.c_str()), PMLOGKS("webprocid", webprocid.c_str()), PMLOGKS("status", "added"), "");
+    LOG_INFO(MSGID_RUNNING_LIST, 4,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("pid", pid.c_str()),
+             PMLOGKS("webprocid", webprocid.c_str()),
+             PMLOGKS("status", "added"), "");
 
     m_runningList.push_back(new_running_item);
 }
@@ -335,7 +328,10 @@ void AppInfoManager::removeRunningInfo(const std::string& app_id)
 {
     auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
     if (it == m_runningList.end()) {
-        LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2, PMLOGKS("status", "failed_to_remove"), PMLOGKS("app_id", app_id.c_str()), "not found app_id in running_list");
+        LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2,
+                  PMLOGKS("status", "failed_to_remove"),
+                  PMLOGKS("app_id", app_id.c_str()),
+                  "not found app_id in running_list");
         return;
     }
 
@@ -463,7 +459,7 @@ void AppInfoManager::getAppIdsByLifeStatus(const LifeStatus& status, std::vector
     }
 
     for (auto& it : m_appinfoList) {
-        if (it.second->life_status() == status)
+        if (it.second->lifeStatus() == status)
             app_ids.push_back(it.first);
     }
 }

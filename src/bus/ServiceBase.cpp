@@ -21,10 +21,11 @@
 #include <util/LSUtils.h>
 
 
-ServiceBase::ServiceBase(const std::string& name) :
-        m_name(name), m_handle(NULL)
+ServiceBase::ServiceBase(const std::string& name)
+    : m_name(name),
+      m_handle(NULL)
 {
-    m_services.push_back( { name, NULL });
+    m_services.push_back({ name, NULL });
 }
 
 ServiceBase::~ServiceBase()

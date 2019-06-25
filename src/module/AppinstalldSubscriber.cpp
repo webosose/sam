@@ -24,7 +24,7 @@
 #include <util/LSUtils.h>
 
 AppinstalldSubscriber::AppinstalldSubscriber() :
-        token_install_status_(0), token_update_info_(0)
+        m_tokenInstallStatus(0), m_tokenUpdateInfo(0)
 {
 }
 
@@ -32,46 +32,53 @@ AppinstalldSubscriber::~AppinstalldSubscriber()
 {
 }
 
-void AppinstalldSubscriber::Init()
+void AppinstalldSubscriber::initialize()
 {
-    ServiceObserver::instance().Add(WEBOS_SERVICE_APPINSTALL, std::bind(&AppinstalldSubscriber::OnInstallServiceStatusChanged, this, std::placeholders::_1));
-    ServiceObserver::instance().Add(WEBOS_SERVICE_APPUPDATE, std::bind(&AppinstalldSubscriber::OnUpdateServiceStatusChanged, this, std::placeholders::_1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_APPINSTALL, std::bind(&AppinstalldSubscriber::onInstallServiceStatusChanged, this, std::placeholders::_1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_APPUPDATE, std::bind(&AppinstalldSubscriber::onUpdateServiceStatusChanged, this, std::placeholders::_1));
 }
 
-boost::signals2::connection AppinstalldSubscriber::SubscribeInstallStatus(boost::function<void(const std::string&, const PackageStatus&)> func)
+boost::signals2::connection AppinstalldSubscriber::subscribeInstallStatus(boost::function<void(const std::string&, const PackageStatus&)> func)
 {
     return notify_install_status_.connect(func);
 }
 
-boost::signals2::connection AppinstalldSubscriber::SubscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func)
+boost::signals2::connection AppinstalldSubscriber::subscribeUpdateInfo(boost::function<void(const pbnjson::JValue&)> func)
 {
     return notify_update_info_.connect(func);
 }
 
 //////////////////////////////////////////
 // app install service
-void AppinstalldSubscriber::OnInstallServiceStatusChanged(bool connection)
+void AppinstalldSubscriber::onInstallServiceStatusChanged(bool connection)
 {
     if (connection) {
-        RequestInstallStatus();
+        requestInstallStatus();
     } else {
-        if (0 != token_install_status_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_install_status_, NULL);
-            token_install_status_ = 0;
+        if (0 != m_tokenInstallStatus) {
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), m_tokenInstallStatus, NULL);
+            m_tokenInstallStatus = 0;
         }
     }
 }
 
-void AppinstalldSubscriber::RequestInstallStatus()
+void AppinstalldSubscriber::requestInstallStatus()
 {
-    if (token_install_status_ != 0)
+    if (m_tokenInstallStatus != 0)
         return;
 
     std::string method = std::string("luna://") + WEBOS_SERVICE_APPINSTALL + std::string("/status");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnInstallStatusCallback, this, &token_install_status_, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().serviceHandle(),
+                method.c_str(), "{\"subscribe\":true}",
+                onInstallStatusCallback,
+                this,
+                &m_tokenInstallStatus, &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscall"),
+                  PMLOGJSON("payload", "{\"subscribe\":true}"),
+                  PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }
 
@@ -94,7 +101,7 @@ void AppinstalldSubscriber::RequestInstallStatus()
 //    }
 //  }
 
-bool AppinstalldSubscriber::OnInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool AppinstalldSubscriber::onInstallStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
 {
     AppinstalldSubscriber* subscriber = static_cast<AppinstalldSubscriber*>(user_data);
     if (!subscriber)
@@ -155,7 +162,9 @@ bool AppinstalldSubscriber::OnInstallStatusCallback(LSHandle* handle, LSMessage*
 
     app_id = package_id.empty() ? id : package_id;
 
-    LOG_INFO(MSGID_PACKAGE_STATUS, 2, PMLOGKS("app_id", app_id.c_str()), PMLOGKFV("status", "%d", (int) package_status), "");
+    LOG_INFO(MSGID_PACKAGE_STATUS, 2,
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKFV("status", "%d", (int) package_status), "");
 
     subscriber->notify_install_status_(app_id, package_status);
     return true;
@@ -163,32 +172,42 @@ bool AppinstalldSubscriber::OnInstallStatusCallback(LSHandle* handle, LSMessage*
 
 //////////////////////////////////////////
 // app update info
-void AppinstalldSubscriber::OnUpdateServiceStatusChanged(bool connection)
+void AppinstalldSubscriber::onUpdateServiceStatusChanged(bool connection)
 {
     if (connection) {
-        RequestUpdateInfo();
+        requestUpdateInfo();
     } else {
-        if (0 != token_update_info_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_update_info_, NULL);
-            token_update_info_ = 0;
+        if (0 != m_tokenUpdateInfo) {
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), m_tokenUpdateInfo, NULL);
+            m_tokenUpdateInfo = 0;
         }
     }
 }
 
-void AppinstalldSubscriber::RequestUpdateInfo()
+void AppinstalldSubscriber::requestUpdateInfo()
 {
-    if (token_update_info_ != 0)
+    if (m_tokenUpdateInfo != 0)
         return;
 
     std::string method = std::string("luna://") + WEBOS_SERVICE_APPUPDATE + std::string("/statusAll");
 
     LSErrorSafe lserror;
-    if (!LSCall(AppMgrService::instance().serviceHandle(), method.c_str(), "{\"subscribe\":true}", OnUpdateInfoCallback, this, &token_update_info_, &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3, PMLOGKS("type", "lscall"), PMLOGJSON("payload", "{\"subscribe\":true}"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+    if (!LSCall(AppMgrService::instance().serviceHandle(),
+                method.c_str(),
+                "{\"subscribe\":true}",
+                onUpdateInfoCallback,
+                this,
+                &m_tokenUpdateInfo,
+                &lserror)) {
+        LOG_ERROR(MSGID_LSCALL_ERR, 3,
+                  PMLOGKS("type", "lscall"),
+                  PMLOGJSON("payload", "{\"subscribe\":true}"),
+                  PMLOGKS("where", __FUNCTION__),
+                  "err: %s", lserror.message);
     }
 }
 
-bool AppinstalldSubscriber::OnUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool AppinstalldSubscriber::onUpdateInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
 {
     AppinstalldSubscriber* subscriber = static_cast<AppinstalldSubscriber*>(user_data);
     if (!subscriber)

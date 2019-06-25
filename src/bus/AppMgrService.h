@@ -30,7 +30,6 @@
 #include <util/Singleton.h>
 #include <string>
 
-
 typedef boost::function<void(LunaTaskPtr)> LunaApiHandler;
 
 class AppMgrService: public ServiceBase,

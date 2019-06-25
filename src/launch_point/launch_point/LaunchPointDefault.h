@@ -14,20 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <lifecycle/LastAppHandler4Base.h>
+#ifndef LAUNCH_POINT_DEFAULT_4_BASE_H
+#define LAUNCH_POINT_DEFAULT_4_BASE_H
 
-LastAppHandler4Base::LastAppHandler4Base()
-{
-}
+#include <launch_point/launch_point/LaunchPoint.h>
 
-LastAppHandler4Base::~LastAppHandler4Base()
-{
-}
+class LaunchPointDefault: public LaunchPoint {
+public:
+    LaunchPointDefault(const std::string& id, const std::string& lp_id)
+        : LaunchPoint(id, lp_id)
+    {
+    }
 
-void LastAppHandler4Base::launch()
-{
-}
+    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string update(const pbnjson::JValue& data);
+};
 
-void LastAppHandler4Base::cancel()
-{
-}
+#endif /* LAUNCH_POINT_DEFAULT_4_BASE_H */

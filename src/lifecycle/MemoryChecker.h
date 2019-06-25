@@ -18,7 +18,7 @@
 #define MEMORY_CHECKER_4_BASE_H
 
 #include <boost/signals2.hpp>
-#include <lifecycle/AppLaunchingItem4Base.h>
+#include <lifecycle/AppLaunchingItem.h>
 
 class MemoryChecker {
 public:
@@ -33,7 +33,7 @@ public:
     boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_start;
     boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_done;
 private:
-    AppLaunchingItem4BaseList m_queue;
+    AppLaunchingItemList m_queue;
 
 };
 

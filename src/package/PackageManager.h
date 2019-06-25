@@ -45,7 +45,7 @@ public:
     PackageManager();
     virtual ~PackageManager();
 
-    void init();
+    void initialize();
     void scanInitialApps();
     void startPostInit();
     void rescan(const std::vector<std::string>& reason = std::vector<std::string>());

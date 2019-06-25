@@ -23,7 +23,7 @@
 #include <util/LSUtils.h>
 
 ConfigdSubscriber::ConfigdSubscriber() :
-        token_config_info_(0)
+        m_tokenConfigInfo(0)
 {
 }
 
@@ -31,40 +31,40 @@ ConfigdSubscriber::~ConfigdSubscriber()
 {
 }
 
-void ConfigdSubscriber::Init()
+void ConfigdSubscriber::initialize()
 {
-    ServiceObserver::instance().Add(WEBOS_SERVICE_CONFIGD, std::bind(&ConfigdSubscriber::OnServerStatusChanged, this, std::placeholders::_1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_CONFIGD, std::bind(&ConfigdSubscriber::onServerStatusChanged, this, std::placeholders::_1));
 }
 
-boost::signals2::connection ConfigdSubscriber::SubscribeConfigInfo(boost::function<void(pbnjson::JValue)> func)
+boost::signals2::connection ConfigdSubscriber::subscribeConfigInfo(boost::function<void(pbnjson::JValue)> func)
 {
     return notify_config_info.connect(func);
 }
 
-void ConfigdSubscriber::OnServerStatusChanged(bool connection)
+void ConfigdSubscriber::onServerStatusChanged(bool connection)
 {
     if (connection) {
-        RequestConfigInfo();
+        requestConfigInfo();
     } else {
-        if (0 != token_config_info_) {
-            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), token_config_info_, NULL);
-            token_config_info_ = 0;
+        if (0 != m_tokenConfigInfo) {
+            (void) LSCallCancel(AppMgrService::instance().serviceHandle(), m_tokenConfigInfo, NULL);
+            m_tokenConfigInfo = 0;
         }
     }
 }
 
-void ConfigdSubscriber::RequestConfigInfo()
+void ConfigdSubscriber::requestConfigInfo()
 {
-    if (token_config_info_ != 0)
+    if (m_tokenConfigInfo != 0)
         return;
-    if (config_keys_.empty())
+    if (m_configKeys.empty())
         return;
 
     pbnjson::JValue payload = pbnjson::Object();
     pbnjson::JValue configs = pbnjson::Array();
 
     payload.put("subscribe", true);
-    for (auto& key : config_keys_) {
+    for (auto& key : m_configKeys) {
         configs.append(key);
     }
     payload.put("configNames", configs);
@@ -75,9 +75,9 @@ void ConfigdSubscriber::RequestConfigInfo()
     if (!LSCall(AppMgrService::instance().serviceHandle(),
                 method.c_str(),
                 payload.stringify().c_str(),
-                ConfigInfoCallback,
+                configInfoCallback,
                 this,
-                &token_config_info_,
+                &m_tokenConfigInfo,
                 &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
                   PMLOGKS("type", "lscall"),
@@ -86,7 +86,7 @@ void ConfigdSubscriber::RequestConfigInfo()
     }
 }
 
-bool ConfigdSubscriber::ConfigInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool ConfigdSubscriber::configInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data)
 {
     ConfigdSubscriber* subscriber = static_cast<ConfigdSubscriber*>(user_data);
     if (!subscriber)

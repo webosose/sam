@@ -23,8 +23,13 @@
 #include <util/Logging.h>
 
 
-AppCloseItem::AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason) :
-        m_app_id(app_id), m_pid(pid), m_caller(caller), m_is_memory_reclaim(false), m_reason(reason), m_close_start_time(0)
+AppCloseItem::AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason)
+    : m_app_id(app_id),
+      m_pid(pid),
+      m_caller(caller),
+      m_is_memory_reclaim(false),
+      m_reason(reason),
+      m_close_start_time(0)
 {
 
     boost::uuids::uuid uid = boost::uuids::random_generator()();
@@ -34,10 +39,16 @@ AppCloseItem::AppCloseItem(const std::string& app_id, const std::string& pid, co
         m_is_memory_reclaim = true;
     }
 
-    LOG_INFO(MSGID_APPCLOSE, 3, PMLOGKS("app_id", m_app_id.c_str()), PMLOGKS("uid", m_uid.c_str()), PMLOGKS("action", "created_close_item"), "");
+    LOG_INFO(MSGID_APPCLOSE, 3,
+             PMLOGKS("app_id", m_app_id.c_str()),
+             PMLOGKS("uid", m_uid.c_str()),
+             PMLOGKS("action", "created_close_item"), "");
 }
 
 AppCloseItem::~AppCloseItem()
 {
-    LOG_INFO(MSGID_APPCLOSE, 3, PMLOGKS("app_id", m_app_id.c_str()), PMLOGKS("uid", m_uid.c_str()), PMLOGKS("action", "removed_close_item"), "");
+    LOG_INFO(MSGID_APPCLOSE, 3,
+             PMLOGKS("app_id", m_app_id.c_str()),
+             PMLOGKS("uid", m_uid.c_str()),
+             PMLOGKS("action", "removed_close_item"), "");
 }

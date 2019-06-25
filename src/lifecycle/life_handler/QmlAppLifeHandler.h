@@ -28,18 +28,18 @@ public:
     virtual void close(AppCloseItemPtr item, std::string& err_text) override;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
-    AppLaunchingItemPtr get_lscall_request_item_by_token(const LSMessageToken& token);
-    void remove_item_from_lscall_request_list(const std::string& uid);
+    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    void removeItemFromLSCallRequestList(const std::string& uid);
 
-    void on_service_ready();
+    void onServiceReady();
 
 private:
     void initialize();
-    static bool cb_return_booster_launch(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_return_booster_close(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_on_qml_process_finished(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnBoosterClose(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onQMLProcessFinished(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    static bool qml_process_watcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onQMLProcessWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
 public:
     boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
@@ -48,7 +48,7 @@ public:
     boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
 
 private:
-    AppLaunchingItemList m_lscall_request_list;
+    AppLaunchingItemList m_LSCallRequestList;
 };
 
 #endif

@@ -22,6 +22,7 @@
 #include <launch_point/LaunchPointManager.h>
 #include <module/LocalePreferences.h>
 #include <util/Logging.h>
+#include <util/LSUtils.h>
 
 #define LP_SUBSCRIPTION_KEY "listLaunchPoints"
 
@@ -63,8 +64,12 @@ void LaunchPointLunaAdapter::requestController(LunaTaskPtr task)
 {
     if (!LaunchPointManager::instance().ready()) {
         m_pendingTasks.push_back(task);
-        LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 4, PMLOGKS("category", task->category().c_str()), PMLOGKS("method", task->method().c_str()), PMLOGKS("status", "pending"),
-                PMLOGKS("caller", task->caller().c_str()), "received message, but will handle later");
+        LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 4,
+                 PMLOGKS("category", task->category().c_str()),
+                 PMLOGKS("method", task->method().c_str()),
+                 PMLOGKS("status", "pending"),
+                 PMLOGKS("caller", task->caller().c_str()),
+                 "received message, but will handle later");
         return;
     }
 
@@ -98,7 +103,6 @@ void LaunchPointLunaAdapter::handleRequest(LunaTaskPtr task)
 
 void LaunchPointLunaAdapter::addLaunchPoint(LunaTaskPtr task)
 {
-
     bool result = false;
     std::string app_id;
     std::string lpid;
@@ -110,10 +114,14 @@ void LaunchPointLunaAdapter::addLaunchPoint(LunaTaskPtr task)
     if (LP != NULL) {
         result = true;
         app_id = LP->Id();
-        lpid = LP->LaunchPointId();
+        lpid = LP->getLunchPointId();
     }
 
-    LOG_NORMAL(NLID_LAUNCH_POINT_ADDED, 4, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", result?"done":"fail"), PMLOGKS("app_id", app_id.c_str()), PMLOGKS("lp_id", lpid.c_str()), "");
+    LOG_NORMAL(NLID_LAUNCH_POINT_ADDED, 4,
+               PMLOGKS("caller", task->caller().c_str()),
+               PMLOGKS("status", result?"done":"fail"),
+               PMLOGKS("app_id", app_id.c_str()),
+               PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!result) {
         task->replyResultWithError(API_ERR_CODE_GENERAL, err_text);
@@ -140,11 +148,14 @@ void LaunchPointLunaAdapter::updateLaunchPoint(LunaTaskPtr task)
     if (LP != NULL) {
         result = true;
         app_id = LP->Id();
-        lpid = LP->LaunchPointId();
+        lpid = LP->getLunchPointId();
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_UPDATED, 4, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", (result?"done":"failed")), PMLOGKS("app_id", app_id.c_str()), PMLOGKS("lp_id", lpid.c_str()),
-            "");
+    LOG_INFO(MSGID_LAUNCH_POINT_UPDATED, 4,
+             PMLOGKS("caller", task->caller().c_str()),
+             PMLOGKS("status", (result?"done":"failed")),
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!result)
         task->setError(API_ERR_CODE_GENERAL, err_text);
@@ -161,7 +172,10 @@ void LaunchPointLunaAdapter::removeLaunchPoint(LunaTaskPtr task)
 
     LaunchPointManager::instance().removeLaunchPoint(task->jmsg(), err_text);
 
-    LOG_INFO(MSGID_LAUNCH_POINT_REMOVED, 3, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", (err_text.empty()?"done":"failed")), PMLOGKS("lp_id", lpid.c_str()), "");
+    LOG_INFO(MSGID_LAUNCH_POINT_REMOVED, 3,
+             PMLOGKS("caller", task->caller().c_str()),
+             PMLOGKS("status", (err_text.empty() ? "done":"failed")),
+             PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!err_text.empty())
         task->setError(API_ERR_CODE_GENERAL, err_text);
@@ -183,11 +197,14 @@ void LaunchPointLunaAdapter::moveLaunchPoint(LunaTaskPtr task)
     if (LP != NULL) {
         result = true;
         app_id = LP->Id();
-        lpid = LP->LaunchPointId();
+        lpid = LP->getLunchPointId();
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_MOVED, 4, PMLOGKS("caller", task->caller().c_str()), PMLOGKS("status", (result?"done":"failed")), PMLOGKS("app_id", app_id.c_str()), PMLOGKS("lp_id", lpid.c_str()),
-            "");
+    LOG_INFO(MSGID_LAUNCH_POINT_MOVED, 4,
+             PMLOGKS("caller", task->caller().c_str()),
+             PMLOGKS("status", (result?"done":"failed")),
+             PMLOGKS("app_id", app_id.c_str()),
+             PMLOGKS("lp_id", lpid.c_str()), "");
 
     if (!err_text.empty())
         task->setError(API_ERR_CODE_GENERAL, err_text);
@@ -210,7 +227,10 @@ void LaunchPointLunaAdapter::listLaunchPoints(LunaTaskPtr task)
     payload.put("subscribed", subscribed);
     payload.put("launchPoints", launch_points);
 
-    LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 2, PMLOGKS("STATUS", "done"), PMLOGKS("CALLER", task->caller().c_str()), "reply listLaunchPoint");
+    LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 2,
+             PMLOGKS("STATUS", "done"),
+             PMLOGKS("CALLER", task->caller().c_str()),
+             "reply listLaunchPoint");
 
     task->ReplyResult(payload);
 }
@@ -258,7 +278,10 @@ void LaunchPointLunaAdapter::onLaunchPointsListChanged(const pbnjson::JValue& la
                              LP_SUBSCRIPTION_KEY,
                              payload.stringify().c_str(),
                              &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "ls_subscription_reply"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+        LOG_ERROR(MSGID_LSCALL_ERR, 2,
+                  PMLOGKS("type", "ls_subscription_reply"),
+                  PMLOGKS("where", __FUNCTION__),
+                  "err: %s", lserror.message);
     }
 }
 
@@ -269,13 +292,17 @@ void LaunchPointLunaAdapter::onLaunchPointChanged(const std::string& change, con
     payload.put("returnValue", true);
     payload.put("subscribed", true);
 
-    LOG_INFO(MSGID_LAUNCH_POINT_REPLY_SUBSCRIBER, 3, PMLOGKS("status", "reply_lp_change_to_subscribers"), PMLOGKS("reason", change.c_str()),
-            PMLOGKFV("position", "%d", launch_point.hasKey("position") ? launch_point["position"].asNumber<int>():-1), "");
+    LOG_INFO(MSGID_LAUNCH_POINT_REPLY_SUBSCRIBER, 3,
+             PMLOGKS("status", "reply_lp_change_to_subscribers"),
+             PMLOGKS("reason", change.c_str()),
+             PMLOGKFV("position", "%d", launch_point.hasKey("position") ? launch_point["position"].asNumber<int>():-1), "");
     LSErrorSafe lserror;
     if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(),
                              LP_SUBSCRIPTION_KEY,
                              payload.stringify().c_str(),
                              &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 2, PMLOGKS("type", "ls_subscription_reply"), PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+        LOG_ERROR(MSGID_LSCALL_ERR, 2,
+                  PMLOGKS("type", "ls_subscription_reply"),
+                  PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
     }
 }

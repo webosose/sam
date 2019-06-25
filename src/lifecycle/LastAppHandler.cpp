@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2018 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_
-#define CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_
+#include <lifecycle/LastAppHandler.h>
 
-#include <base/PrerequisiteMonitor.h>
-#include <util/Singleton.h>
+LastAppHandler::LastAppHandler()
+{
+}
 
-class ProductAbstractFactory: public Singleton<ProductAbstractFactory> {
-public:
-    ProductAbstractFactory();
-    ~ProductAbstractFactory();
+LastAppHandler::~LastAppHandler()
+{
+}
 
-    void Initialize(PrerequisiteMonitor& prerequisite_monitor);
-    void OnReady();
-    void Terminate();
+void LastAppHandler::launch()
+{
+}
 
-private:
-    friend class Singleton<ProductAbstractFactory> ;
-};
-
-#endif  // CORE_BASE_PRODUCT_ABSTRACT_FACTORY_H_
+void LastAppHandler::cancel()
+{
+}

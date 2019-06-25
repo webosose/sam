@@ -37,12 +37,12 @@ LaunchPointManager::~LaunchPointManager()
 {
 }
 
-void LaunchPointManager::init()
+void LaunchPointManager::initialize()
 {
 
-    ServiceObserver::instance().Add(WEBOS_SERVICE_DB, boost::bind(&LaunchPointManager::handleDbConnected, &LaunchPointManager::instance(), _1));
+    ServiceObserver::instance().add(WEBOS_SERVICE_DB, boost::bind(&LaunchPointManager::handleDbConnected, &LaunchPointManager::instance(), _1));
 
-    AppinstalldSubscriber::instance().SubscribeInstallStatus(boost::bind(&LaunchPointManager::onPackageStatusChanged, this, _1, _2));
+    AppinstalldSubscriber::instance().subscribeInstallStatus(boost::bind(&LaunchPointManager::onPackageStatusChanged, this, _1, _2));
 
     PackageManager::instance().signalListAppsChanged.connect(boost::bind(&LaunchPointManager::onListAppsChanged, this, _1, _2, _3));
 
@@ -52,7 +52,7 @@ void LaunchPointManager::init()
 /**********************************************************/
 /**** Set Extendable Handler ******************************/
 /**********************************************************/
-void LaunchPointManager::setDbHandler(DbHandler4Base& db_handler)
+void LaunchPointManager::setDbHandler(DBHandler& db_handler)
 {
 
     m_DBHandler = &db_handler;
@@ -63,12 +63,11 @@ void LaunchPointManager::setDbHandler(DbHandler4Base& db_handler)
     }
 
     m_DBHandler->signal_db_loaded_.connect(boost::bind(&LaunchPointManager::onLaunchPointsDbLoaded, this, _1));
-    m_DBHandler->Init();
+    m_DBHandler->init();
 }
 
-void LaunchPointManager::setOrderingHandler(OrderingHandlerInterface& ordering_handler)
+void LaunchPointManager::setOrderingHandler(OrderingHandler& ordering_handler)
 {
-
     m_orderingHandler = &ordering_handler;
 
     if (m_orderingHandler == nullptr) {
@@ -77,10 +76,10 @@ void LaunchPointManager::setOrderingHandler(OrderingHandlerInterface& ordering_h
     }
 
     m_orderingHandler->signal_launch_points_ordered_.connect(boost::bind(&LaunchPointManager::onLaunchPointsOrdered, this, _1));
-    m_orderingHandler->Init();
+    m_orderingHandler->init();
 }
 
-void LaunchPointManager::setLaunchPointFactory(ILaunchPointFactory& lp_factory)
+void LaunchPointManager::setLaunchPointFactory(LaunchPointFactory& lp_factory)
 {
     m_lpFactory = &lp_factory;
 }
@@ -136,10 +135,10 @@ void LaunchPointManager::handleDbConnected(bool connection)
         return;
 
     if (m_DBHandler != nullptr)
-        m_DBHandler->HandleDbState(m_dbConnected);
+        m_DBHandler->handleDbState(m_dbConnected);
 
     if (m_orderingHandler != nullptr)
-        m_orderingHandler->HandleDbState(m_dbConnected);
+        m_orderingHandler->handleDBState(m_dbConnected);
 }
 
 void LaunchPointManager::onLaunchPointsDbLoaded(const pbnjson::JValue& loaded_db_result)
@@ -159,10 +158,10 @@ void LaunchPointManager::reloadDbData()
         return;
 
     if (m_DBHandler != nullptr)
-        m_DBHandler->ReloadDbData(m_dbConnected);
+        m_DBHandler->reloadDbData(m_dbConnected);
 
     if (m_orderingHandler != nullptr)
-        m_orderingHandler->ReloadDbData(m_dbConnected);
+        m_orderingHandler->reloadDBData(m_dbConnected);
 }
 
 /***********************************************************/
@@ -175,7 +174,7 @@ void LaunchPointManager::makeLaunchPointsInOrder()
 
     std::vector<LaunchPointPtr> visible_list;
     for (auto it : m_launchPointList) {
-        if (it->IsVisible())
+        if (it->isVisible())
             visible_list.push_back(it);
     }
 
@@ -184,7 +183,7 @@ void LaunchPointManager::makeLaunchPointsInOrder()
         return;
     }
 
-    m_orderingHandler->MakeLaunchPointsInOrder(visible_list, m_listAppsChanges);
+    m_orderingHandler->makeLaunchPointsInOrder(visible_list, m_listAppsChanges);
 }
 
 void LaunchPointManager::onLaunchPointsOrdered(const OrderChangeState& change_state)
@@ -288,14 +287,14 @@ void LaunchPointManager::syncAppsWithDbData()
 
         if (app_id.empty() || lp_type == LPType::UNKNOWN) {
             delete_json.put("launchPointId", lp_id);
-            m_DBHandler->DeleteData(delete_json);
+            m_DBHandler->deleteData(delete_json);
             continue;
         }
 
         LaunchPointPtr default_lp = getDefaultLpByAppId(app_id);
         if (default_lp == nullptr) {
             delete_json.put("launchPointId", lp_id);
-            m_DBHandler->DeleteData(delete_json);
+            m_DBHandler->deleteData(delete_json);
             continue;
         }
 
@@ -375,7 +374,7 @@ LaunchPointPtr LaunchPointManager::addLaunchPoint(const LPMAction action, const 
         return nullptr;
     }
 
-    LaunchPointPtr lp = m_lpFactory->CreateLaunchPoint(lp_type, lp_id, data, err_text);
+    LaunchPointPtr lp = m_lpFactory->createLaunchPoint(lp_type, lp_id, data, err_text);
     if (lp == nullptr)
         return nullptr;
 
@@ -383,11 +382,11 @@ LaunchPointPtr LaunchPointManager::addLaunchPoint(const LPMAction action, const 
     case LPMAction::LOAD_APPS:
         break;
     case LPMAction::DB_SYNC:
-        lp->SetStoredInDb(true);
-        lp->UpdateIfEmptyTitle(default_lp);
+        lp->setStoredInDb(true);
+        lp->updateIfEmptyTitle(default_lp);
         break;
     case LPMAction::APP_INSTALLED:
-        position = m_orderingHandler->InsertLpInOrder(lp_id, data);
+        position = m_orderingHandler->insertLPInOrder(lp_id, data);
         if (position == DEFAULT_POSITION_INVALID) {
             err_text = "fail to add in proper position";
             return nullptr;
@@ -396,24 +395,24 @@ LaunchPointPtr LaunchPointManager::addLaunchPoint(const LPMAction action, const 
         replyLpChangeToSubscribers(lp, LP_CHANGE_ADDED, position);
         break;
     case LPMAction::API_ADD:
-        lp->UpdateIfEmpty(default_lp);
+        lp->updateIfEmpty(default_lp);
         // If there's no need to support i18n, fill in title and put it into DB.
         if (data.hasKey("supportI18nTitle") && !data["supportI18nTitle"].asBool())
-            lp->UpdateIfEmptyTitle(default_lp);
+            lp->updateIfEmptyTitle(default_lp);
 
-        position = m_orderingHandler->InsertLpInOrder(lp_id, data);
+        position = m_orderingHandler->insertLPInOrder(lp_id, data);
         if (position == DEFAULT_POSITION_INVALID) {
             err_text = "fail to add in proper position";
             return nullptr;
         }
 
-        lp_as_json = lp->ToJValue().duplicate();
-        lp_as_json.put("lptype", static_cast<int>(lp->LpType()));
+        lp_as_json = lp->toJValue().duplicate();
+        lp_as_json.put("lptype", static_cast<int>(lp->getLPType()));
 
-        if (m_DBHandler->InsertData(lp_as_json))
-            lp->SetStoredInDb(true);
+        if (m_DBHandler->insertData(lp_as_json))
+            lp->setStoredInDb(true);
 
-        lp->UpdateIfEmptyTitle(default_lp);
+        lp->updateIfEmptyTitle(default_lp);
         replyLpChangeToSubscribers(lp, LP_CHANGE_ADDED, position);
         break;
     default:
@@ -475,7 +474,7 @@ LaunchPointPtr LaunchPointManager::updateLaunchPoint(const LPMAction action, con
         lp_by_app_id = getDefaultLpByAppId(app_id);
 
         if (lp_by_app_id != nullptr) {
-            lp_id = lp_by_app_id->LaunchPointId();
+            lp_id = lp_by_app_id->getLunchPointId();
         }
         break;
     default:
@@ -495,46 +494,46 @@ LaunchPointPtr LaunchPointManager::updateLaunchPoint(const LPMAction action, con
         return nullptr;
     }
 
-    original_json = lp_by_lp_id->ToJValue();
-    lp_by_lp_id->Update(data);
+    original_json = lp_by_lp_id->toJValue();
+    lp_by_lp_id->update(data);
 
     switch (action) {
     case LPMAction::DB_SYNC:
-        lp_by_lp_id->SetStoredInDb(true);
+        lp_by_lp_id->setStoredInDb(true);
         break;
     case LPMAction::APP_UPDATED:
-        if (lp_by_lp_id->IsStoredInDb()) {
-            delete_json.put("launchPointId", lp_by_lp_id->LaunchPointId());
-            m_DBHandler->DeleteData(delete_json);
+        if (lp_by_lp_id->isStoredInDb()) {
+            delete_json.put("launchPointId", lp_by_lp_id->getLunchPointId());
+            m_DBHandler->deleteData(delete_json);
         }
 
-        updated_lp = m_lpFactory->CreateLaunchPoint(LPType::DEFAULT, lp_id, data, err_text);
+        updated_lp = m_lpFactory->createLaunchPoint(LPType::DEFAULT, lp_id, data, err_text);
         if (updated_lp == nullptr)
             return nullptr;
 
-        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->LaunchPointId() == lp_id;});
+        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == lp_id;});
         m_launchPointList.push_back(updated_lp);
         replyLpChangeToSubscribers(updated_lp, LP_CHANGE_UPDATED);
 
         break;
     case LPMAction::API_UPDATE:
-        position = m_orderingHandler->UpdateLpInOrder(lp_id, data);
+        position = m_orderingHandler->updateLPInOrder(lp_id, data);
 
-        if ((original_json == lp_by_lp_id->ToJValue()) && (position == DEFAULT_POSITION_INVALID)) {
+        if ((original_json == lp_by_lp_id->toJValue()) && (position == DEFAULT_POSITION_INVALID)) {
             LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2, PMLOGKS("status", "update_launch_point"), PMLOGKS("action", "no_difference"), "");
             break;
         }
 
         lp_as_json = data.duplicate();
         lp_as_json.put("id", lp_by_lp_id->Id());
-        lp_as_json.put("launchPointId", lp_by_lp_id->LaunchPointId());
-        lp_as_json.put("lptype", static_cast<int>(lp_by_lp_id->LpType()));
+        lp_as_json.put("launchPointId", lp_by_lp_id->getLunchPointId());
+        lp_as_json.put("lptype", static_cast<int>(lp_by_lp_id->getLPType()));
 
-        if (lp_by_lp_id->IsStoredInDb()) {
-            m_DBHandler->UpdateData(lp_as_json);
+        if (lp_by_lp_id->isStoredInDb()) {
+            m_DBHandler->updateData(lp_as_json);
         } else {
-            if (m_DBHandler->InsertData(lp_as_json))
-                lp_by_lp_id->SetStoredInDb(true);
+            if (m_DBHandler->insertData(lp_as_json))
+                lp_by_lp_id->setStoredInDb(true);
         }
         replyLpChangeToSubscribers(lp_by_lp_id, LP_CHANGE_UPDATED, position);
         break;
@@ -546,8 +545,11 @@ LaunchPointPtr LaunchPointManager::updateLaunchPoint(const LPMAction action, con
 
     // prevent too much log
     if (LPMAction::DB_SYNC != action)
-        LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5, PMLOGKS("status", "update_launch_point"), PMLOGKS("app_id", app_id.c_str()), PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->LpType()),
-                PMLOGKFV("lp_action", "%d", (int)action), PMLOGKFV("position", "%d", position), "");
+        LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5,
+                 PMLOGKS("status", "update_launch_point"),
+                 PMLOGKS("app_id", app_id.c_str()),
+                 PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->getLPType()),
+                 PMLOGKFV("lp_action", "%d", (int)action), PMLOGKFV("position", "%d", position), "");
     return lp_by_lp_id;
 }
 
@@ -594,7 +596,7 @@ LaunchPointPtr LaunchPointManager::moveLaunchPoint(const LPMAction action, const
         return nullptr;
     }
 
-    if (lp_by_lp_id->IsUnmovable() || !(lp_by_lp_id->IsVisible())) {
+    if (lp_by_lp_id->isUnmovable() || !(lp_by_lp_id->isVisible())) {
         err_text = "app is unmovable or invisible, cannot change the position of this app";
         return nullptr;
     }
@@ -606,11 +608,15 @@ LaunchPointPtr LaunchPointManager::moveLaunchPoint(const LPMAction action, const
         return nullptr;
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5, PMLOGKS("status", "move_launch_point"), PMLOGKS("app_id", lp_by_lp_id->Id().c_str()), PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->LpType()),
-            PMLOGKFV("lp_action", "%d", (int)action), PMLOGKFV("position", "%d", position), "");
+    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5,
+             PMLOGKS("status", "move_launch_point"),
+             PMLOGKS("app_id", lp_by_lp_id->Id().c_str()),
+             PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->getLPType()),
+             PMLOGKFV("lp_action", "%d", (int)action),
+             PMLOGKFV("position", "%d", position), "");
     switch (action) {
     case LPMAction::API_MOVE:
-        m_orderingHandler->UpdateLpInOrder(lp_id, data, position);
+        m_orderingHandler->updateLPInOrder(lp_id, data, position);
         replyLpChangeToSubscribers(lp_by_lp_id, LP_CHANGE_UPDATED, position);
         break;
     default:
@@ -652,23 +658,26 @@ void LaunchPointManager::removeLaunchPoint(const pbnjson::JValue& data, std::str
         return;
     }
 
-    if (!lp->IsRemovable()) {
+    if (!lp->isRemovable()) {
         err_text = "this launch point cannot be removable";
         return;
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3, PMLOGKS("status", "remove_launch_point"), PMLOGKS("app_id", (lp->Id()).c_str()), PMLOGKFV("lp_type", "%d", static_cast<int>(lp->LpType())), "");
+    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3,
+             PMLOGKS("status", "remove_launch_point"),
+             PMLOGKS("app_id", (lp->Id()).c_str()),
+             PMLOGKFV("lp_type", "%d", static_cast<int>(lp->getLPType())), "");
 
-    if (LPType::DEFAULT == lp->LpType()) {
+    if (LPType::DEFAULT == lp->getLPType()) {
         PackageManager::instance().uninstallApp(lp->Id(), err_text);
-        m_orderingHandler->DeleteLpInOrder(lp->LaunchPointId());
-    } else if (LPType::BOOKMARK == lp->LpType()) {
+        m_orderingHandler->deleteLPInOrder(lp->getLunchPointId());
+    } else if (LPType::BOOKMARK == lp->getLPType()) {
         pbnjson::JValue delete_json = pbnjson::Object();
-        delete_json.put("launchPointId", lp->LaunchPointId());
+        delete_json.put("launchPointId", lp->getLunchPointId());
 
         replyLpChangeToSubscribers(lp, LP_CHANGE_REMOVED);
-        m_DBHandler->DeleteData(delete_json);
-        m_orderingHandler->DeleteLpInOrder(lp->LaunchPointId());
+        m_DBHandler->deleteData(delete_json);
+        m_orderingHandler->deleteLPInOrder(lp->getLunchPointId());
 
         if (isLastVisibleLp(lp)) {
             std::string error_text;
@@ -676,7 +685,7 @@ void LaunchPointManager::removeLaunchPoint(const pbnjson::JValue& data, std::str
             LifecycleManager::instance().closeByAppId(lp->Id(), "", "", error_text, false, true);
         }
 
-        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->LaunchPointId() == lp->LaunchPointId();});
+        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == lp->getLunchPointId();});
     }
 }
 
@@ -701,11 +710,11 @@ void LaunchPointManager::replyLpListToSubscribers()
 void LaunchPointManager::replyLpChangeToSubscribers(LaunchPointPtr lp, const std::string& change, int position)
 {
 
-    if ((LPType::DEFAULT == lp->LpType()) && !lp->IsVisible())
+    if ((LPType::DEFAULT == lp->getLPType()) && !lp->isVisible())
         return;
 
     // payload
-    pbnjson::JValue json = lp->ToJValue();
+    pbnjson::JValue json = lp->toJValue();
     json.put("change", change);
     if (DEFAULT_POSITION_INVALID != position && (LP_CHANGE_ADDED == change || LP_CHANGE_UPDATED == change)) {
         json.put("position", position);
@@ -721,7 +730,7 @@ bool LaunchPointManager::isLastVisibleLp(LaunchPointPtr lp)
 {
 
     for (auto it : m_launchPointList) {
-        if ((it->Id() == lp->Id()) && (it->LaunchPointId() != lp->LaunchPointId()) && (it->IsVisible()))
+        if ((it->Id() == lp->Id()) && (it->getLunchPointId() != lp->getLunchPointId()) && (it->isVisible()))
             return false;
     }
     return true;
@@ -743,12 +752,12 @@ void LaunchPointManager::removeAllLaunchPointsByAppId(const std::string& id)
     for (auto it = m_launchPointList.begin(); it != m_launchPointList.end();) {
         if ((*it)->Id() == id) {
             pbnjson::JValue delete_json = pbnjson::Object();
-            delete_json.put("launchPointId", (*it)->LaunchPointId());
+            delete_json.put("launchPointId", (*it)->getLunchPointId());
 
             replyLpChangeToSubscribers(*it, LP_CHANGE_REMOVED);
 
-            m_DBHandler->DeleteData(delete_json);
-            m_orderingHandler->DeleteLpInOrder((*it)->LaunchPointId());
+            m_DBHandler->deleteData(delete_json);
+            m_orderingHandler->deleteLPInOrder((*it)->getLunchPointId());
 
             it = m_launchPointList.erase(it);
         } else
@@ -778,7 +787,7 @@ LaunchPointPtr LaunchPointManager::getDefaultLpByAppId(const std::string& app_id
     LaunchPointPtr default_lp = nullptr;
 
     for (auto lp : m_launchPointList) {
-        if ((app_id == lp->Id()) && (LPType::DEFAULT == lp->LpType())) {
+        if ((app_id == lp->Id()) && (LPType::DEFAULT == lp->getLPType())) {
             default_lp = lp;
             break;
         }
@@ -792,7 +801,7 @@ LaunchPointPtr LaunchPointManager::getLpByLpId(const std::string& lp_id)
     LaunchPointPtr lp_by_lp_id = nullptr;
 
     for (auto lp : m_launchPointList) {
-        if (lp_id == lp->LaunchPointId()) {
+        if (lp_id == lp->getLunchPointId()) {
             lp_by_lp_id = lp;
             break;
         }
@@ -808,13 +817,13 @@ void LaunchPointManager::launchPointsAsJson(pbnjson::JValue& array)
         return;
     }
 
-    std::vector<std::string> ordered_list = m_orderingHandler->GetOrderedList();
+    std::vector<std::string> ordered_list = m_orderingHandler->getOrderedList();
 
     for (auto& lp_id : ordered_list) {
-        auto it = find_if(m_launchPointList.begin(), m_launchPointList.end(), [&](LaunchPointPtr lp) {return lp->LaunchPointId() == lp_id;});
+        auto it = find_if(m_launchPointList.begin(), m_launchPointList.end(), [&](LaunchPointPtr lp) {return lp->getLunchPointId() == lp_id;});
 
-        if ((it != m_launchPointList.end()) && (*it)->IsVisible())
-            array.append((*it)->ToJValue());
+        if ((it != m_launchPointList.end()) && (*it)->isVisible())
+            array.append((*it)->toJValue());
     }
 }
 
@@ -827,17 +836,17 @@ void LaunchPointManager::searchLaunchPoints(pbnjson::JValue& matchedByTitle, con
     gchar* keyword = g_utf8_strdown(searchTerm.c_str(), -1);
 
     for (auto lp : m_launchPointList) {
-        if (!lp->IsVisible())
+        if (!lp->isVisible())
             continue;
 
-        gchar* title = g_utf8_strdown(lp->Title().c_str(), -1);
+        gchar* title = g_utf8_strdown(lp->getTitle().c_str(), -1);
 
         if (matchesTitle(keyword, title)) {
             pbnjson::JValue obj = pbnjson::Object();
-            obj.put("launchPointId", lp->LaunchPointId());
+            obj.put("launchPointId", lp->getLunchPointId());
             obj.put("appId", lp->Id());
-            obj.put("title", lp->Title());
-            obj.put("icon", lp->Icon());
+            obj.put("title", lp->getTitle());
+            obj.put("icon", lp->getIcon());
             matchedByTitle.append(obj);
         }
 

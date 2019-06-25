@@ -37,26 +37,26 @@ public:
     boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
 
 private:
-    void on_service_ready();
-    void on_wam_service_status_changed(bool connection);
+    void onServiceReady();
+    void onWAMServiceStatusChanged(bool connection);
 
-    static bool cb_wam_subscription_runninglist(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_return_for_launch_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_return_for_close_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool cb_return_for_pause_request(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    void handle_running_list_change(const pbnjson::JValue& new_list);
-    void subscribe_wam_running_list();
+    static bool onWAMSubscriptionRunninglist(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForLaunchRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForCloseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForPauseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void handleRunningListChange(const pbnjson::JValue& new_list);
+    void subscribeWAMRunningList();
 
-    AppLaunchingItemPtr get_lscall_request_item_by_token(const LSMessageToken& token);
-    void remove_item_from_lscall_request_list(const std::string& uid);
-    void add_loading_app(const std::string& app_id);
-    void remove_loading_app(const std::string& app_id);
-    bool is_loading(const std::string& app_id);
+    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    void removeItemFromLSCallRequestList(const std::string& uid);
+    void addLoadingApp(const std::string& app_id);
+    void removeLoadingApp(const std::string& app_id);
+    bool isLoading(const std::string& app_id);
 
-    LSMessageToken m_wam_subscription_token;
-    pbnjson::JValue m_running_list;
-    AppLaunchingItemList m_lscall_request_list;
-    std::vector<std::string> m_loading_list;
+    LSMessageToken m_wamSubscriptionToken;
+    pbnjson::JValue m_runningList;
+    AppLaunchingItemList m_lscallRequestList;
+    std::vector<std::string> m_loadingList;
 };
 
 #endif

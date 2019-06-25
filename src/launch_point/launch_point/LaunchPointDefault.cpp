@@ -14,35 +14,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <launch_point/launch_point/LaunchPointBookmark4Base.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
+#include <launch_point/launch_point/LaunchPointDefault.h>
 
-
-LaunchPointPtr LaunchPointBookmark4Base::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LaunchPointDefault::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
 {
     std::string app_id = data["id"].asString();
     if (app_id.empty())
         return nullptr;
 
-    LaunchPoint4BasePtr new_lp = std::make_shared<LaunchPointBookmark4Base>(app_id, lp_id);
-    if (new_lp == nullptr)
+    LaunchPointPtr new_lp = std::make_shared<LaunchPointDefault>(app_id, lp_id);
+    if (new_lp == nullptr) {
+        err_text = "fail to create instance";
         return nullptr;
+    }
 
-    new_lp->SetAttrWithJson(data);
+    new_lp->setAttrWithJson(data);
 
-    new_lp->SetLpType(LPType::BOOKMARK);
-    new_lp->SetDefaultLp(false);
-    new_lp->SetRemovable(true);
-    new_lp->SetSystemApp(false);
-    new_lp->SetVisible(true);
+    new_lp->setLpType(LPType::DEFAULT);
+    new_lp->setDefaultLp(true);
+    new_lp->setRemovable(data["removable"].asBool());
+    new_lp->setSystemApp(data["systemApp"].asBool());
+    new_lp->setVisible(data["visible"].asBool());
+    new_lp->setMiniIcon(data["miniicon"].asString());
 
     return new_lp;
 }
 
-std::string LaunchPointBookmark4Base::Update(const pbnjson::JValue& data)
+std::string LaunchPointDefault::update(const pbnjson::JValue& data)
 {
-    SetAttrWithJson(data);
+    setAttrWithJson(data);
     return "";
 }

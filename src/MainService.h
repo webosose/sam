@@ -18,6 +18,21 @@
 #define MAIN_SERVICE_H
 
 #include <base/WebOSService.h>
+#include <base/PrerequisiteMonitor.h>
+#include <launch_point/handler/DBHandler.h>
+#include <launch_point/handler/OrderingHandler.h>
+#include <launch_point/launch_point/LaunchPoint.h>
+#include <launch_point/launch_point/LaunchPointFactory.h>
+#include <lifecycle/AppLaunchingItemFactory.h>
+#include <lifecycle/LastAppHandler.h>
+#include <lifecycle/MemoryChecker.h>
+#include <lifecycle/Prelauncher.h>
+#include <set>
+#include <luna-service2/lunaservice.h>
+#include <package/AppDescription.h>
+#include <pbnjson.hpp>
+
+#include <util/Singleton.h>
 
 class MainService: public WebOSService {
 public:
@@ -26,6 +41,20 @@ public:
 protected:
     virtual bool initialize();
     virtual bool terminate();
+
+private:
+    void onLaunchingFinished(AppLaunchingItemPtr item);
+
+    // lifecycle adapter
+    AppLaunchingItemFactory m_appLaunchingItemFactory;
+    Prelauncher m_prelauncher;
+    MemoryChecker m_memoryChecker;
+    LastAppHandler m_lastappHandler;
+
+    // launchpoint adapter
+    DBHandler m_dbHandler;
+    OrderingHandler m_orderingHandler;
+    LaunchPointFactory m_launchPointFactory;
 };
 
 #endif

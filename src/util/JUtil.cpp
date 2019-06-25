@@ -19,8 +19,8 @@
 #include <util/Logging.h>
 #include <util/Utils.h>
 
-JUtil::Error::Error() :
-        m_code(Error::None)
+JUtil::Error::Error()
+    : m_code(Error::None)
 {
 }
 
@@ -92,7 +92,7 @@ pbnjson::JValue JUtil::parse(const char *rawData, const std::string &schemaName,
 
 pbnjson::JValue JUtil::parseFile(const std::string &path, const std::string &schemaName, Error *error)
 {
-    std::string rawData = read_file(path.c_str());
+    std::string rawData = readFile(path.c_str());
 
     if (rawData.empty()) {
         if (error)
@@ -114,7 +114,7 @@ pbnjson::JSchema JUtil::loadSchema(const std::string& schemaName, bool cache)
             return it->second;
     }
 
-    std::string schema_path = SettingsImpl::instance().schemaPath + schemaName + ".schema";
+    std::string schema_path = SettingsImpl::instance().m_schemaPath + schemaName + ".schema";
     pbnjson::JSchema schema = pbnjson::JSchema::fromFile(schema_path.c_str());
     if (!schema.isInitialized())
         return schema;

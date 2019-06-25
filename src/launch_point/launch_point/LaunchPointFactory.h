@@ -17,24 +17,23 @@
 #ifndef LAUNCH_POINT_FACTORY_H
 #define LAUNCH_POINT_FACTORY_H
 
-#include <launch_point/ILaunchPointFactory.h>
 #include <launch_point/launch_point/LaunchPoint.h>
 #include <map>
 
-class LaunchPointFactory: public ILaunchPointFactory {
+class LaunchPointFactory {
 public:
     LaunchPointFactory();
     virtual ~LaunchPointFactory();
 
-    virtual LaunchPointPtr CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual LaunchPointPtr createLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
 
 private:
     LaunchPointFactory(const LaunchPointFactory&);
     LaunchPointFactory& operator=(const LaunchPointFactory&);
 
-    void RegisterItem(const LPType type, CreateLaunchPointFunc func);
+    void registerItem(const LPType type, CreateLaunchPointFunc func);
 
-    std::map<LPType, CreateLaunchPointFunc> factory_map_;
+    std::map<LPType, CreateLaunchPointFunc> m_factoryMap;
 };
 
 #endif /* LAUNCH_POINT_FACTORY_H */

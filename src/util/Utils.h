@@ -62,12 +62,12 @@ struct AppVersion {
     }
 };
 
-std::string read_file(const std::string& file_name);
+std::string readFile(const std::string& file_name);
 bool writeFile(const std::string& filePath, const std::string& buffer);
 bool makeDir(const std::string &path, bool withParent = true);
 bool removeDir(const std::string &path);
 bool removeFile(const std::string &path);
-bool dir_exists(const std::string& path);
+bool dirExists(const std::string& path);
 
 template<class T>
 std::string toSTLString(const T &arg)

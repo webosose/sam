@@ -18,31 +18,32 @@
 #define DB_HANDLER_4_BASE_H
 
 #include <launch_point/db/DBLaunchPoint.h>
-#include <launch_point/handler/DBHandler4Base.h>
+#include <launch_point/handler/DBHandler.h>
 #include <pbnjson.hpp>
 
-
-class DbHandler4Base {
+class DBHandler {
 public:
-    DbHandler4Base();
-    virtual ~DbHandler4Base();
+    DBHandler();
+    virtual ~DBHandler();
 
-    virtual void Init();
-    virtual void HandleDbState(bool connection);
-    virtual void ReloadDbData(bool connection);
+    virtual void init();
+    virtual void handleDbState(bool connection);
+    virtual void reloadDbData(bool connection);
 
-    virtual bool InsertData(const pbnjson::JValue& json);
-    virtual bool UpdateData(const pbnjson::JValue& json);
-    virtual bool DeleteData(const pbnjson::JValue& json);
+    virtual bool insertData(const pbnjson::JValue& json);
+    virtual bool updateData(const pbnjson::JValue& json);
+    virtual bool deleteData(const pbnjson::JValue& json);
 
     boost::signals2::signal<void (const pbnjson::JValue&)> signal_db_loaded_;
+
 private:
-    void OnLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
+    void onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
 
-    DBLaunchPoint launch_point_db_;
+    DBLaunchPoint m_launchPointDB;
 
-    bool db_loaded_;
-    unsigned int db_load_count_;
+    bool m_isDBLoaded;
+    unsigned int m_DBLoadCount;
+
 };
 
 #endif

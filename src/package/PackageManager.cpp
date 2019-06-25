@@ -134,14 +134,14 @@ void PackageManager::clear()
     m_appDescMaps.clear();
 }
 
-void PackageManager::init()
+void PackageManager::initialize()
 {
     LocalePreferences::instance().signalLocaleChanged.connect(boost::bind(&PackageManager::onLocaleChanged, this, _1, _2, _3));
 
-    AppinstalldSubscriber::instance().SubscribeInstallStatus(boost::bind(&PackageManager::onPackageStatusChanged, this, _1, _2));
+    AppinstalldSubscriber::instance().subscribeInstallStatus(boost::bind(&PackageManager::onPackageStatusChanged, this, _1, _2));
 
     // required apps scanning : before rw filesystem ready
-    const BaseScanPaths& base_dirs = SettingsImpl::instance().GetBaseAppDirs();
+    const BaseScanPaths& base_dirs = SettingsImpl::instance().getBaseAppDirs();
     for (auto& it : base_dirs) {
         m_appScanner.addDirectory(it.first, it.second);
     }
@@ -150,7 +150,7 @@ void PackageManager::init()
 void PackageManager::startPostInit()
 {
     // remaining apps scanning : after rw filesystem ready
-    const BaseScanPaths& base_dirs = SettingsImpl::instance().GetBaseAppDirs();
+    const BaseScanPaths& base_dirs = SettingsImpl::instance().getBaseAppDirs();
     for (auto& it : base_dirs) {
         m_appScanner.addDirectory(it.first, it.second);
     }
@@ -160,7 +160,7 @@ void PackageManager::startPostInit()
 
 void PackageManager::scanInitialApps()
 {
-    auto boot_time_apps = SettingsImpl::instance().GetBootTimeApps();
+    auto boot_time_apps = SettingsImpl::instance().getBootTimeApps();
     for (auto& app_id : boot_time_apps) {
         AppDescPtr app_desc = m_appScanner.scanForOneApp(app_id);
         if (app_desc) {
@@ -209,7 +209,7 @@ void PackageManager::onAppInstalled(const std::string& app_id)
     }
 
     // disallow dev apps if current not in dev mode
-    if (AppTypeByDir::AppTypeByDir_Dev == new_desc->getTypeByDir() && SettingsImpl::instance().isDevMode == false) {
+    if (AppTypeByDir::AppTypeByDir_Dev == new_desc->getTypeByDir() && SettingsImpl::instance().m_isDevMode == false) {
         return;
     }
 
@@ -466,7 +466,7 @@ void PackageManager::uninstallApp(const std::string& id, std::string& errorReaso
             LOG_DEBUG("%s : check parental lock to remove %s app", __FUNCTION__, id.c_str());
             auto settingValPtr = std::make_shared<CallChainEventHandler::CheckAppLockStatus>(appDesc->id());
             auto pinPtr = std::make_shared<CallChainEventHandler::CheckPin>();
-            callchain.add(settingValPtr).add_if(settingValPtr, false, pinPtr);
+            callchain.add(settingValPtr).addIf(settingValPtr, false, pinPtr);
         }
         callchain.run();
     } else {
@@ -554,13 +554,13 @@ void PackageManager::publishListApps()
     for (auto it : m_appDescMaps) {
         apps.append(it.second->toJValue());
 
-        if (SettingsImpl::instance().isDevMode && AppTypeByDir::AppTypeByDir_Dev == it.second->getTypeByDir())
+        if (SettingsImpl::instance().m_isDevMode && AppTypeByDir::AppTypeByDir_Dev == it.second->getTypeByDir())
             dev_apps.append(it.second->toJValue());
     }
 
     signalListAppsChanged(apps, m_scanReason, false);
 
-    if (SettingsImpl::instance().isDevMode)
+    if (SettingsImpl::instance().m_isDevMode)
         signalListAppsChanged(dev_apps, m_scanReason, true);
 }
 
@@ -570,7 +570,7 @@ void PackageManager::publishOneAppChange(AppDescPtr app_desc, const std::string&
     std::string reason = (event != AppStatusChangeEvent::AppStatusChangeEvent_Nothing) ? toString(event) : "";
 
     signalOneAppChanged(app, change, reason, false);
-    if (SettingsImpl::instance().isDevMode && AppTypeByDir::AppTypeByDir_Dev == app_desc->getTypeByDir())
+    if (SettingsImpl::instance().m_isDevMode && AppTypeByDir::AppTypeByDir_Dev == app_desc->getTypeByDir())
         signalOneAppChanged(app, change, reason, true);
 
     signalAppStatusChanged(event, app_desc);

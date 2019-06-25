@@ -173,7 +173,7 @@ AppDescPtr AppDescriptionScanner::scanApp(std::string& path, AppTypeByDir appTyp
         }
     }
 
-    if (AppTypeByDir::AppTypeByDir_Dev == appTypeByDir && !(SettingsImpl::instance().isDevMode)) {
+    if (AppTypeByDir::AppTypeByDir_Dev == appTypeByDir && !(SettingsImpl::instance().m_isDevMode)) {
         LOG_INFO(MSGID_APP_SCANNER, 1, PMLOGKS("status", "skip"), "dev app, but not in devmode now: %s", path.c_str());
         return nullptr;
     }

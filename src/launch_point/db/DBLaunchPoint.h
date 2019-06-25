@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef DB_LAUNCH_POINT_4_BASE_H
-#define DB_LAUNCH_POINT_4_BASE_H
+#ifndef DB_LAUNCH_POINT_H
+#define DB_LAUNCH_POINT_H
 
 #include <base/DBBase.h>
 #include <string>

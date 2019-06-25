@@ -25,13 +25,15 @@
 
 class ServiceObserver: public Singleton<ServiceObserver> {
     struct ObserverItem {
-        std::string name_;
-        bool connection_;
-        LSMessageToken token_;
+        std::string m_name;
+        bool m_connection;
+        LSMessageToken m_token;
         boost::signals2::signal<void(bool)> signalStatusChanged;
 
-        ObserverItem(const std::string& service_name, boost::function<void(bool)> func) :
-                name_(service_name), connection_(false), token_(0)
+        ObserverItem(const std::string& service_name, boost::function<void(bool)> func)
+            : m_name(service_name),
+              m_connection(false),
+              m_token(0)
         {
             signalStatusChanged.connect(func);
         }
@@ -39,10 +41,10 @@ class ServiceObserver: public Singleton<ServiceObserver> {
     typedef std::shared_ptr<ObserverItem> ObserverItemPtr;
 
 public:
-    void Run();
-    void Stop();
-    bool IsConnected(const std::string& service_name) const;
-    void Add(const std::string& service_name, boost::function<void(bool)> func);
+    void run();
+    void stop();
+    bool isConnected(const std::string& service_name) const;
+    void add(const std::string& service_name, boost::function<void(bool)> func);
 
 private:
     friend class Singleton<ServiceObserver> ;
@@ -50,10 +52,10 @@ private:
     ServiceObserver();
     ~ServiceObserver();
 
-    static bool cbServerStatus(LSHandle *lshandle, LSMessage *message, void *user_data);
+    static bool onServerStatus(LSHandle *lshandle, LSMessage *message, void *user_data);
 
-    std::vector<ObserverItemPtr> watching_services_;
-    bool started_;
+    std::vector<ObserverItemPtr> m_watchingServices;
+    bool m_isStarted;
 };
 
 #endif // MODULE_SERVICEOBSERVER_H_

@@ -27,96 +27,96 @@
 const std::string DELETED_LIST_KEY = "deletedList";
 
 Settings::Settings() :
-        appMgrPreferenceDir(kAppMgrPreferenceDir), deletedSystemAppListPath(kDeletedSystemAppListPath), devModePath("/var/luna/preferences/devmode_enabled"), localeInfoPath(kLocaleInfoFile), schemaPath(
-                kSchemaPath), respawnedPath("/tmp/sam-respawned"), jailModePath("/var/luna/preferences/jailer_disabled"), log_path_(kLogBasePath), isRespawned(false), isDevMode(false), isJailMode(
-                false), isRestLoaded(false), qmlRunnerPath("/usr/bin/qml-runner"), appshellRunnerPath("/usr/bin/app-shell/run_appshell"), jailerPath("/usr/bin/jailer"), use_qml_booster_(false), launch_expired_timeout_(
+        m_appMgrPreferenceDir(kAppMgrPreferenceDir), m_deletedSystemAppListPath(kDeletedSystemAppListPath), m_devModePath("/var/luna/preferences/devmode_enabled"), m_localeInfoPath(kLocaleInfoFile), m_schemaPath(
+                kSchemaPath), m_respawnedPath("/tmp/sam-respawned"), m_jailModePath("/var/luna/preferences/jailer_disabled"), m_logPath(kLogBasePath), m_isRespawned(false), m_isDevMode(false), m_isJailMode(
+                false), m_isRestLoaded(false), m_qmlRunnerPath("/usr/bin/qml-runner"), m_appshellRunnerPath("/usr/bin/app-shell/run_appshell"), m_jailerPath("/usr/bin/jailer"), m_useQmlBooster(false), m_launchExpiredTimeout(
                 120000000000ULL), // 120sec
-        loading_expired_timeout_(30000000000ULL), // 30sec
-        last_loading_app_timeout_(30000), // 30sec
-        appInstallBase(kAppInstallBase), appInstallRelative("usr/palm/applications"), devAppsBasePath("/media/developer/apps"), tempAliasAppBasePath("/tmp/alias/apps"), aliasAppBasePath(
-                "/media/alias/apps"), m_deletedSystemApps(pbnjson::Object()), usePartialKeywordAppSearch(true)
+        m_loadingExpiredTimeout(30000000000ULL), // 30sec
+        m_lastLoadingAppTimeout(30000), // 30sec
+        m_appInstallBase(kAppInstallBase), m_appInstallRelative("usr/palm/applications"), m_devAppsBasePath("/media/developer/apps"), m_tempAliasAppBasePath("/tmp/alias/apps"), m_aliasAppBasePath(
+                "/media/alias/apps"), m_deletedSystemApps(pbnjson::Object()), m_usePartialKeywordAppSearch(true)
 {
-    launch_point_dbkind_ = pbnjson::Object();
-    launch_point_permissions_ = pbnjson::Object();
+    m_launchPointDbkind = pbnjson::Object();
+    m_launchPointPermissions = pbnjson::Object();
 }
 
 Settings::~Settings()
 {
-    base_app_dirs_.clear();
+    m_baseAppDirs.clear();
 }
 
 bool Settings::load(const char* filePath)
 {
     // TODO: move this to configd
     // launch reason
-    AddLaunchReason("com.webos.surfacemanager", "launcher", "launcher");
-    AddLaunchReason("com.webos.surfacemanager", "recent", "recent");
-    AddLaunchReason("com.webos.surfacemanager", "autoReload", "autoReload");
-    AddLaunchReason("com.webos.surfacemanager", "manualLastApp", "manualLastApp");
-    AddLaunchReason("com.webos.surfacemanager", "autoLastApp", "autoLastApp");
-    AddLaunchReason("com.webos.surfacemanager", "hotKey", "hotKey");
-    AddLaunchReason("com.webos.surfacemanager", "wedge", "wedge");
+    addLaunchReason("com.webos.surfacemanager", "launcher", "launcher");
+    addLaunchReason("com.webos.surfacemanager", "recent", "recent");
+    addLaunchReason("com.webos.surfacemanager", "autoReload", "autoReload");
+    addLaunchReason("com.webos.surfacemanager", "manualLastApp", "manualLastApp");
+    addLaunchReason("com.webos.surfacemanager", "autoLastApp", "autoLastApp");
+    addLaunchReason("com.webos.surfacemanager", "hotKey", "hotKey");
+    addLaunchReason("com.webos.surfacemanager", "wedge", "wedge");
 
-    AddLaunchReason("com.webos.surfacemanager.inputpicker", "", "inputPicker");
-    AddLaunchReason("com.webos.surfacemanager.quicksettings", "", "quickSetting");
-    AddLaunchReason("com.webos.service.preloadmanager", "", "preload");
-    AddLaunchReason("com.webos.keyfilter.magicnumber", "", "magicNumber");
-    AddLaunchReason("com.webos.app.voiceagent", "", "voiceCommand");
-    AddLaunchReason("com.webos.app.voiceview", "", "searchResult");
-    AddLaunchReason("com.webos.app.voice", "", "searchResult");
-    AddLaunchReason("com.webos.app.favshows", "", "myContents");
-    AddLaunchReason("com.webos.app.livemenu", "", "directAccess");
-    AddLaunchReason("com.webos.service.dial", "", "dial");
-    AddLaunchReason("com.webos.bootManager", "", "boot");
-    AddLaunchReason("com.webos.app.cpcover", "", "boot");
+    addLaunchReason("com.webos.surfacemanager.inputpicker", "", "inputPicker");
+    addLaunchReason("com.webos.surfacemanager.quicksettings", "", "quickSetting");
+    addLaunchReason("com.webos.service.preloadmanager", "", "preload");
+    addLaunchReason("com.webos.keyfilter.magicnumber", "", "magicNumber");
+    addLaunchReason("com.webos.app.voiceagent", "", "voiceCommand");
+    addLaunchReason("com.webos.app.voiceview", "", "searchResult");
+    addLaunchReason("com.webos.app.voice", "", "searchResult");
+    addLaunchReason("com.webos.app.favshows", "", "myContents");
+    addLaunchReason("com.webos.app.livemenu", "", "directAccess");
+    addLaunchReason("com.webos.service.dial", "", "dial");
+    addLaunchReason("com.webos.bootManager", "", "boot");
+    addLaunchReason("com.webos.app.cpcover", "", "boot");
 
     // close reason
-    AddCloseReason("com.webos.surfacemanager.windowext", "windowPolicy", "windowPolicy");
-    AddCloseReason("com.webos.surfacemanager.windowext", "recent", "recent");
-    AddCloseReason("com.webos.surfacemanager.windowext", "systemUI", "systemUI");
+    addCloseReason("com.webos.surfacemanager.windowext", "windowPolicy", "windowPolicy");
+    addCloseReason("com.webos.surfacemanager.windowext", "recent", "recent");
+    addCloseReason("com.webos.surfacemanager.windowext", "systemUI", "systemUI");
 
-    AddCloseReason("com.webos.memorymanager", "", "memoryReclaim");
-    AddCloseReason("com.webos.service.tvpower", "", "powerSuspend");
-    AddCloseReason("com.webos.service.dial", "", "dial");
+    addCloseReason("com.webos.memorymanager", "", "memoryReclaim");
+    addCloseReason("com.webos.service.tvpower", "", "powerSuspend");
+    addCloseReason("com.webos.service.dial", "", "dial");
 
-    return LoadStaticConfig(filePath);
+    return loadStaticConfig(filePath);
 }
 
 void Settings::onRestLoad()
 {
-    isRestLoaded = true;
-    LoadConfigOnRWFilesystemReady();
+    m_isRestLoaded = true;
+    loadConfigOnRWFilesystemReady();
 }
 
-void Settings::LoadConfigOnRWFilesystemReady()
+void Settings::loadConfigOnRWFilesystemReady()
 {
     // Add base app dir path for dev apps
-    if (0 == access(devModePath.c_str(), F_OK)) {
-        isDevMode = true;
-        for (auto it : devAppsPaths) {
-            AddBaseAppDirPath(it, AppTypeByDir::AppTypeByDir_Dev);
+    if (0 == access(m_devModePath.c_str(), F_OK)) {
+        m_isDevMode = true;
+        for (auto it : m_devAppsPaths) {
+            addBaseAppDirPath(it, AppTypeByDir::AppTypeByDir_Dev);
         }
     }
 
-    LOG_INFO(MSGID_SETTING_INFO, 1, PMLOGKS("key", "devmode"), "val: %s", (isDevMode ? "on" : "off"));
+    LOG_INFO(MSGID_SETTING_INFO, 1, PMLOGKS("key", "devmode"), "val: %s", (m_isDevMode ? "on" : "off"));
 
-    if (0 == access(respawnedPath.c_str(), F_OK)) {
-        isRespawned = true;
+    if (0 == access(m_respawnedPath.c_str(), F_OK)) {
+        m_isRespawned = true;
     } else {
         //create respawnded file
-        if (!writeFile(respawnedPath.c_str(), "")) {
-            LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("respawnedPath", respawnedPath.c_str()), "cannot create respawned file");
+        if (!writeFile(m_respawnedPath.c_str(), "")) {
+            LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("respawnedPath", m_respawnedPath.c_str()), "cannot create respawned file");
         }
     }
 
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 2, PMLOGKS("status", "analyze_loading_reason"), PMLOGKS("loading_status", (isRespawned ? "respawned" : "fresh_start")), "");
+    LOG_INFO(MSGID_SAM_LOADING_SEQ, 2, PMLOGKS("status", "analyze_loading_reason"), PMLOGKS("loading_status", (m_isRespawned ? "respawned" : "fresh_start")), "");
 
-    if (0 != g_mkdir_with_parents(appMgrPreferenceDir.c_str(), 0700)) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("PreferencesDir", appMgrPreferenceDir.c_str()), "cannot create PreferenceDir");
+    if (0 != g_mkdir_with_parents(m_appMgrPreferenceDir.c_str(), 0700)) {
+        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("PreferencesDir", m_appMgrPreferenceDir.c_str()), "cannot create PreferenceDir");
     }
 
     // Load Deleted SystemApp list
-    pbnjson::JValue json = JUtil::parseFile(deletedSystemAppListPath, "deletedSystemAppList", NULL);
+    pbnjson::JValue json = JUtil::parseFile(m_deletedSystemAppListPath, "deletedSystemAppList", NULL);
     if (json.isNull()) {
         LOG_DEBUG("[DELETED SYSTEM APP LIST] fail to launch list");
         m_deletedSystemApps.put(DELETED_LIST_KEY, pbnjson::Array());
@@ -127,7 +127,7 @@ void Settings::LoadConfigOnRWFilesystemReady()
     LOG_DEBUG("[Load deletedList] %s", m_deletedSystemApps.stringify().c_str());
 }
 
-bool Settings::LoadStaticConfig(const char* filePath)
+bool Settings::loadStaticConfig(const char* filePath)
 {
     std::string conf_path = "";
     if (NULL == filePath)
@@ -145,22 +145,22 @@ bool Settings::LoadStaticConfig(const char* filePath)
     }
 
     if (root["DevModePath"].isString())
-        devModePath = root["DevModePath"].asString();
+        m_devModePath = root["DevModePath"].asString();
 
     if (root["JailModePath"].isString())
-        jailModePath = root["JailModePath"].asString();
+        m_jailModePath = root["JailModePath"].asString();
 
     if (root["JailerPath"].isString())
-        jailerPath = root["JailerPath"].asString();
+        m_jailerPath = root["JailerPath"].asString();
 
     if (root["QmlRunnerPath"].isString())
-        qmlRunnerPath = root["QmlRunnerPath"].asString();
+        m_qmlRunnerPath = root["QmlRunnerPath"].asString();
 
     if (root["AppShellRunnerPath"].isString())
-        appshellRunnerPath = root["AppShellRunnerPath"].asString();
+        m_appshellRunnerPath = root["AppShellRunnerPath"].asString();
 
     if (root["RespawnedPath"].isString())
-        respawnedPath = root["RespawnedPath"].asBool();
+        m_respawnedPath = root["RespawnedPath"].asBool();
 
     if (root["ApplicationPaths"].isArray()) {
         pbnjson::JValue applicationPaths = root["ApplicationPaths"];
@@ -181,7 +181,7 @@ bool Settings::LoadStaticConfig(const char* filePath)
             else if ("store" == type)
                 typeByDir = AppTypeByDir::AppTypeByDir_Store;
             else if ("dev" == type) {
-                devAppsPaths.push_back(path);
+                m_devAppsPaths.push_back(path);
                 continue;
             }
             else
@@ -189,17 +189,17 @@ bool Settings::LoadStaticConfig(const char* filePath)
 
             LOG_DEBUG("PathType : %s, Path : %s", type.c_str(), path.c_str());
 
-            AddBaseAppDirPath(path, typeByDir);
+            addBaseAppDirPath(path, typeByDir);
         }
 
-        if (base_app_dirs_.size() < 1) {
+        if (m_baseAppDirs.size() < 1) {
             LOG_WARNING(MSGID_NO_APP_PATHS, 1, PMLOGKS("FILE", conf_path.c_str()), "");
             return false;
         }
     }
 
     if (root["UsePartialKeywordMatchForAppSearch"].isBoolean()) {
-        usePartialKeywordAppSearch = root["UsePartialKeywordMatchForAppSearch"].asBool();
+        m_usePartialKeywordAppSearch = root["UsePartialKeywordMatchForAppSearch"].asBool();
     }
 
     if (root.hasKey("FullscreenWindowType") && root["FullscreenWindowType"].isArray()) {
@@ -208,7 +208,7 @@ bool Settings::LoadStaticConfig(const char* filePath)
             std::string value;
             if (root["FullscreenWindowType"][i].asString(value) != CONV_OK)
                 continue;
-            fullscreen_window_types.push_back(value);
+            m_fullscreenWindowTypes.push_back(value);
         }
     }
 
@@ -219,7 +219,7 @@ bool Settings::LoadStaticConfig(const char* filePath)
                 continue;
 
             LOG_INFO("HOSTAPPS", 1, PMLOGKS("app_id", app_id.c_str()), "");
-            host_apps_for_alias.push_back(app_id);
+            m_hostAppsForAlias.push_back(app_id);
         }
     }
 
@@ -230,7 +230,7 @@ bool Settings::LoadStaticConfig(const char* filePath)
             std::string str;
             if (appList[i].asString(str) != CONV_OK)
                 continue;
-            noJailApps.push_back(str);
+            m_noJailApps.push_back(str);
             LOG_DEBUG("NoJailApp: %s", str.c_str());
         }
     }
@@ -239,17 +239,17 @@ bool Settings::LoadStaticConfig(const char* filePath)
         for (auto it : root["BootTimeApps"].items()) {
             if (!it.isString())
                 continue;
-            AddBootTimeApp(it.asString());
+            addBootTimeApp(it.asString());
         }
     }
 
     if (root["StoreApp"].isString()) {
-        app_store_id_ = root["StoreApp"].asString();
+        m_appStoreId = root["StoreApp"].asString();
     }
     return true;
 }
 
-bool Settings::LoadSAMConf()
+bool Settings::loadSAMConf()
 {
     std::string conf_path = kBasicSettingsFile;
 
@@ -266,7 +266,7 @@ bool Settings::LoadSAMConf()
         for (auto it : root["BootTimeApps"].items()) {
             if (!it.isString())
                 continue;
-            SettingsImpl::instance().AddBootTimeApp(it.asString());
+            SettingsImpl::instance().addBootTimeApp(it.asString());
         }
     }
 
@@ -274,29 +274,29 @@ bool Settings::LoadSAMConf()
         for (auto it : root["CRIUSupportApps"].items()) {
             if (!it.isString())
                 continue;
-            SettingsImpl::instance().AddCRIUSupportApp(it.asString());
+            SettingsImpl::instance().addCRIUSupportApp(it.asString());
         }
     }
 
     if (root.hasKey("LaunchPointDBKind"))
-        launch_point_dbkind_ = root["LaunchPointDBKind"];
+        m_launchPointDbkind = root["LaunchPointDBKind"];
 
     if (root.hasKey("LaunchPointDBPermissions"))
-        launch_point_permissions_ = root["LaunchPointDBPermissions"];
+        m_launchPointPermissions = root["LaunchPointDBPermissions"];
 
     return true;
 }
 
-void Settings::AddBaseAppDirPath(const std::string& path, AppTypeByDir type)
+void Settings::addBaseAppDirPath(const std::string& path, AppTypeByDir type)
 {
-    base_app_dirs_.push_back( { path, type });
+    m_baseAppDirs.push_back( { path, type });
 }
 
 void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
 {
     if (!apps.isArray())
         return;
-    keepAliveApps.clear();
+    m_keepAliveApps.clear();
 
     LOG_INFO(MSGID_CONFIGD_INIT, 1,
              PMLOGKS("CONFIG_TYPE", "keep_alive_apps"),
@@ -309,13 +309,13 @@ void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
             continue;
 
         LOG_INFO(MSGID_CONFIGD_INIT, 2, PMLOGKS("CONFIG_TYPE", "keep_alive_apps"), PMLOGKS("app_id", app_id.c_str()), "");
-        keepAliveApps.push_back(app_id);
+        m_keepAliveApps.push_back(app_id);
     }
 }
 
-void Settings::set_support_qml_booster(bool value)
+void Settings::setSupportQMLBooster(bool value)
 {
-    use_qml_booster_ = value;
+    m_useQmlBooster = value;
     LOG_INFO(MSGID_CONFIGD_INIT, 2, PMLOGKS("CONFIG_TYPE", "support_qml_booster"), PMLOGKS("value", (value?"true":"false")), "");
 }
 
@@ -345,44 +345,44 @@ void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
 
 std::string Settings::getAppInstallBase(bool verified) const
 {
-    return (verified) ? appInstallBase : devAppsBasePath;
+    return (verified) ? m_appInstallBase : m_devAppsBasePath;
 }
 
-bool Settings::is_in_host_apps_list(const std::string& app_id) const
+bool Settings::isInHostAppsList(const std::string& app_id) const
 {
-    auto it = std::find(host_apps_for_alias.begin(), host_apps_for_alias.end(), app_id);
-    if (it != host_apps_for_alias.end())
+    auto it = std::find(m_hostAppsForAlias.begin(), m_hostAppsForAlias.end(), app_id);
+    if (it != m_hostAppsForAlias.end())
         return true;
     return false;
 }
 
-bool Settings::IsKeepAliveApp(const std::string& appId) const
+bool Settings::isKeepAliveApp(const std::string& appId) const
 {
-    auto it = std::find(keepAliveApps.begin(), keepAliveApps.end(), appId);
-    if (it != keepAliveApps.end())
+    auto it = std::find(m_keepAliveApps.begin(), m_keepAliveApps.end(), appId);
+    if (it != m_keepAliveApps.end())
         return true;
     return false;
 }
 
 bool Settings::checkAppAgainstNoJailAppList(const std::string& appId) const
 {
-    auto it = std::find(noJailApps.begin(), noJailApps.end(), appId);
-    if (it != noJailApps.end())
+    auto it = std::find(m_noJailApps.begin(), m_noJailApps.end(), appId);
+    if (it != m_noJailApps.end())
         return true;
     return false;
 }
 
-void Settings::AddBootTimeApp(const std::string& app_id)
+void Settings::addBootTimeApp(const std::string& app_id)
 {
-    auto it = std::find(boot_time_apps_.begin(), boot_time_apps_.end(), app_id);
-    if (it != boot_time_apps_.end())
+    auto it = std::find(m_bootTimeApps.begin(), m_bootTimeApps.end(), app_id);
+    if (it != m_bootTimeApps.end())
         return;
-    boot_time_apps_.push_back(app_id);
+    m_bootTimeApps.push_back(app_id);
 }
 
-bool Settings::IsBootTimeApp(const std::string& app_id)
+bool Settings::isBootTimeApp(const std::string& app_id)
 {
-    for (auto& id : boot_time_apps_)
+    for (auto& id : m_bootTimeApps)
         if (app_id == id)
             return true;
     return false;
@@ -412,8 +412,8 @@ void Settings::setSystemAppAsRemoved(const std::string& appId)
 
     LOG_DEBUG("[REMOVE SYSTEM APP] deletedList: %s", deletedList.c_str());
 
-    if (!g_file_set_contents(deletedSystemAppListPath.c_str(), deletedList.c_str(), deletedList.length(), NULL)) {
-        LOG_WARNING(MSGID_FAIL_WRITING_DELETEDLIST, 2, PMLOGKS("CONTENT", deletedList.c_str()), PMLOGKS("PATH", deletedSystemAppListPath.c_str()), "");
+    if (!g_file_set_contents(m_deletedSystemAppListPath.c_str(), deletedList.c_str(), deletedList.length(), NULL)) {
+        LOG_WARNING(MSGID_FAIL_WRITING_DELETEDLIST, 2, PMLOGKS("CONTENT", deletedList.c_str()), PMLOGKS("PATH", m_deletedSystemAppListPath.c_str()), "");
     }
 }
 
@@ -433,7 +433,7 @@ bool Settings::isDeletedSystemApp(const std::string& appId) const
     return false;
 }
 
-void Settings::SetLifeCycleReason(const pbnjson::JValue& data)
+void Settings::setLifeCycleReason(const pbnjson::JValue& data)
 {
     if (data.hasKey("launchReason") && data["launchReason"].isObject() && data["launchReason"].objectSize() > 0) {
 
@@ -451,7 +451,7 @@ void Settings::SetLifeCycleReason(const pbnjson::JValue& data)
                 if (detail.hasKey("reason") && detail["reason"].isString())
                     reason = detail["reason"].asString();
 
-                AddLaunchReason(caller_id, reason, launch_reason);
+                addLaunchReason(caller_id, reason, launch_reason);
             }
         }
     }
@@ -472,54 +472,54 @@ void Settings::SetLifeCycleReason(const pbnjson::JValue& data)
                 if (detail.hasKey("reason") && detail["reason"].isString())
                     reason = detail["reason"].asString();
 
-                AddCloseReason(caller_id, reason, close_reason);
+                addCloseReason(caller_id, reason, close_reason);
             }
         }
     }
 }
 
-void Settings::AddLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason)
+void Settings::addLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason)
 {
-    launch_event_reason_map_[caller_id + ":" + reason] = launch_reason;
+    m_launchEventReasonMap[caller_id + ":" + reason] = launch_reason;
 }
 
-std::string Settings::GetLaunchReason(const std::string& caller_id, const std::string& reason)
+std::string Settings::getLaunchReason(const std::string& caller_id, const std::string& reason)
 {
     std::string key = caller_id + ":" + reason;
-    if (!launch_event_reason_map_.count(key)) {
+    if (!m_launchEventReasonMap.count(key)) {
         return "undefined";
     } else {
-        return launch_event_reason_map_[key];
+        return m_launchEventReasonMap[key];
     }
 }
 
-void Settings::AddCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason)
+void Settings::addCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason)
 {
-    close_event_reason_map_[caller_id + ":" + reason] = close_reason;
+    m_closeEventReasonMap[caller_id + ":" + reason] = close_reason;
 }
 
-std::string Settings::GetCloseReason(const std::string& caller_id, const std::string& reason)
+std::string Settings::getCloseReason(const std::string& caller_id, const std::string& reason)
 {
     std::string key = caller_id + ":" + reason;
-    if (!close_event_reason_map_.count(key)) {
+    if (!m_closeEventReasonMap.count(key)) {
         return "undefined";
     } else {
-        return close_event_reason_map_[key];
+        return m_closeEventReasonMap[key];
     }
 }
 
-void Settings::AddCRIUSupportApp(const std::string& app_id)
+void Settings::addCRIUSupportApp(const std::string& app_id)
 {
-    if (SupportCRIU(app_id))
+    if (supportCRIU(app_id))
         return;
 
     LOG_INFO(MSGID_SETTING_INFO, 2, PMLOGKS("set_key", "criu_app"), PMLOGKS("app_id", app_id.c_str()), "");
-    criu_support_apps_.push_back(app_id);
+    m_criuSupportApps.push_back(app_id);
 }
 
-bool Settings::SupportCRIU(const std::string& app_id) const
+bool Settings::supportCRIU(const std::string& app_id) const
 {
-    for (auto id : criu_support_apps_) {
+    for (auto id : m_criuSupportApps) {
         if (id == app_id)
             return true;
     }

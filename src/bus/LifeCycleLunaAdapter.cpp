@@ -79,8 +79,12 @@ void LifeCycleLunaAdapter::requestController(LunaTaskPtr task)
         std::string app_id = task->jmsg()["id"].asString();
         AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
         if (app_desc == NULL && !AppMgrService::instance().isServiceReady()) {
-            LOG_INFO(MSGID_API_REQUEST, 4, PMLOGKS("category", task->category().c_str()), PMLOGKS("method", task->method().c_str()), PMLOGKS("status", "pending"),
-                    PMLOGKS("caller", task->caller().c_str()), "received message, but will handle later");
+            LOG_INFO(MSGID_API_REQUEST, 4,
+                     PMLOGKS("category", task->category().c_str()),
+                     PMLOGKS("method", task->method().c_str()),
+                     PMLOGKS("status", "pending"),
+                     PMLOGKS("caller", task->caller().c_str()),
+                     "received message, but will handle later");
             m_pendingTasksOnReady.push_back(task);
             return;
         }
@@ -135,7 +139,10 @@ void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
     if (jmsg.hasKey("params") && jmsg["params"].hasKey("reason"))
         launch_mode = jmsg["params"]["reason"].asString();
 
-    LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3, PMLOGKS("app_id", id.c_str()), PMLOGKS("caller_id", task->caller().c_str()), PMLOGKS("mode", launch_mode.c_str()), "");
+    LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3,
+               PMLOGKS("app_id", id.c_str()),
+               PMLOGKS("caller_id", task->caller().c_str()),
+               PMLOGKS("mode", launch_mode.c_str()), "");
 
     LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
     lifecycle_task->SetAppId(id);
@@ -332,7 +339,9 @@ void LifeCycleLunaAdapter::lockApp(LunaTaskPtr task)
 void LifeCycleLunaAdapter::registerApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "register_app"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "empty_app_id"),
+                  PMLOGKS("where", "register_app"), "");
         task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
         return;
     }
@@ -349,7 +358,9 @@ void LifeCycleLunaAdapter::registerApp(LunaTaskPtr task)
 void LifeCycleLunaAdapter::registerNativeApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2, PMLOGKS("reason", "empty_app_id"), PMLOGKS("where", "register_native_app"), "");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
+                  PMLOGKS("reason", "empty_app_id"),
+                  PMLOGKS("where", "register_native_app"), "");
         task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
         return;
     }

@@ -28,23 +28,23 @@ public:
     BootdSubscriber();
     ~BootdSubscriber();
 
-    void Init();
-    boost::signals2::connection SubscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func);
+    void initialize();
+    boost::signals2::connection subscribeBootStatus(boost::function<void(const pbnjson::JValue&)> func);
 
-    void OnServerStatusChanged(bool connection);
-    static bool OnBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void onServerStatusChanged(bool connection);
+    static bool onBootStatusCallback(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     const std::string& getBootStatus() const
     {
-        return boot_status_str_;
+        return m_bootStatusStr;
     }
 
 private:
     friend class Singleton<BootdSubscriber> ;
 
-    void RequestBootStatus();
+    void requestBootStatus();
 
-    LSMessageToken token_boot_status_;
-    std::string boot_status_str_;
+    LSMessageToken m_tokenBootStatus;
+    std::string m_bootStatusStr;
     boost::signals2::signal<void(const pbnjson::JValue&)> notify_boot_status;
 };
 

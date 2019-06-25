@@ -49,52 +49,44 @@ public:
     {
         return m_removalFlag;
     }
-    bool preload_mode_on() const
+    bool preloadModeOn() const
     {
         return m_preloadModeOn;
     }
-    double last_launch_time() const
+    double lastLaunchTime() const
     {
         return m_lastLaunchTime;
     }
-    LifeStatus life_status() const
+    LifeStatus lifeStatus() const
     {
         return m_lifeStatus;
     }
-    RuntimeStatus runtime_status() const
+    RuntimeStatus runtimeStatus() const
     {
         return m_runtimeStatus;
     }
-    const pbnjson::JValue& virtual_launch_params() const
-    {
-        return m_virtualLaunchParams;
-    }
 
     // setter list
-    void set_execution_lock(bool v = true)
+    void setExecutionLock(bool v = true)
     {
         m_executionLock = v;
     }
-    void set_removal_flag(bool v = true)
+    void setRemovalFlag(bool v = true)
     {
         m_removalFlag = v;
     }
-    void set_preload_mode(bool mode)
+    void setPreloadMode(bool mode)
     {
         m_preloadModeOn = mode;
     }
-    void set_last_launch_time(double launch_time)
+    void setLastLaunchTime(double launch_time)
     {
         m_lastLaunchTime = launch_time;
     }
-    void set_life_status(const LifeStatus& status);
-    void set_runtime_status(RuntimeStatus status)
+    void setLifeStatus(const LifeStatus& status);
+    void setRuntimeStatus(RuntimeStatus status)
     {
         m_runtimeStatus = status;
-    }
-    void set_virtual_launch_params(const pbnjson::JValue& params)
-    {
-        m_virtualLaunchParams = params.duplicate();
     }
 
 private:
@@ -105,7 +97,6 @@ private:
     double m_lastLaunchTime;
     LifeStatus m_lifeStatus;
     RuntimeStatus m_runtimeStatus;
-    pbnjson::JValue m_virtualLaunchParams;
 };
 
 typedef std::shared_ptr<const AppInfo> AppInfoConstPtr;

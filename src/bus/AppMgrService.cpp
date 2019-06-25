@@ -23,14 +23,13 @@
 #include <string>
 #include <vector>
 
-
 namespace {
 static std::map<std::string, std::string> api_schema_map_;
 }
 
 AppMgrService::AppMgrService()
-    : ServiceBase("com.webos.applicationManager"),
-      m_serviceReady(false)
+    : ServiceBase("com.webos.applicationManager")
+    , m_serviceReady(false)
 {
 }
 
@@ -115,7 +114,7 @@ void AppMgrService::postAttach()
     //       This lazy registeration causes timing issue,
     //       because we append new category after mainloop is already attached
     LSErrorSafe lse;
-    if (SettingsImpl::instance().isDevMode) {
+    if (SettingsImpl::instance().m_isDevMode) {
         if (!LSRegisterCategory(serviceHandle(),
                                 API_CATEGORY_DEV,
                                 getMethods(API_CATEGORY_DEV),

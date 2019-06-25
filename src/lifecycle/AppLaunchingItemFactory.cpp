@@ -14,24 +14,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <BaseExtension.h>
-#include <lifecycle/AppLaunchingItem4Base.h>
-#include <lifecycle/AppLaunchingItemFactory4Base.h>
-#include <lifecycle/AppLaunchingItemFactory4Base.h>
+#include <lifecycle/AppLaunchingItem.h>
+#include <lifecycle/AppLaunchingItemFactory.h>
+#include <lifecycle/AppLaunchingItemFactory.h>
+#include <package/PackageManager.h>
 #include <package/AppDescription.h>
 #include <setting/Settings.h>
 #include <util/BaseLogs.h>
 #include <util/JUtil.h>
+#include <util/LSUtils.h>
 
-AppLaunchingItemFactory4Base::AppLaunchingItemFactory4Base()
+AppLaunchingItemFactory::AppLaunchingItemFactory()
 {
 }
 
-AppLaunchingItemFactory4Base::~AppLaunchingItemFactory4Base()
+AppLaunchingItemFactory::~AppLaunchingItemFactory()
 {
 }
 
-AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
+AppLaunchingItemPtr AppLaunchingItemFactory::create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
 {
     if (app_id.empty()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
@@ -40,7 +41,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
         return NULL;
     }
 
-    AppDescPtr app_desc = BaseExtension::instance().GetAppDesc(app_id);
+    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
     if (app_desc == nullptr) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
                   PMLOGKS("reason", "not_exist"),
@@ -59,7 +60,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
 
     // this is for WAM, SAM will bypass to WAM. WAM doens't unload the app even if user clicks "X" button to close it.
     bool keep_alive = params.hasKey("keepAlive") && params["keepAlive"].asBool();
-    if (SettingsImpl::instance().IsKeepAliveApp(app_id)) {
+    if (SettingsImpl::instance().isKeepAliveApp(app_id)) {
         keep_alive = true;
     }
 
@@ -80,7 +81,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
         show_spinner = false;
     }
 
-    AppLaunchingItem4BasePtr new_item = std::make_shared<AppLaunchingItem4Base>(app_id, rtype, params4app, lsmsg);
+    AppLaunchingItemPtr new_item = std::make_shared<AppLaunchingItem>(app_id, rtype, params4app, lsmsg);
     if (new_item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
                   PMLOGKS("reason", "make_shared_error"),
@@ -93,7 +94,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory4Base::Create(const std::string& app_
     new_item->setKeepAlive(keep_alive);
     new_item->setShowSplash(show_splash);
     new_item->setShowSpinner(show_spinner);
-    new_item->setSubStage(static_cast<int>(AppLaunchingStage4Base::PREPARE_PRELAUNCH));
+    new_item->setSubStage(static_cast<int>(AppLaunchingStage::PREPARE_PRELAUNCH));
 
     LOG_INFO(MSGID_APPLAUNCH, 6,
              PMLOGKS("app_id", app_id.c_str()),

@@ -23,23 +23,33 @@
 
 const char* LOCAL_FILE_URI = "file://";
 
-LaunchPoint::LaunchPoint(const std::string& id, const std::string& lp_id) :
-        lp_type_(LPType::UNKNOWN), id_(id), launch_point_id_(lp_id), system_app_(false), removable_(false), default_(false), visible_(false), unmovable_(false), stored_in_db_(false)
+LaunchPoint::LaunchPoint(const std::string& id, const std::string& lp_id)
+    : m_LPType(LPType::UNKNOWN),
+      m_appId(id),
+      m_launchPointId(lp_id),
+      m_systemApp(false),
+      m_removable(false),
+      m_default(false),
+      m_visible(false),
+      m_unmovable(false),
+      m_storedInDB(false),
+      m_relaunch(false)
 {
-    bg_images_ = pbnjson::Array();
-    params_ = pbnjson::Object();
+    m_bgImages = pbnjson::Array();
+    m_params = pbnjson::Object();
+    m_icons = pbnjson::Array();
 }
 
 LaunchPoint::~LaunchPoint()
 {
 }
 
-std::string LaunchPoint::LpTypeAsString() const
+std::string LaunchPoint::LPTypeAsString() const
 {
-    switch (lp_type_) {
-    case DEFAULT:
+    switch (m_LPType) {
+    case LPType::DEFAULT:
         return std::string("default");
-    case BOOKMARK:
+    case LPType::BOOKMARK:
         return std::string("bookmark");
     default:
         break;
@@ -48,68 +58,73 @@ std::string LaunchPoint::LpTypeAsString() const
     return std::string("unknown");
 }
 
-std::string LaunchPoint::Update(const pbnjson::JValue& data)
+std::string LaunchPoint::update(const pbnjson::JValue& data)
 {
     return "";
 }
 
-void LaunchPoint::UpdateIfEmptyTitle(LaunchPointPtr lp)
+void LaunchPoint::updateIfEmptyTitle(LaunchPointPtr lp)
 {
     if (lp == nullptr)
         return;
 
-    if (Title().empty())
-        SetTitle(lp->Title());
+    if (getTitle().empty())
+        setTitle(lp->getTitle());
 }
 
-void LaunchPoint::UpdateIfEmpty(LaunchPointPtr lp)
+void LaunchPoint::updateIfEmpty(LaunchPointPtr lp)
 {
     if (lp == nullptr)
         return;
 
-    if (app_description_.empty())
-        SetAppDescription(lp->AppDescription());
-    if (bg_color_.empty())
-        SetBgColor(lp->BgColor());
-    if (bg_image_.empty())
-        SetBgImage(lp->BgImage());
-    if (icon_color_.empty())
-        SetIconColor(lp->IconColor());
-    if (icon_.empty())
-        SetIcon(lp->Icon());
-    if (image_for_recents_.empty())
-        SetImageForRecents(lp->ImageForRecents());
-    if (large_icon_.empty())
-        SetLargeIcon(lp->LargeIcon());
+    if (m_appDescription.empty())
+        setAppDescription(lp->getAppDescription());
+    if (m_bgColor.empty())
+        setBgColor(lp->getBgColor());
+    if (m_bgImage.empty())
+        setBgImage(lp->getBgImage());
+    if (m_iconColor.empty())
+        setIconColor(lp->getIconColor());
+    if (m_icon.empty())
+        setIcon(lp->getIcon());
+    if (m_imageForRecents.empty())
+        setImageForRecents(lp->getImageForRecents());
+    if (m_largeIcon.empty())
+        setLargeIcon(lp->getLargeIcon());
 }
 
-void LaunchPoint::SetAttrWithJson(const pbnjson::JValue& data)
+void LaunchPoint::setAttrWithJson(const pbnjson::JValue& data)
 {
-    SetAppDescription(data["appDescription"].asString());
-    SetBgColor(data["bgColor"].asString());
-    SetBgImage(data["bgImage"].asString());
-    SetBgImages(data["bgImages"]);
-    SetFolderPath(data["folderPath"].asString());
-    SetIconColor(data["iconColor"].asString());
-    SetIcon(data["icon"].asString());
-    SetImageForRecents(data["imageForRecents"].asString());
-    SetLargeIcon(data["largeIcon"].asString());
-    SetTitle(data["title"].asString());
-    SetUserData(data["userData"].asString());
+    setAppDescription(data["appDescription"].asString());
+    setBgColor(data["bgColor"].asString());
+    setBgImage(data["bgImage"].asString());
+    setBgImages(data["bgImages"]);
+    setFolderPath(data["folderPath"].asString());
+    setIconColor(data["iconColor"].asString());
+    setIcon(data["icon"].asString());
+    setIcons(data["icons"]);
+    setImageForRecents(data["imageForRecents"].asString());
+    setLargeIcon(data["largeIcon"].asString());
+    setTitle(data["title"].asString());
+    setUserData(data["userData"].asString());
+    setFavicon(data["favicon"].asString());
 
     if (data.hasKey("params"))
-        SetParams(data["params"]);
+        setParams(data["params"]);
+
+    if (data.hasKey("relaunch"))
+        setRelaunch(data["relaunch"].asBool());
 
     if (data.hasKey("unmovable"))
-        SetUnmovable(data["unmovable"].asBool());
+        setUnmovable(data["unmovable"].asBool());
 }
 
-void LaunchPoint::ConvertPath(std::string& path)
+void LaunchPoint::convertPath(std::string& path)
 {
     if (path.compare(0, 7, LOCAL_FILE_URI) == 0)
         path.erase(0, 7);
 
-    if (folder_path_.empty())
+    if (m_folderPath.empty())
         return;
 
     if (path.empty())
@@ -118,126 +133,164 @@ void LaunchPoint::ConvertPath(std::string& path)
     if (path[0] == '/')
         return;
 
-    path = folder_path_ + "/" + path;
+    path = m_folderPath + "/" + path;
 }
 
-void LaunchPoint::SetTitle(const std::string& title)
+void LaunchPoint::setTitle(const std::string& title)
 {
     if (title.empty())
         return;
-    title_ = title;
+    m_title = title;
 }
 
-void LaunchPoint::SetIcon(const std::string& icon)
+void LaunchPoint::setIcon(const std::string& icon)
 {
     if (icon.empty())
         return;
-    icon_ = icon;
-    ConvertPath(icon_);
+    m_icon = icon;
+    convertPath(m_icon);
 }
 
-void LaunchPoint::SetBgImage(const std::string& bg_image)
+void LaunchPoint::setBgImage(const std::string& bg_image)
 {
     if (bg_image.empty())
         return;
-    bg_image_ = bg_image;
-    ConvertPath(bg_image_);
+    m_bgImage = bg_image;
+    convertPath(m_bgImage);
 }
 
-void LaunchPoint::SetBgImages(const pbnjson::JValue& bg_images)
+void LaunchPoint::setBgImages(const pbnjson::JValue& bg_images)
 {
     if (bg_images.isNull())
         return;
 
-    bg_images_ = pbnjson::Array();
+    m_bgImages = pbnjson::Array();
     if (bg_images.arraySize() > 0)
-        bg_images_ = bg_images.duplicate();
+        m_bgImages = bg_images.duplicate();
 }
 
-void LaunchPoint::SetBgColor(const std::string& bg_color)
+void LaunchPoint::setBgColor(const std::string& bg_color)
 {
     if (bg_color.empty())
         return;
-    bg_color_ = bg_color;
+    m_bgColor = bg_color;
 }
 
-void LaunchPoint::SetImageForRecents(const std::string& image_for_recents)
+void LaunchPoint::setImageForRecents(const std::string& image_for_recents)
 {
     if (image_for_recents.empty())
         return;
-    image_for_recents_ = image_for_recents;
-    ConvertPath(image_for_recents_);
+    m_imageForRecents = image_for_recents;
+    convertPath(m_imageForRecents);
 }
 
-void LaunchPoint::SetIconColor(const std::string& icon_color)
+void LaunchPoint::setIconColor(const std::string& icon_color)
 {
     if (icon_color.empty())
         return;
-    icon_color_ = icon_color;
+    m_iconColor = icon_color;
 }
 
-void LaunchPoint::SetLargeIcon(const std::string& large_icon)
+void LaunchPoint::setLargeIcon(const std::string& large_icon)
 {
     if (large_icon.empty())
         return;
-    large_icon_ = large_icon;
-    ConvertPath(large_icon_);
+    m_largeIcon = large_icon;
+    convertPath(m_largeIcon);
 }
 
-void LaunchPoint::SetAppDescription(const std::string& app_description)
+void LaunchPoint::setAppDescription(const std::string& app_description)
 {
     if (app_description.empty())
         return;
-    app_description_ = app_description;
+    m_appDescription = app_description;
 }
 
-void LaunchPoint::SetUserData(const std::string& user_data)
+void LaunchPoint::setUserData(const std::string& user_data)
 {
     if (user_data.empty())
         return;
-    user_data_ = user_data;
+    m_userData = user_data;
 }
 
-void LaunchPoint::SetParams(const pbnjson::JValue& params)
+void LaunchPoint::setParams(const pbnjson::JValue& params)
 {
     if (params.isNull())
         return;
-    params_ = pbnjson::Object();
-    params_ = params.duplicate();
+    m_params = pbnjson::Object();
+    m_params = params.duplicate();
 }
 
-pbnjson::JValue LaunchPoint::ToJValue() const
+pbnjson::JValue LaunchPoint::toJValue() const
 {
     pbnjson::JValue json = pbnjson::Object();
     json.put("id", Id());
-    json.put("launchPointId", LaunchPointId());
-    json.put("lptype", LpTypeAsString());
+    json.put("launchPointId", getLunchPointId());
+    json.put("lptype", LPTypeAsString());
 
-    json.put("appDescription", AppDescription());
-    json.put("bgColor", BgColor());
-    json.put("bgImage", BgImage());
-    json.put("bgImages", BgImages());
-    json.put("icon", Icon());
-    json.put("iconColor", IconColor());
-    json.put("imageForRecents", ImageForRecents());
-    json.put("largeIcon", LargeIcon());
-    json.put("unmovable", IsUnmovable());
-    json.put("removable", IsRemovable());
-    json.put("systemApp", IsSystemApp());
-    json.put("title", Title());
-    json.put("userData", UserData());
-    json.put("miniicon", MiniIcon());
+    json.put("appDescription", getAppDescription());
+    json.put("bgColor", getBgColor());
+    json.put("bgImage", getBgImage());
+    json.put("bgImages", getBgImages());
+    json.put("favicon", getFavicon());
+    json.put("icon", getIcon());
+    json.put("iconColor", getIconColor());
+    json.put("imageForRecents", getImageForRecents());
+    json.put("largeIcon", getLargeIcon());
+    json.put("unmovable", isUnmovable());
+    json.put("removable", isRemovable());
+    json.put("relaunch", isRelaunch());
+    json.put("systemApp", isSystemApp());
+    json.put("title", getTitle());
+    json.put("userData", getUserData());
+    json.put("miniicon", getMiniIcon());
 
-    if (!Params().isNull())
-        json.put("params", Params());
+    if (!getParams().isNull())
+        json.put("params", getParams());
 
     return json;
 }
 
+void LaunchPoint::setFavicon(const std::string& favicon)
+{
+    if (favicon.empty())
+        return;
+
+    m_favicon = favicon;
+    convertPath(m_favicon);
+}
+
+void LaunchPoint::setIcons(const pbnjson::JValue& icons)
+{
+    if (icons.isNull())
+        return;
+    if (icons.arraySize() <= 0)
+        return;
+
+    int arr_idx = icons.arraySize();
+    for (int idx = 0; idx < arr_idx; ++idx) {
+        pbnjson::JValue icon_set = pbnjson::Object();
+        std::string icon_path, icon_color;
+
+        if (!icons[idx].hasKey("icon") || !icons[idx].hasKey("iconColor"))
+            continue;
+
+        icon_color = icons[idx]["iconColor"].asString();
+        icon_path = icons[idx]["icon"].asString();
+        convertPath(icon_path);
+
+        icon_set.put("icon", icon_path);
+        icon_set.put("iconColor", icon_color);
+
+        m_icons.append(icon_set);
+    }
+}
+
+
 /****************************/
 /***** LPDefault ************/
 /****************************/
-LaunchPointPtr LPDefault::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LPDefault::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
 {
     std::string app_id = data["id"].asString();
     if (app_id.empty())
@@ -249,28 +302,28 @@ LaunchPointPtr LPDefault::Create(const std::string& lp_id, const pbnjson::JValue
         return nullptr;
     }
 
-    new_lp->SetAttrWithJson(data);
+    new_lp->setAttrWithJson(data);
 
-    new_lp->SetLpType(LPType::DEFAULT);
-    new_lp->SetDefaultLp(true);
-    new_lp->SetRemovable(data["removable"].asBool());
-    new_lp->SetSystemApp(data["systemApp"].asBool());
-    new_lp->SetVisible(data["visible"].asBool());
-    new_lp->SetMiniIcon(data["miniicon"].asString());
+    new_lp->setLpType(LPType::DEFAULT);
+    new_lp->setDefaultLp(true);
+    new_lp->setRemovable(data["removable"].asBool());
+    new_lp->setSystemApp(data["systemApp"].asBool());
+    new_lp->setVisible(data["visible"].asBool());
+    new_lp->setMiniIcon(data["miniicon"].asString());
 
     return new_lp;
 }
 
-std::string LPDefault::Update(const pbnjson::JValue& data)
+std::string LPDefault::update(const pbnjson::JValue& data)
 {
-    SetAttrWithJson(data);
+    setAttrWithJson(data);
     return "";
 }
 
 /****************************/
 /******** LPBookmark ********/
 /****************************/
-LaunchPointPtr LPBookmark::Create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LPBookmark::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
 {
     std::string app_id = data["id"].asString();
     if (app_id.empty())
@@ -280,48 +333,19 @@ LaunchPointPtr LPBookmark::Create(const std::string& lp_id, const pbnjson::JValu
     if (new_lp == nullptr)
         return nullptr;
 
-    new_lp->SetAttrWithJson(data);
+    new_lp->setAttrWithJson(data);
 
-    new_lp->SetLpType(LPType::BOOKMARK);
-    new_lp->SetDefaultLp(false);
-    new_lp->SetRemovable(true);
-    new_lp->SetSystemApp(false);
-    new_lp->SetVisible(true);
+    new_lp->setLpType(LPType::BOOKMARK);
+    new_lp->setDefaultLp(false);
+    new_lp->setRemovable(true);
+    new_lp->setSystemApp(false);
+    new_lp->setVisible(true);
 
     return new_lp;
 }
 
-std::string LPBookmark::Update(const pbnjson::JValue& data)
+std::string LPBookmark::update(const pbnjson::JValue& data)
 {
-    SetAttrWithJson(data);
+    setAttrWithJson(data);
     return "";
-}
-
-/***************************/
-/******** LP Factory *******/
-/***************************/
-LaunchPointFactory::LaunchPointFactory()
-{
-    RegisterItem(LPType::DEFAULT, &LPDefault::Create);
-    RegisterItem(LPType::BOOKMARK, &LPBookmark::Create);
-}
-
-LaunchPointFactory::~LaunchPointFactory()
-{
-}
-
-void LaunchPointFactory::RegisterItem(const LPType type, CreateLaunchPointFunc func)
-{
-    factory_map_[type] = func;
-}
-
-LaunchPointPtr LaunchPointFactory::CreateLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
-{
-    auto item = factory_map_.find(type);
-    if (item != factory_map_.end())
-        return item->second(lp_id, data, err_text);
-
-    LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1, PMLOGKS("status", "fail_to_create_launch_point"), "");
-    err_text = "unknown type";
-    return nullptr;
 }

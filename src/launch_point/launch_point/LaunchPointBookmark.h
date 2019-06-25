@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2018 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,25 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef PRELAUNCHER_INTERFACE_H_
-#define PRELAUNCHER_INTERFACE_H_
+#ifndef LAUNCH_POINT_BOOKMARK_4_BASE_H
+#define LAUNCH_POINT_BOOKMARK_4_BASE_H
 
-#include <boost/signals2.hpp>
+#include <launch_point/launch_point/LaunchPoint.h>
 
-#include <lifecycle/AppLaunchingItem.h>
-
-class IPrelauncher {
+class LaunchPointBookmark: public LaunchPoint {
 public:
-    IPrelauncher() {}
-    virtual ~IPrelauncher() {}
+    LaunchPointBookmark(const std::string& id, const std::string& lp_id)
+        : LaunchPoint(id, lp_id)
+    {
+    }
 
-    virtual void addItem(AppLaunchingItemPtr item) = 0;
-    virtual void removeItem(const std::string& item_uid) = 0;
-    virtual void inputBridgedReturn(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg) = 0;
-    virtual void cancelAll() = 0;
-
-public:
-    boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
+    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual std::string update(const pbnjson::JValue& data);
 };
 
-#endif
+#endif /* LAUNCH_POINT_BOOKMARK_4_BASE_H */

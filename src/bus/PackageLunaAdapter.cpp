@@ -465,11 +465,13 @@ void PackageLunaAdapter::onAppStatusChanged(AppStatusChangeEvent event, AppDescP
     if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(), subs_key.c_str(), str_payload.c_str(), NULL)) {
 
         LOG_WARNING(MSGID_SUBSCRIPTION_REPLY_ERR, 1,
-                    PMLOGKS("key", subs_key.c_str()), "trace(%s:%d)", __FUNCTION__, __LINE__);
+                    PMLOGKS("key", subs_key.c_str()),
+                    "trace(%s:%d)", __FUNCTION__, __LINE__);
     }
 
     if (!LSSubscriptionReply(AppMgrService::instance().serviceHandle(), subs_key_w_appinfo.c_str(), str_payload_w_appinfo.c_str(), NULL)) {
         LOG_WARNING(MSGID_SUBSCRIPTION_REPLY_ERR, 1,
-                    PMLOGKS("key", subs_key_w_appinfo.c_str()), "trace(%s:%d)", __FUNCTION__, __LINE__);
+                    PMLOGKS("key", subs_key_w_appinfo.c_str()),
+                    "trace(%s:%d)", __FUNCTION__, __LINE__);
     }
 }

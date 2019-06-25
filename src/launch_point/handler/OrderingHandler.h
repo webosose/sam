@@ -14,42 +14,52 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef ORDERING_HANDLER_H
-#define ORDERING_HANDLER_H
+#ifndef ORDERING_HANDLER_4_BASE_H
+#define ORDERING_HANDLER_4_BASE_H
 
+#include <launch_point/handler/OrderingHandler.h>
 #include <launch_point/launch_point/LaunchPoint.h>
-#include <launch_point/OrderingHandlerInterface.h>
+#include <functional>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/LSUtils.h>
+#include <boost/signals2.hpp>
 
+const int INVALID_POSITION = -1;
 const int DEFAULT_POSITION_INVALID = -1;
 
-class OrderingHandler: public OrderingHandlerInterface {
+enum class OrderChangeState {
+    FULL = 0,
+    PARTIAL
+};
+
+class OrderingHandler {
 public:
-    OrderingHandler()
+    OrderingHandler();
+    virtual ~OrderingHandler();
+
+    virtual void init();
+    virtual void handleDBState(bool connection);
+    virtual void reloadDBData(bool connection);
+    virtual void makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
+
+    virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text);
+
+    virtual int insertLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual int updateLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual void deleteLPInOrder(const std::string& lp_id);
+
+    virtual std::vector<std::string> getOrderedList()
     {
-    }
-    virtual ~OrderingHandler()
-    {
+        return m_orderedList;
     }
 
-    virtual void Init();
-    virtual void HandleDbState(bool connection);
-    virtual void ReloadDbData(bool connection);
-    virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
-
-    virtual int InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-    virtual int UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-    virtual void DeleteLpInOrder(const std::string& lp_id);
-
-    virtual std::vector<std::string> GetOrderedList()
-    {
-        return ordered_list_;
-    }
+    boost::signals2::signal<void (const OrderChangeState&)> signal_launch_points_ordered_;
 
 private:
-    std::vector<std::string> ordered_list_;
+    void reorder();
+
+    std::vector<std::string> m_orderedList;
+    std::vector<LaunchPointPtr> m_visibleLPs;
+
 };
 
 #endif

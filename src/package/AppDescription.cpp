@@ -127,12 +127,12 @@ bool AppDescription::loadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_b
     else if ("native_appshell" == app_type)
         m_appType = AppType::AppType_Native_AppShell;
     else if ("qml" == app_type && (AppTypeByDir::AppTypeByDir_System_BuiltIn == type_by_dir || AppTypeByDir::AppTypeByDir_System_Updatable == type_by_dir)) {
-        if (SettingsImpl::instance().use_qml_booster_)
+        if (SettingsImpl::instance().m_useQmlBooster)
             m_appType = AppType::AppType_Qml;
         else
             m_appType = AppType::AppType_Native_Qml;
     } else if ("qml" == app_type && AppTypeByDir::AppTypeByDir_Dev == type_by_dir) {
-        if (SettingsImpl::instance().use_qml_booster_)
+        if (SettingsImpl::instance().m_useQmlBooster)
             m_appType = AppType::AppType_Qml;
         else
             m_appType = AppType::AppType_Native_Qml;
@@ -287,7 +287,7 @@ void AppDescription::loadAsset(pbnjson::JValue& jdesc)
 {
     static const std::vector<std::string> supporting_assets { "icon", "largeIcon", "bgImage", "splashBackground" };
 
-    std::string variant = SettingsImpl::instance().package_asset_variant_;
+    std::string variant = SettingsImpl::instance().m_packageAssetVariant;
     std::string asset_base_path = jdesc.hasKey("sysAssetsBasePath") ? jdesc["sysAssetsBasePath"].asString() : "sys-assets";
     set_slash_to_base_path(asset_base_path);
 
