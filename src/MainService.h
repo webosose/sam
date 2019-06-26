@@ -23,14 +23,13 @@
 #include <launch_point/handler/OrderingHandler.h>
 #include <launch_point/launch_point/LaunchPoint.h>
 #include <launch_point/launch_point/LaunchPointFactory.h>
-#include <lifecycle/AppLaunchingItemFactory.h>
-#include <lifecycle/LastAppHandler.h>
-#include <lifecycle/MemoryChecker.h>
-#include <lifecycle/Prelauncher.h>
+#include <lifecycle/stage/AppLaunchingItemFactory.h>
+#include <lifecycle/stage/MemoryChecker.h>
 #include <set>
 #include <luna-service2/lunaservice.h>
 #include <package/AppDescription.h>
 #include <pbnjson.hpp>
+#include <policy/LastAppHandler.h>
 
 #include <util/Singleton.h>
 
@@ -47,7 +46,6 @@ private:
 
     // lifecycle adapter
     AppLaunchingItemFactory m_appLaunchingItemFactory;
-    Prelauncher m_prelauncher;
     MemoryChecker m_memoryChecker;
     LastAppHandler m_lastappHandler;
 

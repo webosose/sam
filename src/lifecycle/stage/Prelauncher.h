@@ -17,7 +17,7 @@
 #ifndef PRELAUNCHER_H
 #define PRELAUNCHER_H
 
-#include <lifecycle/AppLaunchingItem.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
 
 class Prelauncher {
 public:

@@ -54,7 +54,7 @@ public:
     // getter list
     bool canExecute(const std::string& app_id);
     bool isRemoveFlagged(const std::string& app_id);
-    const std::string& pid(const std::string& app_id);
+    const std::string& getPid(const std::string& app_id);
     const std::string& webprocid(const std::string& app_id);
     bool preloadModeOn(const std::string& app_id);
     bool isOutOfService(const std::string& app_id);

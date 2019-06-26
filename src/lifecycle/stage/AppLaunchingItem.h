@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,13 +26,9 @@
 
 const std::string SYS_LAUNCHING_UID = "alertId";
 
-enum class AppLaunchRequestType {
-    INTERNAL = 0,
-    EXTERNAL
-};
-
 enum class AppLaunchingStage {
     INVALID = -1,
+    CHECK_EXECUTE,
     PREPARE_PRELAUNCH = 0,
     PRELAUNCH,
     MEMORY_CHECK,
@@ -40,7 +36,6 @@ enum class AppLaunchingStage {
     PRELAUNCH_DONE,
     LAUNCH,
     DONE,
-    CHECK_EXECUTE,
 };
 
 enum class StageHandlerReturn : int {
@@ -72,12 +67,12 @@ struct StageItem {
     StageHandler m_handler;
     AppLaunchingStage m_launchingStage;
 
-    StageItem(StageHandlerType _type, const std::string& _uri, PayloadMaker _maker, StageHandler _handler, AppLaunchingStage _stage)
+    StageItem(StageHandlerType _type, const std::string& uri, PayloadMaker maker, StageHandler handler, AppLaunchingStage stage)
         : m_handlerType(_type),
-          m_uri(_uri),
-          m_payloadMaker(_maker),
-          m_handler(_handler),
-          m_launchingStage(_stage)
+          m_uri(uri),
+          m_payloadMaker(maker),
+          m_handler(handler),
+          m_launchingStage(stage)
     {
     }
 };
@@ -86,10 +81,10 @@ typedef std::deque<StageItem> StageItemList;
 
 class AppLaunchingItem {
 public:
-    AppLaunchingItem(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg);
+    AppLaunchingItem(const std::string& appId, const pbnjson::JValue& params, LSMessage* lsmsg);
     virtual ~AppLaunchingItem();
 
-    const std::string& uid() const
+    const std::string& getUid() const
     {
         return m_uid;
     }
@@ -97,7 +92,7 @@ public:
     {
         return m_appId;
     }
-    const std::string& pid() const
+    const std::string& getPid() const
     {
         return m_pid;
     }
@@ -109,45 +104,45 @@ public:
     {
         return m_redirected;
     }
-    const AppLaunchingStage& stage() const
+    const AppLaunchingStage& getStage() const
     {
         return m_stage;
     }
-    const int& subStage() const
+    const int& getSubStage() const
     {
         return m_subStage;
     }
-    const std::string& callerId() const
+    const std::string& getCallerId() const
     {
         return m_callerId;
     }
-    const std::string& callerPid() const
+    const std::string& getCallerPid() const
     {
         return m_callerPid;
     }
-    bool showSplash() const
+    bool isShowSplash() const
     {
         return m_showSplash;
     }
-    bool showSpinner() const
+    bool isShowSpinner() const
     {
         return m_showSpinner;
     }
-    const std::string& preload() const
+    const std::string& getPreload() const
     {
         return m_preload;
     }
-    bool keepAlive() const
+    bool isKeepAlive() const
     {
         return m_keepAlive;
     }
-    bool automaticLaunch() const
+    bool isAutomaticLaunch() const
     {
         return m_automaticLaunch;
     }
-    const pbnjson::JValue& params() const
+    const pbnjson::JValue& getParams() const
     {
-        return mParams;
+        return m_params;
     }
     LSMessage* lsmsg() const
     {
@@ -265,12 +260,10 @@ public:
     {
         return m_stageList;
     }
-
     void addStage(StageItem item)
     {
         m_stageList.push_back(item);
     }
-
     void clearAllStages()
     {
         m_stageList.clear();
@@ -282,10 +275,9 @@ private:
     std::string m_pid;
     std::string m_requestedAppId;
     bool m_redirected;
-    AppLaunchRequestType m_rtype;
     AppLaunchingStage m_stage;
     int m_subStage;
-    pbnjson::JValue mParams;
+    pbnjson::JValue m_params;
     LSMessage* m_lsmsg;
     std::string m_callerId;
     std::string m_callerPid;

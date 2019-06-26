@@ -17,7 +17,7 @@
 #include <bus/AppMgrService.h>
 #include <bus/LunaserviceAPI.h>
 #include <bus/PackageLunaAdapter.h>
-#include <lifecycle/LifecycleManager.h>
+#include <lifecycle/LifeCycleManager.h>
 #include <util/Logging.h>
 
 #define SUBSKEY_LIST_APPS             "listApps"

@@ -19,7 +19,7 @@
 #include <bus/AppMgrService.h>
 #include <bus/AppMgrService.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/life_handler/QmlAppLifeHandler.h>
+#include <lifecycle/handler/QmlAppLifeHandler.h>
 #include <package/PackageManager.h>
 #include <util/JUtil.h>
 #include <util/Logging.h>
@@ -65,14 +65,14 @@ void QmlAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGKS("reason", "null_description"),
                   PMLOGKS("where", "qmlapp_launch"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        signal_launching_done(item->uid());
+        signal_launching_done(item->getUid());
         return;
     }
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("main", app_desc->entryPoint());
     payload.put("appId", item->appId());
-    payload.put("params", item->params().duplicate().stringify());
+    payload.put("params", item->getParams().duplicate().stringify());
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
@@ -88,14 +88,14 @@ void QmlAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGJSON("payload", payload.stringify().c_str()),
                   PMLOGKS("where", "booster_launch"), "err: %s", lserror.message);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        signal_launching_done(item->uid());
+        signal_launching_done(item->getUid());
         return;
     }
 
-    if (item->preload().empty())
-        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
+    if (item->getPreload().empty())
+        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::LAUNCHING);
     else
-        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
+        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::PRELOADING);
 
     double current_time = get_current_time();
     double elapsed_time = current_time - item->launchStartTime();
@@ -125,7 +125,7 @@ bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg
         return false;
     }
 
-    uid = item->uid();
+    uid = item->getUid();
     g_this->removeItemFromLSCallRequestList(uid);
     item->resetReturnToken();
 
@@ -137,7 +137,7 @@ bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg
         // TODO: set proper life status for this error case
         // g_this->signal_app_life_status_changed(item->app_id(), "", RuntimeStatus::STOP);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->signal_launching_done(item->uid());
+        g_this->signal_launching_done(item->getUid());
         return false;
     }
 
@@ -151,7 +151,7 @@ bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg
         g_this->signal_app_life_status_changed(item->appId(), "", RuntimeStatus::STOP);
 
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->signal_launching_done(item->uid());
+        g_this->signal_launching_done(item->getUid());
         return true;
     }
 
@@ -175,7 +175,7 @@ bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg
         g_this->signal_app_life_status_changed(item->appId(), "", RuntimeStatus::STOP);
 
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->signal_launching_done(item->uid());
+        g_this->signal_launching_done(item->getUid());
         return true;
     }
 
@@ -187,7 +187,7 @@ bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg
     g_this->signal_running_app_added(app_id, pid, "");
     g_this->signal_app_life_status_changed(app_id, "", RuntimeStatus::RUNNING);
 
-    g_this->signal_launching_done(item->uid());
+    g_this->signal_launching_done(item->getUid());
 
     return true;
 }
@@ -301,7 +301,7 @@ AppLaunchingItemPtr QmlAppLifeHandler::getLSCallRequestItemByToken(const LSMessa
 
 void QmlAppLifeHandler::removeItemFromLSCallRequestList(const std::string& uid)
 {
-    auto it = std::find_if(m_LSCallRequestList.begin(), m_LSCallRequestList.end(), [&uid](AppLaunchingItemPtr item) {return (item->uid() == uid);});
+    auto it = std::find_if(m_LSCallRequestList.begin(), m_LSCallRequestList.end(), [&uid](AppLaunchingItemPtr item) {return (item->getUid() == uid);});
     if (it == m_LSCallRequestList.end())
         return;
 

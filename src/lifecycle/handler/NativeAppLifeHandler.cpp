@@ -20,7 +20,7 @@
 #include <lifecycle/AppInfoManager.h>
 #include <lifecycle/AppInfoManager.h>
 #include <lifecycle/ApplicationErrors.h>
-#include <lifecycle/life_handler/NativeAppLifeHandler.h>
+#include <lifecycle/handler/NativeAppLifeHandler.h>
 #include <package/AppDescription.h>
 #include <package/PackageManager.h>
 #include <setting/Settings.h>
@@ -59,7 +59,7 @@ void NativeAppLifeCycleInterface::launch(NativeClientInfoPtr client, AppLaunchin
 {
     // Check launch condition
     if (checkLaunchCondition(item) == false) {
-        parent()->signal_launching_done(item->uid());
+        parent()->signal_launching_done(item->getUid());
         return;
     }
 
@@ -110,7 +110,7 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
                   PMLOGKS("reason", "null_description"),
                   PMLOGKS("where", __FUNCTION__), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        parent()->signal_launching_done(item->uid());
+        parent()->signal_launching_done(item->getUid());
         return;
     }
 
@@ -206,10 +206,10 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
 
     }
 
-    if (item->preload().empty())
-        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
+    if (item->getPreload().empty())
+        parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::LAUNCHING);
     else
-        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
+        parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::PRELOADING);
 
     int pid = fork_process(fork_params, NULL);
 
@@ -217,9 +217,9 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
                   PMLOGKS("app_id", app_desc->id().c_str()),
                   PMLOGKS("path", path.c_str()), "forked_pid: %d", pid);
-        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::STOP);
+        parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::STOP);
         item->setErrCodeText(APP_ERR_NATIVE_SPAWN, "Failed to launch process");
-        parent()->signal_launching_done(item->uid());
+        parent()->signal_launching_done(item->getUid());
         return;
     }
 
@@ -241,8 +241,8 @@ void NativeAppLifeCycleInterface::launchAsCommon(NativeClientInfoPtr client, App
     client->StartTimerForCheckingRegistration();
     AppInfoManager::instance().setLastLaunchTime(item->appId(), current_time);
     parent()->signal_running_app_added(item->appId(), new_pid, "");
-    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::RUNNING);
-    parent()->signal_launching_done(item->uid());
+    parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::RUNNING);
+    parent()->signal_launching_done(item->getUid());
 }
 
 void NativeAppLifeCycleInterface::relaunchAsCommon(NativeClientInfoPtr client, AppLaunchingItemPtr item)
@@ -256,13 +256,13 @@ void NativeAppLifeCycleInterface::relaunchAsCommon(NativeClientInfoPtr client, A
     pbnjson::JValue payload = pbnjson::Object();
     makeRelaunchParams(item, payload);
 
-    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
+    parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::LAUNCHING);
 
     if (client->SendEvent(payload) == false) {
         LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", client->AppId().c_str()), "failed_to_send_relaunch_event");
     }
 
-    parent()->signal_launching_done(item->uid());
+    parent()->signal_launching_done(item->getUid());
 }
 
 ////////////////////////////////////////////////////////////////
@@ -287,13 +287,13 @@ std::string NativeAppLifeCycleInterfaceVer1::makeForkArguments(AppLaunchingItemP
     if (AppType::AppType_Native_Qml == app_desc->type()) {
         payload.put("main", app_desc->entryPoint());
         payload.put("appId", app_desc->id());
-        payload.put("params", item->params());
+        payload.put("params", item->getParams());
     } else {
-        payload = item->params().duplicate();
+        payload = item->getParams().duplicate();
         payload.put("nid", item->appId());
         payload.put("@system_native_app", true);
-        if (!item->preload().empty())
-            payload.put("preload", item->preload());
+        if (!item->getPreload().empty())
+            payload.put("preload", item->getPreload());
     }
 
     return payload.stringify();
@@ -315,7 +315,7 @@ bool NativeAppLifeCycleInterfaceVer1::checkLaunchCondition(AppLaunchingItemPtr i
 void NativeAppLifeCycleInterfaceVer1::makeRelaunchParams(AppLaunchingItemPtr item, pbnjson::JValue& payload)
 {
     payload.put("message", "relaunch");
-    payload.put("parameters", item->params());
+    payload.put("parameters", item->getParams());
     payload.put("returnValue", true);
 }
 
@@ -350,12 +350,12 @@ void NativeAppLifeCycleInterfaceVer1::launchNotRegisteredAppAsPolicy(NativeClien
     LOG_INFO(MSGID_APPLAUNCH, 3,
              PMLOGKS("app_id", item->appId().c_str()),
              PMLOGKS("preload_mode_on", (preload_mode_on ? "on":"off")),
-             PMLOGKS("preload_mode", (item->preload().empty() ? "empty":item->preload().c_str())),
+             PMLOGKS("preload_mode", (item->getPreload().empty() ? "empty":item->getPreload().c_str())),
              "in close_and_launch");
 
     // if less than 3 sec, just skip
     if ((current_time - last_launch_time) < TIME_LIMIT_OF_APP_LAUNCHING) {
-        if (preload_mode_on && item->preload().empty()) {
+        if (preload_mode_on && item->getPreload().empty()) {
             // should close and launch if currently being launched in hidden mode
         } else {
             LOG_INFO(MSGID_APPLAUNCH, 3,
@@ -363,13 +363,13 @@ void NativeAppLifeCycleInterfaceVer1::launchNotRegisteredAppAsPolicy(NativeClien
                      PMLOGKS("status", "running"),
                      PMLOGKS("action", "skip_by_launching_time"),
                      "life_cycle: %d", (int )AppInfoManager::instance().runtimeStatus(item->appId()));
-            item->setPid(AppInfoManager::instance().pid(item->appId()));
-            parent()->signal_launching_done(item->uid());
+            item->setPid(AppInfoManager::instance().getPid(item->appId()));
+            parent()->signal_launching_done(item->getUid());
             return;
         }
     }
 
-    std::string pid = AppInfoManager::instance().pid(item->appId());
+    std::string pid = AppInfoManager::instance().getPid(item->appId());
     LOG_INFO(MSGID_APPLAUNCH, 3,
              PMLOGKS("app_id", item->appId().c_str()),
              PMLOGKS("status", "running"),
@@ -378,7 +378,7 @@ void NativeAppLifeCycleInterfaceVer1::launchNotRegisteredAppAsPolicy(NativeClien
 
     PidVector all_pids = FindChildPids(client->Pid());
     (void) parent()->SendSystemSignal(all_pids, SIGTERM);
-    parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::CLOSING);
+    parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::CLOSING);
     parent()->StartTimerToKillApp(client->AppId(), client->Pid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
 
     parent()->AddLaunchingItemIntoPendingQ(item);
@@ -467,11 +467,11 @@ std::string NativeAppLifeCycleInterfaceVer2::makeForkArguments(AppLaunchingItemP
     payload.put("appId", item->appId());
     payload.put("interfaceVersion", 2);
     payload.put("interfaceMethod", "registerApp");
-    payload.put("parameters", item->params());
+    payload.put("parameters", item->getParams());
     payload.put("@system_native_app", true);
 
-    if (!item->preload().empty())
-        payload.put("preload", item->preload());
+    if (!item->getPreload().empty())
+        payload.put("preload", item->getPreload());
 
     if (AppType::AppType_Native_Qml == app_desc->type())
         payload.put("main", app_desc->entryPoint());
@@ -489,7 +489,7 @@ void NativeAppLifeCycleInterfaceVer2::makeRelaunchParams(AppLaunchingItemPtr ite
     payload.put("event", "relaunch");
     payload.put("reason", item->launchReason());
     payload.put("appId", item->appId());
-    payload.put("parameters", item->params());
+    payload.put("parameters", item->getParams());
     payload.put("returnValue", true);
 }
 
@@ -517,7 +517,7 @@ void NativeAppLifeCycleInterfaceVer2::launchNotRegisteredAppAsPolicy(NativeClien
         // clean up previous launch reqeust from pending queue
         parent()->CancelLaunchPendingItemAndMakeItDone(client->AppId());
 
-        parent()->signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::CLOSING);
+        parent()->signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::CLOSING);
 
         (void) parent()->FindPidsAndSendSystemSignal(client->Pid(), SIGKILL);
     }
@@ -815,7 +815,7 @@ void NativeAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGKS("app_id", item->appId().c_str()),
                   PMLOGKS("reason", "no_client"), "%s:%d", __FUNCTION__, __LINE__);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        signal_launching_done(item->uid());
+        signal_launching_done(item->getUid());
         return;
     }
 
@@ -1252,7 +1252,7 @@ void NativeAppLifeHandler::CancelLaunchPendingItemAndMakeItDone(const std::strin
                      PMLOGKS("app_id", app_id.c_str()),
                      PMLOGKS("action", "cancel_launch_request"), "");
             (*pending_item)->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "launching_cancled");
-            signal_launching_done((*pending_item)->uid());
+            signal_launching_done((*pending_item)->getUid());
             pending_item = m_launchPendingQueue.erase(pending_item);
         }
     }

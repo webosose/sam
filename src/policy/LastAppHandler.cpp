@@ -14,16 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
-#define APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
+#include <policy/LastAppHandler.h>
 
-#include "AppLaunchingItem.h"
+LastAppHandler::LastAppHandler()
+{
+}
 
-class AppLaunchingItemFactory {
-public:
-    AppLaunchingItemFactory();
-    virtual ~AppLaunchingItemFactory();
-    virtual AppLaunchingItemPtr create(const std::string& initial_app_id, AppLaunchRequestType rtype, const pbnjson::JValue& initial_params, LSMessage* lsmsg, int& err_code, std::string& err_text);
-};
+LastAppHandler::~LastAppHandler()
+{
+}
 
-#endif
+void LastAppHandler::launch()
+{
+}
+
+void LastAppHandler::cancel()
+{
+}

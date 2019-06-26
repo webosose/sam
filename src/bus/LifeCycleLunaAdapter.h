@@ -56,12 +56,6 @@ private:
     void onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info);
     void onLifeCycleEventGenarated(const pbnjson::JValue& event);
 
-    // TODO : make them retired via sangria
-    // api handler which should be deprecated
-    void close(LunaTaskPtr task);
-    void notifySplashTimeout(LunaTaskPtr task);
-    void onLaunch(LunaTaskPtr task);
-
     std::vector<LunaTaskPtr> m_pendingTasksOnReady;
     std::vector<LunaTaskPtr> m_pendingTasksOnScanner;
 };

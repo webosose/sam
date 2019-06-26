@@ -14,41 +14,49 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef QMLAPP_LIFE_HANDLER_H_
-#define QMLAPP_LIFE_HANDLER_H_
+#ifndef WEBAPP_LIFE_HANDLER_H_
+#define WEBAPP_LIFE_HANDLER_H_
 
-#include <lifecycle/life_handler/AppLifeHandlerInterface.h>
+#include <lifecycle/IAppLifeHandler.h>
+#include <luna-service2/lunaservice.h>
 
-class QmlAppLifeHandler: public AppLifeHandlerInterface {
+
+class WebAppLifeHandler: public IAppLifeHandler {
 public:
-    QmlAppLifeHandler();
-    virtual ~QmlAppLifeHandler();
+    WebAppLifeHandler();
+    virtual ~WebAppLifeHandler();
 
     virtual void launch(AppLaunchingItemPtr item) override;
     virtual void close(AppCloseItemPtr item, std::string& err_text) override;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
-    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
-    void removeItemFromLSCallRequestList(const std::string& uid);
-
-    void onServiceReady();
-
-private:
-    void initialize();
-    static bool onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnBoosterClose(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onQMLProcessFinished(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-
-    static bool onQMLProcessWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-
-public:
+    boost::signals2::signal<void()> signal_service_disconnected;
     boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
     boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
     boost::signals2::signal<void(const std::string& app_id)> signal_running_app_removed;
     boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
 
 private:
-    AppLaunchingItemList m_LSCallRequestList;
+    void onServiceReady();
+    void onWAMServiceStatusChanged(bool connection);
+
+    static bool onWAMSubscriptionRunninglist(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForLaunchRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForCloseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnForPauseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    void handleRunningListChange(const pbnjson::JValue& new_list);
+    void subscribeWAMRunningList();
+
+    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    void removeItemFromLSCallRequestList(const std::string& uid);
+    void addLoadingApp(const std::string& app_id);
+    void removeLoadingApp(const std::string& app_id);
+    bool isLoading(const std::string& app_id);
+
+    LSMessageToken m_wamSubscriptionToken;
+    pbnjson::JValue m_runningList;
+    AppLaunchingItemList m_lscallRequestList;
+    std::vector<std::string> m_loadingList;
 };
 
 #endif

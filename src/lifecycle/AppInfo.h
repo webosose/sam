@@ -24,7 +24,6 @@
 
 #include <pbnjson.hpp>
 
-
 const std::string CATEGORY_ON_STORE_APPS = "GAME_APPS";
 const std::string UPDATE_TYPE_OPTIONAL = "Y";
 const std::string UPDATE_TYPE_REQUIRED = "F";

@@ -14,13 +14,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef PRELAUNCHER_STAGES_H
-#define PRELAUNCHER_STAGES_H
+#ifndef APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
+#define APP_LAUNCHING_ITEM_FACTORY_4_BASE_H
 
-#include <lifecycle/AppLaunchingItem.h>
-#include <pbnjson.hpp>
+#include <lifecycle/stage/AppLaunchingItem.h>
 
-bool setPrelaunchingStages(AppLaunchingItemPtr item);
-StageHandlerReturn handleExecutionLockStatus(AppLaunchingItemPtr prelaunching_item);
+class AppLaunchingItemFactory {
+public:
+    AppLaunchingItemFactory();
+    virtual ~AppLaunchingItemFactory();
+    virtual AppLaunchingItemPtr create(const std::string& initial_app_id, const pbnjson::JValue& initial_params, LSMessage* lsmsg, int& err_code, std::string& err_text);
+};
 
 #endif

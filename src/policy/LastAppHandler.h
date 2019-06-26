@@ -14,26 +14,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef MEMORY_CHECKER_4_BASE_H
-#define MEMORY_CHECKER_4_BASE_H
+#ifndef LAST_APP_HANDLER_4_BASE_H
+#define LAST_APP_HANDLER_4_BASE_H
 
-#include <boost/signals2.hpp>
-#include <lifecycle/AppLaunchingItem.h>
+#include <pbnjson.hpp>
 
-class MemoryChecker {
+class LastAppHandler {
 public:
-    MemoryChecker();
-    virtual ~MemoryChecker();
+    LastAppHandler();
+    virtual ~LastAppHandler();
 
-    virtual void add_item(AppLaunchingItemPtr item);
-    virtual void remove_item(const std::string& item_uid);
-    virtual void run();
-    virtual void cancel_all();
-
-    boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_start;
-    boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_done;
-private:
-    AppLaunchingItemList m_queue;
+    virtual void launch();
+    virtual void cancel();
 
 };
 

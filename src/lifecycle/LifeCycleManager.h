@@ -18,21 +18,20 @@
 #define APP_LIFE_MANAGER_H_
 
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/AppLaunchingItem.h>
-#include <lifecycle/AppLaunchingItemFactory.h>
 #include <lifecycle/AppLifeStatus.h>
-#include <lifecycle/life_handler/NativeAppLifeHandler.h>
-#include <lifecycle/life_handler/QmlAppLifeHandler.h>
-#include <lifecycle/life_handler/WebAppLifeHandler.h>
-#include <lifecycle/LastAppHandler.h>
-#include <lifecycle/LifecycleTask.h>
-#include <lifecycle/MemoryChecker.h>
-#include <lifecycle/Prelauncher.h>
+#include <lifecycle/handler/NativeAppLifeHandler.h>
+#include <lifecycle/handler/QmlAppLifeHandler.h>
+#include <lifecycle/handler/WebAppLifeHandler.h>
+#include <lifecycle/LifeCycleTask.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
+#include <lifecycle/stage/AppLaunchingItemFactory.h>
+#include <lifecycle/stage/MemoryChecker.h>
+#include <lifecycle/stage/Prelauncher.h>
 #include <luna-service2/lunaservice.h>
 #include <package/AppDescription.h>
+#include <policy/LastAppHandler.h>
 #include <util/Singleton.h>
 #include <tuple>
-
 
 typedef std::tuple<std::string, AppType, double> LoadingAppItem;
 
@@ -50,7 +49,7 @@ public:
     void CloseByPid(LifeCycleTaskPtr task);
     void CloseAll(LifeCycleTaskPtr task);
 
-    void launch(AppLaunchRequestType rtype, const std::string& app_id, const pbnjson::JValue& params, LSMessage* lsmsg);
+    void launch(const std::string& app_id, const pbnjson::JValue& params, LSMessage* lsmsg);
     void closeByAppId(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool preload_only = false, bool clear_all_items = false);
     void closeByPid(const std::string& pid, const std::string& caller_id, std::string& err_text);
     void closeAllLoadingApps();
@@ -67,7 +66,6 @@ public:
     void getLaunchingAppIds(std::vector<std::string>& app_ids);
 
     void setApplifeitemFactory(AppLaunchingItemFactory& factory);
-    void setPrelauncherHandler(Prelauncher& prelauncher);
     void setMemoryCheckerHandler(MemoryChecker& memory_checker);
     void setLastappHandler(LastAppHandler& lastapp_handler);
 
@@ -138,12 +136,12 @@ private:
     void replySubscriptionForRunning(const pbnjson::JValue& running_list, bool devmode = false);
     void generateLifeCycleEvent(const std::string& app_id, const std::string& uid, LifeEvent event);
 
-    AppLifeHandlerInterface* getLifeHandlerForApp(const std::string& app_id);
+    IAppLifeHandler* getLifeHandlerForApp(const std::string& app_id);
 
 private:
     // extendable interface
+    Prelauncher m_prelauncher;
     AppLaunchingItemFactory* m_launchItemFactory;
-    Prelauncher* m_prelauncher;
     MemoryChecker* m_memoryChecker;
     NativeAppLifeHandler m_nativeLifecycleHandler;
     WebAppLifeHandler m_webLifecycleHandler;

@@ -18,24 +18,23 @@
 #define APP_LIFE_HANDLER_INTERFACE_H_
 
 #include <boost/signals2.hpp>
-#include <lifecycle/AppCloseItem.h>
 #include <lifecycle/AppInfo.h>
 #include <lifecycle/ApplicationErrors.h>
-#include <lifecycle/ApplicationErrors.h>
-#include <lifecycle/AppLaunchingItem.h>
+#include <lifecycle/stage/AppCloseItem.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
 
-class AppLifeHandlerInterface {
+class IAppLifeHandler {
 public:
-    AppLifeHandlerInterface()
+    IAppLifeHandler()
     {
     }
-    virtual ~AppLifeHandlerInterface()
+    virtual ~IAppLifeHandler()
     {
     }
 
     virtual void launch(AppLaunchingItemPtr item) = 0;
-    virtual void close(AppCloseItemPtr item, std::string& err_text) = 0;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) = 0;
+    virtual void close(AppCloseItemPtr item, std::string& errText) = 0;
+    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& errText, bool send_life_event = true) = 0;
 };
 
 #endif

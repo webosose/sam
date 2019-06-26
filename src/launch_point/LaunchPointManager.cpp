@@ -18,7 +18,7 @@
 #include <boost/lexical_cast.hpp>
 #include <bus/AppMgrService.h>
 #include <launch_point/LaunchPointManager.h>
-#include <lifecycle/LifecycleManager.h>
+#include <lifecycle/LifeCycleManager.h>
 #include <module/ServiceObserver.h>
 #include <package/PackageManager.h>
 #include <iterator>

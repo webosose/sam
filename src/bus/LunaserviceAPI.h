@@ -18,8 +18,8 @@
 #define BUS_LUNASERVICEAPI_H_
 
 // category
-#define API_CATEGORY_GENERAL  "/"
-#define API_CATEGORY_DEV      "/dev"
+#define API_CATEGORY_GENERAL                    "/"
+#define API_CATEGORY_DEV                        "/dev"
 
 // core API
 // core API: lifecycle
@@ -50,9 +50,9 @@
 // [ Error code list ]
 //---------------------------------------------------------------------------
 // common error code
-#define API_ERR_CODE_GENERAL          1
-#define API_ERR_CODE_INVALID_PAYLOAD  2
-#define API_ERR_CODE_DEPRECATED       999
+#define API_ERR_CODE_GENERAL                    1
+#define API_ERR_CODE_INVALID_PAYLOAD            2
+#define API_ERR_CODE_DEPRECATED                 999
 
 // For core API : lifecycle
 

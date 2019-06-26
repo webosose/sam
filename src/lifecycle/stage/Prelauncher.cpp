@@ -16,8 +16,8 @@
 
 #include <bus/AppMgrService.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/Prelauncher.h>
-#include <lifecycle/PrelauncherStages.h>
+#include <lifecycle/stage/Prelauncher.h>
+#include <lifecycle/stage/PrelauncherStages.h>
 #include <luna-service2/lunaservice.h>
 
 #include <package/PackageManager.h>
@@ -43,11 +43,11 @@ void Prelauncher::addItem(AppLaunchingItemPtr item)
 {
     AppLaunchingItemPtr newItem = std::static_pointer_cast<AppLaunchingItem>(item);
     auto it = std::find_if(m_itemQueue.begin(), m_itemQueue.end(),
-                           [&item](AppLaunchingItemPtr it_item) {return (it_item->uid() == item->uid());});
+                           [&item](AppLaunchingItemPtr it_item) {return (it_item->getUid() == item->getUid());});
     if (it != m_itemQueue.end()) {
         LOG_CRITICAL(MSGID_APPLAUNCH_ERR, 3,
                      PMLOGKS("app_id", item->appId().c_str()),
-                     PMLOGKS("uid", item->uid().c_str()),
+                     PMLOGKS("uid", item->getUid().c_str()),
                      PMLOGKS("reason", "already_in_prelaunching_queue"), "");
         return;
     }
@@ -69,7 +69,7 @@ void Prelauncher::addItem(AppLaunchingItemPtr item)
 
 void Prelauncher::removeItem(const std::string& app_uid)
 {
-    auto it = std::find_if(m_itemQueue.begin(), m_itemQueue.end(), [&app_uid](AppLaunchingItemPtr it_item) {return (it_item->uid() == app_uid);});
+    auto it = std::find_if(m_itemQueue.begin(), m_itemQueue.end(), [&app_uid](AppLaunchingItemPtr it_item) {return (it_item->getUid() == app_uid);});
     if (it != m_itemQueue.end())
         m_itemQueue.erase(it);
 }
@@ -90,7 +90,7 @@ AppLaunchingItemPtr Prelauncher::getItemByUid(const std::string& uid)
     auto it = m_itemQueue.begin();
     auto it_end = m_itemQueue.end();
     for (; it != it_end; ++it) {
-        if ((*it)->uid() == uid)
+        if ((*it)->getUid() == uid)
             return *it;
     }
     return NULL;
@@ -99,7 +99,7 @@ AppLaunchingItemPtr Prelauncher::getItemByUid(const std::string& uid)
 void Prelauncher::removeItemFromLSCallRequestList(const std::string& uid)
 {
     auto it = std::find_if(m_lscallRequestList.begin(), m_lscallRequestList.end(),
-                           [&uid](AppLaunchingItemPtr item) {return (item->uid() == uid);});
+                           [&uid](AppLaunchingItemPtr item) {return (item->getUid() == uid);});
     if (it == m_lscallRequestList.end())
         return;
     m_lscallRequestList.erase(it);
@@ -125,7 +125,7 @@ bool Prelauncher::onReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* l
         return true;
     }
 
-    const std::string& uid = prelaunching_item->uid();
+    const std::string& uid = prelaunching_item->getUid();
     g_this->removeItemFromLSCallRequestList(uid);
 
     if (g_this->getItemByUid(uid) == NULL) {
@@ -167,7 +167,7 @@ bool Prelauncher::onReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_
         return true;
     }
 
-    std::string uid = prelaunching_item->uid();
+    std::string uid = prelaunching_item->getUid();
     g_this->removeItemFromLSCallRequestList(uid);
 
     if (g_this->getItemByUid(uid) == NULL) {
@@ -351,27 +351,27 @@ void Prelauncher::handleStages(AppLaunchingItemPtr prelaunching_item)
 
 void Prelauncher::finishPrelaunching(AppLaunchingItemPtr prelaunching_item)
 {
-    std::string uid = prelaunching_item->uid();
+    std::string uid = prelaunching_item->getUid();
 
     prelaunching_item->setSubStage(static_cast<int>(AppLaunchingStage::PRELAUNCH_DONE));
-    signal_prelaunching_done(prelaunching_item->uid());
+    signal_prelaunching_done(prelaunching_item->getUid());
 
     // clear prelaunching data
     removeItem(uid);
     removeItemFromLSCallRequestList(uid);
 }
 
-void Prelauncher::redirectToAnother(AppLaunchingItemPtr prelaunching_item)
+void Prelauncher::redirectToAnother(AppLaunchingItemPtr item)
 {
     LOG_INFO(MSGID_APPLAUNCH, 3,
              PMLOGKS("action", "redirected"),
-             PMLOGKS("new_app_id", prelaunching_item->appId().c_str()),
-             PMLOGKS("old_app_id", prelaunching_item->requestedAppId().c_str()),
-            "%s->%s", prelaunching_item->requestedAppId().c_str(), prelaunching_item->appId().c_str());
+             PMLOGKS("new_app_id", item->appId().c_str()),
+             PMLOGKS("old_app_id", item->requestedAppId().c_str()),
+            "%s->%s", item->requestedAppId().c_str(), item->appId().c_str());
 
-    prelaunching_item->clearAllStages();
-    setPrelaunchingStages(prelaunching_item);
-    runStages(prelaunching_item);
+    item->clearAllStages();
+    setPrelaunchingStages(item);
+    runStages(item);
 }
 
 void Prelauncher::cancelAll()
@@ -381,7 +381,7 @@ void Prelauncher::cancelAll()
                  PMLOGKS("app_id", prelaunching_item->appId().c_str()),
                  PMLOGKS("status", "cancel_launching"), "");
         prelaunching_item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "cancel all request");
-        signal_prelaunching_done(prelaunching_item->uid());
+        signal_prelaunching_done(prelaunching_item->getUid());
     }
 
     m_itemQueue.clear();

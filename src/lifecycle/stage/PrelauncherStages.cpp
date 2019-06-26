@@ -16,7 +16,7 @@
 
 #include <bus/AppMgrService.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/PrelauncherStages.h>
+#include <lifecycle/stage/PrelauncherStages.h>
 #include <module/Notification.h>
 #include <module/ServiceObserver.h>
 #include <package/AppDescription.h>

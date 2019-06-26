@@ -19,7 +19,7 @@
 #include <bus/AppMgrService.h>
 #include <bus/LifeCycleLunaAdapter.h>
 #include <bus/LunaserviceAPI.h>
-#include <lifecycle/LifecycleManager.h>
+#include <lifecycle/LifeCycleManager.h>
 #include <package/PackageManager.h>
 #include <util/Logging.h>
 
@@ -129,8 +129,7 @@ void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
     const pbnjson::JValue& jmsg = task->jmsg();
 
     std::string id = jmsg["id"].asString();
-    if (id.length() == 0) {
-        pbnjson::JValue payload = pbnjson::Object();
+    if (id.empty()) {
         task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
@@ -144,8 +143,8 @@ void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
                PMLOGKS("caller_id", task->caller().c_str()),
                PMLOGKS("mode", launch_mode.c_str()), "");
 
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Launch, task);
-    lifecycle_task->SetAppId(id);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
+    lifecycle_task->setAppId(id);
     LifecycleManager::instance().Launch(lifecycle_task);
 }
 
@@ -160,36 +159,38 @@ void LifeCycleLunaAdapter::pause(LunaTaskPtr task)
         return;
     }
 
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Pause, task);
-    lifecycle_task->SetAppId(id);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
+    lifecycle_task->setAppId(id);
     LifecycleManager::instance().Pause(lifecycle_task);
 }
 
 void LifeCycleLunaAdapter::closeByAppId(LunaTaskPtr task)
 {
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Close, task);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
     LifecycleManager::instance().Close(lifecycle_task);
 }
 
 void LifeCycleLunaAdapter::closeByAppIdForDev(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
-    std::string app_id = jmsg["id"].asString();
-    AppDescPtr app_desc = PackageManager::instance().getAppById(app_id);
+    std::string appId = jmsg["id"].asString();
+    AppDescPtr appDescPtr = PackageManager::instance().getAppById(appId);
 
-    if (AppTypeByDir::AppTypeByDir_Dev != app_desc->getTypeByDir()) {
-        LOG_WARNING(MSGID_APPCLOSE_ERR, 1, PMLOGKS("app_id", app_id.c_str()), "only dev apps should be closed in devmode");
+    if (AppTypeByDir::AppTypeByDir_Dev != appDescPtr->getTypeByDir()) {
+        LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
+                    PMLOGKS("app_id", appId.c_str()),
+                    "only dev apps should be closed in devmode");
         task->replyResultWithError(API_ERR_CODE_GENERAL, "Only Dev app should be closed using /dev category_API");
         return;
     }
 
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Close, task);
-    LifecycleManager::instance().Close(lifecycle_task);
+    LifeCycleTaskPtr lifecycleTask = std::make_shared<LifeCycleTask>(task);
+    LifecycleManager::instance().Close(lifecycleTask);
 }
 
 void LifeCycleLunaAdapter::closeAllApps(LunaTaskPtr task)
 {
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::CloseAll, task);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
     LifecycleManager::instance().CloseAll(lifecycle_task);
     task->replyResult();
 }
@@ -378,37 +379,6 @@ void LifeCycleLunaAdapter::notifyAlertClosed(LunaTaskPtr task)
 {
     LifecycleManager::instance().handleBridgedLaunchRequest(task->jmsg());
     task->replyResult();
-}
-
-// TODO: make below APIs retired
-void LifeCycleLunaAdapter::close(LunaTaskPtr task)
-{
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(LifeCycleTaskType::Close, task);
-    LifecycleManager::instance().CloseByPid(lifecycle_task);
-}
-
-void LifeCycleLunaAdapter::notifySplashTimeout(LunaTaskPtr task)
-{
-    task->replyResult();
-}
-
-void LifeCycleLunaAdapter::onLaunch(LunaTaskPtr task)
-{
-
-    pbnjson::JValue payload = pbnjson::Object();
-    if (LSMessageIsSubscription(task->lsmsg())) {
-        if (!LSSubscriptionAdd(task->lshandle(), SUBSKEY_ON_LAUNCH, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
-            payload.put("subscribed", false);
-        } else {
-            payload.put("subscribed", true);
-        }
-    } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
-        payload.put("subscribed", false);
-    }
-
-    task->ReplyResult(payload);
 }
 
 // subscription adapter to reply

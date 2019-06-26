@@ -395,7 +395,7 @@ const std::string& AppInfoManager::getAppIdByPid(const std::string& pid)
     return (*it)->m_appId;
 }
 
-const std::string& AppInfoManager::pid(const std::string& app_id)
+const std::string& AppInfoManager::getPid(const std::string& app_id)
 {
     auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
     if (it == m_runningList.end())

@@ -22,7 +22,6 @@
 #include <list>
 #include <pbnjson.hpp>
 
-
 class AppCloseItem {
 public:
     AppCloseItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason);

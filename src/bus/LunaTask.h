@@ -111,15 +111,10 @@ public:
     {
         return m_jmsg;
     }
-    void setJmsg(const pbnjson::JValue& params)
-    {
-        m_jmsg = params.duplicate();
-    }
     void setReturnPayload(const pbnjson::JValue& payload)
     {
         m_returnPayload = payload.duplicate();
     }
-
     void setError(int32_t code, const std::string& text)
     {
         m_errorCode = code;

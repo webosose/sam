@@ -16,7 +16,7 @@
 
 #include <bus/AppMgrService.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/life_handler/WebAppLifeHandler.h>
+#include <lifecycle/handler/WebAppLifeHandler.h>
 #include <module/ServiceObserver.h>
 #include <package/PackageManager.h>
 #include <util/JUtil.h>
@@ -55,20 +55,20 @@ void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGKS("reason", "null_description"),
                   PMLOGKS("where", "webapp_launch"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        signal_launching_done(item->uid());
+        signal_launching_done(item->getUid());
         return;
     }
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("appDesc", app_desc->toJValue());
     payload.put("reason", item->launchReason());
-    payload.put("parameters", item->params());
-    payload.put("launchingAppId", item->callerId());
-    payload.put("launchingProcId", item->callerPid());
-    payload.put("keepAlive", item->keepAlive());
+    payload.put("parameters", item->getParams());
+    payload.put("launchingAppId", item->getCallerId());
+    payload.put("launchingProcId", item->getCallerPid());
+    payload.put("keepAlive", item->isKeepAlive());
 
-    if (!(item->preload().empty()))
-        payload.put("preload", item->preload());
+    if (!(item->getPreload().empty()))
+        payload.put("preload", item->getPreload());
 
     LSMessageToken token = 0;
     LSErrorSafe lserror;
@@ -84,16 +84,16 @@ void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
                   PMLOGJSON("payload", payload.stringify().c_str()),
                   PMLOGKS("where", "wam_launchApp"), "err: %s", lserror.message);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
-        signal_launching_done(item->uid());
+        signal_launching_done(item->getUid());
         return;
     }
 
     addLoadingApp(item->appId());
 
-    if (item->preload().empty())
-        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::LAUNCHING);
+    if (item->getPreload().empty())
+        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::LAUNCHING);
     else
-        signal_app_life_status_changed(item->appId(), item->uid(), RuntimeStatus::PRELOADING);
+        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::PRELOADING);
 
     double current_time = get_current_time();
     double elapsed_time = current_time - item->launchStartTime();
@@ -123,7 +123,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
         return false;
     }
 
-    uid = item->uid();
+    uid = item->getUid();
     g_this->removeItemFromLSCallRequestList(uid);
     item->resetReturnToken();
 
@@ -157,7 +157,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
         }
 
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "WebAppMgr's launchApp is failed");
-        g_this->signal_launching_done(item->uid());
+        g_this->signal_launching_done(item->getUid());
 
         g_this->signal_app_life_status_changed(app_id, "", RuntimeStatus::STOP);
         return true;
@@ -168,7 +168,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
              PMLOGKS("status", "received_launch_return_from_wam"), "");
 
     item->setPid(proc_id);
-    g_this->signal_launching_done(item->uid());
+    g_this->signal_launching_done(item->getUid());
 
     return true;
 }
@@ -501,7 +501,7 @@ AppLaunchingItemPtr WebAppLifeHandler::getLSCallRequestItemByToken(const LSMessa
 
 void WebAppLifeHandler::removeItemFromLSCallRequestList(const std::string& uid)
 {
-    auto it = std::find_if(m_lscallRequestList.begin(), m_lscallRequestList.end(), [&uid](AppLaunchingItemPtr item) {return (item->uid() == uid);});
+    auto it = std::find_if(m_lscallRequestList.begin(), m_lscallRequestList.end(), [&uid](AppLaunchingItemPtr item) {return (item->getUid() == uid);});
     if (it == m_lscallRequestList.end())
         return;
 

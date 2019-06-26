@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <lifecycle/MemoryChecker.h>
+#include <lifecycle/stage/MemoryChecker.h>
 #include <util/BaseLogs.h>
 
 MemoryChecker::MemoryChecker()
@@ -36,12 +36,12 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
     }
 
     auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item](AppLaunchingItemPtr it) {
-        return (it->uid() == item->uid());
+        return (it->getUid() == item->getUid());
     });
     if (it != m_queue.end()) {
         LOG_WARNING(MSGID_APPLAUNCH_ERR, 4,
                     PMLOGKS("app_id", item->appId().c_str()),
-                    PMLOGKS("uid", item->uid().c_str()),
+                    PMLOGKS("uid", item->getUid().c_str()),
                     PMLOGKS("reason", "already_in_queue"),
                     PMLOGKS("where", "memory_checking_add_item"), "");
         return;
@@ -62,7 +62,7 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
 void MemoryChecker::remove_item(const std::string& item_uid)
 {
     auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item_uid](AppLaunchingItemPtr it) {
-        return (it->uid() == item_uid);
+        return (it->getUid() == item_uid);
     });
     if (it != m_queue.end())
         m_queue.erase(it);
@@ -75,8 +75,8 @@ void MemoryChecker::run()
 
         (*it)->setSubStage(static_cast<int>(AppLaunchingStage::MEMORY_CHECK_DONE));
 
-        std::string uid = (*it)->uid();
-        signal_memory_checking_done((*it)->uid());
+        std::string uid = (*it)->getUid();
+        signal_memory_checking_done((*it)->getUid());
         remove_item(uid);
     }
 }
@@ -88,7 +88,7 @@ void MemoryChecker::cancel_all()
                  PMLOGKS("app_id", launching_item->appId().c_str()),
                  PMLOGKS("status", "cancel_launching"), "");
         launching_item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "cancel all request");
-        signal_memory_checking_done(launching_item->uid());
+        signal_memory_checking_done(launching_item->getUid());
     }
 
     m_queue.clear();

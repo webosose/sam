@@ -18,20 +18,19 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include <lifecycle/AppLaunchingItem.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
 #include <package/PackageManager.h>
 #include <util/Logging.h>
 
 
-AppLaunchingItem::AppLaunchingItem(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg)
-    : m_appId(app_id),
+AppLaunchingItem::AppLaunchingItem(const std::string& appId, const pbnjson::JValue& params, LSMessage* lsmsg)
+    : m_appId(appId),
       m_pid(""),
-      m_requestedAppId(app_id),
+      m_requestedAppId(appId),
       m_redirected(false),
-      m_rtype(rtype),
       m_stage(AppLaunchingStage::PRELAUNCH),
       m_subStage(0),
-      mParams(params.duplicate()),
+      m_params(params.duplicate()),
       m_lsmsg(lsmsg),
       m_showSplash(true),
       m_showSpinner(true),
@@ -80,7 +79,7 @@ bool AppLaunchingItem::setRedirection(const std::string& target_app_id, const pb
     }
 
     m_appId = target_app_id;
-    mParams = new_params;
+    m_params = new_params;
     m_showSplash = app_desc->splashOnLaunch();
     m_showSpinner = app_desc->spinnerOnLaunch();
     m_preload = "";

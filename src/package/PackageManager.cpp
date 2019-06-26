@@ -16,7 +16,7 @@
 
 #include <bus/AppMgrService.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/LifecycleManager.h>
+#include <lifecycle/LifeCycleManager.h>
 #include <module/LocalePreferences.h>
 #include <package/PackageManager.h>
 #include <setting/Settings.h>

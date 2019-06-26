@@ -14,22 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef LAST_APP_HANDLER_4_BASE_H
-#define LAST_APP_HANDLER_4_BASE_H
+#ifndef PRELAUNCHER_STAGES_H
+#define PRELAUNCHER_STAGES_H
 
-#include <lifecycle/AppLifeStatus.h>
-#include <luna-service2/lunaservice.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
 #include <pbnjson.hpp>
 
-
-class LastAppHandler {
-public:
-    LastAppHandler();
-    virtual ~LastAppHandler();
-
-    virtual void launch();
-    virtual void cancel();
-
-};
+bool setPrelaunchingStages(AppLaunchingItemPtr item);
+StageHandlerReturn handleExecutionLockStatus(AppLaunchingItemPtr prelaunching_item);
 
 #endif

@@ -17,7 +17,7 @@
 #ifndef NATIVEAPP_LIFE_HANDLER_H_
 #define NATIVEAPP_LIFE_HANDLER_H_
 
-#include <lifecycle/life_handler/AppLifeHandlerInterface.h>
+#include <lifecycle/IAppLifeHandler.h>
 #include <list>
 #include <memory>
 #include <vector>
@@ -205,7 +205,7 @@ private:
     NativeAppLifeCycleInterface* m_lifeCycleHandler;
 };
 
-class NativeAppLifeHandler: public AppLifeHandlerInterface {
+class NativeAppLifeHandler: public IAppLifeHandler {
 public:
     NativeAppLifeHandler();
     virtual ~NativeAppLifeHandler();

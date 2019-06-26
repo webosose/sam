@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <lifecycle/AppLaunchingItem.h>
-#include <lifecycle/AppLaunchingItemFactory.h>
-#include <lifecycle/AppLaunchingItemFactory.h>
+#include <lifecycle/stage/AppLaunchingItem.h>
+#include <lifecycle/stage/AppLaunchingItemFactory.h>
+#include <lifecycle/stage/AppLaunchingItemFactory.h>
 #include <package/PackageManager.h>
 #include <package/AppDescription.h>
 #include <setting/Settings.h>
@@ -32,7 +32,7 @@ AppLaunchingItemFactory::~AppLaunchingItemFactory()
 {
 }
 
-AppLaunchingItemPtr AppLaunchingItemFactory::create(const std::string& app_id, AppLaunchRequestType rtype, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
+AppLaunchingItemPtr AppLaunchingItemFactory::create(const std::string& app_id, const pbnjson::JValue& params, LSMessage* lsmsg, int& err_code, std::string& err_text)
 {
     if (app_id.empty()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
@@ -81,7 +81,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory::create(const std::string& app_id, A
         show_spinner = false;
     }
 
-    AppLaunchingItemPtr new_item = std::make_shared<AppLaunchingItem>(app_id, rtype, params4app, lsmsg);
+    AppLaunchingItemPtr new_item = std::make_shared<AppLaunchingItem>(app_id, params4app, lsmsg);
     if (new_item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
                   PMLOGKS("reason", "make_shared_error"),
@@ -98,7 +98,7 @@ AppLaunchingItemPtr AppLaunchingItemFactory::create(const std::string& app_id, A
 
     LOG_INFO(MSGID_APPLAUNCH, 6,
              PMLOGKS("app_id", app_id.c_str()),
-             PMLOGKS("caller_id", new_item->callerId().c_str()),
+             PMLOGKS("caller_id", new_item->getCallerId().c_str()),
              PMLOGKS("keep_alive", (keep_alive?"true":"false")),
              PMLOGKS("show_splash", (show_splash?"true":"false")),
              PMLOGKS("show_spinner", (show_spinner?"true":"false")),

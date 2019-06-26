@@ -28,7 +28,7 @@
 #include <boost/bind.hpp>
 #include <bus/AppMgrService.h>
 #include <launch_point/LaunchPointManager.h>
-#include <lifecycle/LifecycleManager.h>
+#include <lifecycle/LifeCycleManager.h>
 #include <module/AppinstalldSubscriber.h>
 #include <module/BootdSubscriber.h>
 #include <module/ConfigdSubscriber.h>
@@ -194,7 +194,6 @@ bool MainService::initialize()
 
     // set extension handlers for lifecycle interface
     LifecycleManager::instance().setApplifeitemFactory(m_appLaunchingItemFactory);
-    LifecycleManager::instance().setPrelauncherHandler(m_prelauncher);
     LifecycleManager::instance().setMemoryCheckerHandler(m_memoryChecker);
     LifecycleManager::instance().setLastappHandler(m_lastappHandler);
 

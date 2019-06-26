@@ -18,7 +18,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include <lifecycle/AppCloseItem.h>
+#include <lifecycle/stage/AppCloseItem.h>
 #include <package/PackageManager.h>
 #include <util/Logging.h>
 
