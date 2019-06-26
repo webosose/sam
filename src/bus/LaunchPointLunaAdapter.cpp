@@ -18,9 +18,9 @@
 #include <bus/AppMgrService.h>
 #include <bus/AppMgrService.h>
 #include <bus/LaunchPointLunaAdapter.h>
+#include <bus/LocalePreferences.h>
 #include <bus/LunaserviceAPI.h>
-#include <launch_point/LaunchPointManager.h>
-#include <module/LocalePreferences.h>
+#include <launchpoint/LaunchPointManager.h>
 #include <util/Logging.h>
 #include <util/LSUtils.h>
 

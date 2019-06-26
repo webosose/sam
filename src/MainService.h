@@ -19,11 +19,10 @@
 
 #include <base/WebOSService.h>
 #include <base/PrerequisiteMonitor.h>
-#include <launch_point/handler/DBHandler.h>
-#include <launch_point/handler/OrderingHandler.h>
-#include <launch_point/launch_point/LaunchPoint.h>
-#include <launch_point/launch_point/LaunchPointFactory.h>
-#include <lifecycle/stage/AppLaunchingItemFactory.h>
+#include <launchpoint/handler/DBHandler.h>
+#include <launchpoint/handler/OrderingHandler.h>
+#include <launchpoint/launch_point/LaunchPoint.h>
+#include <launchpoint/launch_point/LaunchPointFactory.h>
 #include <lifecycle/stage/MemoryChecker.h>
 #include <set>
 #include <luna-service2/lunaservice.h>
@@ -42,12 +41,7 @@ protected:
     virtual bool terminate();
 
 private:
-    void onLaunchingFinished(AppLaunchingItemPtr item);
-
-    // lifecycle adapter
-    AppLaunchingItemFactory m_appLaunchingItemFactory;
-    MemoryChecker m_memoryChecker;
-    LastAppHandler m_lastappHandler;
+    void onLaunchingFinished(LaunchAppItemPtr item);
 
     // launchpoint adapter
     DBHandler m_dbHandler;

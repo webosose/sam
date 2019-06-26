@@ -1,0 +1,11 @@
+{
+    "id": "native-noui",
+    "title": "native-noui",
+    "vendor": "LGE",
+    "type": "native",
+    "version": "1.0.1",
+    "main": "native-noui",
+    "icon": "icon.png",
+    "iconColor":"#E42E28",
+    "uiRevision": 2
+}

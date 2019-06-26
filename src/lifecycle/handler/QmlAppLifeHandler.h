@@ -24,11 +24,11 @@ public:
     QmlAppLifeHandler();
     virtual ~QmlAppLifeHandler();
 
-    virtual void launch(AppLaunchingItemPtr item) override;
-    virtual void close(AppCloseItemPtr item, std::string& err_text) override;
+    virtual void launch(LaunchAppItemPtr item) override;
+    virtual void close(CloseAppItemPtr item, std::string& err_text) override;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
-    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
     void removeItemFromLSCallRequestList(const std::string& uid);
 
     void onServiceReady();
@@ -48,7 +48,7 @@ public:
     boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
 
 private:
-    AppLaunchingItemList m_LSCallRequestList;
+    LaunchItemList m_LSCallRequestList;
 };
 
 #endif

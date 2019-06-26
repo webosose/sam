@@ -20,8 +20,8 @@
 #include <boost/signals2.hpp>
 #include <lifecycle/AppInfo.h>
 #include <lifecycle/ApplicationErrors.h>
-#include <lifecycle/stage/AppCloseItem.h>
-#include <lifecycle/stage/AppLaunchingItem.h>
+#include <lifecycle/stage/appitem/CloseAppItem.h>
+#include <lifecycle/stage/appitem/LaunchAppItem.h>
 
 class IAppLifeHandler {
 public:
@@ -32,8 +32,8 @@ public:
     {
     }
 
-    virtual void launch(AppLaunchingItemPtr item) = 0;
-    virtual void close(AppCloseItemPtr item, std::string& errText) = 0;
+    virtual void launch(LaunchAppItemPtr item) = 0;
+    virtual void close(CloseAppItemPtr item, std::string& errText) = 0;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& errText, bool send_life_event = true) = 0;
 };
 

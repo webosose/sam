@@ -32,7 +32,7 @@ AppInfoManager::~AppInfoManager()
 {
 }
 
-void AppInfoManager::init()
+void AppInfoManager::initialize()
 {
     PackageManager::instance().signalAllAppRosterChanged.connect(boost::bind(&AppInfoManager::onAllAppRosterChanged, this, _1));
 }
@@ -163,15 +163,6 @@ bool AppInfoManager::preloadModeOn(const std::string& app_id)
     return getAppInfoForGetter(app_id)->preloadModeOn();
 }
 
-bool AppInfoManager::isOutOfService(const std::string& app_id)
-{
-    for (auto& it : m_outOfServiceInfoList) {
-        if (it == app_id)
-            return true;
-    }
-    return false;
-}
-
 bool AppInfoManager::hasUpdate(const std::string& app_id)
 {
     for (auto& it : m_updateInfoList) {
@@ -277,26 +268,6 @@ void AppInfoManager::onAllAppRosterChanged(const AppDescMaps& all_apps)
     }
 }
 
-void AppInfoManager::resetAllOutOfServiceInfo()
-{
-    m_outOfServiceInfoList.clear();
-}
-
-void AppInfoManager::addUpdateInfo(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version)
-{
-    pbnjson::JValue info = pbnjson::Object();
-    info.put("type", type);
-    info.put("category", category);
-    info.put("version", version);
-
-    m_updateInfoList.insert(std::make_pair(app_id, info));
-}
-
-void AppInfoManager::resetAllUpdateInfo()
-{
-    m_updateInfoList.clear();
-}
-
 void AppInfoManager::addRunningInfo(const std::string& app_id, const std::string& pid, const std::string& webprocid)
 {
     for (auto& running_data : m_runningList) {
@@ -360,23 +331,15 @@ void AppInfoManager::getRunningList(pbnjson::JValue& running_list, bool devmode_
         if (devmode_only && AppTypeByDir::AppTypeByDir_Dev != app_desc->getTypeByDir())
             continue;
 
-        std::string app_type = AppDescription::toString(app_desc->type());
+        std::string app_type = AppDescription::toString(app_desc->getAppType());
         running_info.put("id", running_data->m_appId);
         running_info.put("processid", running_data->m_pid);
         running_info.put("webprocessid", running_data->m_webprocid);
-        running_info.put("defaultWindowType", app_desc->defaultWindowType());
+        running_info.put("defaultWindowType", app_desc->getDefaultWindowType());
         running_info.put("appType", app_type);
 
         running_list.append(running_info);
     }
-}
-
-RunningInfoPtr AppInfoManager::getRunningData(const std::string& app_id)
-{
-    auto it = std::find_if(m_runningList.begin(), m_runningList.end(), [&app_id](const RunningInfoPtr running_data) {return (running_data->m_appId == app_id);});
-    if (it != m_runningList.end())
-        return (*it);
-    return NULL;
 }
 
 bool AppInfoManager::isRunning(const std::string& app_id)

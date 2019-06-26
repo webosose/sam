@@ -26,8 +26,8 @@ public:
     WebAppLifeHandler();
     virtual ~WebAppLifeHandler();
 
-    virtual void launch(AppLaunchingItemPtr item) override;
-    virtual void close(AppCloseItemPtr item, std::string& err_text) override;
+    virtual void launch(LaunchAppItemPtr item) override;
+    virtual void close(CloseAppItemPtr item, std::string& err_text) override;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
     boost::signals2::signal<void()> signal_service_disconnected;
@@ -47,7 +47,7 @@ private:
     void handleRunningListChange(const pbnjson::JValue& new_list);
     void subscribeWAMRunningList();
 
-    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
     void removeItemFromLSCallRequestList(const std::string& uid);
     void addLoadingApp(const std::string& app_id);
     void removeLoadingApp(const std::string& app_id);
@@ -55,7 +55,7 @@ private:
 
     LSMessageToken m_wamSubscriptionToken;
     pbnjson::JValue m_runningList;
-    AppLaunchingItemList m_lscallRequestList;
+    LaunchItemList m_lscallRequestList;
     std::vector<std::string> m_loadingList;
 };
 

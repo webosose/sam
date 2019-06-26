@@ -111,8 +111,8 @@ void threadCleanup();
 bool isNumber(const std::string& str);
 timespec diff(timespec start, timespec end);
 void set_slash_to_base_path(std::string& path);
-bool concat_to_filename(const std::string originPath, std::string& returnPath, const std::string addingStr);
-double get_current_time();
+bool concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr);
+double getCurrentTime();
 
 #if 0
 std::string base64_encode(unsigned char const* , unsigned int len);
@@ -133,6 +133,6 @@ std::string & append_format(std::string & str, const char * format, ...) G_GNUC_
 #endif
 
 bool convertToWindowTypeSAM(const std::string& lsm, std::string& sam);
-std::string generate_uid();
+std::string generateUid();
 
 #endif /* UTILS_H */

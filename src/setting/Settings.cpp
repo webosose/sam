@@ -364,7 +364,7 @@ bool Settings::isKeepAliveApp(const std::string& appId) const
     return false;
 }
 
-bool Settings::checkAppAgainstNoJailAppList(const std::string& appId) const
+bool Settings::isInNoJailApps(const std::string& appId) const
 {
     auto it = std::find(m_noJailApps.begin(), m_noJailApps.end(), appId);
     if (it != m_noJailApps.end())

@@ -47,7 +47,7 @@ public:
     void setKeepAliveApps(const pbnjson::JValue& apps);
     void setSupportQMLBooster(bool value);
     bool isKeepAliveApp(const std::string&) const;
-    bool checkAppAgainstNoJailAppList(const std::string&) const;
+    bool isInNoJailApps(const std::string&) const;
     void setLifeCycleReason(const pbnjson::JValue& data);
     void addLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason);
     std::string getLaunchReason(const std::string& caller_id, const std::string& reason);

@@ -72,7 +72,7 @@ public:
     virtual ~AppDescription();
 
     // getter
-    AppType type() const
+    AppType getAppType() const
     {
         return m_appType;
     }
@@ -80,32 +80,32 @@ public:
     {
         return m_typeByDir;
     }
-    LifeHandlerType handlerType() const
+    LifeHandlerType getHandlerType() const
     {
         return m_handlerType;
     }
-    const std::string& folderPath() const
+    const std::string& getFolderPath() const
     {
         return m_folderPath;
     }
-    const std::string& id() const
+    const std::string& getAppId() const
     {
         return m_appId;
     }
-    const std::string& title() const
+    const std::string& getTitle() const
     {
         return m_title;
     }
-    const std::string& entryPoint() const
+    const std::string& getEntryPoint() const
     {
         return m_entryPoint;
     }
-    const std::string& version() const
+    const std::string& getVersion() const
     {
         return m_version;
     }
 
-    const AppIntVersion& intVersion() const
+    const AppIntVersion& getIntVersion() const
     {
         return m_intVersion;
     }
@@ -113,17 +113,17 @@ public:
     {
         m_intVersion = {major, minor, micro};
     }
-    const std::string& trustLevel() const
+    const std::string& getTrustLevel() const
     {
         return m_trustLevel;
     }
-    const std::string& splashBackground() const
+    const std::string& getSplashBackground() const
     {
         return m_splashBackground;
     }
-    int nativeInterfaceVersion() const
+    int getNativeInterfaceVersion() const
     {
-        return m_nativeInterfaceVersion_;
+        return m_nativeInterfaceVersion;
     }
     bool isBuiltinBasedApp() const
     {
@@ -141,19 +141,19 @@ public:
     {
         return m_visible;
     }
-    int requiredMemory() const
+    int getRequiredMemory() const
     {
         return m_requiredMemory;
     }
-    const std::string& defaultWindowType() const
+    const std::string& getDefaultWindowType() const
     {
         return m_defaultWindowType;
     }
-    bool windowGroup() const
+    bool getWindowGroup() const
     {
         return m_windowGroup;
     }
-    bool windowGroupOwner() const
+    bool getWindowGroupOwner() const
     {
         return m_windowGroupOwner;
     }
@@ -161,7 +161,7 @@ public:
     {
         return (m_windowGroup && !m_windowGroupOwner);
     }
-    const std::string& windowGroupOwnerId() const
+    const std::string& getWindowGroupOwnerId() const
     {
         return m_windowGroupOwnerId;
     }
@@ -173,23 +173,23 @@ public:
     {
         return m_redirection;
     }
-    bool splashOnLaunch() const
+    bool getSplashOnLaunch() const
     {
         return m_splashOnLaunch;
     }
-    bool spinnerOnLaunch() const
+    bool getSpinnerOnLaunch() const
     {
         return m_spinnerOnLaunch;
     }
-    const pbnjson::JValue& launchParams() const
+    const pbnjson::JValue& getLaunchParams() const
     {
-        return launch_params_;
+        return m_launchParams;
     }
-    const std::string& containerJS() const
+    const std::string& getContainerJS() const
     {
         return m_containerJS;
     }
-    const std::string& enyoVersion() const
+    const std::string& getEnyoVersion() const
     {
         return m_enyoVersion;
     }
@@ -228,7 +228,7 @@ protected:
     AppIntVersion m_intVersion;
     std::string m_trustLevel;
     std::string m_splashBackground;
-    int m_nativeInterfaceVersion_;
+    int m_nativeInterfaceVersion;
     bool m_isBuiltinBasedApp;
     bool m_flaggedForRemoval;
     bool m_removable;
@@ -242,7 +242,7 @@ protected:
     pbnjson::JValue m_redirection;
     bool m_splashOnLaunch;
     bool m_spinnerOnLaunch;
-    pbnjson::JValue launch_params_;
+    pbnjson::JValue m_launchParams;
     std::string m_containerJS;
     std::string m_enyoVersion;
     pbnjson::JValue m_deviceId;

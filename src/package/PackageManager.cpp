@@ -15,9 +15,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/AppMgrService.h>
+#include <bus/LocalePreferences.h>
 #include <lifecycle/AppInfoManager.h>
-#include <lifecycle/LifeCycleManager.h>
-#include <module/LocalePreferences.h>
+#include <lifecycle/LifecycleManager.h>
 #include <package/PackageManager.h>
 #include <setting/Settings.h>
 #include <algorithm>
@@ -204,7 +204,7 @@ void PackageManager::onAppInstalled(const std::string& app_id)
     }
 
     // skip if stub type, (stub apps will be loaded on next full scan)
-    if (AppType::AppType_Stub == new_desc->type()) {
+    if (AppType::AppType_Stub == new_desc->getAppType()) {
         return;
     }
 
@@ -216,7 +216,7 @@ void PackageManager::onAppInstalled(const std::string& app_id)
     addApp(app_id, new_desc, AppStatusChangeEvent::AppStatusChangeEvent_Installed);
 
     // clear web app cache
-    if (AppTypeByDir::AppTypeByDir_Dev == new_desc->getTypeByDir() && AppType::AppType_Web == new_desc->type()) {
+    if (AppTypeByDir::AppTypeByDir_Dev == new_desc->getTypeByDir() && AppType::AppType_Web == new_desc->getAppType()) {
         (void) LSCallOneReply(AppMgrService::instance().serviceHandle(), "luna://com.palm.webappmanager/discardCodeCache", "{\"force\":true}", NULL, NULL, NULL, NULL);
     }
 }
@@ -460,11 +460,11 @@ void PackageManager::uninstallApp(const std::string& id, std::string& errorReaso
     if (AppTypeByDir::AppTypeByDir_System_BuiltIn == appDesc->getTypeByDir()) {
         CallChain& callchain = CallChain::acquire(
                 boost::bind(&PackageManager::onReadyToUninstallSystemApp, this, _1, _2, _3),
-        NULL, new std::string(appDesc->id()));
+        NULL, new std::string(appDesc->getAppId()));
 
         if (appDesc->isVisible()) {
             LOG_DEBUG("%s : check parental lock to remove %s app", __FUNCTION__, id.c_str());
-            auto settingValPtr = std::make_shared<CallChainEventHandler::CheckAppLockStatus>(appDesc->id());
+            auto settingValPtr = std::make_shared<CallChainEventHandler::CheckAppLockStatus>(appDesc->getAppId());
             auto pinPtr = std::make_shared<CallChainEventHandler::CheckPin>();
             callchain.add(settingValPtr).addIf(settingValPtr, false, pinPtr);
         }

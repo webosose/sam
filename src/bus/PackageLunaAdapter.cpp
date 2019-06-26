@@ -17,7 +17,7 @@
 #include <bus/AppMgrService.h>
 #include <bus/LunaserviceAPI.h>
 #include <bus/PackageLunaAdapter.h>
-#include <lifecycle/LifeCycleManager.h>
+#include <lifecycle/LifecycleManager.h>
 #include <util/Logging.h>
 
 #define SUBSKEY_LIST_APPS             "listApps"
@@ -298,7 +298,7 @@ void PackageLunaAdapter::getAppBasePath(LunaTaskPtr task)
     }
 
     payload.put("appId", app_id);
-    payload.put("basePath", app_desc->entryPoint());
+    payload.put("basePath", app_desc->getEntryPoint());
 
     task->ReplyResult(payload);
 }
@@ -441,12 +441,12 @@ void PackageLunaAdapter::onAppStatusChanged(AppStatusChangeEvent event, AppDescP
         return;
     }
 
-    payload.put("appId", app_desc->id());
+    payload.put("appId", app_desc->getAppId());
     payload.put("event", str_event);
     payload.put("returnValue", true);
 
-    std::string subs_key = "getappstatus#" + app_desc->id() + "#N";
-    std::string subs_key_w_appinfo = "getappstatus#" + app_desc->id() + "#Y";
+    std::string subs_key = "getappstatus#" + app_desc->getAppId() + "#N";
+    std::string subs_key_w_appinfo = "getappstatus#" + app_desc->getAppId() + "#Y";
     std::string str_payload = payload.stringify();
 
     switch (event) {

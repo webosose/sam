@@ -15,9 +15,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/AppMgrService.h>
+#include <bus/ServiceObserver.h>
 #include <lifecycle/AppInfoManager.h>
 #include <lifecycle/handler/WebAppLifeHandler.h>
-#include <module/ServiceObserver.h>
 #include <package/PackageManager.h>
 #include <util/JUtil.h>
 #include <util/Logging.h>
@@ -46,12 +46,12 @@ WebAppLifeHandler::~WebAppLifeHandler()
 //////////////////////////////////////////////////////////////
 /// launch
 //////////////////////////////////////////////////////////////
-void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
+void WebAppLifeHandler::launch(LaunchAppItemPtr item)
 {
-    AppDescPtr app_desc = PackageManager::instance().getAppById(item->appId());
+    AppDescPtr app_desc = PackageManager::instance().getAppById(item->getAppId());
     if (app_desc == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("app_id", item->getAppId().c_str()),
                   PMLOGKS("reason", "null_description"),
                   PMLOGKS("where", "webapp_launch"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
@@ -61,7 +61,7 @@ void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("appDesc", app_desc->toJValue());
-    payload.put("reason", item->launchReason());
+    payload.put("reason", item->getReason());
     payload.put("parameters", item->getParams());
     payload.put("launchingAppId", item->getCallerId());
     payload.put("launchingProcId", item->getCallerPid());
@@ -88,17 +88,17 @@ void WebAppLifeHandler::launch(AppLaunchingItemPtr item)
         return;
     }
 
-    addLoadingApp(item->appId());
+    addLoadingApp(item->getAppId());
 
     if (item->getPreload().empty())
-        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::LAUNCHING);
+        signal_app_life_status_changed(item->getAppId(), item->getUid(), RuntimeStatus::LAUNCHING);
     else
-        signal_app_life_status_changed(item->appId(), item->getUid(), RuntimeStatus::PRELOADING);
+        signal_app_life_status_changed(item->getAppId(), item->getUid(), RuntimeStatus::PRELOADING);
 
-    double current_time = get_current_time();
+    double current_time = getCurrentTime();
     double elapsed_time = current_time - item->launchStartTime();
     LOG_INFO(MSGID_APP_LAUNCHED, 5,
-             PMLOGKS("app_id", item->appId().c_str()),
+             PMLOGKS("app_id", item->getAppId().c_str()),
              PMLOGKS("type", "web"), PMLOGKS("pid", ""),
              PMLOGKFV("start_time", "%f", item->launchStartTime()),
              PMLOGKFV("collapse_time", "%f", elapsed_time), "");
@@ -111,7 +111,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
 {
     LSMessageToken token = 0;
     std::string uid = "";
-    AppLaunchingItemPtr item = NULL;
+    LaunchAppItemPtr item = NULL;
 
     token = LSMessageGetResponseToken(lsmsg);
     item = g_this->getLSCallRequestItemByToken(token);
@@ -137,7 +137,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
         return false;
     }
 
-    std::string app_id = jmsg.hasKey("appId") && jmsg["appId"].isString() ? jmsg["appId"].asString() : item->appId();
+    std::string app_id = jmsg.hasKey("appId") && jmsg["appId"].isString() ? jmsg["appId"].asString() : item->getAppId();
     std::string proc_id = jmsg.hasKey("procId") && jmsg["procId"].isString() ? jmsg["procId"].asString() : "";
 
     // TODO: WAM doesn't return "returnValue" on success
@@ -176,7 +176,7 @@ bool WebAppLifeHandler::onReturnForLaunchRequest(LSHandle* handle, LSMessage* ls
 //////////////////////////////////////////////////////////////
 /// close
 //////////////////////////////////////////////////////////////
-void WebAppLifeHandler::close(AppCloseItemPtr item, std::string& err_text)
+void WebAppLifeHandler::close(CloseAppItemPtr item, std::string& err_text)
 {
     bool need_to_handle_fake_stop = false;
     if (!AppInfoManager::instance().isRunning(item->getAppId())) {
@@ -488,7 +488,7 @@ void WebAppLifeHandler::handleRunningListChange(const pbnjson::JValue& new_list)
     m_runningList = new_list.arraySize() > 0 ? new_list.duplicate() : pbnjson::Array();
 }
 
-AppLaunchingItemPtr WebAppLifeHandler::getLSCallRequestItemByToken(const LSMessageToken& token)
+LaunchAppItemPtr WebAppLifeHandler::getLSCallRequestItemByToken(const LSMessageToken& token)
 {
     auto it = m_lscallRequestList.begin();
     auto it_end = m_lscallRequestList.end();
@@ -501,12 +501,12 @@ AppLaunchingItemPtr WebAppLifeHandler::getLSCallRequestItemByToken(const LSMessa
 
 void WebAppLifeHandler::removeItemFromLSCallRequestList(const std::string& uid)
 {
-    auto it = std::find_if(m_lscallRequestList.begin(), m_lscallRequestList.end(), [&uid](AppLaunchingItemPtr item) {return (item->getUid() == uid);});
+    auto it = std::find_if(m_lscallRequestList.begin(), m_lscallRequestList.end(), [&uid](LaunchAppItemPtr item) {return (item->getUid() == uid);});
     if (it == m_lscallRequestList.end())
         return;
 
     LOG_INFO(MSGID_APPLAUNCH, 2,
-             PMLOGKS("app_id", (*it)->appId().c_str()),
+             PMLOGKS("app_id", (*it)->getAppId().c_str()),
              PMLOGKS("uid", uid.c_str()), "removed from checking queue");
 
     m_lscallRequestList.erase(it);

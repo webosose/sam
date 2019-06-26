@@ -21,7 +21,7 @@
 #include <cstring>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <module/LocalePreferences.h>
+#include <bus/LocalePreferences.h>
 #include <package/AppDescription.h>
 #include <setting/Settings.h>
 #include <util/JUtil.h>
@@ -36,7 +36,7 @@ AppDescription::AppDescription()
       m_handlerType(LifeHandlerType::LifeHandlerType_None),
       m_version("1.0.0"), // default version
       m_intVersion(1, 0, 0),
-      m_nativeInterfaceVersion_(1),
+      m_nativeInterfaceVersion(1),
       m_isBuiltinBasedApp(false),
       m_flaggedForRemoval(false),
       m_removable(false),
@@ -214,7 +214,7 @@ bool AppDescription::loadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_b
 
     // native_interface_version
     if (jdesc.hasKey("nativeLifeCycleInterfaceVersion") && jdesc["nativeLifeCycleInterfaceVersion"].isNumber()) {
-        m_nativeInterfaceVersion_ = jdesc["nativeLifeCycleInterfaceVersion"].asNumber<int>();
+        m_nativeInterfaceVersion = jdesc["nativeLifeCycleInterfaceVersion"].asNumber<int>();
     }
 
     // system_app
@@ -269,7 +269,7 @@ bool AppDescription::loadJson(pbnjson::JValue& jdesc, const AppTypeByDir& type_b
 
     // launch_params: this params for launchPoint
     if (jdesc.hasKey("launchParams"))
-        launch_params_ = jdesc["launchParams"];
+        m_launchParams = jdesc["launchParams"];
 
     // containerJS: This is used for checking the app will use container app : optional
     if (jdesc.hasKey("containerJS"))
@@ -312,7 +312,7 @@ void AppDescription::loadAsset(pbnjson::JValue& jdesc)
             std::string path_to_check = "";
 
             // check variant asset first
-            if (!variant.empty() && concat_to_filename(assetPath, variant_path, variant)) {
+            if (!variant.empty() && concatToFilename(assetPath, variant_path, variant)) {
                 path_to_check = m_folderPath + std::string("/") + variant_path;
                 if (0 == access(path_to_check.c_str(), F_OK)) {
                     jdesc.put(key, variant_path);
@@ -338,7 +338,7 @@ void AppDescription::loadAsset(pbnjson::JValue& jdesc)
 
         std::string defaultAsset = asset_base_path + filename;
 
-        if (!variant.empty() && concat_to_filename(defaultAsset, variant_path, variant)) {
+        if (!variant.empty() && concatToFilename(defaultAsset, variant_path, variant)) {
             std::string path_variant_to_check = m_folderPath + std::string("/") + variant_path;
             if (0 == access(path_variant_to_check.c_str(), F_OK)) {
                 jdesc.put(key, variant_path);
@@ -433,8 +433,8 @@ bool AppDescription::isHigherVersionThanMe(AppDescPtr me, AppDescPtr another)
         return false;
     }
 
-    const AppIntVersion& me_ver = me->intVersion();
-    const AppIntVersion& new_ver = another->intVersion();
+    const AppIntVersion& me_ver = me->getIntVersion();
+    const AppIntVersion& new_ver = another->getIntVersion();
 
     // compare version
     if (std::get<0>(me_ver) < std::get<0>(new_ver))

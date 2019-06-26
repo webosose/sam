@@ -17,16 +17,16 @@
 #ifndef PRELAUNCHER_H
 #define PRELAUNCHER_H
 
-#include <lifecycle/stage/AppLaunchingItem.h>
+#include <lifecycle/stage/appitem/LaunchAppItem.h>
 
 class Prelauncher {
 public:
     Prelauncher();
     virtual ~Prelauncher();
 
-    virtual void addItem(AppLaunchingItemPtr item);
+    virtual void addItem(LaunchAppItemPtr item);
     virtual void removeItem(const std::string& app_uid);
-    virtual void inputBridgedReturn(AppLaunchingItemPtr item, const pbnjson::JValue& jmsg);
+    virtual void inputBridgedReturn(LaunchAppItemPtr item, const pbnjson::JValue& jmsg);
     virtual void cancelAll();
 
     boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
@@ -35,19 +35,19 @@ private:
     static bool onReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     static bool onReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
-    void runStages(AppLaunchingItemPtr item);
-    void handleStages(AppLaunchingItemPtr prelaunching_item);
+    void runStages(LaunchAppItemPtr item);
+    void handleStages(LaunchAppItemPtr prelaunching_item);
 
-    void redirectToAnother(AppLaunchingItemPtr prelaunching_item);
-    void finishPrelaunching(AppLaunchingItemPtr prelaunching_item);
+    void redirectToAnother(LaunchAppItemPtr prelaunching_item);
+    void finishPrelaunching(LaunchAppItemPtr prelaunching_item);
 
-    AppLaunchingItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
-    AppLaunchingItemPtr getItemByUid(const std::string& uid);
+    LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
+    LaunchAppItemPtr getItemByUid(const std::string& uid);
     void removeItemFromLSCallRequestList(const std::string& uid);
 
 private:
-    AppLaunchingItemList m_itemQueue;
-    AppLaunchingItemList m_lscallRequestList;
+    LaunchItemList m_itemQueue;
+    LaunchItemList m_lscallRequestList;
 
 };
 

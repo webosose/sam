@@ -40,7 +40,7 @@ public:
     {
         return !m_executionLock;
     }
-    const std::string& appId() const
+    const std::string& getAppId() const
     {
         return m_appId;
     }

@@ -213,7 +213,7 @@ void AppDescriptionScanner::registerNewAppDesc(AppDescPtr new_desc, AppDescMaps&
     if (!new_desc)
         return;
 
-    const std::string& app_id = new_desc->id();
+    const std::string& app_id = new_desc->getAppId();
     if (app_roster.count(app_id) == 0) {
         app_roster[app_id] = new_desc;
         return;
@@ -257,10 +257,11 @@ pbnjson::JValue AppDescriptionScanner::loadAppInfo(const std::string& app_dir_pa
 
     const std::string default_appinfo_path = app_dir_path + "/appinfo.json";
 
-    pbnjson::JValue root = JUtil::parseFile(default_appinfo_path, "ApplicationDescription");
+    JUtil::Error error;
+    pbnjson::JValue root = JUtil::parseFile(default_appinfo_path, "ApplicationDescription", &error);
 
     if (root.isNull()) {
-        LOG_INFO(MSGID_APP_SCANNER, 1, PMLOGKS("status", "ignore"), "failed_parse_json: %s", default_appinfo_path.c_str());
+        LOG_INFO(MSGID_APP_SCANNER, 1, PMLOGKS("status", "ignore"), "failed_parse_json: %s / reason: %s", default_appinfo_path.c_str(), error.detail().c_str());
         return pbnjson::JValue();
     }
 

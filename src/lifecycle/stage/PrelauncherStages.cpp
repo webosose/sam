@@ -15,22 +15,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/AppMgrService.h>
+#include <bus/Notification.h>
+#include <bus/ServiceObserver.h>
 #include <lifecycle/AppInfoManager.h>
 #include <lifecycle/stage/PrelauncherStages.h>
-#include <module/Notification.h>
-#include <module/ServiceObserver.h>
 #include <package/AppDescription.h>
 #include <package/PackageManager.h>
 #include <setting/Settings.h>
 #include <util/BaseLogs.h>
 #include <util/JUtil.h>
 
-bool setPrelaunchingStages(AppLaunchingItemPtr item)
+bool PrelauncherStage::setPrelaunchingStages(LaunchAppItemPtr item)
 {
-    AppDescPtr appDesc = PackageManager::instance().getAppById(item->appId());
+    AppDescPtr appDesc = PackageManager::instance().getAppById(item->getAppId());
     if (!appDesc) {
         LOG_ERROR(MSGID_APPLAUNCH, 3,
-                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("app_id", item->getAppId().c_str()),
                   PMLOGKS("reason", "null_description"),
                   PMLOGKS("where", "set_prelaunching_stage"), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
@@ -39,20 +39,23 @@ bool setPrelaunchingStages(AppLaunchingItemPtr item)
 
     // execution lock
     item->addStage(StageItem(StageHandlerType::DIRECT_CHECK,
-                                   "",
-                                   NULL,
-                                   handleExecutionLockStatus,
-                                   AppLaunchingStage::CHECK_EXECUTE)
+                             "",
+                             NULL,
+                             handleExecutionLockStatus,
+                             AppLaunchingStage::CHECK_EXECUTE)
     );
     return true;
 }
 
-StageHandlerReturn handleExecutionLockStatus(AppLaunchingItemPtr prelaunching_item)
+StageHandlerReturn PrelauncherStage::handleExecutionLockStatus(LaunchAppItemPtr item)
 {
-    const std::string& app_id = prelaunching_item->appId();
+    const std::string& app_id = item->getAppId();
     if (AppInfoManager::instance().canExecute(app_id) == false) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3, PMLOGKS("app_id", app_id.c_str()), PMLOGKS("reason", "execution_lock"), PMLOGKS("where", "handle_execution_lock_status"), "");
-        prelaunching_item->setErrCodeText(APP_ERR_LOCKED, "app is locked");
+        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
+                  PMLOGKS("app_id", app_id.c_str()),
+                  PMLOGKS("reason", "execution_lock"),
+                  PMLOGKS("where", "handle_execution_lock_status"), "");
+        item->setErrCodeText(APP_ERR_LOCKED, "app is locked");
         return StageHandlerReturn::ERROR;
     }
 

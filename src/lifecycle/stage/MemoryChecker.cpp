@@ -26,7 +26,7 @@ MemoryChecker::~MemoryChecker()
 {
 }
 
-void MemoryChecker::add_item(AppLaunchingItemPtr item)
+void MemoryChecker::add_item(LaunchAppItemPtr item)
 {
     if (item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
@@ -35,22 +35,22 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
         return;
     }
 
-    auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item](AppLaunchingItemPtr it) {
+    auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item](LaunchAppItemPtr it) {
         return (it->getUid() == item->getUid());
     });
     if (it != m_queue.end()) {
         LOG_WARNING(MSGID_APPLAUNCH_ERR, 4,
-                    PMLOGKS("app_id", item->appId().c_str()),
+                    PMLOGKS("app_id", item->getAppId().c_str()),
                     PMLOGKS("uid", item->getUid().c_str()),
                     PMLOGKS("reason", "already_in_queue"),
                     PMLOGKS("where", "memory_checking_add_item"), "");
         return;
     }
 
-    AppLaunchingItemPtr new_item = std::static_pointer_cast<AppLaunchingItem>(item);
+    LaunchAppItemPtr new_item = std::static_pointer_cast<LaunchAppItem>(item);
     if (new_item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS("app_id", item->appId().c_str()),
+                  PMLOGKS("app_id", item->getAppId().c_str()),
                   PMLOGKS("reason", "pointer_cast_error"),
                   PMLOGKS("where", "memory_checking_add_item"), "");
         return;
@@ -61,7 +61,7 @@ void MemoryChecker::add_item(AppLaunchingItemPtr item)
 
 void MemoryChecker::remove_item(const std::string& item_uid)
 {
-    auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item_uid](AppLaunchingItemPtr it) {
+    auto it = std::find_if(m_queue.begin(), m_queue.end(), [&item_uid](LaunchAppItemPtr it) {
         return (it->getUid() == item_uid);
     });
     if (it != m_queue.end())
@@ -85,7 +85,7 @@ void MemoryChecker::cancel_all()
 {
     for (auto& launching_item : m_queue) {
         LOG_INFO(MSGID_APPLAUNCH, 2,
-                 PMLOGKS("app_id", launching_item->appId().c_str()),
+                 PMLOGKS("app_id", launching_item->getAppId().c_str()),
                  PMLOGKS("status", "cancel_launching"), "");
         launching_item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "cancel all request");
         signal_memory_checking_done(launching_item->getUid());

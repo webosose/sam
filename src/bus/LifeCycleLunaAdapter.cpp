@@ -19,9 +19,10 @@
 #include <bus/AppMgrService.h>
 #include <bus/LifeCycleLunaAdapter.h>
 #include <bus/LunaserviceAPI.h>
-#include <lifecycle/LifeCycleManager.h>
+#include <lifecycle/LifecycleManager.h>
 #include <package/PackageManager.h>
 #include <util/Logging.h>
+#include <util/JValueUtil.h>
 
 #define SUBSKEY_RUNNING              "running"
 #define SUBSKEY_DEV_RUNNING          "dev_running"
@@ -128,24 +129,31 @@ void LifeCycleLunaAdapter::launch(LunaTaskPtr task)
 {
     const pbnjson::JValue& jmsg = task->jmsg();
 
-    std::string id = jmsg["id"].asString();
-    if (id.empty()) {
+    std::string id;
+    if (!JValueUtil::getValue(jmsg, "id", id)) {
         task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
 
-    std::string launch_mode = "normal";
-    if (jmsg.hasKey("params") && jmsg["params"].hasKey("reason"))
-        launch_mode = jmsg["params"]["reason"].asString();
+    std::string display;
+    if (!JValueUtil::getValue(jmsg, "display", display)) {
+        display = ""; // TODO default displayId
+    }
 
+    std::string mode;
+    if (!JValueUtil::getValue(jmsg, "params", "reason", mode)) {
+        mode = "normal";
+    }
     LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3,
                PMLOGKS("app_id", id.c_str()),
                PMLOGKS("caller_id", task->caller().c_str()),
-               PMLOGKS("mode", launch_mode.c_str()), "");
+               PMLOGKS("mode", mode.c_str()), "");
 
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
-    lifecycle_task->setAppId(id);
-    LifecycleManager::instance().Launch(lifecycle_task);
+    LifeCycleTaskPtr lifeCycleTask = std::make_shared<LifecycleTask>(task);
+    lifeCycleTask->setAppId(id);
+    lifeCycleTask->setDisplay(display);
+
+    LifecycleManager::instance().launch(lifeCycleTask);
 }
 
 void LifeCycleLunaAdapter::pause(LunaTaskPtr task)
@@ -159,14 +167,14 @@ void LifeCycleLunaAdapter::pause(LunaTaskPtr task)
         return;
     }
 
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifecycleTask>(task);
     lifecycle_task->setAppId(id);
     LifecycleManager::instance().Pause(lifecycle_task);
 }
 
 void LifeCycleLunaAdapter::closeByAppId(LunaTaskPtr task)
 {
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifecycleTask>(task);
     LifecycleManager::instance().Close(lifecycle_task);
 }
 
@@ -184,13 +192,13 @@ void LifeCycleLunaAdapter::closeByAppIdForDev(LunaTaskPtr task)
         return;
     }
 
-    LifeCycleTaskPtr lifecycleTask = std::make_shared<LifeCycleTask>(task);
+    LifeCycleTaskPtr lifecycleTask = std::make_shared<LifecycleTask>(task);
     LifecycleManager::instance().Close(lifecycleTask);
 }
 
 void LifeCycleLunaAdapter::closeAllApps(LunaTaskPtr task)
 {
-    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifeCycleTask>(task);
+    LifeCycleTaskPtr lifecycle_task = std::make_shared<LifecycleTask>(task);
     LifecycleManager::instance().CloseAll(lifecycle_task);
     task->replyResult();
 }
@@ -223,33 +231,6 @@ void LifeCycleLunaAdapter::runningForDev(LunaTaskPtr task)
     }
 
     task->ReplyResult(payload);
-}
-
-void LifeCycleLunaAdapter::changeRunningAppId(LunaTaskPtr task)
-{
-    const pbnjson::JValue& jmsg = task->jmsg();
-
-    pbnjson::JValue response = pbnjson::Object();
-    std::string caller_id = task->caller();
-    std::string target_id = jmsg["id"].asString();
-    ErrorInfo err_info;
-
-    if (caller_id != "com.webos.app.inputcommon") {
-        task->replyResultWithError(PERMISSION_DENIED, "only 'com.webos.app.inputcommon' can call this API");
-        return;
-    }
-
-    if (NULL == PackageManager::instance().getAppById(target_id)) {
-        task->replyResultWithError(APP_ERR_INVALID_APPID, "Cannot find target appId.");
-        return;
-    }
-
-    if (!LifecycleManager::instance().changeRunningAppId(caller_id, target_id, err_info)) {
-        task->replyResultWithError(err_info.errorCode, err_info.errorText);
-        return;
-    }
-
-    task->replyResult();
 }
 
 void LifeCycleLunaAdapter::getAppLifeEvents(LunaTaskPtr task)

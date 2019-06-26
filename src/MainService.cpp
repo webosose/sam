@@ -26,15 +26,15 @@
 
 #include <glib.h>
 #include <boost/bind.hpp>
+#include <bus/AppinstalldSubscriber.h>
 #include <bus/AppMgrService.h>
-#include <launch_point/LaunchPointManager.h>
-#include <lifecycle/LifeCycleManager.h>
-#include <module/AppinstalldSubscriber.h>
-#include <module/BootdSubscriber.h>
-#include <module/ConfigdSubscriber.h>
-#include <module/LocalePreferences.h>
-#include <module/LSMSubscriber.h>
-#include <module/ServiceObserver.h>
+#include <bus/BootdSubscriber.h>
+#include <bus/ConfigdSubscriber.h>
+#include <bus/LocalePreferences.h>
+#include <bus/LSMSubscriber.h>
+#include <bus/ServiceObserver.h>
+#include <launchpoint/LaunchPointManager.h>
+#include <lifecycle/LifecycleManager.h>
 #include <MainService.h>
 #include <package/PackageManager.h>
 #include <setting/Settings.h>
@@ -192,11 +192,6 @@ bool MainService::initialize()
     // to check first app launch finished
     LifecycleManager::instance().signal_launching_finished.connect(boost::bind(&MainService::onLaunchingFinished, this, _1));
 
-    // set extension handlers for lifecycle interface
-    LifecycleManager::instance().setApplifeitemFactory(m_appLaunchingItemFactory);
-    LifecycleManager::instance().setMemoryCheckerHandler(m_memoryChecker);
-    LifecycleManager::instance().setLastappHandler(m_lastappHandler);
-
     // set extension handlers for launch point interface
     LaunchPointManager::instance().setDbHandler(m_dbHandler);
     LaunchPointManager::instance().setOrderingHandler(m_orderingHandler);
@@ -220,10 +215,10 @@ bool MainService::terminate()
     return true;
 }
 
-void MainService::onLaunchingFinished(AppLaunchingItemPtr item)
+void MainService::onLaunchingFinished(LaunchAppItemPtr item)
 {
-    AppLaunchingItemPtr basic_item = std::static_pointer_cast<AppLaunchingItem>(item);
+    LaunchAppItemPtr basic_item = std::static_pointer_cast<LaunchAppItem>(item);
 
-    if (basic_item->errText().empty())
-        LifecycleManager::instance().setLastLoadingApp(basic_item->appId());
+    if (basic_item->getErrorText().empty())
+        LifecycleManager::instance().setLastLoadingApp(basic_item->getAppId());
 }

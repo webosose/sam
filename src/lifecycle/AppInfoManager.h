@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,10 +28,10 @@ struct RunningInfo {
     std::string m_pid;
     std::string m_webprocid;
 
-    RunningInfo(const std::string& _app_id, const std::string& _pid, const std::string& _webprocid)
-        : m_appId(_app_id),
-          m_pid(_pid),
-          m_webprocid(_webprocid)
+    RunningInfo(const std::string& appId, const std::string& pid, const std::string& webprocid)
+        : m_appId(appId),
+          m_pid(pid),
+          m_webprocid(webprocid)
     {
     }
 };
@@ -41,15 +41,12 @@ typedef std::list<RunningInfoPtr> RunningInfoList;
 typedef std::map<std::string, pbnjson::JValue> UpdateInfoList;
 
 class AppInfoManager: public Singleton<AppInfoManager> {
+friend class Singleton<AppInfoManager> ;
 public:
     AppInfoManager();
     virtual ~AppInfoManager();
 
-    void init();
-
-    ////////////////////////////////////////////////////
-    /// information per app
-    ////////////////////////////////////////////////////
+    void initialize();
 
     // getter list
     bool canExecute(const std::string& app_id);
@@ -57,7 +54,6 @@ public:
     const std::string& getPid(const std::string& app_id);
     const std::string& webprocid(const std::string& app_id);
     bool preloadModeOn(const std::string& app_id);
-    bool isOutOfService(const std::string& app_id);
     bool hasUpdate(const std::string& app_id);
     const std::string updateCategory(const std::string& app_id);
     const std::string updateType(const std::string& app_id);
@@ -74,44 +70,20 @@ public:
     void setLifeStatus(const std::string& app_id, const LifeStatus& status);
     void setRuntimeStatus(const std::string& app_id, RuntimeStatus status);
 
-    ////////////////////////////////////////////////////
-    /// common functions
-    ////////////////////////////////////////////////////
     void removeAppInfo(const std::string& app_id);
 
     // life status
     std::string toString(const LifeStatus& status);
     void getAppIdsByLifeStatus(const LifeStatus& status, std::vector<std::string>& app_list);
 
-    ////////////////////////////////////////////////////
-    /// information list
-    ////////////////////////////////////////////////////
-
-    // out of service info
-    void addOutOfServiceInfo(const std::string& app_id)
-    {
-        m_outOfServiceInfoList.push_back(app_id);
-    }
-    void resetAllOutOfServiceInfo();
-
-    // update info
-    void addUpdateInfo(const std::string& app_id, const std::string& type, const std::string& category, const std::string& version);
-    void resetAllUpdateInfo();
-
     // running info
     const std::string& getAppIdByPid(const std::string& pid);
     void getRunningList(pbnjson::JValue& running_list, bool devmode_only = false);
     void getRunningAppIds(std::vector<std::string>& running_app_ids);
-    RunningInfoPtr getRunningData(const std::string& app_id);
     void addRunningInfo(const std::string& app_id, const std::string& pid, const std::string& webprocid);
     void removeRunningInfo(const std::string& app_id);
     bool isRunning(const std::string& app_id);
 
-    // foreground info
-    const std::string& getLastForegroundAppId() const
-    {
-        return m_lastForegroundAppId;
-    }
     const std::string& getCurrentForegroundAppId() const
     {
         return m_currentForegroundAppId;
@@ -128,10 +100,6 @@ public:
     bool isAppOnFullscreen(const std::string& app_id);
     bool isAppOnForeground(const std::string& app_id);
 
-    void setLastForegroundAppId(const std::string& app_id)
-    {
-        m_lastForegroundAppId = app_id;
-    }
     void setCurrentForegroundAppId(const std::string& app_id)
     {
         m_currentForegroundAppId = app_id;
@@ -146,8 +114,6 @@ public:
     }
 
 private:
-    friend class Singleton<AppInfoManager> ;
-
     void onAllAppRosterChanged(const AppDescMaps& allApps);
     AppInfoPtr getAppInfo(const std::string& appId);
     AppInfoPtr getAppInfoForSetter(const std::string& appId);
@@ -158,12 +124,10 @@ private:
     RunningInfoList m_runningList;
     UpdateInfoList m_updateInfoList;
 
-    std::string m_lastForegroundAppId;
     std::string m_currentForegroundAppId;
     pbnjson::JValue m_jsonForegroundInfo;
 
     std::vector<std::string> m_foregroundApps;
-    std::vector<std::string> m_outOfServiceInfoList;
 };
 
 #endif

@@ -17,10 +17,16 @@
 #ifndef PRELAUNCHER_STAGES_H
 #define PRELAUNCHER_STAGES_H
 
-#include <lifecycle/stage/AppLaunchingItem.h>
+#include <lifecycle/stage/appitem/LaunchAppItem.h>
 #include <pbnjson.hpp>
 
-bool setPrelaunchingStages(AppLaunchingItemPtr item);
-StageHandlerReturn handleExecutionLockStatus(AppLaunchingItemPtr prelaunching_item);
+class PrelauncherStage {
+public:
+    PrelauncherStage() {}
+    virtual ~PrelauncherStage() {}
+
+    static bool setPrelaunchingStages(LaunchAppItemPtr item);
+    static StageHandlerReturn handleExecutionLockStatus(LaunchAppItemPtr item);
+};
 
 #endif

@@ -43,7 +43,6 @@ private:
     void closeAllApps(LunaTaskPtr task);
     void running(LunaTaskPtr task);
     void runningForDev(LunaTaskPtr task);
-    void changeRunningAppId(LunaTaskPtr task);
     void getAppLifeEvents(LunaTaskPtr task);
     void getAppLifeStatus(LunaTaskPtr task);
     void getForegroundAppInfo(LunaTaskPtr task);

@@ -18,9 +18,9 @@
 #define PACKAGE_PACKAGEMANAGER_H_
 
 #include <boost/signals2.hpp>
+#include <bus/AppinstalldSubscriber.h>
 #include <lifecycle/ApplicationErrors.h>
 #include <luna-service2/lunaservice.h>
-#include <module/AppinstalldSubscriber.h>
 #include <package/AppDescription.h>
 #include <package/AppDescriptionScanner.h>
 #include <util/Singleton.h>
