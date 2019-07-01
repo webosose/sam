@@ -17,41 +17,40 @@
 #include <lifecycle/stage/appitem/AppItemFactory.h>
 #include <lifecycle/stage/appitem/AppItemFactory.h>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
-#include <package/PackageManager.h>
-#include <package/AppDescription.h>
+#include <package/AppPackage.h>
+#include <package/AppPackageManager.h>
 #include <setting/Settings.h>
-#include <util/BaseLogs.h>
 #include <util/JUtil.h>
 #include <util/LSUtils.h>
 
-LaunchAppItemPtr AppItemFactory::createLaunchItem(LifeCycleTaskPtr task)
+LaunchAppItemPtr AppItemFactory::createLaunchItem(LifecycleTaskPtr task)
 {
     if (task->getAppId().empty()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "empty_app_id"),
-                  PMLOGKS("where", "tv_launching_item_factory"), "");
+                  PMLOGKS(LOG_KEY_REASON, "empty_app_id"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return nullptr;
     }
 
-    AppDescPtr appDesc = PackageManager::instance().getAppById(task->getAppId());
+    AppPackagePtr appDesc = AppPackageManager::getInstance().getAppById(task->getAppId());
     if (appDesc == nullptr) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "not_exist"),
-                  PMLOGKS("where", "AppLaunchingItemFactory4Basic"), "");
+                  PMLOGKS(LOG_KEY_REASON, "not_exist"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return nullptr;
     }
 
     // parse caller info
-    std::string caller = getCallerFromMessage(task->getLunaTask()->lsmsg());
+    std::string caller = task->getLunaTask()->caller();
     std::string callerId = getCallerID(caller);
     std::string callerPid = getCallerPID(caller);
 
-    const pbnjson::JValue& params = task->getLunaTask()->jmsg();
+    const pbnjson::JValue& params = task->getLunaTask()->getRequestPayload();
     pbnjson::JValue params4app = (params.hasKey("params") && params["params"].isObject()) ? params["params"].duplicate() : pbnjson::Object();
 
     // this is for WAM, SAM will bypass to WAM. WAM doens't unload the app even if user clicks "X" button to close it.
     bool keepAlive = params.hasKey("keepAlive") && params["keepAlive"].asBool();
-    if (SettingsImpl::instance().isKeepAliveApp(task->getAppId())) {
+    if (SettingsImpl::getInstance().isKeepAliveApp(task->getAppId())) {
         keepAlive = true;
     }
 
@@ -76,8 +75,8 @@ LaunchAppItemPtr AppItemFactory::createLaunchItem(LifeCycleTaskPtr task)
     LaunchAppItemPtr item = std::make_shared<LaunchAppItem>(task->getAppId(), task->getDisplay(), params4app, task->getLunaTask()->lsmsg());
     if (item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "make_shared_error"),
-                  PMLOGKS("where", "tv_launching_item_factory"), "");
+                  PMLOGKS(LOG_KEY_REASON, "make_shared_error"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return NULL;
     }
 
@@ -89,7 +88,7 @@ LaunchAppItemPtr AppItemFactory::createLaunchItem(LifeCycleTaskPtr task)
     item->setSubStage(static_cast<int>(AppLaunchingStage::PREPARE_PRELAUNCH));
 
     LOG_INFO(MSGID_APPLAUNCH, 6,
-             PMLOGKS("app_id", task->getAppId().c_str()),
+             PMLOGKS(LOG_KEY_APPID, task->getAppId().c_str()),
              PMLOGKS("caller_id", item->getCallerId().c_str()),
              PMLOGKS("keep_alive", (keepAlive?"true":"false")),
              PMLOGKS("show_splash", (noSplash?"true":"false")),
@@ -99,7 +98,7 @@ LaunchAppItemPtr AppItemFactory::createLaunchItem(LifeCycleTaskPtr task)
     return item;
 }
 
-CloseAppItemPtr AppItemFactory::createCloseItem(LifeCycleTaskPtr task)
+CloseAppItemPtr AppItemFactory::createCloseItem(LifecycleTaskPtr task)
 {
     // return std::make_shared<CloseAppItem>(appId, pid, callerId, closeReason);
     return nullptr;

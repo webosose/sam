@@ -17,7 +17,7 @@
 #ifndef NATIVEAPP_LIFE_HANDLER_H_
 #define NATIVEAPP_LIFE_HANDLER_H_
 
-#include <lifecycle/handler/native_interface/INativeApp.h>
+#include <lifecycle/handler/native_interface/AbsNativeAppLifecycleInterface.h>
 #include <lifecycle/IAppLifeHandler.h>
 #include <list>
 #include <memory>
@@ -54,7 +54,7 @@ typedef std::shared_ptr<KillingData> KillingDataPtr;
 
 class NativeAppLifeHandler: public IAppLifeHandler,
                             public ISingleton<NativeAppLifeHandler> {
-friend class INativeApp;
+friend class AbsNativeAppLifecycleInterface;
 friend class NativeAppLifeCycleInterfaceVer1;
 friend class NativeAppLifeCycleInterfaceVer2;
 friend class ISingleton<NativeAppLifeHandler>;
@@ -67,10 +67,10 @@ public:
 
     void registerApp(const std::string& app_id, LSMessage* lsmsg, std::string& err_text);
 
-    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
-    boost::signals2::signal<void(const std::string& app_id)> signal_running_app_removed;
-    boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const std::string& app_id)> EventRunningAppRemoved;
+    boost::signals2::signal<void(const std::string& uid)> EventLaunchingDone;
 
 private:
     NativeAppLifeHandler();

@@ -27,15 +27,20 @@ public:
 
     static bool hasKey(const JValue& json, const string& firstKey, const string& secondKey = "", const string& thirdKey = "");
 
-    // TODO: refactoring is needed
+    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value);
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value);
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, int& value);
+    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, bool& value);
+
+    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, JValue& value);
     static bool getValue(const JValue& json, const string& mainKey, const string& subKey, string& value);
     static bool getValue(const JValue& json, const string& mainKey, const string& subKey, int& value);
+    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, bool& value);
+
+    static bool getValue(const JValue& json, const string& key, JValue& value);
     static bool getValue(const JValue& json, const string& key, string& value);
     static bool getValue(const JValue& json, const string& key, int& value);
-
-    static string getMeta(const JValue& json, const string& key);
+    static bool getValue(const JValue& json, const string& key, bool& value);
 };
 
 #endif /* UTIL_JVALUEUTIL_H_ */

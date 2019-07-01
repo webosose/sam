@@ -37,7 +37,7 @@ public:
     void loadDb();
     bool query(const std::string& cmd, const std::string& query);
 
-    boost::signals2::signal<void(const pbnjson::JValue& loaded_db_result)> signalDbLoaded;
+    boost::signals2::signal<void(const pbnjson::JValue& loaded_db_result)> EventDBLoaded;
 
 protected:
     std::string m_name;

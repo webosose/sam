@@ -21,8 +21,8 @@
 
 class LaunchPointBookmark: public LaunchPoint {
 public:
-    LaunchPointBookmark(const std::string& id, const std::string& lp_id)
-        : LaunchPoint(id, lp_id)
+    LaunchPointBookmark(const std::string& appId, const std::string& launchPointId)
+        : LaunchPoint(appId, launchPointId)
     {
     }
 

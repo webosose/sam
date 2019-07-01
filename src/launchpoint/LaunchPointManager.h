@@ -18,8 +18,8 @@
 #define LAUNCH_POINT_MANAGER_H
 
 #include <boost/bind.hpp>
-#include <boost/signals.hpp>
-#include <bus/AppinstalldSubscriber.h>
+#include <boost/signals2.hpp>
+#include <bus/client/AppInstallService.h>
 #include <glib.h>
 #include <launchpoint/DBBase.h>
 #include <launchpoint/handler/DBHandler.h>
@@ -27,6 +27,7 @@
 #include <launchpoint/launch_point/LaunchPoint.h>
 #include <launchpoint/launch_point/LaunchPointFactory.h>
 #include <luna-service2/lunaservice.h>
+#include "interface/IListener.h"
 #include <util/JUtil.h>
 #include <util/Singleton.h>
 
@@ -51,7 +52,16 @@ enum class LPStateInput {
     LOAD_ORDERED_LIST
 };
 
-class LaunchPointManager: public Singleton<LaunchPointManager> {
+class LaunchPointManagerListener {
+public:
+    LaunchPointManagerListener() {}
+    virtual ~LaunchPointManagerListener() {}
+
+    virtual void onReadyLaunchPointManager() = 0;
+};
+
+class LaunchPointManager: public Singleton<LaunchPointManager>,
+                          public IListener<LaunchPointManagerListener> {
 friend class Singleton<LaunchPointManager> ;
 public:
     LaunchPointManager();
@@ -59,37 +69,26 @@ public:
 
     void initialize();
 
-    LaunchPointPtr addLaunchPoint(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
-    LaunchPointPtr updateLaunchPoint(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
-    LaunchPointPtr moveLaunchPoint(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
-    void removeLaunchPoint(const pbnjson::JValue& data, std::string& err_text);
-    void searchLaunchPoints(pbnjson::JValue& matchedByTitle, const std::string& searchTerm);
+    LaunchPointPtr addLP(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
+    LaunchPointPtr updateLP(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
+    LaunchPointPtr moveLP(const LPMAction action, const pbnjson::JValue& data, std::string& err_text);
+    void removeLP(const pbnjson::JValue& data, std::string& err_text);
 
-    void removeAllLaunchPointsByAppId(const std::string& id);
-    void launchPointsAsJson(pbnjson::JValue& array);
-
-    void setDbHandler(DBHandler& db_handler);
-    void setOrderingHandler(OrderingHandler& ordering_handler);
-    void setLaunchPointFactory(LaunchPointFactory& lp_factory);
+    void removeLPsByAppId(const std::string& id);
+    void convertLPsToJson(pbnjson::JValue& array);
 
     bool ready() const
     {
         return m_lpmReady;
     }
-    boost::signal<void()> signal_on_launch_point_ready_;
-    void subscribeListChange(boost::function<void(const pbnjson::JValue&)> func)
-    {
-        notify_launch_point_list_changed.connect(func);
-    }
-    void subscribeLaunchPointChange(boost::function<void(const std::string& change, const pbnjson::JValue&)> func)
-    {
-        notify_launch_point_changed.connect(func);
-    }
+
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventLaunchPointListChanged;
+    boost::signals2::signal<void(const std::string&, const pbnjson::JValue&)> EventLaunchPointChanged;
 
 private:
-    void handleDbConnected(bool connection);
-    void onLaunchPointsDbLoaded(const pbnjson::JValue& loaded_result);
-    void onLaunchPointsOrdered(const OrderChangeState& change_state);
+    void onDBConnected(bool connection);
+    void onLPLoaded(const pbnjson::JValue& loaded_result);
+    void onLPOrdered(const OrderChangeState& change_state);
     void onPackageStatusChanged(const std::string& app_id, const PackageStatus& status);
 
     void onListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev);
@@ -97,21 +96,18 @@ private:
     void handleLpmState(const LPStateInput& input, const pbnjson::JValue& data);
     void reloadDbData();
 
-    void makeLaunchPointsInOrder();
+    void sortLPs();
 
     void updateApps(const pbnjson::JValue& apps);
     void syncAppsWithDbData();
 
     void replyLpListToSubscribers();
     void replyLpChangeToSubscribers(LaunchPointPtr lp, const std::string& change, int position = -1);
-    boost::signal<void(const pbnjson::JValue&)> notify_launch_point_list_changed;
-    boost::signal<void(const std::string&, const pbnjson::JValue&)> notify_launch_point_changed;
 
     bool isLastVisibleLp(LaunchPointPtr lp);
     LaunchPointPtr getDefaultLpByAppId(const std::string& app_id);
     std::string generateLpId();
     LaunchPointPtr getLpByLpId(const std::string& lp_id);
-    bool matchesTitle(const gchar* keyword, const gchar* title) const;
 
     bool m_lpmReady;
     bool m_dbConnected;
@@ -124,9 +120,9 @@ private:
     pbnjson::JValue m_launchPointsDBData;
     LaunchPointList m_launchPointList;
 
-    DBHandler* m_DBHandler;
-    LaunchPointFactory* m_lpFactory;
-    OrderingHandler* m_orderingHandler;
+    DBHandler m_DBHandler;
+    LaunchPointFactory m_launchPointFactory;
+    OrderingHandler m_orderingHandler;
 };
 
 #endif

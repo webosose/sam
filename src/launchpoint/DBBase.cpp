@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/AppMgrService.h>
+#include <bus/service/ApplicationManager.h>
 #include <launchpoint/DBBase.h>
 #include <util/CallChain.h>
 #include <util/JUtil.h>
@@ -34,7 +34,7 @@ protected:
     {
         if (message["returnValue"].asBool()) {
             if (!message.hasKey("results") || !message["results"].isArray()) {
-                std::string error_text = message["errorText"].asString();
+                std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
 
                 if (error_text.empty())
                     error_text = "results is not valid";
@@ -67,7 +67,7 @@ protected:
         if (message["returnValue"].asBool())
             return true;
 
-        std::string error_text = message["errorText"].asString();
+        std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
 
         if (error_text.empty())
             error_text = "register kind is failed";
@@ -90,7 +90,7 @@ protected:
         if (message["returnValue"].asBool())
             return true;
 
-        std::string error_text = message["errorText"].asString();
+        std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
 
         if (error_text.empty())
             error_text = "register Permission is failed";
@@ -113,7 +113,9 @@ DBBase::~DBBase()
 
 void DBBase::loadDb()
 {
-    LOG_INFO(MSGID_DB_LOAD, 2, PMLOGKS("where", "LoadDb"), PMLOGKS("name", m_name.c_str()), "");
+    LOG_INFO(MSGID_DB_LOAD, 2,
+             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
+             PMLOGKS("name", m_name.c_str()), "");
 
     //using call chain
     CallChain& call_chain = CallChain::acquire(std::bind(&DBBase::onReadyToUseDb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), NULL, NULL);
@@ -122,12 +124,12 @@ void DBBase::loadDb()
     const char* qry_ptr = qry.c_str();
 
     //1. check key from DB
-    auto check_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/find", qry_ptr);
+    auto check_kind = std::make_shared<CallChain_DBConfig::CheckKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/find", qry_ptr);
 
     call_chain.add(check_kind);
 
     //2. register kind to DB
-    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putKind", m_kind.stringify().c_str());
+    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/putKind", m_kind.stringify().c_str());
 
     call_chain.addIf(check_kind, false, reg_kind);
 
@@ -135,24 +137,24 @@ void DBBase::loadDb()
     pbnjson::JValue permission_data = pbnjson::Object();
     permission_data.put("permissions", m_permissions);
 
-    auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/putPermissions",
+    auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/putPermissions",
             permission_data.stringify().c_str());
 
     call_chain.addIf(reg_kind, true, reg_permission);
 
-    auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(AppMgrService::instance().serviceHandle(), "luna://com.webos.service.db/find", qry_ptr);
+    auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/find", qry_ptr);
 
     call_chain.addIf(reg_permission, true, get_kind);
 
     call_chain.run();
 }
 
-bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data)
+bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo errInfo, void *user_data)
 {
     if (!result.hasKey("returnValue")) {
         LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
                   PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", "returnValue_does_not_exist"), "%s", err_info.errorText.c_str());
+                  PMLOGKS("result", "returnValue_does_not_exist"), "%s", errInfo.errorText.c_str());
         return false;
     }
 
@@ -160,7 +162,7 @@ bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *us
         LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
                   PMLOGKS("status", "on_ready_to_use_db"),
                   PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  "%s", err_info.errorText.c_str());
+                  "%s", errInfo.errorText.c_str());
         return false;
     }
 
@@ -168,7 +170,7 @@ bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *us
         LOG_ERROR(MSGID_DB_LOAD_ERR, 3,
                   PMLOGKS("status", "on_ready_to_use_db"),
                   PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  PMLOGKS("reason", "loaded_db_results_is_not_valid"), "");
+                  PMLOGKS(LOG_KEY_REASON, "loaded_db_results_is_not_valid"), "");
         return false;
     }
 
@@ -176,8 +178,8 @@ bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *us
 
     LOG_INFO(MSGID_DB_LOAD, 2,
              PMLOGKS("status", "on_ready_to_use_db"),
-             PMLOGKS("reason", "received_find_db"), "");
-    signalDbLoaded(loaded_db_result);
+             PMLOGKS(LOG_KEY_REASON, "received_find_db"), "");
+    EventDBLoaded(loaded_db_result);
 
     return true;
 }
@@ -190,11 +192,18 @@ bool DBBase::query(const std::string& cmd, const std::string& query)
              PMLOGKS("name", m_name.c_str()), "");
 
     LSErrorSafe lserror;
-    if (!LSCallOneReply(AppMgrService::instance().serviceHandle(), cmd.c_str(), query.c_str(), onReturnQueryResult, this, NULL, &lserror)) {
+    if (!LSCallOneReply(ApplicationManager::getInstance().get(),
+                        cmd.c_str(),
+                        query.c_str(),
+                        onReturnQueryResult,
+                        this,
+                        NULL,
+                        &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS("type", "lscall_one_reply"),
-                  PMLOGKS("service_name", "com.webos.service.db"),
-                  PMLOGKS("api", cmd.c_str()), "err: %s", lserror.message);
+                  PMLOGKS(LOG_KEY_TYPE, "lscall_one_reply"),
+                  PMLOGKS(LOG_KEY_SERVICE, "com.webos.service.db"),
+                  PMLOGKS("api", cmd.c_str()),
+                  "err: %s", lserror.message);
         return false;
     }
 
@@ -206,12 +215,13 @@ bool DBBase::onReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* u
     pbnjson::JValue result = JUtil::parse(LSMessageGetPayload(message), std::string(""));
 
     if (result.isNull()) {
-        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1, PMLOGKS("result", "Null"), "");
+        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1,
+                  PMLOGKS("result", "Null"), "");
     }
 
     if (!result["returnValue"].asBool()) {
         LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1,
-                  PMLOGKFV("db errorText", "%s", result["errorText"].asString().c_str()), "");
+                  PMLOGKFV("db errorText", "%s", result[LOG_KEY_ERRORTEXT].asString().c_str()), "");
     }
 
     return true;

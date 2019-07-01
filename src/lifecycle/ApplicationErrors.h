@@ -20,6 +20,7 @@
 #include <string>
 
 #include <pbnjson.hpp>
+#include "util/Logging.h"
 
 //! error value from applicationManager
 ////////////////////////////////////////////////////////////////////////
@@ -112,8 +113,8 @@ typedef struct _ErrorInfo {
             json.put("returnValue", true);
         } else {
             json.put("returnValue", false);
-            json.put("errorCode", errorCode);
-            json.put("errorText", errorText);
+            json.put(LOG_KEY_ERRORCODE, errorCode);
+            json.put(LOG_KEY_ERRORTEXT, errorText);
         }
     }
 } ErrorInfo;

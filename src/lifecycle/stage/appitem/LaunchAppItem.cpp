@@ -19,7 +19,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
-#include <package/PackageManager.h>
+#include <package/AppPackageManager.h>
 #include <util/Logging.h>
 
 
@@ -38,9 +38,9 @@ LaunchAppItem::LaunchAppItem(const std::string& appId, const std::string& displa
       m_launchStartTime(0)
 {
     LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS("appId", getAppId().c_str()),
+             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
              PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS("action", "created_launching_item"), "");
+             PMLOGKS(LOG_KEY_ACTION, "created_launching_item"), "");
 
     if (m_lsmsg != NULL) {
         LSMessageRef(m_lsmsg);
@@ -50,9 +50,9 @@ LaunchAppItem::LaunchAppItem(const std::string& appId, const std::string& displa
 LaunchAppItem::~LaunchAppItem()
 {
     LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS("appId", getAppId().c_str()),
+             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
              PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS("action", "removed_launching_item"), "");
+             PMLOGKS(LOG_KEY_ACTION, "removed_launching_item"), "");
 
     if (m_lsmsg != NULL) {
         LSMessageUnref(m_lsmsg);

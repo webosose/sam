@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 #include <boost/bind.hpp>
 #include <launchpoint/handler/OrderingHandler.h>
 #include <setting/Settings.h>
-#include <util/BaseLogs.h>
-
 
 OrderingHandler::OrderingHandler()
 {
@@ -84,5 +82,5 @@ void OrderingHandler::reorder()
         m_orderedList.push_back(it->get()->getLunchPointId());
     }
     std::sort(m_orderedList.begin(), m_orderedList.end(), [](const std::string& a, const std::string& b) -> bool {return (a < b);});
-    signal_launch_points_ordered_(OrderChangeState::FULL);
+    EventLaunchPointsOrdered(OrderChangeState::FULL);
 }

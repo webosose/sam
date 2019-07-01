@@ -52,7 +52,7 @@ public:
         return m_orderedList;
     }
 
-    boost::signals2::signal<void (const OrderChangeState&)> signal_launch_points_ordered_;
+    boost::signals2::signal<void (const OrderChangeState&)> EventLaunchPointsOrdered;
 
 private:
     void reorder();

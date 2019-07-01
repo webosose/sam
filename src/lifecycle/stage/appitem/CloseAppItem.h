@@ -18,7 +18,7 @@
 #define APP_CLOSE_ITEM_H_
 
 #include <lifecycle/ApplicationErrors.h>
-#include <package/AppDescription.h>
+#include <package/AppPackage.h>
 #include <list>
 #include <pbnjson.hpp>
 #include "AppItem.h"

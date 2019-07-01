@@ -30,22 +30,17 @@ public:
     virtual void close(CloseAppItemPtr item, std::string& err_text) override;
     virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
 
-    boost::signals2::signal<void()> signal_service_disconnected;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
-    boost::signals2::signal<void(const std::string& app_id)> signal_running_app_removed;
-    boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const std::string& app_id)> EventRunningAppRemoved;
+    boost::signals2::signal<void(const std::string& uid)> EventLaunchingDone;
 
 private:
-    void onServiceReady();
-    void onWAMServiceStatusChanged(bool connection);
-
     static bool onWAMSubscriptionRunninglist(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     static bool onReturnForLaunchRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     static bool onReturnForCloseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
     static bool onReturnForPauseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    void handleRunningListChange(const pbnjson::JValue& new_list);
-    void subscribeWAMRunningList();
+    void onListRunningAppsChanged(const pbnjson::JValue& new_list);
 
     LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
     void removeItemFromLSCallRequestList(const std::string& uid);

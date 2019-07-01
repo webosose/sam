@@ -34,7 +34,7 @@ public:
     virtual bool updateData(const pbnjson::JValue& json);
     virtual bool deleteData(const pbnjson::JValue& json);
 
-    boost::signals2::signal<void (const pbnjson::JValue&)> signal_db_loaded_;
+    boost::signals2::signal<void (const pbnjson::JValue&)> EventDBLoaded_;
 
 private:
     void onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);

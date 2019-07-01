@@ -19,7 +19,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <lifecycle/stage/appitem/CloseAppItem.h>
-#include <package/PackageManager.h>
+#include <package/AppPackageManager.h>
 #include <util/Logging.h>
 
 
@@ -30,15 +30,15 @@ CloseAppItem::CloseAppItem(const std::string& app_id, const std::string& pid, co
     setCallerId(caller);
 
     LOG_INFO(MSGID_APPCLOSE, 3,
-             PMLOGKS("appId", getAppId().c_str()),
+             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
              PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS("action", "created_close_item"), "");
+             PMLOGKS(LOG_KEY_ACTION, "created_close_item"), "");
 }
 
 CloseAppItem::~CloseAppItem()
 {
     LOG_INFO(MSGID_APPCLOSE, 3,
-             PMLOGKS("appId", getAppId().c_str()),
+             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
              PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS("action", "removed_close_item"), "");
+             PMLOGKS(LOG_KEY_ACTION, "removed_close_item"), "");
 }

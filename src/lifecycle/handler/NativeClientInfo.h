@@ -24,7 +24,7 @@
 #include <boost/function.hpp>
 #include "../stage/appitem/LaunchAppItem.h"
 
-class INativeApp;
+class AbsNativeAppLifecycleInterface;
 
 class NativeClientInfo {
 public:
@@ -38,8 +38,8 @@ public:
     void stopTimerForCheckingRegistration();
     static gboolean checkRegistration(gpointer user_data);
 
-    void setLifeCycleHandler(int ver, INativeApp* handler);
-    INativeApp* getLifeCycleHandler() const
+    void setLifeCycleHandler(int ver, AbsNativeAppLifecycleInterface* handler);
+    AbsNativeAppLifecycleInterface* getLifeCycleHandler() const
     {
         return m_lifecycleHandler;
     }
@@ -85,7 +85,7 @@ private:
     LSMessage* m_lsmsg;
     guint m_registrationCheckTimerSource;
     double m_registrationCheckStartTime;
-    INativeApp* m_lifecycleHandler;
+    AbsNativeAppLifecycleInterface* m_lifecycleHandler;
 };
 
 typedef std::shared_ptr<NativeClientInfo> NativeClientInfoPtr;

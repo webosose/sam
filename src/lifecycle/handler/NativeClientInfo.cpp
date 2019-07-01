@@ -28,7 +28,9 @@ NativeClientInfo::NativeClientInfo(const std::string& app_id)
       m_registrationCheckStartTime(0),
       m_lifecycleHandler(NULL)
 {
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", m_appId.c_str()), "client_info_created");
+    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1,
+             PMLOGKS(LOG_KEY_APPID, m_appId.c_str()),
+             "client_info_created");
 }
 
 NativeClientInfo::~NativeClientInfo()
@@ -37,7 +39,9 @@ NativeClientInfo::~NativeClientInfo()
         LSMessageUnref(m_lsmsg);
     stopTimerForCheckingRegistration();
 
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1, PMLOGKS("app_id", m_appId.c_str()), "client_info_removed");
+    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1,
+             PMLOGKS(LOG_KEY_APPID, m_appId.c_str()),
+             "client_info_removed");
 }
 
 void NativeClientInfo::Register(LSMessage* lsmsg)
@@ -99,7 +103,7 @@ gboolean NativeClientInfo::checkRegistration(gpointer user_data)
     return FALSE;
 }
 
-void NativeClientInfo::setLifeCycleHandler(int ver, INativeApp* handler)
+void NativeClientInfo::setLifeCycleHandler(int ver, AbsNativeAppLifecycleInterface* handler)
 {
     m_interfaceVersion = ver;
     m_lifecycleHandler = handler;
@@ -110,7 +114,7 @@ bool NativeClientInfo::sendEvent(pbnjson::JValue& payload)
 
     if (!m_isRegistered) {
         LOG_WARNING(MSGID_NATIVE_APP_LIFE_CYCLE_EVENT, 1,
-                    PMLOGKS("reason", "app_is_not_registered"),
+                    PMLOGKS(LOG_KEY_REASON, "app_is_not_registered"),
                     "payload: %s", payload.stringify().c_str());
         return false;
     }
@@ -122,9 +126,10 @@ bool NativeClientInfo::sendEvent(pbnjson::JValue& payload)
     LSErrorSafe lserror;
     if (!LSMessageRespond(m_lsmsg, payload.stringify().c_str(), &lserror)) {
         LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS("type", "respond"),
-                  PMLOGJSON("payload", payload.stringify().c_str()),
-                  PMLOGKS("where", __FUNCTION__), "err: %s", lserror.message);
+                  PMLOGKS(LOG_KEY_TYPE, "respond"),
+                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
+                  "err: %s", lserror.message);
         return false;
     }
 

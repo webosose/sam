@@ -79,13 +79,13 @@ bool LSCallItem::Call()
 
     if (!onBeforeCall()) {
         errInfo.setError(CALLCHANIN_ERR_GENERAL, "Cancelled");
-        onError(errInfo);
+        EventError(errInfo);
         return false;
     }
 
     if (!LSCallOneReply(m_handle, m_uri.c_str(), m_payload.c_str(), LSCallItem::handler, this, NULL, &lserror)) {
         errInfo.setError(CALLCHANIN_ERR_GENERAL, lserror.message);
-        onError(errInfo);
+        EventError(errInfo);
         return false;
     }
 
@@ -117,7 +117,7 @@ bool LSCallItem::handler(LSHandle *lshandle, LSMessage *message, void *user_data
 
     bool result = call->onReceiveCall(json);
 
-    call->onFinished(result, call->getError());
+    call->EventFinished(result, call->getError());
 
     return result;
 }
@@ -149,8 +149,8 @@ CallChain::~CallChain()
 
 CallChain& CallChain::add(CallItemPtr call, bool push_front)
 {
-    call->onFinished.connect(boost::bind(&CallChain::onCallFinished, this, _1, _2));
-    call->onError.connect(boost::bind(&CallChain::onCallError, this, _1));
+    call->EventFinished.connect(boost::bind(&CallChain::onCallFinished, this, _1, _2));
+    call->EventError.connect(boost::bind(&CallChain::onCallError, this, _1));
 
     if (push_front)
         m_calls.push_front(call);

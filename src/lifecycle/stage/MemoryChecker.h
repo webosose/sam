@@ -30,8 +30,8 @@ public:
     virtual void run();
     virtual void cancel_all();
 
-    boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_start;
-    boost::signals2::signal<void (const std::string& uid)> signal_memory_checking_done;
+    boost::signals2::signal<void (const std::string& uid)> EventMemoryCheckingStart;
+    boost::signals2::signal<void (const std::string& uid)> EventMemoryCheckingDone;
 private:
     LaunchItemList m_queue;
 

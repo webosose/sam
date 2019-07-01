@@ -63,8 +63,8 @@ pid_t LinuxProcess::fork_process(const char **argv, const char **envp)
                                                &gerr);
     if (gerr) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "fork_fail"),
-                  PMLOGKS("where", "fork_process"),
+                  PMLOGKS(LOG_KEY_REASON, "fork_fail"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
                   "returned_pid: %d, err_text: %s", (int )pid, gerr->message);
         g_error_free(gerr);
         gerr = NULL;
@@ -73,8 +73,9 @@ pid_t LinuxProcess::fork_process(const char **argv, const char **envp)
 
     if (!result) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "return_false_from_gspawn"),
-                  PMLOGKS("where", "fork_process"), "returned_pid: %d", pid);
+                  PMLOGKS(LOG_KEY_REASON, "return_false_from_gspawn"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
+                  "returned_pid: %d", pid);
         return -1;
     }
 
@@ -88,7 +89,9 @@ PidVector LinuxProcess::FindChildPids(const std::string& pid)
 
     proc_t **proctab = readproctab(PROC_FILLSTAT);
     if (!proctab) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 1, PMLOGKS("reason", "readproctab_error"), "failed to read proctab");
+        LOG_ERROR(MSGID_APPCLOSE_ERR, 1,
+                  PMLOGKS(LOG_KEY_REASON, "readproctab_error"),
+                  "failed to read proctab");
         return pids;
     }
 

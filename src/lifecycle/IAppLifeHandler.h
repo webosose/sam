@@ -18,8 +18,8 @@
 #define APP_LIFE_HANDLER_INTERFACE_H_
 
 #include <boost/signals2.hpp>
-#include <lifecycle/AppInfo.h>
 #include <lifecycle/ApplicationErrors.h>
+#include <lifecycle/RunningInfo.h>
 #include <lifecycle/stage/appitem/CloseAppItem.h>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
 

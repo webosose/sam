@@ -15,7 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <errno.h>
-#include <lifecycle/AppInfoManager.h>
+#include <lifecycle/RunningInfoManager.h>
 #include <setting/SettingsConf.h>
 #include <setting/Settings.h>
 #include <unistd.h>
@@ -98,21 +98,29 @@ void Settings::loadConfigOnRWFilesystemReady()
         }
     }
 
-    LOG_INFO(MSGID_SETTING_INFO, 1, PMLOGKS("key", "devmode"), "val: %s", (m_isDevMode ? "on" : "off"));
+    LOG_INFO(MSGID_SETTING_INFO, 1,
+             PMLOGKS("key", "devmode"),
+             "val: %s", (m_isDevMode ? "on" : "off"));
 
     if (0 == access(m_respawnedPath.c_str(), F_OK)) {
         m_isRespawned = true;
     } else {
         //create respawnded file
         if (!writeFile(m_respawnedPath.c_str(), "")) {
-            LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("respawnedPath", m_respawnedPath.c_str()), "cannot create respawned file");
+            LOG_WARNING(MSGID_SETTINGS_ERR, 1,
+                        PMLOGKS("respawnedPath", m_respawnedPath.c_str()),
+                        "cannot create respawned file");
         }
     }
 
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 2, PMLOGKS("status", "analyze_loading_reason"), PMLOGKS("loading_status", (m_isRespawned ? "respawned" : "fresh_start")), "");
+    LOG_INFO(MSGID_SAM_LOADING_SEQ, 2,
+             PMLOGKS("status", "analyze_loading_reason"),
+             PMLOGKS("loading_status", (m_isRespawned ? "respawned" : "fresh_start")), "");
 
     if (0 != g_mkdir_with_parents(m_appMgrPreferenceDir.c_str(), 0700)) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("PreferencesDir", m_appMgrPreferenceDir.c_str()), "cannot create PreferenceDir");
+        LOG_WARNING(MSGID_SETTINGS_ERR, 1,
+                    PMLOGKS("PreferencesDir", m_appMgrPreferenceDir.c_str()),
+                    "cannot create PreferenceDir");
     }
 
     // Load Deleted SystemApp list
@@ -193,7 +201,8 @@ bool Settings::loadStaticConfig(const char* filePath)
         }
 
         if (m_baseAppDirs.size() < 1) {
-            LOG_WARNING(MSGID_NO_APP_PATHS, 1, PMLOGKS("FILE", conf_path.c_str()), "");
+            LOG_WARNING(MSGID_NO_APP_PATHS, 1,
+                        PMLOGKS("FILE", conf_path.c_str()), "");
             return false;
         }
     }
@@ -214,12 +223,14 @@ bool Settings::loadStaticConfig(const char* filePath)
 
     if (root.hasKey("HostAppsForAlias") && root["HostAppsForAlias"].isArray()) {
         for (int i = 0; i < root["HostAppsForAlias"].arraySize(); ++i) {
-            std::string app_id = "";
-            if (!root["HostAppsForAlias"][i].isString() || root["HostAppsForAlias"][i].asString(app_id) != CONV_OK)
+            std::string appId = "";
+            if (root["HostAppsForAlias"][i].isString() == false ||
+                root["HostAppsForAlias"][i].asString(appId) != CONV_OK)
                 continue;
 
-            LOG_INFO("HOSTAPPS", 1, PMLOGKS("app_id", app_id.c_str()), "");
-            m_hostAppsForAlias.push_back(app_id);
+            LOG_INFO("HOSTAPPS", 1,
+                     PMLOGKS(LOG_KEY_APPID, appId.c_str()), "");
+            m_hostAppsForAlias.push_back(appId);
         }
     }
 
@@ -258,7 +269,8 @@ bool Settings::loadSAMConf()
     JUtil::Error error;
     pbnjson::JValue root = JUtil::parseFile(conf_path, "", &error);
     if (root.isNull()) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("FILE", conf_path.c_str()), "");
+        LOG_WARNING(MSGID_SETTINGS_ERR, 1,
+                    PMLOGKS("FILE", conf_path.c_str()), "");
         return false;
     }
 
@@ -266,7 +278,7 @@ bool Settings::loadSAMConf()
         for (auto it : root["BootTimeApps"].items()) {
             if (!it.isString())
                 continue;
-            SettingsImpl::instance().addBootTimeApp(it.asString());
+            SettingsImpl::getInstance().addBootTimeApp(it.asString());
         }
     }
 
@@ -274,7 +286,7 @@ bool Settings::loadSAMConf()
         for (auto it : root["CRIUSupportApps"].items()) {
             if (!it.isString())
                 continue;
-            SettingsImpl::instance().addCRIUSupportApp(it.asString());
+            SettingsImpl::getInstance().addCRIUSupportApp(it.asString());
         }
     }
 
@@ -308,7 +320,9 @@ void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
         if (!apps[i].isString() || apps[i].asString(app_id) != CONV_OK)
             continue;
 
-        LOG_INFO(MSGID_CONFIGD_INIT, 2, PMLOGKS("CONFIG_TYPE", "keep_alive_apps"), PMLOGKS("app_id", app_id.c_str()), "");
+        LOG_INFO(MSGID_CONFIGD_INIT, 2,
+                 PMLOGKS("CONFIG_TYPE", "keep_alive_apps"),
+                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()), "");
         m_keepAliveApps.push_back(app_id);
     }
 }
@@ -316,7 +330,9 @@ void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
 void Settings::setSupportQMLBooster(bool value)
 {
     m_useQmlBooster = value;
-    LOG_INFO(MSGID_CONFIGD_INIT, 2, PMLOGKS("CONFIG_TYPE", "support_qml_booster"), PMLOGKS("value", (value?"true":"false")), "");
+    LOG_INFO(MSGID_CONFIGD_INIT, 2,
+             PMLOGKS("CONFIG_TYPE", "support_qml_booster"),
+             PMLOGKS("value", (value?"true":"false")), "");
 }
 
 void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
@@ -338,7 +354,9 @@ void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
         if (!keys_arr[i].isString() || keys_arr[i].asString(key) != CONV_OK)
             continue;
 
-        LOG_INFO(MSGID_CONFIGD_INIT, 2, PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"), PMLOGKS("key", key.c_str()), "");
+        LOG_INFO(MSGID_CONFIGD_INIT, 2,
+                 PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"),
+                 PMLOGKS("key", key.c_str()), "");
         m_assetFallbackPrecedence.push_back(key);
     }
 }
@@ -413,13 +431,18 @@ void Settings::setSystemAppAsRemoved(const std::string& appId)
     LOG_DEBUG("[REMOVE SYSTEM APP] deletedList: %s", deletedList.c_str());
 
     if (!g_file_set_contents(m_deletedSystemAppListPath.c_str(), deletedList.c_str(), deletedList.length(), NULL)) {
-        LOG_WARNING(MSGID_FAIL_WRITING_DELETEDLIST, 2, PMLOGKS("CONTENT", deletedList.c_str()), PMLOGKS("PATH", m_deletedSystemAppListPath.c_str()), "");
+        LOG_WARNING(MSGID_FAIL_WRITING_DELETEDLIST, 2,
+                    PMLOGKS("CONTENT", deletedList.c_str()),
+                    PMLOGKS("PATH", m_deletedSystemAppListPath.c_str()), "");
     }
 }
 
 bool Settings::isDeletedSystemApp(const std::string& appId) const
 {
-    if (m_deletedSystemApps.isNull() || !m_deletedSystemApps.isObject() || !m_deletedSystemApps.hasKey(DELETED_LIST_KEY) || !m_deletedSystemApps[DELETED_LIST_KEY].isArray())
+    if (m_deletedSystemApps.isNull() ||
+        m_deletedSystemApps.isObject() == false ||
+        m_deletedSystemApps.hasKey(DELETED_LIST_KEY) == false ||
+        m_deletedSystemApps[DELETED_LIST_KEY].isArray() == false)
         return false;
     int arraySize = m_deletedSystemApps[DELETED_LIST_KEY].arraySize();
     if (arraySize < 1)
@@ -435,7 +458,9 @@ bool Settings::isDeletedSystemApp(const std::string& appId) const
 
 void Settings::setLifeCycleReason(const pbnjson::JValue& data)
 {
-    if (data.hasKey("launchReason") && data["launchReason"].isObject() && data["launchReason"].objectSize() > 0) {
+    if (data.hasKey("launchReason") &&
+        data["launchReason"].isObject() &&
+        data["launchReason"].objectSize() > 0) {
 
         for (auto it : data["launchReason"].children()) {
             if (!it.second.isArray() || it.second.arraySize() < 1)
@@ -456,7 +481,9 @@ void Settings::setLifeCycleReason(const pbnjson::JValue& data)
         }
     }
 
-    if (data.hasKey("closeReason") && data["closeReason"].isObject() && data["closeReason"].objectSize() > 0) {
+    if (data.hasKey("closeReason") &&
+        data["closeReason"].isObject() &&
+        data["closeReason"].objectSize() > 0) {
 
         for (auto it : data["closeReason"].children()) {
             if (!it.second.isArray() || it.second.arraySize() < 1)
@@ -513,7 +540,9 @@ void Settings::addCRIUSupportApp(const std::string& app_id)
     if (supportCRIU(app_id))
         return;
 
-    LOG_INFO(MSGID_SETTING_INFO, 2, PMLOGKS("set_key", "criu_app"), PMLOGKS("app_id", app_id.c_str()), "");
+    LOG_INFO(MSGID_SETTING_INFO, 2,
+             PMLOGKS("set_key", "criu_app"),
+             PMLOGKS(LOG_KEY_APPID, app_id.c_str()), "");
     m_criuSupportApps.push_back(app_id);
 }
 

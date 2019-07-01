@@ -18,12 +18,9 @@
 
 NativeAppLifeCycleInterfaceVer3::NativeAppLifeCycleInterfaceVer3()
 {
-    // TODO Auto-generated constructor stub
-
 }
 
 NativeAppLifeCycleInterfaceVer3::~NativeAppLifeCycleInterfaceVer3()
 {
-    // TODO Auto-generated destructor stub
 }
 

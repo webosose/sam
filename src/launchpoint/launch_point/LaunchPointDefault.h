@@ -21,8 +21,8 @@
 
 class LaunchPointDefault: public LaunchPoint {
 public:
-    LaunchPointDefault(const std::string& id, const std::string& lp_id)
-        : LaunchPoint(id, lp_id)
+    LaunchPointDefault(const std::string& appId, const std::string& launchPointId)
+        : LaunchPoint(appId, launchPointId)
     {
     }
 

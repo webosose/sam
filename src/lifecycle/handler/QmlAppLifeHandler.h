@@ -42,10 +42,10 @@ private:
     static bool onQMLProcessWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
 
 public:
-    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> signal_app_life_status_changed;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> signal_running_app_added;
-    boost::signals2::signal<void(const std::string& app_id)> signal_running_app_removed;
-    boost::signals2::signal<void(const std::string& uid)> signal_launching_done;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
+    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const std::string& app_id)> EventRunningAppRemoved;
+    boost::signals2::signal<void(const std::string& uid)> EventLaunchingDone;
 
 private:
     LaunchItemList m_LSCallRequestList;

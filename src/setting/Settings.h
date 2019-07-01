@@ -23,8 +23,8 @@
 #include <vector>
 
 #include <glib.h>
-#include <package/AppDescription.h>
-#include <package/AppDescriptionScanner.h>
+#include <package/AppPackage.h>
+#include <package/AppPackageScanner.h>
 #include <pbnjson.hpp>
 #include <util/Singleton.h>
 

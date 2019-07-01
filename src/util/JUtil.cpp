@@ -69,7 +69,7 @@ JUtil::~JUtil()
 
 pbnjson::JValue JUtil::parse(const char *rawData, const std::string &schemaName, Error *error)
 {
-    pbnjson::JSchema schema = JUtil::instance().loadSchema(schemaName, true);
+    pbnjson::JSchema schema = JUtil::getInstance().loadSchema(schemaName, true);
     if (!schema.isInitialized()) {
         if (error)
             error->set(Error::Schema);
@@ -114,7 +114,7 @@ pbnjson::JSchema JUtil::loadSchema(const std::string& schemaName, bool cache)
             return it->second;
     }
 
-    std::string schema_path = SettingsImpl::instance().m_schemaPath + schemaName + ".schema";
+    std::string schema_path = SettingsImpl::getInstance().m_schemaPath + schemaName + ".schema";
     pbnjson::JSchema schema = pbnjson::JSchema::fromFile(schema_path.c_str());
     if (!schema.isInitialized())
         return schema;

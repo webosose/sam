@@ -34,8 +34,8 @@ DBLaunchPoint::~DBLaunchPoint()
 
 void DBLaunchPoint::init()
 {
-    m_kind = SettingsImpl::instance().m_launchPointDbkind;
-    m_permissions = SettingsImpl::instance().m_launchPointPermissions;
+    m_kind = SettingsImpl::getInstance().m_launchPointDbkind;
+    m_permissions = SettingsImpl::getInstance().m_launchPointPermissions;
 }
 
 bool DBLaunchPoint::insertData(const pbnjson::JValue& json)

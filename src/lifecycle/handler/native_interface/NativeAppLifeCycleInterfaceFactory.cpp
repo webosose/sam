@@ -16,7 +16,7 @@
 
 #include <lifecycle/handler/native_interface/NativeAppLifeCycleInterfaceFactory.h>
 
-INativeApp& NativeAppLifeCycleInterfaceFactory::getInterface(AppDescPtr appDescPtr)
+AbsNativeAppLifecycleInterface& NativeAppLifeCycleInterfaceFactory::getInterface(AppPackagePtr appDescPtr)
 {
     switch (appDescPtr->getNativeInterfaceVersion()) {
     case 1:

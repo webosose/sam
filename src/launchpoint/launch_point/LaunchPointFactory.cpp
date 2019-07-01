@@ -38,7 +38,8 @@ LaunchPointPtr LaunchPointFactory::createLaunchPoint(const LPType type, const st
     if (item != m_factoryMap.end())
         return item->second(lp_id, data, err_text);
 
-    LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1, PMLOGKS("status", "fail_to_create_launch_point"), "");
+    LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1,
+              PMLOGKS("status", "fail_to_create_launch_point"), "");
     err_text = "unknown type";
     return nullptr;
 }

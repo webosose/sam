@@ -30,9 +30,15 @@ public:
     {
         return m_uid;
     }
+
     const std::string& getAppId() const
     {
         return m_appId;
+    }
+
+    const std::string& getDisplay() const
+    {
+        return m_display;
     }
 
     void setPid(const std::string& pid)

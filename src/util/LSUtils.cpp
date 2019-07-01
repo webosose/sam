@@ -16,19 +16,6 @@
 
 #include <util/LSUtils.h>
 
-std::string getCallerFromMessage(LSMessage* message)
-{
-    std::string caller = "";
-    if (!message)
-        return "";
-
-    if (LSMessageGetApplicationID(message))
-        caller = LSMessageGetApplicationID(message);
-    else if (LSMessageGetSenderServiceName(message))
-        caller = LSMessageGetSenderServiceName(message);
-    return caller;
-}
-
 std::string getCallerID(const std::string& caller)
 {
     if (std::string::npos == caller.find(" "))

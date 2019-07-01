@@ -26,6 +26,15 @@ bool JValueUtil::hasKey(const JValue& json, const string& firstKey, const string
     return true;
 }
 
+bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value)
+{
+    if (!json.hasKey(firstKey))
+        return false;
+    if (!json[firstKey].isObject())
+        return false;
+    return getValue(json[firstKey], secondKey, thirdKey, value);
+}
+
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value)
 {
     if (!json.hasKey(firstKey))
@@ -44,6 +53,24 @@ bool JValueUtil::getValue(const JValue& json, const string& firstKey, const stri
     return getValue(json[firstKey], secondKey, thirdKey, value);
 }
 
+bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, bool& value)
+{
+    if (!json.hasKey(firstKey))
+        return false;
+    if (!json[firstKey].isObject())
+        return false;
+    return getValue(json[firstKey], secondKey, thirdKey, value);
+}
+
+bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, JValue& value)
+{
+    if (!json.hasKey(mainKey))
+        return false;
+    if (!json[mainKey].isObject())
+        return false;
+    return getValue(json[mainKey], subKey, value);
+}
+
 bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, string& value)
 {
     if (!json.hasKey(mainKey))
@@ -60,6 +87,23 @@ bool JValueUtil::getValue(const JValue& json, const string& mainKey, const strin
     if (!json[mainKey].isObject())
         return false;
     return getValue(json[mainKey], subKey, value);
+}
+
+bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, bool& value)
+{
+    if (!json.hasKey(mainKey))
+        return false;
+    if (!json[mainKey].isObject())
+        return false;
+    return getValue(json[mainKey], subKey, value);
+}
+
+bool JValueUtil::getValue(const JValue& json, const string& key, JValue& value)
+{
+    if (!json.hasKey(key))
+        return false;
+    value = json[key];
+    return true;
 }
 
 bool JValueUtil::getValue(const JValue& json, const string& key, string& value)
@@ -88,17 +132,15 @@ bool JValueUtil::getValue(const JValue& json, const string& key, int& value)
     return true;
 }
 
-string JValueUtil::getMeta(const JValue& json, const string& key)
+bool JValueUtil::getValue(const JValue& json, const string& key, bool& value)
 {
-    if (!json.isValid() || json.isNull() || !json.isArray())
-        return "";
-
-    string tmpKey, value;
-    for (JValue meta : json.items()) {
-        if (!getValue(meta, "key", tmpKey) || !getValue(meta, "value", value))
-            continue;
-        if (tmpKey == key)
-            return value;
+    if (!json.hasKey(key))
+        return false;
+    if (!json[key].isBoolean())
+        return false;
+    if (json[key].asBool(value) != CONV_OK) {
+        value = false;
+        return false;
     }
-    return "";
+    return true;
 }

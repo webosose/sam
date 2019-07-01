@@ -29,7 +29,6 @@ class LaunchPoint;
 #define DEFAULT_ICON_W 64
 #define DEFAULT_ICON_H 64
 
-typedef std::shared_ptr<const LaunchPoint> LaunchPointConstPtr;
 typedef std::shared_ptr<LaunchPoint> LaunchPointPtr;
 typedef std::function<LaunchPointPtr(const std::string&, const pbnjson::JValue&, std::string&)> CreateLaunchPointFunc;
 
@@ -245,23 +244,23 @@ protected:
 
 class LPDefault: public LaunchPoint {
 public:
-    LPDefault(const std::string& id, const std::string& lp_id)
-        : LaunchPoint(id, lp_id)
+    LPDefault(const std::string& appId, const std::string& launchPointId)
+        : LaunchPoint(appId, launchPointId)
     {
     }
 
-    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    static LaunchPointPtr create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText);
     virtual std::string update(const pbnjson::JValue& data);
 };
 
 class LPBookmark: public LaunchPoint {
 public:
-    LPBookmark(const std::string& id, const std::string& lp_id)
-        : LaunchPoint(id, lp_id)
+    LPBookmark(const std::string& appId, const std::string& launchPointId)
+        : LaunchPoint(appId, launchPointId)
     {
     }
 
-    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    static LaunchPointPtr create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText);
     virtual std::string update(const pbnjson::JValue& data);
 };
 

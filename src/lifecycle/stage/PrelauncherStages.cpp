@@ -14,25 +14,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/AppMgrService.h>
-#include <bus/Notification.h>
-#include <bus/ServiceObserver.h>
-#include <lifecycle/AppInfoManager.h>
+#include <bus/ResBundleAdaptor.h>
+#include <bus/service/ApplicationManager.h>
+#include <lifecycle/RunningInfoManager.h>
 #include <lifecycle/stage/PrelauncherStages.h>
-#include <package/AppDescription.h>
-#include <package/PackageManager.h>
+#include <package/AppPackage.h>
+#include <package/AppPackageManager.h>
 #include <setting/Settings.h>
-#include <util/BaseLogs.h>
 #include <util/JUtil.h>
 
 bool PrelauncherStage::setPrelaunchingStages(LaunchAppItemPtr item)
 {
-    AppDescPtr appDesc = PackageManager::instance().getAppById(item->getAppId());
+    AppPackagePtr appDesc = AppPackageManager::getInstance().getAppById(item->getAppId());
     if (!appDesc) {
         LOG_ERROR(MSGID_APPLAUNCH, 3,
-                  PMLOGKS("app_id", item->getAppId().c_str()),
-                  PMLOGKS("reason", "null_description"),
-                  PMLOGKS("where", "set_prelaunching_stage"), "");
+                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
+                  PMLOGKS(LOG_KEY_REASON, "null_description"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return false;
     }
@@ -49,12 +47,12 @@ bool PrelauncherStage::setPrelaunchingStages(LaunchAppItemPtr item)
 
 StageHandlerReturn PrelauncherStage::handleExecutionLockStatus(LaunchAppItemPtr item)
 {
-    const std::string& app_id = item->getAppId();
-    if (AppInfoManager::instance().canExecute(app_id) == false) {
+    AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(item->getAppId());
+    if (appDescPtr == nullptr || appDescPtr->isLocked()) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS("app_id", app_id.c_str()),
-                  PMLOGKS("reason", "execution_lock"),
-                  PMLOGKS("where", "handle_execution_lock_status"), "");
+                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
+                  PMLOGKS(LOG_KEY_REASON, "execution_lock"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         item->setErrCodeText(APP_ERR_LOCKED, "app is locked");
         return StageHandlerReturn::ERROR;
     }

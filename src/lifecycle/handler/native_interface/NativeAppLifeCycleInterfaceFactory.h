@@ -26,7 +26,7 @@ friend class ISingleton<NativeAppLifeCycleInterfaceFactory>;
 public:
     virtual ~NativeAppLifeCycleInterfaceFactory() {}
 
-    INativeApp& getInterface(AppDescPtr appDescPtr);
+    AbsNativeAppLifecycleInterface& getInterface(AppPackagePtr appDescPtr);
 
 private:
     NativeAppLifeCycleInterfaceFactory() {}

@@ -40,8 +40,8 @@ public:
 
     virtual bool Call() = 0;
 
-    boost::signals2::signal<void(bool, ErrorInfo errInfo)> onFinished;
-    boost::signals2::signal<void(ErrorInfo errInfo)> onError;
+    boost::signals2::signal<void(bool, ErrorInfo errInfo)> EventFinished;
+    boost::signals2::signal<void(ErrorInfo errInfo)> EventError;
 
 protected:
     void setError(int errorCode, std::string errorText);

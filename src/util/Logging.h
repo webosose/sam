@@ -19,6 +19,17 @@
 
 #include <PmLogLib.h>
 
+#define LOG_KEY_SERVICE     "service"
+#define LOG_KEY_APPID       "appId"
+#define LOG_KEY_FUNC        "func"
+#define LOG_KEY_LINE        "line"
+#define LOG_KEY_ACTION      "action"
+#define LOG_KEY_REASON      "reason"
+#define LOG_KEY_TYPE        "type"
+#define LOG_KEY_ERRORCODE   "errorCode"
+#define LOG_KEY_ERRORTEXT   "errorText"
+#define LOG_KEY_PAYLOAD     "payload"
+
 #define LOG_NORMAL(...)              PmLogInfo(GetSAMPmLogContext(), ##__VA_ARGS__)
 #define LOG_INFO(...)                PmLogInfo(GetSAMPmLogContext(), ##__VA_ARGS__)
 #define LOG_INFO_WITH_CLOCK(...)     PmLogInfoWithClock(GetSAMPmLogContext(), ##__VA_ARGS__)
@@ -161,6 +172,28 @@
 
 /* call chain */
 #define MSGID_CALLCHAIN_ERR                 "CALLCHAIN_ERR" /* error about callchain **/
+
+#define MSGID_TV_CONFIGURATION                  "TV_CONFIGURATION"
+#define MSGID_GET_LASTINPUT_FAIL                "GET_LASTINPUT_FAIL" /** Failed to request getLastInput to tvservice */
+#define MSGID_LAUNCH_LASTINPUT_ERR              "LAUNCH_LASTINPUT_ERR" /** error about launching last input app */
+#define MSGID_APPSCAN_FILTER_TV                 "APPSCAN_FILTER_TV"
+#define MSGID_CLEAR_FIRST_LAUNCHING_APP         "CLEAR_FIRST_LAUNCHNIG_APP" /** cancel launching first app on foreground app change */
+
+/* package */
+#define MSGID_PER_APP_SETTINGS                  "PER_APP_SETTINGS" /** per app settings feature */
+
+/* launch point */
+#define MSGID_LAUNCH_POINT_ORDERING             "LAUNCH_POINT_ORDERING" /* Ordering Handling */
+#define MSGID_LAUNCH_POINT_ORDERING_WARNING     "LAUNCH_POINT_ORDERING_WARNING" /* Ordering Warning */
+#define MSGID_LAUNCH_POINT_ORDERING_ERROR       "LAUNCH_POINT_ORDERING_ERROR" /* Ordering Error */
+
+/* customization */
+#define MSGID_LOAD_ICONS_FAIL                   "LOAD_ICONS_FAIL" /** fail to load icons info */
+
+
+#define API_ERR_CODE_GENERAL                    1
+#define API_ERR_CODE_INVALID_PAYLOAD            2
+#define API_ERR_CODE_DEPRECATED                 999
 
 PmLogContext GetSAMPmLogContext();
 

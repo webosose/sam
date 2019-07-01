@@ -21,12 +21,11 @@
 #include <fstream>
 
 #include <gio/gio.h>
-#include <MainService.h>
-
+#include <MainDaemon.h>
 #include <util/Logging.h>
 #include <util/Utils.h>
 
-MainService service;
+MainDaemon service;
 
 void signal_handler(int signal, siginfo_t *siginfo, void *context)
 {
@@ -69,10 +68,14 @@ void signal_handler(int signal, siginfo_t *siginfo, void *context)
 
 Done:
     if (signal == SIGHUP || signal == SIGINT || signal == SIGPIPE) {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1, PMLOGKS("action", "ignore"), "just ignore");
+        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1,
+                    PMLOGKS(LOG_KEY_ACTION, "ignore"),
+                    "just ignore");
         return;
     } else {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1, PMLOGKS("action", "terminate"), "sam process is now terminating");
+        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1,
+                    PMLOGKS(LOG_KEY_ACTION, "terminate"),
+                    "sam process is now terminating");
     }
 
     service.stop();
@@ -80,7 +83,8 @@ Done:
 
 int main(int argc, char **argv)
 {
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1, PMLOGKS("status", "starting"), "");
+    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
+             PMLOGKS("status", "starting"), "");
 
     // tracking sender if we get some signal
     struct sigaction act;

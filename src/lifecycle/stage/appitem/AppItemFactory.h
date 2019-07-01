@@ -26,8 +26,8 @@ public:
     AppItemFactory() {}
     virtual ~AppItemFactory() {}
 
-    static LaunchAppItemPtr createLaunchItem(LifeCycleTaskPtr task);
-    static CloseAppItemPtr createCloseItem(LifeCycleTaskPtr task);
+    static LaunchAppItemPtr createLaunchItem(LifecycleTaskPtr task);
+    static CloseAppItemPtr createCloseItem(LifecycleTaskPtr task);
 };
 
 #endif

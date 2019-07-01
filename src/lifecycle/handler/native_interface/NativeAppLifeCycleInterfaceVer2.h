@@ -17,31 +17,25 @@
 #ifndef LIFECYCLE_HANDLER_NATIVE_INTERFACE_NATIVEAPPLIFECYCLEINTERFACEVER2_H_
 #define LIFECYCLE_HANDLER_NATIVE_INTERFACE_NATIVEAPPLIFECYCLEINTERFACEVER2_H_
 
-#include <lifecycle/handler/native_interface/INativeApp.h>
+#include <lifecycle/handler/native_interface/AbsNativeAppLifecycleInterface.h>
 
-class NativeAppLifeCycleInterfaceVer2: public INativeApp {
+class NativeAppLifeCycleInterfaceVer2: public AbsNativeAppLifecycleInterface {
 public:
     NativeAppLifeCycleInterfaceVer2();
-    virtual ~NativeAppLifeCycleInterfaceVer2()
-    {
-    }
+    virtual ~NativeAppLifeCycleInterfaceVer2();
+
+    virtual void close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& err_text) override;
+    virtual void pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event) override;
 
 private:
+    virtual void launchFromClosing(NativeClientInfoPtr client, LaunchAppItemPtr item) override;
+    virtual void launchFromRunning(NativeClientInfoPtr client, LaunchAppItemPtr item) override;
+
+    virtual bool canLaunch(LaunchAppItemPtr item) override;
+    virtual bool getLaunchParams(LaunchAppItemPtr item, AppPackagePtr appDescPtr, std::string& params) override;
+    virtual bool getRelaunchParams(LaunchAppItemPtr item, AppPackagePtr appDescPtr, pbnjson::JValue& params) override;
+
     static const int TIMEOUT_FOR_NOT_RESPONDING = 10000;
-    // launch
-    virtual bool checkLaunchCondition(LaunchAppItemPtr item);
-    virtual std::string makeForkArguments(LaunchAppItemPtr item, AppDescPtr app_desc);
-    virtual void launchAfterClosedAsPolicy(NativeClientInfoPtr client, LaunchAppItemPtr item);
-    virtual void launchNotRegisteredAppAsPolicy(NativeClientInfoPtr client, LaunchAppItemPtr item);
-
-    // relaunch
-    virtual void makeRelaunchParams(LaunchAppItemPtr item, pbnjson::JValue& j_params);
-
-    // close
-    virtual void closeAsPolicy(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& err_text);
-
-    // pause
-    virtual void pauseAsPolicy(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event);
 };
 
 #endif /* LIFECYCLE_HANDLER_NATIVE_INTERFACE_NATIVEAPPLIFECYCLEINTERFACEVER2_H_ */

@@ -17,8 +17,8 @@
 #ifndef LIFECYCLE_LIFECYCLETASK_H_
 #define LIFECYCLE_LIFECYCLETASK_H_
 
-#include <bus/AppMgrService.h>
-#include <package/AppDescription.h>
+#include <bus/service/ApplicationManager.h>
+#include <package/AppPackage.h>
 
 class LifecycleTask {
 public:
@@ -55,11 +55,11 @@ public:
     }
     void finalize()
     {
-        m_lunaTaskPtr->replyResult();
+        m_lunaTaskPtr->reply();
     }
     void finalize(const pbnjson::JValue& payload)
     {
-        m_lunaTaskPtr->ReplyResult(payload);
+        m_lunaTaskPtr->replyResult(payload);
     }
     void finalizeWithError(int32_t code, const std::string& text)
     {
@@ -74,7 +74,7 @@ private:
 
 };
 
-typedef std::shared_ptr<LifecycleTask> LifeCycleTaskPtr;
+typedef std::shared_ptr<LifecycleTask> LifecycleTaskPtr;
 
 #endif  // CORE_LIFECYCLE_LIFECYCLE_TASK_CONTROLLER_H_
 

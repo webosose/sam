@@ -45,7 +45,7 @@ public:
     /*! get singleton instance
      instance will be destroy when program ends automatically
      */
-    static TYPE& instance()
+    static TYPE& getInstance()
     {
         if (!_instance) {
             _instance = new TYPE;

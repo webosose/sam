@@ -15,7 +15,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <lifecycle/stage/MemoryChecker.h>
-#include <util/BaseLogs.h>
 
 MemoryChecker::MemoryChecker()
 {
@@ -30,8 +29,8 @@ void MemoryChecker::add_item(LaunchAppItemPtr item)
 {
     if (item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS("reason", "null_pointer"),
-                  PMLOGKS("where", "memory_checking_add_item"), "");
+                  PMLOGKS(LOG_KEY_REASON, "null_pointer"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return;
     }
 
@@ -40,19 +39,19 @@ void MemoryChecker::add_item(LaunchAppItemPtr item)
     });
     if (it != m_queue.end()) {
         LOG_WARNING(MSGID_APPLAUNCH_ERR, 4,
-                    PMLOGKS("app_id", item->getAppId().c_str()),
+                    PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
                     PMLOGKS("uid", item->getUid().c_str()),
-                    PMLOGKS("reason", "already_in_queue"),
-                    PMLOGKS("where", "memory_checking_add_item"), "");
+                    PMLOGKS(LOG_KEY_REASON, "already_in_queue"),
+                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return;
     }
 
     LaunchAppItemPtr new_item = std::static_pointer_cast<LaunchAppItem>(item);
     if (new_item == NULL) {
         LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS("app_id", item->getAppId().c_str()),
-                  PMLOGKS("reason", "pointer_cast_error"),
-                  PMLOGKS("where", "memory_checking_add_item"), "");
+                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
+                  PMLOGKS(LOG_KEY_REASON, "pointer_cast_error"),
+                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         return;
     }
 
@@ -76,7 +75,7 @@ void MemoryChecker::run()
         (*it)->setSubStage(static_cast<int>(AppLaunchingStage::MEMORY_CHECK_DONE));
 
         std::string uid = (*it)->getUid();
-        signal_memory_checking_done((*it)->getUid());
+        EventMemoryCheckingDone((*it)->getUid());
         remove_item(uid);
     }
 }
@@ -85,10 +84,10 @@ void MemoryChecker::cancel_all()
 {
     for (auto& launching_item : m_queue) {
         LOG_INFO(MSGID_APPLAUNCH, 2,
-                 PMLOGKS("app_id", launching_item->getAppId().c_str()),
+                 PMLOGKS(LOG_KEY_APPID, launching_item->getAppId().c_str()),
                  PMLOGKS("status", "cancel_launching"), "");
         launching_item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "cancel all request");
-        signal_memory_checking_done(launching_item->getUid());
+        EventMemoryCheckingDone(launching_item->getUid());
     }
 
     m_queue.clear();

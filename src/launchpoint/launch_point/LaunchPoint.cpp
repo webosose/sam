@@ -23,10 +23,10 @@
 
 const char* LOCAL_FILE_URI = "file://";
 
-LaunchPoint::LaunchPoint(const std::string& id, const std::string& lp_id)
+LaunchPoint::LaunchPoint(const std::string& appId, const std::string& launchPointId)
     : m_LPType(LPType::UNKNOWN),
-      m_appId(id),
-      m_launchPointId(lp_id),
+      m_appId(appId),
+      m_launchPointId(launchPointId),
       m_systemApp(false),
       m_removable(false),
       m_default(false),

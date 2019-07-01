@@ -32,7 +32,7 @@ DBHandler::~DBHandler()
 void DBHandler::init()
 {
     m_launchPointDB.init();
-    m_launchPointDB.signalDbLoaded.connect(boost::bind(&DBHandler::onLaunchPointDbLoaded, this, _1));
+    m_launchPointDB.EventDBLoaded.connect(boost::bind(&DBHandler::onLaunchPointDbLoaded, this, _1));
 }
 
 void DBHandler::handleDbState(bool connection)
@@ -51,7 +51,7 @@ void DBHandler::onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
     m_isDBLoaded = true;
     ++m_DBLoadCount;
 
-    signal_db_loaded_(loaded_db_result);
+    EventDBLoaded_(loaded_db_result);
 }
 
 void DBHandler::reloadDbData(bool connection)

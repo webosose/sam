@@ -27,9 +27,8 @@ AppItem::AppItem(const std::string& appId, const std::string& display, const std
      *    m_uid = boost::lexical_cast<std::string>(uid);
      */
     if (display.empty())
-        m_uid = appId +  "_default";
-    else
-        m_uid = appId +  "_" + display;
+        m_display = "default";
+    m_uid = appId +  "_" + display;
 }
 
 AppItem::~AppItem()

@@ -29,7 +29,7 @@ public:
     virtual void inputBridgedReturn(LaunchAppItemPtr item, const pbnjson::JValue& jmsg);
     virtual void cancelAll();
 
-    boost::signals2::signal<void (const std::string& uid)> signal_prelaunching_done;
+    boost::signals2::signal<void (const std::string& uid)> EventPrelaunchingDone;
 
 private:
     static bool onReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);

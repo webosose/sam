@@ -34,7 +34,6 @@ public:
     }
 };
 
-std::string getCallerFromMessage(LSMessage* message);
 std::string getCallerID(const std::string& caller);
 std::string getCallerPID(const std::string& caller);
 std::string getCategoryFromMessage(LSMessage* message);

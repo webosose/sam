@@ -20,7 +20,7 @@
 #include <boost/function.hpp>
 #include <lifecycle/ApplicationErrors.h>
 #include <luna-service2/lunaservice.h>
-#include <package/AppDescription.h>
+#include <package/AppPackage.h>
 #include <list>
 #include <pbnjson.hpp>
 #include "AppItem.h"
@@ -169,10 +169,10 @@ public:
     {
         m_returnToken = 0;
     }
-    void setErrCodeText(int code, std::string err)
+    void setErrCodeText(int errorCode, std::string errorText)
     {
-        m_errorCode = code;
-        m_errorText = err;
+        m_errorCode = errorCode;
+        m_errorText = errorText;
     }
     void setLaunchStartTime(const double& start_time)
     {

@@ -17,25 +17,37 @@
 #ifndef APP_LIFE_MANAGER_H_
 #define APP_LIFE_MANAGER_H_
 
-#include <lifecycle/AppInfoManager.h>
-#include <lifecycle/AppLifeStatus.h>
 #include <lifecycle/handler/NativeAppLifeHandler.h>
 #include <lifecycle/handler/QmlAppLifeHandler.h>
 #include <lifecycle/handler/WebAppLifeHandler.h>
+#include <lifecycle/LifecycleRouter.h>
 #include <lifecycle/LifecycleTask.h>
+#include <lifecycle/RunningInfoManager.h>
 #include <lifecycle/stage/appitem/AppItemFactory.h>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
 #include <lifecycle/stage/MemoryChecker.h>
 #include <lifecycle/stage/Prelauncher.h>
 #include <luna-service2/lunaservice.h>
-#include <package/AppDescription.h>
+#include <package/AppPackage.h>
 #include <policy/LastAppHandler.h>
 #include <util/Singleton.h>
+#include "interface/IListener.h"
 #include <tuple>
 
 typedef std::tuple<std::string, AppType, double> LoadingAppItem;
 
-class LifecycleManager: public Singleton<LifecycleManager> {
+class LifecycleManagerListener {
+public:
+    LifecycleManagerListener() {}
+    virtual ~LifecycleManagerListener() {}
+
+    virtual void onEmptyForeground() = 0;
+    virtual void onForegroundAppChanged() = 0;
+    virtual void onForegroundExtraInfoChanged() = 0;
+};
+
+class LifecycleManager : public Singleton<LifecycleManager>,
+                         public IListener<LifecycleManagerListener> {
 friend class Singleton<LifecycleManager> ;
 public:
     LifecycleManager();
@@ -43,14 +55,12 @@ public:
 
     void initialize();
 
-    void launch(LifeCycleTaskPtr task);
-    void Pause(LifeCycleTaskPtr task);
-    void Close(LifeCycleTaskPtr task);
-    void CloseByPid(LifeCycleTaskPtr task);
-    void CloseAll(LifeCycleTaskPtr task);
+    void launch(LifecycleTaskPtr task);
+    void pause(LifecycleTaskPtr task);
+    void close(LifecycleTaskPtr task);
+    void closeAll(LifecycleTaskPtr task);
 
     void closeByAppId(const std::string& app_id, const std::string& caller_id, const std::string& reason, std::string& err_text, bool preload_only = false, bool clear_all_items = false);
-    void closeByPid(const std::string& pid, const std::string& caller_id, std::string& err_text);
     void closeAllLoadingApps();
     void closeAllApps(bool clear_all_items = false);
     void closeApps(const std::vector<std::string>& app_ids, bool clear_all_items = false);
@@ -64,10 +74,10 @@ public:
     void getLaunchingAppIds(std::vector<std::string>& app_ids);
 
     boost::signals2::signal<void(const std::string& app_id, const LifeStatus& life_status)> signal_app_life_status_changed;
-    boost::signals2::signal<void(const std::string& app_id)> signal_foreground_app_changed;
-    boost::signals2::signal<void(const pbnjson::JValue& foreground_info)> signal_foreground_extra_info_changed;
-    boost::signals2::signal<void(const pbnjson::JValue& event)> signal_lifecycle_event;
-    boost::signals2::signal<void(LaunchAppItemPtr)> signal_launching_finished;
+    boost::signals2::signal<void(const std::string& app_id)> EventForegroundAppChanged;
+    boost::signals2::signal<void(const pbnjson::JValue& foreground_info)> EventForegroundExtraInfoChanged;
+    boost::signals2::signal<void(const pbnjson::JValue& event)> EventLifecycle;
+    boost::signals2::signal<void(LaunchAppItemPtr)> EventLaunchingFinished;
 
 private:
     static bool callbackCloseAppViaLSM(LSHandle* handle, LSMessage* lsmsg, void* user_data);
@@ -85,7 +95,7 @@ private:
     void getLoadingAppIds(std::vector<std::string>& app_ids);
     void addLoadingApp(const std::string& app_id, const AppType& type);
     void removeLoadingApp(const std::string& app_id);
-    void stopAllWebappItem();
+    void onWAMStatusChanged(bool isConnected);
     bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
     void clearLaunchingAndLoadingItemsByAppId(const std::string& app_id);
     bool hasOnlyPreloadedItems(const std::string& app_id);
@@ -95,7 +105,7 @@ private:
 
     void addTimerForLastLoadingApp(const std::string& app_id);
     void removeTimerForLastLoadingApp(bool trigger);
-    static gboolean runLastLoadingAppTimeoutHandler(gpointer user_data);
+    static gboolean runLastLoadingAppTimeoutHandler(gpointer userData);
 
     void addLastLaunchingApp(const std::string& app_id);
     void removeLastLaunchingApp(const std::string& app_id);
@@ -127,7 +137,7 @@ private:
     void replyWithResult(LSMessage* lsmsg, const std::string& pid, bool result, const int& err_code, const std::string& err_text);
     void replySubscriptionOnLaunch(const std::string& app_id, bool show_splash);
     void replySubscriptionForAppLifeStatus(const std::string& app_id, const std::string& uid, const LifeStatus& life_status);
-    void replySubscriptionForRunning(const pbnjson::JValue& running_list, bool devmode = false);
+    void postRunning(const pbnjson::JValue& running, bool devmode = false);
     void generateLifeCycleEvent(const std::string& app_id, const std::string& uid, LifeEvent event);
 
     IAppLifeHandler* getLifeHandlerForApp(const std::string& app_id);
@@ -139,14 +149,13 @@ private:
     WebAppLifeHandler m_webLifecycleHandler;
     QmlAppLifeHandler m_qmlLifecycleHandler;
     LastAppHandler m_lastappHandler;
-    LifeCycleRouter m_lifecycleRouter;
+    LifecycleRouter m_lifecycleRouter;
 
     // member variables
-    std::vector<LifeCycleTaskPtr> m_lifecycleTasks;
+    std::vector<LifecycleTaskPtr> m_lifecycleTasks;
     LaunchItemList m_appLaunchingItemList;
     LaunchItemList m_automaticPendingList;
     CloseAppItemList m_closeItemList;
-    std::vector<std::string> m_fullscreenWindowTypes;
     std::map<std::string, std::string> m_closeReasonInfo;
     std::vector<LoadingAppItem> m_loadingAppList;
     std::vector<std::string> m_lastLaunchingApps;
