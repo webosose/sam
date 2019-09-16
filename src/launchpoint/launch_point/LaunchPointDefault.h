@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public:
     {
     }
 
-    static LaunchPointPtr create(const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    static LaunchPointPtr create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText);
     virtual std::string update(const pbnjson::JValue& data);
 };
 

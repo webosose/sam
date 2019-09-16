@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@
 #include <pbnjson.hpp>
 #include <setting/Settings.h>
 
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
 
+const string SettingService::NAME = "com.webos.settingsservice";
+
 SettingService::SettingService()
-    : AbsLunaClient("com.webos.settingsservice"),
-      m_localeInfoToken(0)
+    : AbsLunaClient(NAME)
 {
+    setClassName(NAME);
 }
 
 SettingService::~SettingService()
@@ -44,74 +44,84 @@ void SettingService::onInitialze()
 
 void SettingService::onServerStatusChanged(bool isConnected)
 {
+    static std::string method = std::string("luna://") + getName() + std::string("/getSystemSettings");
 
+    if (isConnected) {
+        JValue requestPayload = pbnjson::Object();
+        requestPayload.put("subscribe", "true");
+        requestPayload.put("key", "localeInfo");
+
+        m_getSystemSettingsCall = ApplicationManager::getInstance().callMultiReply(
+            method.c_str(),
+            requestPayload.stringify().c_str(),
+            onGetSystemSettings,
+            nullptr
+        );
+    } else {
+        m_getSystemSettingsCall.cancel();
+    }
 }
 
 void SettingService::onRestInit()
 {
-
-    pbnjson::JValue locale_info = JUtil::parseFile(SettingsImpl::getInstance().m_localeInfoPath, std::string(""));
-    updateLocaleInfo(locale_info);
+    pbnjson::JValue localeInfo = JDomParser::fromFile(SettingsImpl::getInstance().m_localeInfoPath.c_str());
+    updateLocaleInfo(localeInfo);
 }
 
-void SettingService::onSettingServiceStatusChanaged(bool connection)
+Call SettingService::batch(LSFilterFunc func, const string& appId)
 {
-    if (connection) {
-        if (m_localeInfoToken == 0) {
-            std::string payload = "{\"subscribe\":true,\"key\":\"localeInfo\"}";
-            if (!LSCall(ApplicationManager::getInstance().get(),
-                        "luna://com.webos.settingsservice/getSystemSettings",
-                        payload.c_str(),
-                        onLocaleInfoReceived,
-                        this,
-                        &m_localeInfoToken,
-                        NULL)) {
-                LOG_WARNING(MSGID_LSCALL_ERR, 2,
-                            PMLOGKS(LOG_KEY_TYPE, "lscall"),
-                            PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                            "failed_subscribing_settings");
-            }
-        }
-    } else {
-        if (0 != m_localeInfoToken) {
-            (void) LSCallCancel(ApplicationManager::getInstance().get(), m_localeInfoToken, NULL);
-            m_localeInfoToken = 0;
-        }
-    }
+    static string method = std::string("luna://") + getName() + std::string("/batch");
+    JValue requestPayload = pbnjson::Object();
+    JValue operations = pbnjson::Array();
+
+    JValue parentalControl = pbnjson::Object();
+    parentalControl.put("method", "getSystemSettings");
+    parentalControl.put("params", pbnjson::Object());
+    parentalControl["params"].put("category", "lock");
+    parentalControl["params"].put("key", "parentalControl");
+    operations.append(parentalControl);
+
+    JValue applockPerApp = pbnjson::Object();
+    applockPerApp.put("method", "getSystemSettings");
+    applockPerApp.put("params", pbnjson::Object());
+    applockPerApp["params"].put("category", "lock");
+    applockPerApp["params"].put("key", "applockPerApp");
+    applockPerApp["params"].put("appId", appId);
+    operations.append(applockPerApp);
+
+    requestPayload.put("operations", operations);
+
+    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
+    return call;
 }
 
-bool SettingService::onLocaleInfoReceived(LSHandle* sh, LSMessage* message, void* user_data)
+bool SettingService::onGetSystemSettings(LSHandle* sh, LSMessage* message, void* context)
 {
-    SettingService* s_this = static_cast<SettingService*>(user_data);
-    if (s_this == NULL)
-        return false;
+    pbnjson::JValue json = JDomParser::fromString(LSMessageGetPayload(message));
 
-    pbnjson::JValue json = JUtil::parse(LSMessageGetPayload(message), std::string(""));
-
-    LOG_DEBUG("[RESPONSE-SUBSCRIPTION]: %s", json.stringify().c_str());
+    Logger::debug(getInstance().getClassName(), __FUNCTION__, "subscription-client", json.stringify());
 
     if (json.isNull() || !json["returnValue"].asBool() || !json["settings"].isObject()) {
-        LOG_WARNING(MSGID_RECEIVED_INVALID_SETTINGS, 1,
-                    PMLOGKS(LOG_KEY_REASON, "invalid_return"),
-                    "received invaild message from settings service");
+        Logger::warning(getInstance().getClassName(), __FUNCTION__, "lscall", "received invaild message from settings service");
         return true;
     }
 
-    s_this->updateLocaleInfo(json["settings"]);
+    SettingService::getInstance().updateLocaleInfo(json["settings"]);
 
     return true;
 }
 
 void SettingService::updateLocaleInfo(const pbnjson::JValue& j_locale)
 {
-
     std::string ui_locale_info;
 
     // load language info
     if (j_locale.isNull() || j_locale.isObject() == false)
         return;
 
-    if (j_locale.hasKey("localeInfo") && j_locale["localeInfo"].hasKey("locales") && j_locale["localeInfo"]["locales"].hasKey("UI")) {
+    if (j_locale.hasKey("localeInfo") &&
+        j_locale["localeInfo"].hasKey("locales") &&
+        j_locale["localeInfo"]["locales"].hasKey("UI")) {
         ui_locale_info = j_locale["localeInfo"]["locales"]["UI"].asString();
     }
 
@@ -119,7 +129,6 @@ void SettingService::updateLocaleInfo(const pbnjson::JValue& j_locale)
         m_localeInfo = ui_locale_info;
         setLocaleInfo(m_localeInfo);
     }
-
 }
 
 /// separate the substrings of BCP-47 (langauge-Script-COUNTRY)
@@ -149,11 +158,8 @@ void SettingService::setLocaleInfo(const std::string& locale)
     m_script = script;
     m_region = region;
 
-    LOG_INFO(MSGID_LANGUAGE_SET_CHANGE, 4,
-             PMLOGKS("locale", locale.c_str()),
-             PMLOGKS("language", m_language.c_str()),
-             PMLOGKS("script", m_script.c_str()),
-             PMLOGKS("region", m_region.c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, "lscall",
+                 Logger::format("locale(%s) language(%s) script(%s) region(%s)", locale.c_str(), m_language.c_str(), m_script.c_str(), m_region.c_str()));
 
     ResBundleAdaptor::getInstance().setLocale(locale);
     EventLocaleChanged(m_language, m_script, m_region);

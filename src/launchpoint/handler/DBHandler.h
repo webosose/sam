@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@
 #ifndef DB_HANDLER_4_BASE_H
 #define DB_HANDLER_4_BASE_H
 
-#include <launchpoint/db/DBLaunchPoint.h>
 #include <launchpoint/handler/DBHandler.h>
+#include "interface/IClassName.h"
 #include <pbnjson.hpp>
+#include <boost/signals2.hpp>
+#include "util/Logger.h"
 
-class DBHandler {
+class DBHandler : public IClassName {
 public:
     DBHandler();
     virtual ~DBHandler();
@@ -38,8 +40,6 @@ public:
 
 private:
     void onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result);
-
-    DBLaunchPoint m_launchPointDB;
 
     bool m_isDBLoaded;
     unsigned int m_DBLoadCount;

@@ -22,11 +22,12 @@
 #include <bus/service/compat/ApplicationManagerCompat.h>
 #include <luna-service2/lunaservice.hpp>
 #include "../LunaTask.h"
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 #include <map>
 #include <memory>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/Singleton.h>
+#include "util/Logger.h"
 #include <string>
 
 #define SUBSKEY_RUNNING              "running"
@@ -42,8 +43,9 @@ using namespace LS;
 typedef boost::function<void(LunaTaskPtr)> LunaApiHandler;
 
 class ApplicationManager : public LS::Handle,
-                           public Singleton<ApplicationManager> {
-friend class Singleton<ApplicationManager> ;
+                           public ISingleton<ApplicationManager>,
+                           public IClassName {
+friend class ISingleton<ApplicationManager> ;
 public:
     ApplicationManager();
     virtual ~ApplicationManager();
@@ -68,12 +70,9 @@ public:
 
     void postListLaunchPoints(JValue& subscriptionPayload)
     {
-        LOG_INFO(MSGID_LAUNCH_POINT_REPLY_SUBSCRIBER, 1,
-                 PMLOGKS("status", "reply_lp_list_to_subscribers"), "");
+        Logger::info(getClassName(), __FUNCTION__, "LS2", "reply_lp_list_to_subscribers");
         if (!m_listLaunchPointsPoint.post(subscriptionPayload.stringify().c_str())) {
-            LOG_ERROR(MSGID_LSCALL_ERR, 2,
-                      PMLOGKS(LOG_KEY_TYPE, "ls_subscription_reply"),
-                      PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+            Logger::error(getClassName(), __FUNCTION__, "LS2", "Failed to post subscription");
         }
     }
 
@@ -147,7 +146,7 @@ public:
     boost::signals2::signal<void()> EventServiceReady;
 
 private:
-    static bool onAPICalled(LSHandle* lshandle, LSMessage* lsmsg, void* ctx);
+    static bool onAPICalled(LSHandle* sh, LSMessage* message, void* context);
 
     static LSMethod ROOT_METHOD[];
     static LSMethod ROOT_METHOD_DEV[];

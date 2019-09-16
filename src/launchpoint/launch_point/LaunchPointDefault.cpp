@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,28 +16,28 @@
 
 #include <launchpoint/launch_point/LaunchPointDefault.h>
 
-LaunchPointPtr LaunchPointDefault::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LaunchPointDefault::create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText)
 {
-    std::string app_id = data["id"].asString();
-    if (app_id.empty())
+    std::string appId = data["id"].asString();
+    if (appId.empty())
         return nullptr;
 
-    LaunchPointPtr new_lp = std::make_shared<LaunchPointDefault>(app_id, lp_id);
-    if (new_lp == nullptr) {
-        err_text = "fail to create instance";
+    LaunchPointPtr newLaunchPoint = std::make_shared<LaunchPointDefault>(appId, launchPointId);
+    if (newLaunchPoint == nullptr) {
+        errorText = "fail to create instance";
         return nullptr;
     }
 
-    new_lp->setAttrWithJson(data);
+    newLaunchPoint->setAttrWithJson(data);
 
-    new_lp->setLpType(LPType::DEFAULT);
-    new_lp->setDefaultLp(true);
-    new_lp->setRemovable(data["removable"].asBool());
-    new_lp->setSystemApp(data["systemApp"].asBool());
-    new_lp->setVisible(data["visible"].asBool());
-    new_lp->setMiniIcon(data["miniicon"].asString());
+    newLaunchPoint->setLpType(LPType::DEFAULT);
+    newLaunchPoint->setDefaultLp(true);
+    newLaunchPoint->setRemovable(data["removable"].asBool());
+    newLaunchPoint->setSystemApp(data["systemApp"].asBool());
+    newLaunchPoint->setVisible(data["visible"].asBool());
+    newLaunchPoint->setMiniIcon(data["miniicon"].asString());
 
-    return new_lp;
+    return newLaunchPoint;
 }
 
 std::string LaunchPointDefault::update(const pbnjson::JValue& data)

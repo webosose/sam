@@ -15,9 +15,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/client/DB8.h>
+#include <util/Logger.h>
+#include <bus/service/ApplicationManager.h>
+
+const std::string DB8::WEBOS_SERVICE_DB = "com.webos.service.db";
 
 DB8::DB8()
-    : AbsLunaClient("com.webos.service.db")
+    : AbsLunaClient(WEBOS_SERVICE_DB)
 {
 }
 
@@ -33,4 +37,33 @@ void DB8::onInitialze()
 void DB8::onServerStatusChanged(bool isConnected)
 {
 
+}
+
+Call DB8::find(LSFilterFunc func, const string& name)
+{
+    static string method = std::string("luna://") + getName() + std::string("/find");
+
+    JValue requestPayload = pbnjson::Object();
+    requestPayload.put("query", pbnjson::Object());
+    requestPayload["query"].put("from", name);
+    requestPayload["query"].put("orderBy", "_rev");
+
+    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
+    return call;
+}
+
+Call DB8::putKind(LSFilterFunc func, JValue& requestPayload)
+{
+    static string method = std::string("luna://") + getName() + std::string("/putKind");
+
+    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
+    return call;
+}
+
+Call DB8::putPermissions(LSFilterFunc func, JValue& requestPayload)
+{
+    static string method = std::string("luna://") + getName() + std::string("/putPermissions");
+
+    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
+    return call;
 }

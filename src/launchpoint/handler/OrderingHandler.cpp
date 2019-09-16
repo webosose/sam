@@ -38,38 +38,38 @@ void OrderingHandler::reloadDBData(bool connection)
 {
 }
 
-void OrderingHandler::makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason)
+void OrderingHandler::makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visibleLaunchPoints, const pbnjson::JValue& changed_reason)
 {
-    m_visibleLPs = visible_lps;
+    m_visibleLPs = visibleLaunchPoints;
     reorder();
 }
 
-bool OrderingHandler::SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text)
+bool OrderingHandler::SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visibleLaunchPoints, std::string& errorText)
 {
     return false;
 }
 
-int OrderingHandler::insertLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+int OrderingHandler::insertLPInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position)
 {
     int i = 0;
     for (auto it = m_orderedList.begin(); it != m_orderedList.end(); ++it, ++i) {
-        if (*it > lp_id) {
-            m_orderedList.insert(it, lp_id);
+        if (*it > launchPointId) {
+            m_orderedList.insert(it, launchPointId);
             return i;
         }
     }
-    m_orderedList.push_back(lp_id);
+    m_orderedList.push_back(launchPointId);
     return m_orderedList.size() - 1;
 }
 
-int OrderingHandler::updateLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position)
+int OrderingHandler::updateLPInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position)
 {
     return 0;
 }
 
-void OrderingHandler::deleteLPInOrder(const std::string& lp_id)
+void OrderingHandler::deleteLPInOrder(const std::string& launchPointId)
 {
-    auto it = std::find(m_orderedList.begin(), m_orderedList.end(), lp_id);
+    auto it = std::find(m_orderedList.begin(), m_orderedList.end(), launchPointId);
 
     if (it != m_orderedList.end())
         m_orderedList.erase(it);

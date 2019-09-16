@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,13 +50,10 @@ bool SchemaChecker::checkRequest(Message& request)
     if (m_APISchemaFiles.find(method) == m_APISchemaFiles.end())
         return true;
 
-    cout << "method : " << method << endl;
     if (m_APISchemaFiles[method].empty())
         return true;
 
-    cout << "file path : " << m_APISchemaFiles[method] << endl;
     JValue requestPayload = JDomParser::fromString(request.getPayload(), JSchema::fromFile(m_APISchemaFiles[method].c_str()));
-    cout << requestPayload.stringify("    ") << endl;
     if (requestPayload.isNull())
         return false;
     return true;

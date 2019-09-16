@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,15 @@
 #include <luna-service2/lunaservice.h>
 #include <package/AppPackage.h>
 #include <package/AppPackageScanner.h>
-#include <util/Singleton.h>
+#include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+
+using namespace std;
+using namespace pbnjson;
 
 enum class AppStatusChangeEvent : int8_t {
     AppStatusChangeEvent_Nothing = 0,
@@ -38,8 +42,9 @@ enum class AppStatusChangeEvent : int8_t {
     UPDATE_COMPLETED,
 };
 
-class AppPackageManager: public Singleton<AppPackageManager> {
-friend class Singleton<AppPackageManager> ;
+class AppPackageManager: public ISingleton<AppPackageManager>,
+                         public IClassName {
+friend class ISingleton<AppPackageManager> ;
 public:
     AppPackageManager();
     virtual ~AppPackageManager();
@@ -55,8 +60,8 @@ public:
     {
         return m_appScanner;
     }
-    bool lockAppForUpdate(const std::string& app_id, bool lock, std::string& err_text);
-    void uninstallApp(const std::string& id, std::string& errorReason);
+    bool lockAppForUpdate(const std::string& appId, bool lock, std::string& errorText);
+    void uninstallApp(const std::string& id, std::string& errorText);
 
     std::string toString(const AppStatusChangeEvent& event);
 
@@ -66,22 +71,23 @@ public:
     boost::signals2::signal<void(AppStatusChangeEvent, AppPackagePtr app_desc)> EventAppStatusChanged;
 
 private:
-    static bool cbAppUninstalled(LSHandle* lshandle, LSMessage* message, void* data);
+    static bool onBatch(LSHandle* sh, LSMessage* message, void* context);
+    static bool onAppUninstalled(LSHandle* sh, LSMessage* message, void* context);
+    static bool onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void* context);
 
     void scan();
     void clear();
-    void addApp(const std::string& app_id, AppPackagePtr new_desc, AppStatusChangeEvent event = AppStatusChangeEvent::AppStatusChangeEvent_Installed);
-    void removeApp(const std::string& app_id, bool rescan = true, AppStatusChangeEvent event = AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
-    void reloadApp(const std::string& app_id);
-    void replaceAppDesc(const std::string& app_id, AppPackagePtr new_desc);
+    void addApp(const std::string& appId, AppPackagePtr new_desc, AppStatusChangeEvent event = AppStatusChangeEvent::AppStatusChangeEvent_Installed);
+    void removeApp(const std::string& appId, bool rescan = true, AppStatusChangeEvent event = AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    void reloadApp(const std::string& appId);
+    void replaceAppDesc(const std::string& appId, AppPackagePtr new_desc);
 
     void onLocaleChanged(const std::string& lang, const std::string& region, const std::string& script);
-    void onReadyToUninstallSystemApp(pbnjson::JValue result, ErrorInfo err_info, void* user_data);
 
-    void onAppInstalled(const std::string& app_id);
-    void onAppUninstalled(const std::string& app_id);
+    void onAppInstalled(const std::string& appId);
+    void onAppUninstalled(const std::string& appId);
     void onAppScanFinished(ScanMode mode, const AppDescMaps& scanned_apps);
-    void onPackageStatusChanged(const std::string& app_id, const PackageStatus& status);
+    void onPackageStatusChanged(const std::string& appId, const PackageStatus& status);
 
     void publishListApps();
     void publishOneAppChange(AppPackagePtr app_desc, const std::string& change, AppStatusChangeEvent event);

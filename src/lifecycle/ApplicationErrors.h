@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
 #define APPLICATIONERRORS_H
 
 #include <string>
-
+#include "util/Logger.h"
 #include <pbnjson.hpp>
-#include "util/Logging.h"
 
 //! error value from applicationManager
 ////////////////////////////////////////////////////////////////////////
@@ -113,8 +112,8 @@ typedef struct _ErrorInfo {
             json.put("returnValue", true);
         } else {
             json.put("returnValue", false);
-            json.put(LOG_KEY_ERRORCODE, errorCode);
-            json.put(LOG_KEY_ERRORTEXT, errorText);
+            json.put(Logger::LOG_KEY_ERRORCODE, errorCode);
+            json.put(Logger::LOG_KEY_ERRORTEXT, errorText);
         }
     }
 } ErrorInfo;

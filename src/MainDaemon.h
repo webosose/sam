@@ -22,12 +22,13 @@
 #include <launchpoint/launch_point/LaunchPointFactory.h>
 #include "package/AppPackageManager.h"
 #include "lifecycle/stage/appitem/LaunchAppItem.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.h>
 #include <prerequisite/BootdPrerequisiteItem.h>
 #include <prerequisite/ConfigdPrerequisiteItem.h>
 #include <prerequisite/PrerequisiteItem.h>
 
-class MainDaemon : public PrerequisiteItemListener {
+class MainDaemon : public IClassName {
 public:
     MainDaemon();
     virtual ~MainDaemon();
@@ -35,15 +36,12 @@ public:
     void start();
     void stop();
 
-    // PrerequisiteItemListener
-    virtual void onPrerequisiteItemStatusChanged(PrerequisiteItem* item) override;
+    void onPrerequisiteItemStatusChanged(PrerequisiteItem* item);
 
-
-    // APIs
     void onLaunchPointsListChanged(const pbnjson::JValue& launchPoints);
     void onLaunchPointChanged(const std::string& change, const pbnjson::JValue& launchPoint);
 
-    void onForegroundAppChanged(const std::string& app_id);
+    void onForegroundAppChanged(const std::string& appId);
     void onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info);
     void onLifeCycleEventGenarated(const pbnjson::JValue& event);
 

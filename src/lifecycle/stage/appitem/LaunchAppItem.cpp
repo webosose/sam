@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,14 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
 #include <package/AppPackageManager.h>
-#include <util/Logging.h>
 
-
-LaunchAppItem::LaunchAppItem(const std::string& appId, const std::string& display, const pbnjson::JValue& params, LSMessage* lsmsg)
+LaunchAppItem::LaunchAppItem(const std::string& appId, const std::string& display, const pbnjson::JValue& params, LSMessage* message)
     : AppItem(appId, display, ""),
       m_requestedAppId(appId),
       m_stage(AppLaunchingStage::PRELAUNCH),
       m_subStage(0),
       m_params(params.duplicate()),
-      m_lsmsg(lsmsg),
+      m_request(message),
       m_showSplash(true),
       m_showSpinner(true),
       m_keepAlive(false),
@@ -37,24 +35,16 @@ LaunchAppItem::LaunchAppItem(const std::string& appId, const std::string& displa
       m_errorCode(0),
       m_launchStartTime(0)
 {
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
-             PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS(LOG_KEY_ACTION, "created_launching_item"), "");
-
-    if (m_lsmsg != NULL) {
-        LSMessageRef(m_lsmsg);
+    Logger::info("LaunchAppItem", __FUNCTION__, getAppId(), "created_launching_item");
+    if (m_request != NULL) {
+        LSMessageRef(m_request);
     }
 }
 
 LaunchAppItem::~LaunchAppItem()
 {
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, getAppId().c_str()),
-             PMLOGKS("uid", getUid().c_str()),
-             PMLOGKS(LOG_KEY_ACTION, "removed_launching_item"), "");
-
-    if (m_lsmsg != NULL) {
-        LSMessageUnref(m_lsmsg);
+    Logger::info("LaunchAppItem", __FUNCTION__, getAppId(), "removed_launching_item");
+    if (m_request != NULL) {
+        LSMessageUnref(m_request);
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@
 #include <prerequisite/BootdPrerequisiteItem.h>
 #include <prerequisite/ConfigdPrerequisiteItem.h>
 #include <setting/Settings.h>
-#include <util/Logging.h>
 
 #define SUBSKEY_LIST_APPS             "listApps"
 #define SUBSKEY_LIST_APPS_COMPACT     "listAppsCompact"
@@ -67,8 +66,9 @@ MainDaemon::MainDaemon()
     LSM::getInstance().initialize();
     AppInstallService::getInstance().initialize();
 
-    m_bootdPrerequisiteItem.setListener(this);
-    m_configdPrerequisiteItem.setListener(this);
+    m_bootdPrerequisiteItem.EventItemStatusChanged.connect(boost::bind(&MainDaemon::onPrerequisiteItemStatusChanged, this, _1));
+    m_configdPrerequisiteItem.EventItemStatusChanged.connect(boost::bind(&MainDaemon::onPrerequisiteItemStatusChanged, this, _1));
+
     m_bootdPrerequisiteItem.start();
     m_configdPrerequisiteItem.start();
 
@@ -91,7 +91,7 @@ MainDaemon::MainDaemon()
 MainDaemon::~MainDaemon()
 {
     ApplicationManager::getInstance().detach();
-    SingletonNS::destroyAll();
+    //SingletonNS::destroyAll();
 
     if (m_mainLoop) {
         g_main_loop_unref(m_mainLoop);
@@ -113,19 +113,16 @@ void MainDaemon::onPrerequisiteItemStatusChanged(PrerequisiteItem* item)
 {
     if (m_configdPrerequisiteItem.getStatus() != PrerequisiteItemStatus::PASSED &&
         m_bootdPrerequisiteItem.getStatus() != PrerequisiteItemStatus::PASSED) {
-        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
-                 PMLOGKS("status", "all_precondition_is_not_ready"), "");
+        Logger::info(getClassName(), __FUNCTION__, "", "all_precondition_is_not_ready");
         return;
     }
 
     if (ApplicationManager::getInstance().isServiceReady()) {
-        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
-                 PMLOGKS("status", "applicaitonmanager_is_not_ready"), "");
+        Logger::info(getClassName(), __FUNCTION__, "", "applicaitonmanager_is_not_ready");
         return;
     }
 
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
-             PMLOGKS("status", "all_precondition_ready"), "");
+    Logger::info(getClassName(), __FUNCTION__, "", "all_precondition_ready");
 
     SettingsImpl::getInstance().onRestLoad();
     SettingService::getInstance().onRestInit();
@@ -143,85 +140,72 @@ void MainDaemon::onLaunchingFinished(LaunchAppItemPtr item)
 
 void MainDaemon::onLaunchPointsListChanged(const pbnjson::JValue& launchPoints)
 {
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("subscribed", true);
-    payload.put("returnValue", true);
-    payload.put("launchPoints", launchPoints);
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    subscriptionPayload.put("subscribed", true);
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("launchPoints", launchPoints);
 
-    ApplicationManager::getInstance().postListLaunchPoints(payload);
+    ApplicationManager::getInstance().postListLaunchPoints(subscriptionPayload);
 }
 
 void MainDaemon::onLaunchPointChanged(const std::string& change, const pbnjson::JValue& launchPoint)
 {
-    pbnjson::JValue payload = launchPoint.duplicate();
-    payload.put("returnValue", true);
-    payload.put("subscribed", true);
+    pbnjson::JValue subscriptionPayload = launchPoint.duplicate();
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
 
-    ApplicationManager::getInstance().postListLaunchPoints(payload);
+    ApplicationManager::getInstance().postListLaunchPoints(subscriptionPayload);
 }
 
 void MainDaemon::onForegroundAppChanged(const std::string& appId)
 {
 
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("returnValue", true);
-    payload.put("subscribed", true);
-    payload.put(LOG_KEY_APPID, appId);
-    payload.put("windowId", "");
-    payload.put("processId", "");
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
+    subscriptionPayload.put(Logger::LOG_KEY_APPID, appId);
+    subscriptionPayload.put("windowId", "");
+    subscriptionPayload.put("processId", "");
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
-             PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO),
-             PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload.stringify());
 
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
-    SUBSKEY_FOREGROUND_INFO, payload.stringify().c_str(), NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "subscriptionreply"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+                             SUBSKEY_FOREGROUND_INFO,
+                             subscriptionPayload.stringify().c_str(),
+                             NULL)) {
+        Logger::error(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload.stringify());
         return;
     }
 }
 
 void MainDaemon::onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info)
 {
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("returnValue", true);
-    payload.put("subscribed", true);
-    payload.put("foregroundAppInfo", foreground_info);
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
+    subscriptionPayload.put("foregroundAppInfo", foreground_info);
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
-             PMLOGKS("skey", SUBSKEY_FOREGROUND_INFO_EX),
-             PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, "LS2", SUBSKEY_FOREGROUND_INFO_EX, subscriptionPayload.stringify());
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
                              SUBSKEY_FOREGROUND_INFO_EX,
-                             payload.stringify().c_str(),
+                             subscriptionPayload.stringify().c_str(),
                              NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "subscriptionreply"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, "LS2", "subscriptionreply", subscriptionPayload.stringify());
         return;
     }
 }
 
 void MainDaemon::onLifeCycleEventGenarated(const pbnjson::JValue& event)
 {
-    pbnjson::JValue payload = event.duplicate();
-    payload.put("returnValue", true);
+    pbnjson::JValue subscriptionPayload = event.duplicate();
+    subscriptionPayload.put("returnValue", true);
 
-    LOG_INFO(MSGID_SUBSCRIPTION_REPLY, 2,
-             PMLOGKS("skey", SUBSKEY_GET_APP_LIFE_EVENTS),
-             PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, "LS2", SUBSKEY_GET_APP_LIFE_EVENTS, subscriptionPayload.stringify());
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
                              SUBSKEY_GET_APP_LIFE_EVENTS,
-                             payload.stringify().c_str(),
+                             subscriptionPayload.stringify().c_str(),
                              NULL)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "subscriptionreply"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, "LS2", "subscriptionreply", subscriptionPayload.stringify());
         return;
     }
 }
@@ -230,20 +214,17 @@ void MainDaemon::onListAppsChanged(const pbnjson::JValue& apps, const std::vecto
 {
     std::string subs_key = dev ? SUBSKEY_DEV_LIST_APPS : SUBSKEY_LIST_APPS;
     std::string subs_key4compact = dev ? SUBSKEY_DEV_LIST_APPS_COMPACT : SUBSKEY_LIST_APPS_COMPACT;
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("returnValue", true);
-    payload.put("subscribed", true);
-    payload.put("apps", apps);
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
+    subscriptionPayload.put("apps", apps);
 
     // reply for clients wanted full properties
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
                              subs_key.c_str(),
-                             payload.stringify().c_str(),
+                             subscriptionPayload.stringify().c_str(),
                              NULL)) {
-        LOG_WARNING(MSGID_LSCALL_ERR, 3,
-                    PMLOGKS(LOG_KEY_TYPE, "subscription_reply"),
-                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                    PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        Logger::warning(getClassName(), __FUNCTION__, "LS2", "subscriptionreply", subscriptionPayload.stringify());
     }
 
     // reply for clients wanted partial properties
@@ -253,32 +234,28 @@ void MainDaemon::onListAppsChanged(const pbnjson::JValue& apps, const std::vecto
 
     while (LSSubscriptionHasNext(iter)) {
         LSMessage* message = LSSubscriptionNext(iter);
-        pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(message), std::string("applicationManager.listApps"));
-        if (jmsg.isNull())
+        pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message), JValueUtil::getSchema("applicationManager.listApps"));
+        if (responsePayload.isNull())
             continue;
 
         // not a clients wanted partial properties
-        if (!jmsg.hasKey("properties") || !jmsg["properties"].isArray()) {
+        if (!responsePayload.hasKey("properties") || !responsePayload["properties"].isArray()) {
             continue;
         }
 
         pbnjson::JValue new_apps = pbnjson::Array();
 
         // id is required
-        jmsg["properties"].append("id");
-        if (!AppPackage::getSelectedPropsFromApps(apps, jmsg["properties"], new_apps)) {
-            LOG_WARNING(MSGID_FAIL_GET_SELECTED_PROPS, 1,
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        responsePayload["properties"].append("id");
+        if (!AppPackage::getSelectedPropsFromApps(apps, responsePayload["properties"], new_apps)) {
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to get selected props");
             continue;
         }
 
-        payload.put("apps", new_apps);
+        subscriptionPayload.put("apps", new_apps);
 
-        if (!LSMessageRespond(message, payload.stringify().c_str(), NULL)) {
-            LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                      PMLOGKS(LOG_KEY_TYPE, "respond"),
-                      PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                      PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        if (!LSMessageRespond(message, subscriptionPayload.stringify().c_str(), NULL)) {
+            Logger::error(getClassName(), __FUNCTION__, "Failed to call LSMessageRespond");
         }
     }
     LSSubscriptionRelease(iter);
@@ -289,19 +266,16 @@ void MainDaemon::onOneAppChanged(const pbnjson::JValue& app, const std::string& 
 {
     std::string subs_key = dev ? SUBSKEY_DEV_LIST_APPS : SUBSKEY_LIST_APPS;
     std::string subs_key4compact = dev ? SUBSKEY_DEV_LIST_APPS_COMPACT : SUBSKEY_LIST_APPS_COMPACT;
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("returnValue", true);
-    payload.put("subscribed", true);
-    payload.put("change", change);
-    payload.put("changeReason", reason);
-    payload.put("app", app);
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
+    subscriptionPayload.put("change", change);
+    subscriptionPayload.put("changeReason", reason);
+    subscriptionPayload.put("app", app);
 
     // reply for clients wanted full properties
-    if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), subs_key.c_str(), payload.stringify().c_str(), NULL)) {
-        LOG_WARNING(MSGID_LSCALL_ERR, 3,
-                    PMLOGKS(LOG_KEY_TYPE, "subscription_reply"),
-                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                    PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+    if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), subs_key.c_str(), subscriptionPayload.stringify().c_str(), NULL)) {
+        Logger::error(getClassName(), __FUNCTION__, "LS2", "subscriptionreply", subscriptionPayload.stringify());
     }
 
     // reply for clients wanted partial properties
@@ -311,32 +285,28 @@ void MainDaemon::onOneAppChanged(const pbnjson::JValue& app, const std::string& 
 
     while (LSSubscriptionHasNext(iter)) {
         LSMessage* message = LSSubscriptionNext(iter);
-        pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(message), std::string("applicationManager.listApps"));
+        pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message), JValueUtil::getSchema("applicationManager.listApps"));
 
-        if (jmsg.isNull())
+        if (responsePayload.isNull())
             continue;
 
         // not a clients wanted partial properties
-        if (!jmsg.hasKey("properties") || !jmsg["properties"].isArray()) {
+        if (!responsePayload.hasKey("properties") || !responsePayload["properties"].isArray()) {
             continue;
         }
 
         pbnjson::JValue new_props = pbnjson::Object();
         // id is required
-        jmsg["properties"].append("id");
-        if (!AppPackage::getSelectedPropsFromAppInfo(app, jmsg["properties"], new_props)) {
-            LOG_WARNING(MSGID_FAIL_GET_SELECTED_PROPS, 1,
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        responsePayload["properties"].append("id");
+        if (!AppPackage::getSelectedPropsFromAppInfo(app, responsePayload["properties"], new_props)) {
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to get selected props");
             continue;
         }
 
-        payload.put("app", new_props);
+        subscriptionPayload.put("app", new_props);
 
-        if (!LSMessageRespond(message, payload.stringify().c_str(), NULL)) {
-            LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                      PMLOGKS(LOG_KEY_TYPE, "respond"),
-                      PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                      PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        if (!LSMessageRespond(message, subscriptionPayload.stringify().c_str(), NULL)) {
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to call LSMessageRespond");
         }
     }
 
@@ -351,62 +321,55 @@ void MainDaemon::onAppStatusChanged(AppStatusChangeEvent event, AppPackagePtr ap
         return;
     }
 
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue subscriptionPayload = pbnjson::Object();
     std::string str_event = AppPackageManager::getInstance().toString(event);
 
     switch (event) {
     case AppStatusChangeEvent::AppStatusChangeEvent_Installed:
     case AppStatusChangeEvent::STORAGE_ATTACHED:
     case AppStatusChangeEvent::UPDATE_COMPLETED:
-        payload.put("status", "launchable");
-        payload.put("exist", true);
-        payload.put("launchable", true);
+        subscriptionPayload.put("status", "launchable");
+        subscriptionPayload.put("exist", true);
+        subscriptionPayload.put("launchable", true);
         break;
 
     case AppStatusChangeEvent::STORAGE_DETACHED:
     case AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled:
-        payload.put("status", "notExist");
-        payload.put("exist", false);
-        payload.put("launchable", false);
+        subscriptionPayload.put("status", "notExist");
+        subscriptionPayload.put("exist", false);
+        subscriptionPayload.put("launchable", false);
         break;
 
     default:
         return;
     }
 
-    payload.put(LOG_KEY_APPID, app_desc->getAppId());
-    payload.put("event", str_event);
-    payload.put("returnValue", true);
+    subscriptionPayload.put(Logger::LOG_KEY_APPID, app_desc->getAppId());
+    subscriptionPayload.put("event", str_event);
+    subscriptionPayload.put("returnValue", true);
 
     std::string subs_key = "getappstatus#" + app_desc->getAppId() + "#N";
     std::string subs_key_w_appinfo = "getappstatus#" + app_desc->getAppId() + "#Y";
-    std::string str_payload = payload.stringify();
+    std::string str_payload = subscriptionPayload.stringify();
 
     switch (event) {
     case AppStatusChangeEvent::AppStatusChangeEvent_Installed:
     case AppStatusChangeEvent::STORAGE_ATTACHED:
     case AppStatusChangeEvent::UPDATE_COMPLETED:
-        payload.put("appInfo", app_desc->toJValue());
+        subscriptionPayload.put("appInfo", app_desc->toJValue());
         break;
 
     default:
         break;
     }
 
-    std::string str_payload_w_appinfo = payload.stringify();
+    std::string str_payload_w_appinfo = subscriptionPayload.stringify();
 
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), subs_key.c_str(), str_payload.c_str(), NULL)) {
-
-        LOG_WARNING(MSGID_SUBSCRIPTION_REPLY_ERR, 3,
-                    PMLOGKS("key", subs_key.c_str()),
-                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                    PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        Logger::warning(getClassName(), __FUNCTION__, "LS2", subs_key);
     }
 
     if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), subs_key_w_appinfo.c_str(), str_payload_w_appinfo.c_str(), NULL)) {
-        LOG_WARNING(MSGID_SUBSCRIPTION_REPLY_ERR, 3,
-                    PMLOGKS("key", subs_key_w_appinfo.c_str()),
-                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                    PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        Logger::warning(getClassName(), __FUNCTION__, "LS2", subs_key_w_appinfo);
     }
 }

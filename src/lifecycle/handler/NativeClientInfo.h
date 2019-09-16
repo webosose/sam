@@ -18,25 +18,26 @@
 #define LIFECYCLE_HANDLER_NATIVECLIENTINFO_H_
 
 #include <iostream>
-#include <util/Logging.h>
 #include <lunaservice.h>
 #include <pbnjson.hpp>
 #include <boost/function.hpp>
 #include "../stage/appitem/LaunchAppItem.h"
+#include "interface/IClassName.h"
+#include "util/Logger.h"
 
 class AbsNativeAppLifecycleInterface;
 
-class NativeClientInfo {
+class NativeClientInfo : public IClassName {
 public:
-    NativeClientInfo(const std::string& app_id);
+    NativeClientInfo(const std::string& appId);
     ~NativeClientInfo();
 
-    void Register(LSMessage* lsmsg);
+    void Register(LSMessage* message);
     void Unregister();
 
     void startTimerForCheckingRegistration();
     void stopTimerForCheckingRegistration();
-    static gboolean checkRegistration(gpointer user_data);
+    static gboolean checkRegistration(gpointer context);
 
     void setLifeCycleHandler(int ver, AbsNativeAppLifecycleInterface* handler);
     AbsNativeAppLifecycleInterface* getLifeCycleHandler() const
@@ -44,9 +45,9 @@ public:
         return m_lifecycleHandler;
     }
     bool sendEvent(pbnjson::JValue& payload);
-    void setAppId(const std::string& app_id)
+    void setAppId(const std::string& appId)
     {
-        m_appId = app_id;
+        m_appId = appId;
     }
     void setPid(const std::string& pid)
     {
@@ -82,7 +83,7 @@ private:
     int m_interfaceVersion;
     bool m_isRegistered;
     bool m_isRegistrationExpired;
-    LSMessage* m_lsmsg;
+    LSMessage* m_request;
     guint m_registrationCheckTimerSource;
     double m_registrationCheckStartTime;
     AbsNativeAppLifecycleInterface* m_lifecycleHandler;

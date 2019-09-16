@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 #include <bus/client/Bootd.h>
 #include <bus/service/ApplicationManager.h>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
 
+const string Bootd::NAME = "com.webos.bootManager";
+
 Bootd::Bootd()
-    : AbsLunaClient("com.webos.bootManager"),
-      m_tokenBootStatus(0)
+    : AbsLunaClient(NAME)
 {
+    setClassName(NAME);
 }
 
 Bootd::~Bootd()
@@ -38,49 +38,34 @@ void Bootd::onInitialze()
 
 void Bootd::onServerStatusChanged(bool isConnected)
 {
+    static std::string method = std::string("luna://") + getName() + std::string("/getBootStatus");
+
     if (isConnected) {
-        if (m_tokenBootStatus != 0)
-             return;
+        if (m_getBootStatus.isActive())
+            return;
 
-         std::string method = std::string("luna://") + getName() + std::string("/getBootStatus");
-
-         LSErrorSafe lserror;
-         if (!LSCall(ApplicationManager::getInstance().get(),
-                     method.c_str(),
-                     "{\"subscribe\":true}",
-                     onGetBootStatus,
-                     this,
-                     &m_tokenBootStatus,
-                     &lserror)) {
-             LOG_ERROR(MSGID_LSCALL_ERR, 4,
-                       PMLOGKS(LOG_KEY_TYPE, "lscall"),
-                       PMLOGJSON(LOG_KEY_PAYLOAD, "{\"subscribe\":true}"),
-                       PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                       PMLOGKS(LOG_KEY_ERRORTEXT, lserror.message), "");
-         }
+        m_getBootStatus = ApplicationManager::getInstance().callMultiReply(
+            method.c_str(),
+            AbsLunaClient::getSubscriptionPayload().stringify().c_str(),
+            onGetBootStatus,
+            this
+        );
     } else {
-        if (0 != m_tokenBootStatus) {
-            (void) LSCallCancel(ApplicationManager::getInstance().get(), m_tokenBootStatus, NULL);
-            m_tokenBootStatus = 0;
-        }
+        m_getBootStatus.cancel();
     }
 }
 
-bool Bootd::onGetBootStatus(LSHandle* handle, LSMessage* lsmsg, void* userData)
+bool Bootd::onGetBootStatus(LSHandle* sh, LSMessage* message, void* context)
 {
-    Bootd* subscriber = static_cast<Bootd*>(userData);
-    if (!subscriber)
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    if (responsePayload.isNull())
         return false;
 
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-    if (jmsg.isNull())
-        return false;
-
-    if (jmsg.hasKey("bootStatus")) {
+    if (responsePayload.hasKey("bootStatus")) {
         // factory, normal, firstUse
-        subscriber->m_bootStatusStr = jmsg["bootStatus"].asString();
+        Bootd::getInstance().m_bootStatusStr = responsePayload["bootStatus"].asString();
     }
 
-    subscriber->EventBootStatusChanged(jmsg);
+    Bootd::getInstance().EventBootStatusChanged(responsePayload);
     return true;
 }

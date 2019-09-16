@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,10 @@
 #include <memory>
 #include <pbnjson.hpp>
 #include <stdint.h>
-#include <util/Utils.h>
+#include "interface/IClassName.h"
 #include <string>
 #include <tuple>
+#include "util/Logger.h"
 
 const unsigned int APP_VERSION_DIGIT = 3;
 
@@ -60,7 +61,7 @@ class AppPackage;
 typedef std::shared_ptr<AppPackage> AppPackagePtr;
 typedef std::tuple<uint16_t, uint16_t, uint16_t> AppIntVersion;
 
-class AppPackage {
+class AppPackage : public IClassName {
 public:
     static std::string toString(AppType type);
     static bool getSelectedPropsFromAppInfo(const pbnjson::JValue& appinfo, const pbnjson::JValue& wanted_props, pbnjson::JValue& result);
@@ -149,15 +150,15 @@ public:
     }
     bool getWindowGroup() const
     {
-        return m_windowGroup;
+        return m_isWindowGroup;
     }
     bool getWindowGroupOwner() const
     {
-        return m_windowGroupOwner;
+        return m_isWindowGroupOwner;
     }
     bool isChildWindow() const
     {
-        return (m_windowGroup && !m_windowGroupOwner);
+        return (m_isWindowGroup && !m_isWindowGroupOwner);
     }
     bool getSplashOnLaunch() const
     {
@@ -218,8 +219,8 @@ protected:
     bool m_visible;
     int m_requiredMemory;
     std::string m_defaultWindowType;
-    bool m_windowGroup;
-    bool m_windowGroupOwner;
+    bool m_isWindowGroup;
+    bool m_isWindowGroupOwner;
     bool m_splashOnLaunch;
     bool m_spinnerOnLaunch;
     bool m_isLocked;

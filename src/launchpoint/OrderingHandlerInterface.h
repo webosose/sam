@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ class OrderingHandlerInterface {
   virtual void Init() = 0;
   virtual void HandleDbState(bool connection) = 0;
   virtual void ReloadDbData(bool connection) = 0;
-  virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason) = 0;
+  virtual void MakeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visibleLaunchPoints, const pbnjson::JValue& changed_reason) = 0;
 
-  virtual int  InsertLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION) = 0;
-  virtual int  UpdateLpInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION) = 0;
-  virtual void DeleteLpInOrder(const std::string& lp_id) = 0;
+  virtual int  InsertLpInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position = INVALID_POSITION) = 0;
+  virtual int  UpdateLpInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position = INVALID_POSITION) = 0;
+  virtual void DeleteLpInOrder(const std::string& launchPointId) = 0;
 
   virtual std::vector<std::string> GetOrderedList() = 0;
 

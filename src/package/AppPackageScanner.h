@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,14 @@
 
 #include <boost/signals2.hpp>
 #include <package/AppPackage.h>
+#include "interface/IClassName.h"
+#include <iostream>
 #include <string>
 #include <vector>
+#include "util/Logger.h"
+
+using namespace std;
+using namespace pbnjson;
 
 typedef std::vector<std::pair<std::string, AppTypeByDir>> BaseScanPaths;
 typedef std::map<std::string, AppPackagePtr> AppDescMaps;
@@ -38,7 +44,7 @@ public:
 
 };
 
-class AppPackageScanner {
+class AppPackageScanner : public IClassName {
 public:
     AppPackageScanner();
     virtual ~AppPackageScanner();
@@ -50,7 +56,7 @@ public:
 
     bool isRunning() const;
     void run(ScanMode mode);
-    AppPackagePtr scanForOneApp(const std::string& app_id);
+    AppPackagePtr scanForOneApp(const std::string& appId);
 
     boost::signals2::signal<void(ScanMode, const AppDescMaps&)> EventAppScanFinished;
 

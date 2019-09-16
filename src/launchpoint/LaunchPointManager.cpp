@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,14 @@
 #include <sys/time.h>
 #include <bus/client/WAM.h>
 #include <bus/client/DB8.h>
-#include <util/Logging.h>
-
 #include <util/LSUtils.h>
 
 LaunchPointManager::LaunchPointManager()
-    : m_lpmReady(false),
-      m_dbConnected(false),
-      m_dbLoaded(false),
-      m_appsLoaded(false),
-      m_orderedListReady(false),
+    : m_isLPMReady(false),
+      m_isDBConnected(false),
+      m_isDBLoaded(false),
+      m_isAppsLoaded(false),
+      m_isOrderedListReady(false),
       m_listAppsChanges(pbnjson::Array()),
       m_launchPointsDBData(pbnjson::Array()),
       m_DBHandler(),
@@ -63,19 +61,14 @@ void LaunchPointManager::initialize()
 
 void LaunchPointManager::handleLpmState(const LPStateInput& input, const pbnjson::JValue& data)
 {
-    LOG_INFO(MSGID_LAUNCH_POINT, 6,
-             PMLOGKS("status", "handle_lpm_state"),
-             PMLOGKFV("state_input", "%d", (int)input),
-             PMLOGKS("load_app", m_appsLoaded?"done":"not_ready_yet"),
-             PMLOGKS("load_db", m_dbLoaded?"done":"not_ready_yet"),
-             PMLOGKS("load_ordered_list", m_orderedListReady?"done":"not_ready_yet"),
-             PMLOGKS("lpm_ready", m_lpmReady?"ready":"not_ready_yet"), "");
+    Logger::info(getClassName(), __FUNCTION__, "", Logger::format("input(%d) m_isAppsLoaded(%B) m_isDBLoaded(%B) m_isOrderedListReady(%B) m_isLPMReady(%B)",
+                 (int)input, m_isAppsLoaded, m_isDBLoaded, m_isOrderedListReady, m_isLPMReady));
 
     if (LPStateInput::LOAD_APPS == input) {
-        if (m_appsLoaded && m_dbLoaded) {
+        if (m_isAppsLoaded && m_isDBLoaded) {
             updateApps(data);
             reloadDbData();
-        } else if (!m_appsLoaded && m_dbLoaded) {
+        } else if (!m_isAppsLoaded && m_isDBLoaded) {
             updateApps(data);
             syncAppsWithDbData();
             sortLPs();
@@ -83,24 +76,20 @@ void LaunchPointManager::handleLpmState(const LPStateInput& input, const pbnjson
             updateApps(data);
         }
     } else if (LPStateInput::LOAD_DB_DATA == input) {
-        if (m_appsLoaded) {
+        if (m_isAppsLoaded) {
             syncAppsWithDbData();
             sortLPs();
         }
     }
 
-    if (m_appsLoaded && m_dbLoaded && m_orderedListReady) {
-        LOG_INFO(MSGID_LAUNCH_POINT, 1,
-                 PMLOGKS("status", "lpm_ready"),
-                 "all conditions are ready");
-
-        m_lpmReady = true;
+    if (m_isAppsLoaded && m_isDBLoaded && m_isOrderedListReady) {
+        Logger::info(getClassName(), __FUNCTION__, "", "all conditions are ready");
+        m_isLPMReady = true;
 
         replyLpListToSubscribers();
-        if (m_listener)
-            m_listener->onReadyLaunchPointManager();
+        EventReady();
     } else {
-        m_lpmReady = false;
+        m_isLPMReady = false;
     }
 }
 
@@ -109,30 +98,30 @@ void LaunchPointManager::handleLpmState(const LPStateInput& input, const pbnjson
 /***********************************************************/
 void LaunchPointManager::onDBConnected(bool connection)
 {
-    m_dbConnected = connection;
-    if (!m_dbConnected)
+    m_isDBConnected = connection;
+    if (!m_isDBConnected)
         return;
 
-    m_DBHandler.handleDbState(m_dbConnected);
-    m_orderingHandler.handleDBState(m_dbConnected);
+    m_DBHandler.handleDbState(m_isDBConnected);
+    m_orderingHandler.handleDBState(m_isDBConnected);
 }
 
 void LaunchPointManager::onLPLoaded(const pbnjson::JValue& loaded_db_result)
 {
     m_launchPointsDBData = loaded_db_result.duplicate();
-    m_dbLoaded = true;
+    m_isDBLoaded = true;
 
     handleLpmState(LPStateInput::LOAD_DB_DATA, loaded_db_result);
 }
 
 void LaunchPointManager::reloadDbData()
 {
-    m_dbLoaded = false;
-    if (!m_dbConnected)
+    m_isDBLoaded = false;
+    if (!m_isDBConnected)
         return;
 
-    m_DBHandler.reloadDbData(m_dbConnected);
-    m_orderingHandler.reloadDBData(m_dbConnected);
+    m_DBHandler.reloadDbData(m_isDBConnected);
+    m_orderingHandler.reloadDBData(m_isDBConnected);
 }
 
 /***********************************************************/
@@ -140,7 +129,7 @@ void LaunchPointManager::reloadDbData()
 /***********************************************************/
 void LaunchPointManager::sortLPs()
 {
-    m_orderedListReady = false;
+    m_isOrderedListReady = false;
 
     std::vector<LaunchPointPtr> visible_list;
     for (auto it : m_launchPointList) {
@@ -153,13 +142,9 @@ void LaunchPointManager::sortLPs()
 
 void LaunchPointManager::onLPOrdered(const OrderChangeState& change_state)
 {
-    LOG_INFO(MSGID_LAUNCH_POINT, 3,
-             PMLOGKS("status", "received_changed_order_list"),
-             PMLOGKFV("change_state", "%d", (int)change_state),
-             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
-
+    Logger::info(getClassName(), __FUNCTION__, "", Logger::format("change_state(%d)", (int)change_state));
     if (change_state == OrderChangeState::FULL) {
-        m_orderedListReady = true;
+        m_isOrderedListReady = true;
         handleLpmState(LPStateInput::LOAD_ORDERED_LIST, pbnjson::Object());
     }
 }
@@ -167,10 +152,10 @@ void LaunchPointManager::onLPOrdered(const OrderChangeState& change_state)
 /***********************************************************/
 /** handling Applist (listApps/update/syncDB) **************/
 /***********************************************************/
-void LaunchPointManager::onPackageStatusChanged(const std::string& app_id, const PackageStatus& status)
+void LaunchPointManager::onPackageStatusChanged(const std::string& appId, const PackageStatus& status)
 {
     if (PackageStatus::AboutToUninstall == status)
-        removeLPsByAppId(app_id);
+        removeLPsByAppId(appId);
 }
 
 void LaunchPointManager::onListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev)
@@ -183,11 +168,7 @@ void LaunchPointManager::onListAppsChanged(const pbnjson::JValue& apps, const st
         m_listAppsChanges.append(c);
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT, 3,
-             PMLOGKS("status", "full_list_changed_on_list_apps"),
-             PMLOGKS("change_reason", m_listAppsChanges.stringify().c_str()),
-             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
-
+    Logger::info(getClassName(), __FUNCTION__, "", m_listAppsChanges.stringify());
     handleLpmState(LPStateInput::LOAD_APPS, apps);
 }
 
@@ -197,200 +178,181 @@ void LaunchPointManager::onOneAppChanged(const pbnjson::JValue& app, const std::
     if (dev)
         return;
 
-    std::string app_id = app["id"].asString();
-    std::string err_text;
+    std::string appId = app["id"].asString();
+    std::string errorText;
 
-    LOG_INFO(MSGID_LAUNCH_POINT, 4,
-             PMLOGKS("status", "one_app_changed_on_list_apps"),
-             PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-             PMLOGKS("change_reason", change.c_str()),
-             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, "one_app_changed_on_list_apps", change);
 
     if (LP_CHANGE_ADDED == change) {
-        addLP(LPMAction::APP_INSTALLED, app, err_text);
+        addLP(LPMAction::APP_INSTALLED, app, errorText);
     } else if (LP_CHANGE_UPDATED == change) {
-        updateLP(LPMAction::APP_UPDATED, app, err_text);
+        updateLP(LPMAction::APP_UPDATED, app, errorText);
     } else if (LP_CHANGE_REMOVED == change) {
-        removeLPsByAppId(app_id);
+        removeLPsByAppId(appId);
     }
 }
 
 void LaunchPointManager::updateApps(const pbnjson::JValue& apps)
 {
-
-    std::string err_text;
+    std::string errorText;
     m_launchPointList.clear();
 
     for (int i = 0; i < apps.arraySize(); ++i) {
-        std::string app_id = apps[i]["id"].asString();
-        LaunchPointPtr lp = addLP(LPMAction::LOAD_APPS, apps[i], err_text);
+        std::string appId = apps[i]["id"].asString();
+        LaunchPointPtr launchPointPtr = addLP(LPMAction::LOAD_APPS, apps[i], errorText);
 
-        if (lp == nullptr)
-            LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 3,
-                        PMLOGKS("status", "lp_is_nullptr"),
-                        PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                        "%s", err_text.c_str());
+        if (launchPointPtr == nullptr) {
+            Logger::warning(getClassName(), __FUNCTION__, appId, "lp is nullptr", errorText);
+        }
     }
 
-    m_appsLoaded = true;
+    m_isAppsLoaded = true;
 }
 
 void LaunchPointManager::syncAppsWithDbData()
 {
-
-    std::string app_id, lp_id, err_text;
+    std::string appId, launchPointId, errorText;
     LPType lp_type;
 
     int db_data_idx = m_launchPointsDBData.arraySize();
 
-    LOG_INFO(MSGID_LAUNCH_POINT, 2,
-             PMLOGKS("status", "sync_apps_with_db_data"),
-             PMLOGKS(LOG_KEY_ACTION, "start_sync"), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, "start sync_apps_with_db_data");
     for (int idx = 0; idx < db_data_idx; ++idx) {
         pbnjson::JValue delete_json = pbnjson::Object();
 
-        app_id = m_launchPointsDBData[idx]["id"].asString();
-        lp_id = m_launchPointsDBData[idx]["launchPointId"].asString();
+        appId = m_launchPointsDBData[idx]["id"].asString();
+        launchPointId = m_launchPointsDBData[idx]["launchPointId"].asString();
         lp_type = static_cast<LPType>(m_launchPointsDBData[idx]["lptype"].asNumber<int>());
 
-        if (app_id.empty() || lp_type == LPType::UNKNOWN) {
-            delete_json.put("launchPointId", lp_id);
+        if (appId.empty() || lp_type == LPType::UNKNOWN) {
+            delete_json.put("launchPointId", launchPointId);
             m_DBHandler.deleteData(delete_json);
             continue;
         }
 
-        LaunchPointPtr default_lp = getDefaultLpByAppId(app_id);
-        if (default_lp == nullptr) {
-            delete_json.put("launchPointId", lp_id);
+        LaunchPointPtr defaultLaunchPoint = getDefaultLpByAppId(appId);
+        if (defaultLaunchPoint == nullptr) {
+            delete_json.put("launchPointId", launchPointId);
             m_DBHandler.deleteData(delete_json);
             continue;
         }
 
         if (LPType::DEFAULT == lp_type) {
-            updateLP(LPMAction::DB_SYNC, m_launchPointsDBData[idx], err_text);
+            updateLP(LPMAction::DB_SYNC, m_launchPointsDBData[idx], errorText);
         } else if (LPType::BOOKMARK == lp_type) {
-            addLP(LPMAction::DB_SYNC, m_launchPointsDBData[idx], err_text);
+            addLP(LPMAction::DB_SYNC, m_launchPointsDBData[idx], errorText);
         }
     }
-
-    LOG_INFO(MSGID_LAUNCH_POINT, 2,
-             PMLOGKS("status", "sync_apps_with_db_data"),
-             PMLOGKS(LOG_KEY_ACTION, "end_sync"), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, "end sync_apps_with_db_data");
 }
 
 /***********************************************************/
 /** add launch point ****************************************/
 /** Action Item: load_apps/db_sync/app_installed/api_add ***/
 /***********************************************************/
-LaunchPointPtr LaunchPointManager::addLP(const LPMAction action, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LaunchPointManager::addLP(const LPMAction action, const pbnjson::JValue& data, std::string& errorText)
 {
-
-    std::string app_id, lp_id;
+    std::string appId, launchPointId;
     int position = DEFAULT_POSITION_INVALID;
-    LPType lp_type = LPType::UNKNOWN;
-    pbnjson::JValue lp_as_json = pbnjson::Object();
+    LPType lpType = LPType::UNKNOWN;
+    pbnjson::JValue launchPointAsJson = pbnjson::Object();
 
-    if (!data.hasKey("id") || data["id"].asString(app_id) != CONV_OK) {
-        err_text = "id is empty";
+    if (!data.hasKey("id") || data["id"].asString(appId) != CONV_OK) {
+        errorText = "id is empty";
         return nullptr;
     }
 
-    LaunchPointPtr default_lp = getDefaultLpByAppId(app_id);
-    if (default_lp == nullptr && (LPMAction::DB_SYNC == action || LPMAction::API_ADD == action)) {
-        err_text = "cannot find default launch point";
+    LaunchPointPtr defaultLaunchPoint = getDefaultLpByAppId(appId);
+    if (defaultLaunchPoint == nullptr && (LPMAction::DB_SYNC == action || LPMAction::API_ADD == action)) {
+        errorText = "cannot find default launch point";
         return nullptr;
     }
 
     switch (action) {
     case LPMAction::LOAD_APPS:
     case LPMAction::APP_INSTALLED:
-        lp_type = LPType::DEFAULT;
-        lp_id = app_id + "_default";
+        lpType = LPType::DEFAULT;
+        launchPointId = appId + "_default";
         break;
+
     case LPMAction::DB_SYNC:
-        lp_type = LPType::BOOKMARK;
-        lp_id = data["launchPointId"].asString();
+        lpType = LPType::BOOKMARK;
+        launchPointId = data["launchPointId"].asString();
         break;
+
     case LPMAction::API_ADD:
-        lp_type = LPType::BOOKMARK;
-        lp_id = generateLpId();
+        lpType = LPType::BOOKMARK;
+        launchPointId = generateLpId();
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "add_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
-        err_text = "unknown action";
+        Logger::warning(getClassName(), __FUNCTION__, "", "unknown_request");
+        errorText = "unknown action";
         return nullptr;
     }
 
-    if (lp_id.empty()) {
-        err_text = "fail to generate launch point id";
+    if (launchPointId.empty()) {
+        errorText = "fail to generate launch point id";
         return nullptr;
     }
 
-    LaunchPointPtr lp = m_launchPointFactory.createLaunchPoint(lp_type, lp_id, data, err_text);
-    if (lp == nullptr)
+    LaunchPointPtr launchPointPtr = m_launchPointFactory.createLaunchPoint(lpType, launchPointId, data, errorText);
+    if (launchPointPtr == nullptr)
         return nullptr;
 
     switch (action) {
     case LPMAction::LOAD_APPS:
         break;
+
     case LPMAction::DB_SYNC:
-        lp->setStoredInDb(true);
-        lp->updateIfEmptyTitle(default_lp);
+        launchPointPtr->setStoredInDb(true);
+        launchPointPtr->updateIfEmptyTitle(defaultLaunchPoint);
         break;
+
     case LPMAction::APP_INSTALLED:
-        position = m_orderingHandler.insertLPInOrder(lp_id, data);
+        position = m_orderingHandler.insertLPInOrder(launchPointId, data);
         if (position == DEFAULT_POSITION_INVALID) {
-            err_text = "fail to add in proper position";
+            errorText = "fail to add in proper position";
             return nullptr;
         }
 
-        replyLpChangeToSubscribers(lp, LP_CHANGE_ADDED, position);
+        replyLpChangeToSubscribers(launchPointPtr, LP_CHANGE_ADDED, position);
         break;
     case LPMAction::API_ADD:
-        lp->updateIfEmpty(default_lp);
+        launchPointPtr->updateIfEmpty(defaultLaunchPoint);
         // If there's no need to support i18n, fill in title and put it into DB.
         if (data.hasKey("supportI18nTitle") && !data["supportI18nTitle"].asBool())
-            lp->updateIfEmptyTitle(default_lp);
+            launchPointPtr->updateIfEmptyTitle(defaultLaunchPoint);
 
-        position = m_orderingHandler.insertLPInOrder(lp_id, data);
+        position = m_orderingHandler.insertLPInOrder(launchPointId, data);
         if (position == DEFAULT_POSITION_INVALID) {
-            err_text = "fail to add in proper position";
+            errorText = "fail to add in proper position";
             return nullptr;
         }
 
-        lp_as_json = lp->toJValue().duplicate();
-        lp_as_json.put("lptype", static_cast<int>(lp->getLPType()));
+        launchPointAsJson = launchPointPtr->toJValue().duplicate();
+        launchPointAsJson.put("lptype", static_cast<int>(launchPointPtr->getLPType()));
 
-        if (m_DBHandler.insertData(lp_as_json))
-            lp->setStoredInDb(true);
+        if (m_DBHandler.insertData(launchPointAsJson))
+            launchPointPtr->setStoredInDb(true);
 
-        lp->updateIfEmptyTitle(default_lp);
-        replyLpChangeToSubscribers(lp, LP_CHANGE_ADDED, position);
+        launchPointPtr->updateIfEmptyTitle(defaultLaunchPoint);
+        replyLpChangeToSubscribers(launchPointPtr, LP_CHANGE_ADDED, position);
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "add_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
-        err_text = "unknown action";
+        Logger::warning(getClassName(), __FUNCTION__, "", "unknown_request");
+        errorText = "unknown action";
         return nullptr;
     }
 
     // prevent too much log
     if ((LPMAction::LOAD_APPS != action) && (LPMAction::DB_SYNC != action)) {
-        LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5,
-                 PMLOGKS("status", "add_launch_point"),
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKFV("lp_type", "%d", (int)lp_type),
-                 PMLOGKFV("lp_action", "%d", (int)action),
-                 PMLOGKFV("position", "%d", position), "");
+        Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("lp_type(%d) action(%d) position(%d)", lpType, action, position));
     }
-    m_launchPointList.push_back(lp);
+    m_launchPointList.push_back(launchPointPtr);
 
-    return lp;
+    return launchPointPtr;
 }
 
 /***********************************************************/
@@ -404,11 +366,11 @@ LaunchPointPtr LaunchPointManager::updateLP(const LPMAction action, const pbnjso
         return nullptr;
     }
 
-    std::string lp_id, app_id;
-    LaunchPointPtr lp_by_app_id = nullptr;
-    LaunchPointPtr lp_by_lp_id = nullptr;
-    LaunchPointPtr updated_lp = nullptr;
-    pbnjson::JValue lp_as_json = pbnjson::Object();
+    std::string launchPointId, appId;
+    LaunchPointPtr launchPointByAppId = nullptr;
+    LaunchPointPtr launchPointByLaunchPointId = nullptr;
+    LaunchPointPtr updatedLaunchPoint = nullptr;
+    pbnjson::JValue launchPointAsJson = pbnjson::Object();
     pbnjson::JValue delete_json = pbnjson::Object();
     pbnjson::JValue original_json = pbnjson::Object();
     int position = DEFAULT_POSITION_INVALID;
@@ -416,97 +378,88 @@ LaunchPointPtr LaunchPointManager::updateLP(const LPMAction action, const pbnjso
     switch (action) {
     case LPMAction::API_UPDATE:
     case LPMAction::DB_SYNC:
-        lp_id = data["launchPointId"].asString();
+        launchPointId = data["launchPointId"].asString();
         break;
     case LPMAction::APP_UPDATED:
-        app_id = data["id"].asString();
-        lp_by_app_id = getDefaultLpByAppId(app_id);
+        appId = data["id"].asString();
+        launchPointByAppId = getDefaultLpByAppId(appId);
 
-        if (lp_by_app_id != nullptr) {
-            lp_id = lp_by_app_id->getLunchPointId();
+        if (launchPointByAppId != nullptr) {
+            launchPointId = launchPointByAppId->getLunchPointId();
         }
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "update_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
+        Logger::info(getClassName(), __FUNCTION__, "", "unknown_request");
         errorText = "unknown action";
         return nullptr;
     }
 
-    if (lp_id.empty()) {
+    if (launchPointId.empty()) {
         errorText = "launch point id is empty";
         return nullptr;
     }
 
-    lp_by_lp_id = getLpByLpId(lp_id);
-    if (lp_by_lp_id == nullptr) {
+    launchPointByLaunchPointId = getLpByLpId(launchPointId);
+    if (launchPointByLaunchPointId == nullptr) {
         errorText = "cannot find launch point";
         return nullptr;
     }
 
-    original_json = lp_by_lp_id->toJValue();
-    lp_by_lp_id->update(data);
+    original_json = launchPointByLaunchPointId->toJValue();
+    launchPointByLaunchPointId->update(data);
 
     switch (action) {
     case LPMAction::DB_SYNC:
-        lp_by_lp_id->setStoredInDb(true);
+        launchPointByLaunchPointId->setStoredInDb(true);
         break;
     case LPMAction::APP_UPDATED:
-        if (lp_by_lp_id->isStoredInDb()) {
-            delete_json.put("launchPointId", lp_by_lp_id->getLunchPointId());
+        if (launchPointByLaunchPointId->isStoredInDb()) {
+            delete_json.put("launchPointId", launchPointByLaunchPointId->getLunchPointId());
             m_DBHandler.deleteData(delete_json);
         }
 
-        updated_lp = m_launchPointFactory.createLaunchPoint(LPType::DEFAULT, lp_id, data, errorText);
-        if (updated_lp == nullptr)
+        updatedLaunchPoint = m_launchPointFactory.createLaunchPoint(LPType::DEFAULT, launchPointId, data, errorText);
+        if (updatedLaunchPoint == nullptr)
             return nullptr;
 
-        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == lp_id;});
-        m_launchPointList.push_back(updated_lp);
-        replyLpChangeToSubscribers(updated_lp, LP_CHANGE_UPDATED);
+        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == launchPointId;});
+        m_launchPointList.push_back(updatedLaunchPoint);
+        replyLpChangeToSubscribers(updatedLaunchPoint, LP_CHANGE_UPDATED);
 
         break;
     case LPMAction::API_UPDATE:
-        position = m_orderingHandler.updateLPInOrder(lp_id, data);
+        position = m_orderingHandler.updateLPInOrder(launchPointId, data);
 
-        if ((original_json == lp_by_lp_id->toJValue()) && (position == DEFAULT_POSITION_INVALID)) {
-            LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                        PMLOGKS("status", "update_launch_point"),
-                        PMLOGKS(LOG_KEY_ACTION, "no_difference"), "");
+        if ((original_json == launchPointByLaunchPointId->toJValue()) && (position == DEFAULT_POSITION_INVALID)) {
+            Logger::warning(getClassName(), __FUNCTION__, "", "no_difference");
             break;
         }
 
-        lp_as_json = data.duplicate();
-        lp_as_json.put("id", lp_by_lp_id->Id());
-        lp_as_json.put("launchPointId", lp_by_lp_id->getLunchPointId());
-        lp_as_json.put("lptype", static_cast<int>(lp_by_lp_id->getLPType()));
+        launchPointAsJson = data.duplicate();
+        launchPointAsJson.put("id", launchPointByLaunchPointId->Id());
+        launchPointAsJson.put("launchPointId", launchPointByLaunchPointId->getLunchPointId());
+        launchPointAsJson.put("lptype", static_cast<int>(launchPointByLaunchPointId->getLPType()));
 
-        if (lp_by_lp_id->isStoredInDb()) {
-            m_DBHandler.updateData(lp_as_json);
+        if (launchPointByLaunchPointId->isStoredInDb()) {
+            m_DBHandler.updateData(launchPointAsJson);
         } else {
-            if (m_DBHandler.insertData(lp_as_json))
-                lp_by_lp_id->setStoredInDb(true);
+            if (m_DBHandler.insertData(launchPointAsJson))
+                launchPointByLaunchPointId->setStoredInDb(true);
         }
-        replyLpChangeToSubscribers(lp_by_lp_id, LP_CHANGE_UPDATED, position);
+        replyLpChangeToSubscribers(launchPointByLaunchPointId, LP_CHANGE_UPDATED, position);
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "update_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
         errorText = "unknown action";
+        Logger::warning(getClassName(), __FUNCTION__, "", errorText);
         return nullptr;
     }
 
     // prevent too much log
     if (LPMAction::DB_SYNC != action)
-        LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5,
-                 PMLOGKS("status", "update_launch_point"),
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->getLPType()),
-                 PMLOGKFV("lp_action", "%d", (int)action),
-                 PMLOGKFV("position", "%d", position), "");
-    return lp_by_lp_id;
+        Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("LPType(%d) action(%d) position(%d)", launchPointByLaunchPointId->getLPType(), action, position));
+    return launchPointByLaunchPointId;
 }
 
 /***********************************************************/
@@ -521,34 +474,33 @@ LaunchPointPtr LaunchPointManager::moveLP(const LPMAction action, const pbnjson:
         return nullptr;
     }
 
-    std::string lp_id, app_id;
-    LaunchPointPtr lp_by_lp_id = nullptr;
+    std::string launchPointId, appId;
+    LaunchPointPtr launchPointByLaunchPointId = nullptr;
     int position = DEFAULT_POSITION_INVALID;
 
     switch (action) {
     case LPMAction::API_MOVE:
-        lp_id = data["launchPointId"].asString();
+        launchPointId = data["launchPointId"].asString();
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "move_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
         errorText = "unknown action";
+        Logger::warning(getClassName(), __FUNCTION__, "", errorText);
         return nullptr;
     }
 
-    if (lp_id.empty()) {
+    if (launchPointId.empty()) {
         errorText = "launch point id is empty";
         return nullptr;
     }
 
-    lp_by_lp_id = getLpByLpId(lp_id);
-    if (lp_by_lp_id == nullptr) {
+    launchPointByLaunchPointId = getLpByLpId(launchPointId);
+    if (launchPointByLaunchPointId == nullptr) {
         errorText = "cannot find launch point";
         return nullptr;
     }
 
-    if (lp_by_lp_id->isUnmovable() || !(lp_by_lp_id->isVisible())) {
+    if (launchPointByLaunchPointId->isUnmovable() || !(launchPointByLaunchPointId->isVisible())) {
         errorText = "app is unmovable or invisible, cannot change the position of this app";
         return nullptr;
     }
@@ -560,26 +512,20 @@ LaunchPointPtr LaunchPointManager::moveLP(const LPMAction action, const pbnjson:
         return nullptr;
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 5,
-             PMLOGKS("status", "move_launch_point"),
-             PMLOGKS(LOG_KEY_APPID, lp_by_lp_id->Id().c_str()),
-             PMLOGKFV("lp_type", "%d", (int)lp_by_lp_id->getLPType()),
-             PMLOGKFV("lp_action", "%d", (int)action),
-             PMLOGKFV("position", "%d", position), "");
+    Logger::info(getClassName(), __FUNCTION__, launchPointByLaunchPointId->Id(), Logger::format("LPType(%d) action(%d) position(%d)", launchPointByLaunchPointId->getLPType(), action, position));
     switch (action) {
     case LPMAction::API_MOVE:
-        m_orderingHandler.updateLPInOrder(lp_id, data, position);
-        replyLpChangeToSubscribers(lp_by_lp_id, LP_CHANGE_UPDATED, position);
+        m_orderingHandler.updateLPInOrder(launchPointId, data, position);
+        replyLpChangeToSubscribers(launchPointByLaunchPointId, LP_CHANGE_UPDATED, position);
         break;
+
     default:
-        LOG_WARNING(MSGID_LAUNCH_POINT_WARNING, 2,
-                    PMLOGKS("status", "move_launch_point"),
-                    PMLOGKS(LOG_KEY_ACTION, "unknown_request"), "");
         errorText = "unknown action";
+        Logger::warning(getClassName(), __FUNCTION__, "", errorText);
         return nullptr;
     }
 
-    return lp_by_lp_id;
+    return launchPointByLaunchPointId;
 }
 
 /***********************************************************/
@@ -587,49 +533,42 @@ LaunchPointPtr LaunchPointManager::moveLP(const LPMAction action, const pbnjson:
 /***********************************************************/
 void LaunchPointManager::removeLP(const pbnjson::JValue& data, std::string& errorText)
 {
-    std::string lpId = data["launchPointId"].asString();
-    if (lpId.empty()) {
+    std::string launchPointId = data["launchPointId"].asString();
+    if (launchPointId.empty()) {
         errorText = "launch point id is empty";
         return;
     }
 
-    LaunchPointPtr lp = getLpByLpId(lpId);
-    if (lp == nullptr) {
+    LaunchPointPtr launchPointPtr = getLpByLpId(launchPointId);
+    if (launchPointPtr == nullptr) {
         errorText = "cannot find launch point";
         return;
     }
 
-    if (!lp->isRemovable()) {
+    if (!launchPointPtr->isRemovable()) {
         errorText = "this launch point cannot be removable";
         return;
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3,
-             PMLOGKS("status", "remove_launch_point"),
-             PMLOGKS(LOG_KEY_APPID, (lp->Id()).c_str()),
-             PMLOGKFV("lp_type", "%d", static_cast<int>(lp->getLPType())), "");
-
-    if (LPType::DEFAULT == lp->getLPType()) {
-        AppPackageManager::getInstance().uninstallApp(lp->Id(), errorText);
-        m_orderingHandler.deleteLPInOrder(lp->getLunchPointId());
-    } else if (LPType::BOOKMARK == lp->getLPType()) {
+    Logger::info(getClassName(), __FUNCTION__, launchPointPtr->Id(), Logger::format("LPType(%d)", launchPointPtr->getLPType()));
+    if (LPType::DEFAULT == launchPointPtr->getLPType()) {
+        AppPackageManager::getInstance().uninstallApp(launchPointPtr->Id(), errorText);
+        m_orderingHandler.deleteLPInOrder(launchPointPtr->getLunchPointId());
+    } else if (LPType::BOOKMARK == launchPointPtr->getLPType()) {
         pbnjson::JValue delete_json = pbnjson::Object();
-        delete_json.put("launchPointId", lp->getLunchPointId());
+        delete_json.put("launchPointId", launchPointPtr->getLunchPointId());
 
-        replyLpChangeToSubscribers(lp, LP_CHANGE_REMOVED);
+        replyLpChangeToSubscribers(launchPointPtr, LP_CHANGE_REMOVED);
         m_DBHandler.deleteData(delete_json);
-        m_orderingHandler.deleteLPInOrder(lp->getLunchPointId());
+        m_orderingHandler.deleteLPInOrder(launchPointPtr->getLunchPointId());
 
-        if (isLastVisibleLp(lp)) {
-            std::string error_text;
-            LOG_INFO(MSGID_LAUNCH_POINT_ACTION, 3,
-                     PMLOGKS("status", "remove_launch_point"),
-                     PMLOGKS("last_visible_app", (lp->Id()).c_str()),
-                     PMLOGKS("status", "closed"), "");
-            LifecycleManager::getInstance().closeByAppId(lp->Id(), "", "", error_text, false, true);
+        if (isLastVisibleLp(launchPointPtr)) {
+            std::string errorText;
+            Logger::info(getClassName(), __FUNCTION__, launchPointPtr->Id(), "last visible app is closed");
+            LifecycleManager::getInstance().closeByAppId(launchPointPtr->Id(), "", "", errorText, false, true);
         }
 
-        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == lp->getLunchPointId();});
+        m_launchPointList.remove_if([=](LaunchPointPtr p) {return p->getLunchPointId() == launchPointPtr->getLunchPointId();});
     }
 }
 
@@ -650,14 +589,13 @@ void LaunchPointManager::replyLpListToSubscribers()
     m_listAppsChanges = pbnjson::Array();
 }
 
-void LaunchPointManager::replyLpChangeToSubscribers(LaunchPointPtr lp, const std::string& change, int position)
+void LaunchPointManager::replyLpChangeToSubscribers(LaunchPointPtr launchPointPtr, const std::string& change, int position)
 {
-
-    if ((LPType::DEFAULT == lp->getLPType()) && !lp->isVisible())
+    if ((LPType::DEFAULT == launchPointPtr->getLPType()) && !launchPointPtr->isVisible())
         return;
 
     // payload
-    pbnjson::JValue json = lp->toJValue();
+    pbnjson::JValue json = launchPointPtr->toJValue();
     json.put("change", change);
     if (DEFAULT_POSITION_INVALID != position && (LP_CHANGE_ADDED == change || LP_CHANGE_UPDATED == change)) {
         json.put("position", position);
@@ -669,11 +607,11 @@ void LaunchPointManager::replyLpChangeToSubscribers(LaunchPointPtr lp, const std
 /***********************************************************/
 /** common util function ***********************************/
 /***********************************************************/
-bool LaunchPointManager::isLastVisibleLp(LaunchPointPtr lp)
+bool LaunchPointManager::isLastVisibleLp(LaunchPointPtr launchPointPTr)
 {
 
     for (auto it : m_launchPointList) {
-        if ((it->Id() == lp->Id()) && (it->getLunchPointId() != lp->getLunchPointId()) && (it->isVisible()))
+        if ((it->Id() == launchPointPTr->Id()) && (it->getLunchPointId() != launchPointPTr->getLunchPointId()) && (it->isVisible()))
             return false;
     }
     return true;
@@ -705,49 +643,49 @@ std::string LaunchPointManager::generateLpId()
         gettimeofday(&tv, NULL);
         double verifier = tv.tv_usec;
 
-        std::string new_lp_id = boost::lexical_cast<std::string>(verifier);
-        if (getLpByLpId(new_lp_id) == nullptr)
-            return new_lp_id;
+        std::string new_launchPointId = boost::lexical_cast<std::string>(verifier);
+        if (getLpByLpId(new_launchPointId) == nullptr)
+            return new_launchPointId;
     }
 
     return std::string("");
 }
 
-LaunchPointPtr LaunchPointManager::getDefaultLpByAppId(const std::string& app_id)
+LaunchPointPtr LaunchPointManager::getDefaultLpByAppId(const std::string& appId)
 {
 
-    LaunchPointPtr default_lp = nullptr;
+    LaunchPointPtr defaultLaunchPointPtr = nullptr;
 
-    for (auto lp : m_launchPointList) {
-        if ((app_id == lp->Id()) && (LPType::DEFAULT == lp->getLPType())) {
-            default_lp = lp;
+    for (auto launchPoint : m_launchPointList) {
+        if ((appId == launchPoint->Id()) && (LPType::DEFAULT == launchPoint->getLPType())) {
+            defaultLaunchPointPtr = launchPoint;
             break;
         }
     }
 
-    return default_lp;
+    return defaultLaunchPointPtr;
 }
 
-LaunchPointPtr LaunchPointManager::getLpByLpId(const std::string& lp_id)
+LaunchPointPtr LaunchPointManager::getLpByLpId(const std::string& launchPointId)
 {
-    LaunchPointPtr lp_by_lp_id = nullptr;
+    LaunchPointPtr LaunchPointPtrByLaunchPointId = nullptr;
 
     for (auto lp : m_launchPointList) {
-        if (lp_id == lp->getLunchPointId()) {
-            lp_by_lp_id = lp;
+        if (launchPointId == lp->getLunchPointId()) {
+            LaunchPointPtrByLaunchPointId = lp;
             break;
         }
     }
 
-    return lp_by_lp_id;
+    return LaunchPointPtrByLaunchPointId;
 }
 
 void LaunchPointManager::convertLPsToJson(pbnjson::JValue& array)
 {
     std::vector<std::string> ordered_list = m_orderingHandler.getOrderedList();
 
-    for (auto& lp_id : ordered_list) {
-        auto it = find_if(m_launchPointList.begin(), m_launchPointList.end(), [&](LaunchPointPtr lp) {return lp->getLunchPointId() == lp_id;});
+    for (auto& launchPointId : ordered_list) {
+        auto it = find_if(m_launchPointList.begin(), m_launchPointList.end(), [&](LaunchPointPtr lp) {return lp->getLunchPointId() == launchPointId;});
 
         if ((it != m_launchPointList.end()) && (*it)->isVisible())
             array.append((*it)->toJValue());

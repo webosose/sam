@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,106 +16,20 @@
 
 #include <bus/client/SettingService.h>
 #include <bus/service/ApplicationManager.h>
+#include <bus/client/Notification.h>
 #include <lifecycle/LifecycleManager.h>
 #include <lifecycle/RunningInfoManager.h>
 #include <package/AppPackageManager.h>
 #include <setting/Settings.h>
 #include <algorithm>
 #include <sys/types.h>
-#include <util/CallChain.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
-#include <util/Utils.h>
+#include <util/JValueUtil.h>
 #include <utime.h>
-
 
 const std::string APP_CHANGE_ADDED = "added";
 const std::string APP_CHANGE_REMOVED = "removed";
 const std::string APP_CHANGE_UPDATED = "updated";
-
-namespace CallChainEventHandler {
-class CheckAppLockStatus: public LSCallItem {
-public:
-    CheckAppLockStatus(const std::string& appId) :
-            LSCallItem(ApplicationManager::getInstance().get(), "luna://com.webos.settingsservice/batch", "{}")
-    {
-        std::string query = std::string(R"({"operations":[
-          {"method":"getSystemSettings","params":{"category":"lock","key":"parentalControl"}},
-          {"method":"getSystemSettings","params":{
-            "category":"lock","key":"applockPerApp",LOG_KEY_APPID:")")
-                        + appId + std::string(R"("}}
-        ]})");
-
-        setPayload(query.c_str());
-    }
-
-protected:
-    virtual bool onReceiveCall(pbnjson::JValue jmsg)
-    {
-        bool received_valid_parental_mode_info = false;
-        bool received_valid_lock_info = false;
-        bool parental_control_mode_on = true;
-        bool app_locked = true;
-
-        if (!jmsg.hasKey("results") || !jmsg["results"].isArray()) {
-            LOG_DEBUG("result fail: %s", jmsg.stringify().c_str());
-            setError(PARENTAL_ERR_GET_SETTINGVAL, "invalid return message");
-            return false;
-        }
-
-        for (int i = 0; i < jmsg["results"].arraySize(); ++i) {
-            if (!jmsg["results"][i].hasKey("settings") || !jmsg["results"][i]["settings"].isObject())
-                continue;
-
-            if (jmsg["results"][i]["settings"].hasKey("parentalControl") && jmsg["results"][i]["settings"]["parentalControl"].isBoolean()) {
-                parental_control_mode_on = jmsg["results"][i]["settings"]["parentalControl"].asBool();
-                received_valid_parental_mode_info = true;
-            }
-
-            if (jmsg["results"][i]["settings"].hasKey("applockPerApp") && jmsg["results"][i]["settings"]["applockPerApp"].isBoolean()) {
-                app_locked = jmsg["results"][i]["settings"]["applockPerApp"].asBool();
-                received_valid_lock_info = true;
-            }
-        }
-
-        if (!received_valid_parental_mode_info || !received_valid_lock_info) {
-            LOG_DEBUG("receiving valid result fail: %s", jmsg.stringify().c_str());
-            setError(PARENTAL_ERR_GET_SETTINGVAL, "not found valid lock info");
-            return false;
-        }
-
-        if (parental_control_mode_on && app_locked)
-            return false;
-
-        return true;
-    }
-};
-
-class CheckPin: public LSCallItem {
-public:
-    CheckPin()
-        : LSCallItem(ApplicationManager::getInstance().get(), "luna://com.webos.notification/createPincodePrompt", R"({"promptType":"parental"})")
-    {
-    }
-protected:
-    virtual bool onReceiveCall(pbnjson::JValue jmsg)
-    {
-        //{"returnValue": true, "matched" : true/false }
-        bool matched = false;
-        if (!jmsg.hasKey("matched") ||
-            !jmsg["matched"].isBoolean() ||
-            jmsg["matched"].asBool(matched) != CONV_OK ||
-            matched == false) {
-            LOG_DEBUG("Pincode is not matched: %s", jmsg.stringify().c_str());
-            setError(PARENTAL_ERR_UNMATCH_PINCODE, "pincode is not matched");
-            return false;
-        }
-
-        return true;
-    }
-};
-}
 
 AppPackageManager::AppPackageManager() :
         m_isFirstFullScanStarted(false)
@@ -159,10 +73,10 @@ void AppPackageManager::startPostInit()
 void AppPackageManager::scanInitialApps()
 {
     auto boot_time_apps = SettingsImpl::getInstance().getBootTimeApps();
-    for (auto& app_id : boot_time_apps) {
-        AppPackagePtr app_desc = m_appScanner.scanForOneApp(app_id);
+    for (auto& appId : boot_time_apps) {
+        AppPackagePtr app_desc = m_appScanner.scanForOneApp(appId);
         if (app_desc) {
-            m_appDescMaps[app_id] = app_desc;
+            m_appDescMaps[appId] = app_desc;
         }
     }
 }
@@ -170,8 +84,7 @@ void AppPackageManager::scanInitialApps()
 void AppPackageManager::scan()
 {
     if (!m_isFirstFullScanStarted) {
-        LOG_INFO(MSGID_START_SCAN, 1,
-                 PMLOGKS("STATUS", "FIRST_FULL_SCAN"), "");
+        Logger::info(getClassName(), __FUNCTION__, "first full scan");
         m_isFirstFullScanStarted = true;
     }
     m_appScanner.run(ScanMode::FULL_SCAN);
@@ -189,8 +102,7 @@ void AppPackageManager::rescan(const std::vector<std::string>& reason)
     if (!m_isFirstFullScanStarted)
         return;
 
-    LOG_INFO(MSGID_START_SCAN, 1,
-             PMLOGKS("STATUS", "RESCAN"), "");
+    Logger::info(getClassName(), __FUNCTION__, "rescan");
     scan();
 }
 
@@ -229,9 +141,9 @@ void AppPackageManager::onAppInstalled(const std::string& appId)
     }
 }
 
-void AppPackageManager::onAppUninstalled(const std::string& app_id)
+void AppPackageManager::onAppUninstalled(const std::string& appId)
 {
-    removeApp(app_id, true, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    removeApp(appId, true, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
 }
 
 const AppDescMaps& AppPackageManager::allApps()
@@ -239,21 +151,21 @@ const AppDescMaps& AppPackageManager::allApps()
     return m_appDescMaps;
 }
 
-AppPackagePtr AppPackageManager::getAppById(const std::string& app_id)
+AppPackagePtr AppPackageManager::getAppById(const std::string& appId)
 {
-    if (m_appDescMaps.count(app_id) == 0)
+    if (m_appDescMaps.count(appId) == 0)
         return NULL;
-    return m_appDescMaps[app_id];
+    return m_appDescMaps[appId];
 }
 
-void AppPackageManager::replaceAppDesc(const std::string& app_id, AppPackagePtr new_desc)
+void AppPackageManager::replaceAppDesc(const std::string& appId, AppPackagePtr new_desc)
 {
-    if (m_appDescMaps.count(app_id) == 0) {
-        m_appDescMaps[app_id] = new_desc;
+    if (m_appDescMaps.count(appId) == 0) {
+        m_appDescMaps[appId] = new_desc;
         return;
     }
 
-    m_appDescMaps[app_id] = new_desc;
+    m_appDescMaps[appId] = new_desc;
 }
 
 void AppPackageManager::addApp(const std::string& appId, AppPackagePtr newAppdescPtr, AppStatusChangeEvent event)
@@ -288,11 +200,7 @@ void AppPackageManager::removeApp(const std::string& appId, bool rescan, AppStat
 
     appPackagePtr->lock();
     if (appPackagePtr->isBuiltinBasedApp() && AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled == event) {
-        LOG_INFO(MSGID_UNINSTALL_APP, 3,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKS("app_type", "system"),
-                 PMLOGKS("location", "rw"),
-                 "remove system-app in read-write area");
+        Logger::info(getClassName(), __FUNCTION__, appId, "remove system-app in read-write area");
         SettingsImpl::getInstance().setSystemAppAsRemoved(appId);
     }
 
@@ -324,18 +232,14 @@ void AppPackageManager::removeApp(const std::string& appId, bool rescan, AppStat
         publishOneAppChange(rescanned_desc, APP_CHANGE_UPDATED, event);
     }
 
-    LOG_INFO(MSGID_UNINSTALL_APP, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("status", "clear_memory"), "event: %d", (int ) event);
+    Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("clear_memory: event: %d", event));
 }
 
 void AppPackageManager::reloadApp(const std::string& appId)
 {
     AppPackagePtr oldAppDescPtr = getAppById(appId);
     if (!oldAppDescPtr) {
-        LOG_INFO(MSGID_PACKAGE_STATUS, 2,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "reload"), "no current description, just skip");
+        Logger::info(getClassName(), __FUNCTION__, appId, "reload: no current description, just skip");
         return;
     }
 
@@ -345,24 +249,17 @@ void AppPackageManager::reloadApp(const std::string& appId)
         publishOneAppChange(oldAppDescPtr, APP_CHANGE_REMOVED, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
         m_appDescMaps.erase(appId);
         RunningInfoManager::getInstance().removeRunningInfo(appId);
-        LOG_INFO(MSGID_PACKAGE_STATUS, 2,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "reload"), "no app package left, just remove");
+        Logger::info(getClassName(), __FUNCTION__, appId, "reload: no app package left, just remove");
         return;
     }
 
     if (AppPackage::isSame(oldAppDescPtr, newAppDescPtr)) {
-        LOG_INFO(MSGID_PACKAGE_STATUS, 2,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "reload"),
-                 "no change, just skip");
+        Logger::info(getClassName(), __FUNCTION__, appId, "reload: no change, just skip");
         return;
     } else {
         replaceAppDesc(appId, newAppDescPtr);
         publishOneAppChange(newAppDescPtr, APP_CHANGE_UPDATED, AppStatusChangeEvent::UPDATE_COMPLETED);
-        LOG_INFO(MSGID_PACKAGE_STATUS, 2,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "reload"), "different package detected, update info now");
+        Logger::info(getClassName(), __FUNCTION__, appId, "reload: different package detected, update info now");
     }
 }
 
@@ -374,10 +271,7 @@ bool AppPackageManager::lockAppForUpdate(const std::string& appId, bool lock, st
         return false;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH_LOCK, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("lock_status", (lock ? "locked" : "unlocked")), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("lock(%B)", lock));
     desc->lock();
     return true;
 }
@@ -395,16 +289,14 @@ void AppPackageManager::onAppScanFinished(ScanMode mode, const AppDescMaps& scan
         // check changes after rescan
         for (const auto& app : scanned_apps) {
             if (m_appDescMaps.count(app.first) == 0) {
-                LOG_INFO(MSGID_PACKAGE_STATUS, 1,
-                         PMLOGKS("added_after_full_scan", app.first.c_str()), "");
+                Logger::info(getClassName(), __FUNCTION__, app.first, "added_after_full_scan");
                 EventAppStatusChanged(AppStatusChangeEvent::AppStatusChangeEvent_Installed, app.second);
             }
         }
         std::vector<std::string> removed_apps;
         for (const auto& app : m_appDescMaps) {
             if (scanned_apps.count(app.first) == 0) {
-                LOG_INFO(MSGID_PACKAGE_STATUS, 1,
-                         PMLOGKS("removed_after_full_scan", app.first.c_str()), "");
+                Logger::info(getClassName(), __FUNCTION__, app.first, "removed_after_full_scan");
                 removed_apps.push_back(app.first);
                 EventAppStatusChanged(AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled, app.second);
             }
@@ -421,119 +313,151 @@ void AppPackageManager::onAppScanFinished(ScanMode mode, const AppDescMaps& scan
     } else if (ScanMode::PARTIAL_SCAN == mode) {
 
         for (auto& it : scanned_apps) {
-            const std::string app_id = it.first;
+            const std::string appId = it.first;
             AppPackagePtr new_desc = it.second;
-            addApp(app_id, new_desc, AppStatusChangeEvent::STORAGE_ATTACHED);
+            addApp(appId, new_desc, AppStatusChangeEvent::STORAGE_ATTACHED);
         }
     }
 }
 
-void AppPackageManager::onReadyToUninstallSystemApp(pbnjson::JValue result, ErrorInfo err_info, void* user_data)
+bool AppPackageManager::onBatch(LSHandle* sh, LSMessage* message, void* context)
 {
-    std::string *ptrAppId = static_cast<std::string*>(user_data);
-    std::string app_id = *ptrAppId;
-    delete ptrAppId;
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    string errorText;
 
-    if (app_id.empty())
-        return;
+    bool isParentalControlValid = false;
+    bool parentalControl = false;
+    bool isApplockPerAppValid = false;
+    bool applockPerApp = false;
 
-    if (!result.hasKey("returnValue")) {
-        LOG_ERROR(MSGID_CALLCHAIN_ERR, 1,
-                  PMLOGKS(LOG_KEY_REASON, "key_does_not_exist"), "");
-        return;
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!responsePayload.hasKey("results") || !responsePayload["results"].isArray()) {
+        Logger::debug(getInstance().getClassName(), __FUNCTION__, Logger::format("result fail: %s", responsePayload.stringify().c_str()));
+        goto Done;
     }
 
-    if (!result["returnValue"].asBool()) {
-        LOG_INFO(MSGID_UNINSTALL_APP, 3,
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKS("app_type", "system"),
-                 PMLOGKS("status", "invalid_pincode"), "uninstallation is canceled");
-        return;
+    for (int i = 0; i < responsePayload["results"].arraySize(); ++i) {
+        if (!responsePayload["results"][i].hasKey("settings") || !responsePayload["results"][i]["settings"].isObject())
+            continue;
+
+        if (responsePayload["results"][i]["settings"].hasKey("parentalControl") && responsePayload["results"][i]["settings"]["parentalControl"].isBoolean()) {
+            parentalControl = responsePayload["results"][i]["settings"]["parentalControl"].asBool();
+            isParentalControlValid = true;
+        }
+
+        if (responsePayload["results"][i]["settings"].hasKey("applockPerApp") && responsePayload["results"][i]["settings"]["applockPerApp"].isBoolean()) {
+            applockPerApp = responsePayload["results"][i]["settings"]["applockPerApp"].asBool();
+            isApplockPerAppValid = true;
+        }
     }
 
-    removeApp(app_id, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    if (!isParentalControlValid || !isApplockPerAppValid) {
+        Logger::debug("CheckAppLockStatus", __FUNCTION__, Logger::format("receiving valid result fail: %s", responsePayload.stringify().c_str()));
+        goto Done;
+    }
+
+    if (parentalControl && applockPerApp) {
+        Notification::getInstance().createPincodePrompt(onCreatePincodePrompt);
+        return true;
+    }
+
+Done:
+    // TODO: appId should be passed
+    // AppPackageManager::getInstance().removeApp(appId, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    return true;
 }
 
-void AppPackageManager::uninstallApp(const std::string& id, std::string& errorReason)
+bool AppPackageManager::onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void* context)
 {
-    AppPackagePtr appDesc = getAppById(id);
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    bool matched = false;
+
+    if (!JValueUtil::getValue(responsePayload, "returnValue", returnValue) || !JValueUtil::getValue(responsePayload, "matched", matched)) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get required params");
+        return true;
+    }
+
+
+    if (matched == false) {
+        Logger::info(AppPackageManager::getInstance().getClassName(), __FUNCTION__, "uninstallation is canceled because of invalid pincode");
+    } else {
+        // TODO: appId should be passed
+        // AppPackageManager::getInstance().removeApp(appId, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    }
+    return true;
+}
+
+void AppPackageManager::uninstallApp(const std::string& appId, std::string& errorText)
+{
+    AppPackagePtr appDesc = getAppById(appId);
     if (!appDesc)
         return;
 
     if (!appDesc->isRemovable()) {
-        errorReason = id + " is not removable";
+        errorText = appId + " is not removable";
         return;
     }
 
-    LOG_INFO(MSGID_UNINSTALL_APP, 1,
-             PMLOGKS(LOG_KEY_APPID, id.c_str()),
-             "start_uninstall_app");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, "start_uninstall_app");
     if (AppTypeByDir::AppTypeByDir_System_BuiltIn == appDesc->getTypeByDir()) {
-        CallChain& callchain = CallChain::acquire(
-                boost::bind(&AppPackageManager::onReadyToUninstallSystemApp, this, _1, _2, _3),
-        NULL, new std::string(appDesc->getAppId()));
 
-        if (appDesc->isVisible()) {
-            LOG_DEBUG("%s : check parental lock to remove %s app", __FUNCTION__, id.c_str());
-            auto settingValPtr = std::make_shared<CallChainEventHandler::CheckAppLockStatus>(appDesc->getAppId());
-            auto pinPtr = std::make_shared<CallChainEventHandler::CheckPin>();
-            callchain.add(settingValPtr).addIf(settingValPtr, false, pinPtr);
+        if (!appDesc->isVisible()) {
+            removeApp(appId, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+        } else {
+            Logger::debug(getClassName(), __FUNCTION__, appId, "check parental lock to remove app");
+            Call call = SettingService::getInstance().batch(onBatch, appId);
         }
-        callchain.run();
     } else {
-        pbnjson::JValue payload = pbnjson::Object();
-        payload.put("id", id);
-        payload.put("subscribe", false);
+        pbnjson::JValue requestPayload = pbnjson::Object();
+        requestPayload.put("id", appId);
+        requestPayload.put("subscribe", false);
 
         LSErrorSafe lserror;
 
         if (!LSCallOneReply(ApplicationManager::getInstance().get(),
                             "luna://com.webos.appInstallService/remove",
-                            payload.stringify().c_str(),
-                            cbAppUninstalled,
+                            requestPayload.stringify().c_str(),
+                            onAppUninstalled,
                             NULL,
                             NULL,
                             &lserror)) {
-            errorReason = lserror.message;
+            errorText = lserror.message;
             return;
         }
 
-        LOG_INFO(MSGID_UNINSTALL_APP, 1,
-                 PMLOGKS(LOG_KEY_APPID, id.c_str()),
-                 "requested_to_appinstalld");
+        Logger::info(getClassName(), __FUNCTION__, appId, "requested_to_appinstalld");
     }
 }
 
-bool AppPackageManager::cbAppUninstalled(LSHandle* lshandle, LSMessage *message, void* data)
+bool AppPackageManager::onAppUninstalled(LSHandle* sh, LSMessage *message, void* context)
 {
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
 
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(message), std::string(""));
-
-    if (jmsg.isNull()) {
-        LOG_ERROR(MSGID_UNINSTALL_APP_ERR, 1,
-                  PMLOGKS("status", "received_return_false"),
-                  "null jmsg");
+    if (responsePayload.isNull()) {
+        Logger::error(AppPackageManager::getInstance().getClassName(), __FUNCTION__, "Null response");
     }
 
-    LOG_INFO(MSGID_UNINSTALL_APP, 1,
-             PMLOGKS("status", "recieved_result"), "%s", jmsg.stringify().c_str());
+    Logger::info(AppPackageManager::getInstance().getClassName(), __FUNCTION__, responsePayload.stringify());
 
     return true;
 }
 
-void AppPackageManager::onPackageStatusChanged(const std::string& app_id, const PackageStatus& status)
+void AppPackageManager::onPackageStatusChanged(const std::string& appId, const PackageStatus& status)
 {
     if (PackageStatus::Installed == status)
-        onAppInstalled(app_id);
+        onAppInstalled(appId);
     else if (PackageStatus::InstallFailed == status)
-        reloadApp(app_id);
+        reloadApp(appId);
     else if (PackageStatus::Uninstalled == status)
-        onAppUninstalled(app_id);
+        onAppUninstalled(appId);
     else if (PackageStatus::UninstallFailed == status)
-        reloadApp(app_id);
+        reloadApp(appId);
     else if (PackageStatus::ResetToDefault == status)
-        reloadApp(app_id);
+        reloadApp(appId);
 }
 
 std::string AppPackageManager::toString(const AppStatusChangeEvent& event)

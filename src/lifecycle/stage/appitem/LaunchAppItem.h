@@ -82,7 +82,7 @@ typedef std::deque<StageItem> StageItemList;
 
 class LaunchAppItem : public AppItem {
 public:
-    LaunchAppItem(const std::string& appId, const std::string& display, const pbnjson::JValue& params, LSMessage* lsmsg);
+    LaunchAppItem(const std::string& appId, const std::string& display, const pbnjson::JValue& params, LSMessage* message);
     virtual ~LaunchAppItem();
 
     const std::string& requestedAppId() const
@@ -117,9 +117,9 @@ public:
     {
         return m_params;
     }
-    LSMessage* lsmsg() const
+    LSMessage* getRequest() const
     {
-        return m_lsmsg;
+        return m_request;
     }
     LSMessageToken returnToken() const
     {
@@ -196,7 +196,7 @@ private:
     AppLaunchingStage m_stage;
     int m_subStage;
     pbnjson::JValue m_params;
-    LSMessage* m_lsmsg;
+    LSMessage* m_request;
     bool m_showSplash;
     bool m_showSpinner;
     std::string m_preload;

@@ -24,7 +24,6 @@
 #include <bus/client/Configd.h>
 #include <prerequisite/PrerequisiteItem.h>
 #include "setting/Settings.h"
-#include "util/Logging.h"
 
 class ConfigdPrerequisiteItem: public PrerequisiteItem {
 public:
@@ -48,40 +47,34 @@ public:
         setStatus(PrerequisiteItemStatus::DOING);
     }
 
-    void onResponse(const pbnjson::JValue& jmsg)
+    void onResponse(const pbnjson::JValue& responsePayload)
     {
-        LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
-                 PMLOGKS("status", "received_configd_msg"),
-                 "%s", jmsg.duplicate().stringify().c_str());
+        Logger::info("ConfigdPrerequisiteItem", __FUNCTION__, "received_configd_msg", responsePayload.duplicate().stringify());
 
-        if (!jmsg.hasKey("configs") || !jmsg["configs"].isObject()) {
-            LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                        PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        if (!responsePayload.hasKey("configs") || !responsePayload["configs"].isObject()) {
+            Logger::warning("ConfigdPrerequisiteItem", __FUNCTION__, "Internal Error");
         }
 
-        if (jmsg["configs"].hasKey(CONFIGD_KEY_FALLBACK_PRECEDENCE) &&
-            jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE].isArray())
-            SettingsImpl::getInstance().setAssetFallbackKeys(jmsg["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE]);
+        if (responsePayload["configs"].hasKey(CONFIGD_KEY_FALLBACK_PRECEDENCE) &&
+            responsePayload["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE].isArray())
+            SettingsImpl::getInstance().setAssetFallbackKeys(responsePayload["configs"][CONFIGD_KEY_FALLBACK_PRECEDENCE]);
 
-        if (jmsg["configs"].hasKey(CONFIGD_KEY_KEEPALIVE_APPS) &&
-            jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS].isArray())
-            SettingsImpl::getInstance().setKeepAliveApps(jmsg["configs"][CONFIGD_KEY_KEEPALIVE_APPS]);
+        if (responsePayload["configs"].hasKey(CONFIGD_KEY_KEEPALIVE_APPS) &&
+            responsePayload["configs"][CONFIGD_KEY_KEEPALIVE_APPS].isArray())
+            SettingsImpl::getInstance().setKeepAliveApps(responsePayload["configs"][CONFIGD_KEY_KEEPALIVE_APPS]);
 
-        if (jmsg["configs"].hasKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER) &&
-            jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].isBoolean())
-            SettingsImpl::getInstance().setSupportQMLBooster(jmsg["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
+        if (responsePayload["configs"].hasKey(CONFIGD_KEY_SUPPORT_QML_BOOSTER) &&
+            responsePayload["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].isBoolean())
+            SettingsImpl::getInstance().setSupportQMLBooster(responsePayload["configs"][CONFIGD_KEY_SUPPORT_QML_BOOSTER].asBool());
 
-        if (jmsg["configs"].hasKey(CONFIGD_KEY_LIFECYCLE_REASON) &&
-            jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON].isObject())
-            SettingsImpl::getInstance().setLifeCycleReason(jmsg["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
+        if (responsePayload["configs"].hasKey(CONFIGD_KEY_LIFECYCLE_REASON) &&
+            responsePayload["configs"][CONFIGD_KEY_LIFECYCLE_REASON].isObject())
+            SettingsImpl::getInstance().setLifeCycleReason(responsePayload["configs"][CONFIGD_KEY_LIFECYCLE_REASON]);
 
-        if (jmsg.hasKey("missingConfigs") &&
-            jmsg["missingConfigs"].isArray() &&
-            jmsg["missingConfigs"].arraySize() > 0) {
-            LOG_WARNING(MSGID_INTERNAL_ERROR, 2,
-                        PMLOGKS("status", "missing_core_config_info"),
-                        PMLOGJSON("missed_infos", jmsg["missingConfigs"].stringify().c_str()), "");
+        if (responsePayload.hasKey("missingConfigs") &&
+            responsePayload["missingConfigs"].isArray() &&
+            responsePayload["missingConfigs"].arraySize() > 0) {
+            Logger::warning("ConfigdPrerequisiteItem", __FUNCTION__, "missing_core_config_info", responsePayload["missingConfigs"].stringify());
         }
 
         m_eventConnection.disconnect();

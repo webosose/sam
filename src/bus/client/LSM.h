@@ -19,40 +19,46 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+#include "util/Logger.h"
 
 using namespace LS;
 using namespace pbnjson;
 
 class LSM : public ISingleton<LSM>,
-            public AbsLunaClient {
+            public AbsLunaClient,
+            public IClassName {
 friend class ISingleton<LSM>;
 public:
-    LSM();
     virtual ~LSM();
 
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventForegroundAppInfoChanged;
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventRecentsAppListChanged;
 private:
-    static bool categoryWatcher(LSHandle* handle, LSMessage* lsmsg, void* userData);
-    static bool onForegroundInfo(LSHandle* handle, LSMessage* lsmsg, void* userData);
-    static bool onRecentList(LSHandle* handle, LSMessage* lsmsg, void* userData);
+    static const string NAME;
+    static const string NAME_GET_FOREGROUND_APP_INFO;
+    static const string NAME_GET_RECENTS_APP_LIST;
 
-    void subscribeForegroundInfo();
-    void subscribeRecentList();
+    static bool onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context);
+    static bool onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context);
+    static bool onGetRecentsAppList(LSHandle* sh, LSMessage* message, void* context);
 
-public:
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventForegroundInfoChanged;
-    boost::signals2::signal<void(const pbnjson::JValue&)> signal_recent_list;
+    LSM();
 
-private:
-    LSMessageToken m_token_category_watcher;
-    LSMessageToken m_token_foreground_info;
-    LSMessageToken m_token_recent_list;
+    void subscribeGetForegroundAppInfo();
+    void subscribeGetRecentsAppList();
+
+    Call m_registerServiceCategoryCall;
+    Call m_getRecentsAppListCall;
+    Call m_getForegroundAppInfoCall;
+
 };
 
 #endif

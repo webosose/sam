@@ -19,8 +19,10 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
+#include <util/Logger.h>
 #include <pbnjson.hpp>
 
 using namespace LS;
@@ -37,7 +39,8 @@ enum class PackageStatus : int8_t {
 };
 
 class AppInstallService : public ISingleton<AppInstallService>,
-                          public AbsLunaClient {
+                          public AbsLunaClient,
+                          public IClassName {
 friend class ISingleton<AppInstallService>;
 public:
     virtual ~AppInstallService();
@@ -49,7 +52,7 @@ public:
     boost::signals2::signal<void(const std::string&, const PackageStatus&)> EventStatusChanged;
 
 private:
-    static bool onStatus(LSHandle* handle, LSMessage* lsmsg, void* userData);
+    static bool onStatus(LSHandle* sh, LSMessage* message, void* context);
 
     AppInstallService();
 

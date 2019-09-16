@@ -1,0 +1,95 @@
+// Copyright (c) 2019 LG Electronics, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+#include "File.h"
+#include <unistd.h>
+
+void File::set_slash_to_base_path(std::string& path)
+{
+    if (!path.empty() && path[path.length() - 1] == '/')
+        return;
+
+    path.append("/");
+}
+
+std::string File::readFile(const std::string& file_name)
+{
+    std::ifstream file(file_name.c_str(), std::ifstream::in);
+    std::string file_contents;
+
+    if (file.is_open() && file.good()) {
+        stringstream buf;
+        buf << file.rdbuf();
+        file_contents = buf.str();
+    }
+
+    return file_contents;
+}
+
+bool File::writeFile(const std::string &path, const std::string& buffer)
+{
+    std::ofstream file(path.c_str());
+    if (file.is_open()) {
+        file << buffer;
+        file.close();
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool File::concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr)
+{
+    if (originPath.empty() || addingStr.empty())
+        return false;
+
+    returnPath = "";
+
+    std::string dir_path, filename, name_only, ext;
+    size_t pos_dir = originPath.find_last_of("/");
+
+    if (std::string::npos == pos_dir) {
+        filename = originPath;
+    } else {
+        pos_dir = pos_dir + 1;
+        dir_path = originPath.substr(0, pos_dir);
+        filename = originPath.substr(pos_dir);
+    }
+
+    size_t pos_ext = filename.find_last_of(".");
+
+    if (std::string::npos == pos_ext)
+        return false;
+
+    name_only = filename.substr(0, pos_ext);
+    ext = filename.substr(pos_ext);
+
+    if (ext.length() < 2)
+        return false;
+
+    returnPath = dir_path + name_only + addingStr + ext;
+
+    return true;
+}
+
+File::File()
+{
+}
+
+File::~File()
+{
+}
+

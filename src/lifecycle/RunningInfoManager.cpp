@@ -16,7 +16,6 @@
 
 #include <launchpoint/LaunchPointManager.h>
 #include <lifecycle/RunningInfoManager.h>
-#include <util/Logging.h>
 #include <algorithm>
 
 std::string RunningInfoManager::toString(const LifeStatus& status)
@@ -115,16 +114,13 @@ RunningInfoPtr RunningInfoManager::addRunningInfo(const std::string& appId, cons
 
     RunningInfoPtr runningInfoPtr = std::make_shared<RunningInfo>(appId);
     if (runningInfoPtr == nullptr) {
-        LOG_ERROR(MSGID_APPINFO_ERR, 1,
-                  PMLOGKS(LOG_KEY_REASON, "failed_create_new_app_info"), "");
+        Logger::error(getClassName(), __FUNCTION__, "failed_create_new_app_info");
         return nullptr;
     }
 
     runningInfoPtr->setDisplay(display);
     m_runningList[key] = runningInfoPtr;
-    LOG_INFO(MSGID_APPINFO, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("status", "item_added"), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, "item_added");
     return runningInfoPtr;
 }
 
@@ -133,17 +129,12 @@ bool RunningInfoManager::removeRunningInfo(const std::string& appId, const std::
     string key = getKey(appId, display);
     auto it = m_runningList.find(key);
     if (it == m_runningList.end()) {
-        LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2,
-                  PMLOGKS("status", "failed_to_remove"),
-                  PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                  "not found appId in running_list");
+        Logger::error(getClassName(), __FUNCTION__, appId, "failed_to_remove: not found appId in running_list");
         return false;
     }
 
     m_runningList.erase(it);
-    LOG_INFO(MSGID_RUNNING_LIST, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS(LOG_KEY_ACTION, "removed"), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, "removed");
     return true;
 }
 
@@ -160,10 +151,10 @@ void RunningInfoManager::getForegroundInfoById(const std::string& appId, pbnjson
         return;
 
     for (auto item : m_foregroundInfo.items()) {
-        if (!item.hasKey(LOG_KEY_APPID) || !item[LOG_KEY_APPID].isString())
+        if (!item.hasKey(Logger::LOG_KEY_APPID) || !item[Logger::LOG_KEY_APPID].isString())
             continue;
 
-        if (item[LOG_KEY_APPID].asString() == appId) {
+        if (item[Logger::LOG_KEY_APPID].asString() == appId) {
             info = item.duplicate();
             return;
         }
@@ -186,10 +177,7 @@ void RunningInfoManager::getRunningList(pbnjson::JValue& runningList, bool devmo
 
         AppPackagePtr appPackagePtr = AppPackageManager::getInstance().getAppById(runningInfo.second->getAppId());
         if (appPackagePtr == nullptr) {
-            LOG_ERROR(MSGID_RUNNING_LIST_ERR, 2,
-                      PMLOGKS("status", "failed_to_remove"),
-                      PMLOGKS(LOG_KEY_APPID, runningInfo.second->getAppId().c_str()),
-                      "not found appId in running_list");
+            Logger::error(getClassName(), __FUNCTION__, runningInfo.second->getAppId(), "failed_to_remove: not found appId in running_list");
             continue;
         }
 

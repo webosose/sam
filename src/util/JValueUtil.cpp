@@ -12,18 +12,21 @@
  */
 
 #include "util/JValueUtil.h"
+#include "setting/SettingsConf.h"
 
-bool JValueUtil::hasKey(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey)
+map<string, JSchema> JValueUtil::s_schemas;
+
+void JValueUtil::addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str)
 {
-    if (!json.isObject())
-        return false;
-    if (!json.hasKey(firstKey))
-        return false;
-    if (!secondKey.empty() && (!json[firstKey].isObject() || !json[firstKey].hasKey(secondKey)))
-        return false;
-    if (!thirdKey.empty() && (!json[firstKey][secondKey].isObject() || !json[firstKey][secondKey].hasKey(thirdKey)))
-        return false;
-    return true;
+    if (arr.isNull() || !arr.isArray() || str.empty())
+        return;
+
+    for (int i = 0; i < arr.arraySize(); ++i) {
+        if (arr[i].isString() && 0 == str.compare(arr[i].asString()))
+            return;
+    }
+
+    arr.append(str);
 }
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value)
@@ -142,5 +145,36 @@ bool JValueUtil::getValue(const JValue& json, const string& key, bool& value)
         value = false;
         return false;
     }
+    return true;
+}
+
+JSchema JValueUtil::getSchema(string name)
+{
+    if (name.empty())
+        return JSchema::AllSchema();
+
+    auto it = s_schemas.find(name);
+    if (it != s_schemas.end())
+        return it->second;
+
+    std::string path = kSchemaPath + name + ".schema";
+    pbnjson::JSchema schema = JSchema::fromFile(path.c_str());
+    if (!schema.isInitialized())
+        return JSchema::AllSchema();
+
+    s_schemas.insert(std::pair<std::string, pbnjson::JSchema>(name, schema));
+    return schema;
+}
+
+bool JValueUtil::hasKey(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey)
+{
+    if (!json.isObject())
+        return false;
+    if (!json.hasKey(firstKey))
+        return false;
+    if (!secondKey.empty() && (!json[firstKey].isObject() || !json[firstKey].hasKey(secondKey)))
+        return false;
+    if (!thirdKey.empty() && (!json[firstKey][secondKey].isObject() || !json[firstKey][secondKey].hasKey(thirdKey)))
+        return false;
     return true;
 }

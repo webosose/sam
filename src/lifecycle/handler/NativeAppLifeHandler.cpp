@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,10 @@
 #include <package/AppPackageManager.h>
 #include "native_interface/NativeAppLifeCycleInterfaceFactory.h"
 #include <setting/Settings.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
-#include <util/Utils.h>
-
-static NativeAppLifeHandler* g_this = NULL;
 
 NativeAppLifeHandler::NativeAppLifeHandler()
 {
-    g_this = this;
 }
 
 NativeAppLifeHandler::~NativeAppLifeHandler()
@@ -44,10 +38,7 @@ NativeClientInfoPtr NativeAppLifeHandler::makeNewClientInfo(const std::string& a
 {
     AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(appId);
     if (appDescPtr == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "not_existing_app"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, appId, "not_existing_app");
         return nullptr;
     }
 
@@ -90,16 +81,16 @@ NativeClientInfoPtr NativeAppLifeHandler::getNativeClientInfoByPid(const std::st
     return (*it);
 }
 
-NativeClientInfoPtr NativeAppLifeHandler::getNativeClientInfoOrMakeNew(const std::string& app_id)
+NativeClientInfoPtr NativeAppLifeHandler::getNativeClientInfoOrMakeNew(const std::string& appId)
 {
-    return getNativeClientInfo(app_id, true);
+    return getNativeClientInfo(appId, true);
 }
 
-void NativeAppLifeHandler::removeNativeClientInfo(const std::string& app_id)
+void NativeAppLifeHandler::removeNativeClientInfo(const std::string& appId)
 {
 
-    auto it = std::find_if(m_activeClients.begin(), m_activeClients.end(), [&app_id](NativeClientInfoPtr client) {
-        return app_id == client->getAppId();
+    auto it = std::find_if(m_activeClients.begin(), m_activeClients.end(), [&appId](NativeClientInfoPtr client) {
+        return appId == client->getAppId();
     });
     if (it != m_activeClients.end()) {
         m_activeClients.erase(it);
@@ -108,12 +99,9 @@ void NativeAppLifeHandler::removeNativeClientInfo(const std::string& app_id)
 
 void NativeAppLifeHandler::printNativeClients()
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 1,
-             PMLOGKFV("native_app_clients_total", "%d", (int)m_activeClients.size()), "");
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("native_app_clients_total(%d)", m_activeClients.size()));
     for (auto client : m_activeClients) {
-        LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-                 PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-                 PMLOGKS("pid", client->getPid().c_str()), "current_client");
+        Logger::info(getClassName(), __FUNCTION__, client->getAppId(), Logger::format("pid(%d)", client->getPid().c_str()));
     }
 }
 
@@ -122,11 +110,7 @@ void NativeAppLifeHandler::launch(LaunchAppItemPtr item)
     NativeClientInfoPtr client_info = getNativeClientInfoOrMakeNew(item->getAppId());
 
     if (client_info == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 4,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "no_client"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "no_client");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         EventLaunchingDone(item->getUid());
         return;
@@ -135,61 +119,49 @@ void NativeAppLifeHandler::launch(LaunchAppItemPtr item)
     client_info->getLifeCycleHandler()->launch(client_info, item);
 }
 
-void NativeAppLifeHandler::close(CloseAppItemPtr item, std::string& err_text)
+void NativeAppLifeHandler::close(CloseAppItemPtr item, std::string& errorText)
 {
     NativeClientInfoPtr client_info = getNativeClientInfo(item->getAppId());
 
     if (client_info == nullptr) {
-        LOG_INFO(MSGID_APPCLOSE_ERR, 4,
-                 PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                 PMLOGKS(LOG_KEY_REASON, "no_client"),
-                 PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                 PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
-        err_text = "native app is not running";
+        Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "no_client");
+        errorText = "native app is not running";
         return;
     }
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(item->getAppId());
     if (RuntimeStatus::STOP == runningInfoPtr->getRuntimeStatus()) {
-        LOG_INFO(MSGID_APPCLOSE_ERR, 1,
-                 PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                 "native app is not running");
-        err_text = "native app is not running";
+        Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "native app is not running");
+        errorText = "native app is not running";
         return;
     }
 
-    client_info->getLifeCycleHandler()->close(client_info, item, err_text);
+    client_info->getLifeCycleHandler()->close(client_info, item, errorText);
 }
 
-void NativeAppLifeHandler::pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
+void NativeAppLifeHandler::pause(const std::string& appId, const pbnjson::JValue& params, std::string& errorText, bool send_life_event)
 {
-    NativeClientInfoPtr client_info = getNativeClientInfo(app_id);
+    NativeClientInfoPtr client_info = getNativeClientInfo(appId);
 
     if (client_info == nullptr) {
-        LOG_INFO(MSGID_APPPAUSE_ERR, 4,
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKS(LOG_KEY_REASON, "no_client"),
-                 PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                 PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
-        err_text = "no_handling_info";
-        return;
-    }
-
-    client_info->getLifeCycleHandler()->pause(client_info, params, err_text, send_life_event);
-}
-
-void NativeAppLifeHandler::registerApp(const std::string& appId, LSMessage* lsmsg, std::string& errorText)
-{
-    NativeClientInfoPtr clientInfo = getNativeClientInfo(appId);
-
-    if (clientInfo == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "no_handling_info"), "%s", __FUNCTION__);
+        Logger::info(getClassName(), __FUNCTION__, appId, "no_client");
         errorText = "no_handling_info";
         return;
     }
 
-    clientInfo->Register(lsmsg);
+    client_info->getLifeCycleHandler()->pause(client_info, params, errorText, send_life_event);
+}
+
+void NativeAppLifeHandler::registerApp(const std::string& appId, LSMessage* message, std::string& errorText)
+{
+    NativeClientInfoPtr clientInfo = getNativeClientInfo(appId);
+
+    if (clientInfo == nullptr) {
+        Logger::info(getClassName(), __FUNCTION__, appId, "no_handling_info");
+        errorText = "no_handling_info";
+        return;
+    }
+
+    clientInfo->Register(message);
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("returnValue", true);
@@ -200,14 +172,10 @@ void NativeAppLifeHandler::registerApp(const std::string& appId, LSMessage* lsms
         payload.put("message", "registered");
 
     if (clientInfo->sendEvent(payload) == false) {
-        LOG_WARNING(MSGID_APPLAUNCH_ERR, 1,
-                    PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                    "failed_to_send_registered_event");
+        Logger::warning(getClassName(), __FUNCTION__, appId, "failed_to_send_registered_event");
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("status", "connected"), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, "connected");
 
     // update life status
     EventAppLifeStatusChanged(appId, "", RuntimeStatus::REGISTERED);
@@ -220,20 +188,20 @@ void NativeAppLifeHandler::addLaunchingItemIntoPendingQ(LaunchAppItemPtr item)
     m_launchPendingQueue.push_back(item);
 }
 
-LaunchAppItemPtr NativeAppLifeHandler::getLaunchPendingItem(const std::string& app_id)
+LaunchAppItemPtr NativeAppLifeHandler::getLaunchPendingItem(const std::string& appId)
 {
-    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&app_id](LaunchAppItemPtr item) {
-        return (item->getAppId() == app_id);
+    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&appId](LaunchAppItemPtr item) {
+        return (item->getAppId() == appId);
     });
     if (it == m_launchPendingQueue.end())
         return nullptr;
     return (*it);
 }
 
-void NativeAppLifeHandler::removeLaunchPendingItem(const std::string& app_id)
+void NativeAppLifeHandler::removeLaunchPendingItem(const std::string& appId)
 {
-    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&app_id](LaunchAppItemPtr item) {
-        return (item->getAppId() == app_id);
+    auto it = std::find_if(m_launchPendingQueue.begin(), m_launchPendingQueue.end(), [&appId](LaunchAppItemPtr item) {
+        return (item->getAppId() == appId);
     });
     if (it != m_launchPendingQueue.end())
         m_launchPendingQueue.erase(it);
@@ -241,24 +209,19 @@ void NativeAppLifeHandler::removeLaunchPendingItem(const std::string& app_id)
 
 bool NativeAppLifeHandler::findPidsAndSendSystemSignal(const std::string& pid, int signame)
 {
-    PidVector pids = LinuxProcess::FindChildPids(pid);
+    PidVector pids = LinuxProcess::findChildPids(pid);
     return sendSystemSignal(pids, signame);
 }
 
 bool NativeAppLifeHandler::sendSystemSignal(const PidVector& pids, int signame)
 {
     if (pids.empty()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_pids"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, "empty_pids");
         return false;
     }
 
-    if (!LinuxProcess::kill_processes(pids, signame)) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "seding_signal_error"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "signame: %d", signame);
+    if (!LinuxProcess::killProcesses(pids, signame)) {
+        Logger::error(getClassName(), __FUNCTION__, "seding_signal_error");
         return false;
     }
 
@@ -267,59 +230,47 @@ bool NativeAppLifeHandler::sendSystemSignal(const PidVector& pids, int signame)
 
 void NativeAppLifeHandler::startTimerToKillApp(const std::string& appId, const std::string& pid, const PidVector& allPids, guint timeout)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("status", "start_kill_timer"), "pid: %s", pid.c_str());
-
+    Logger::info(getClassName(), __FUNCTION__, appId, "start_kill_timer");
     KillingDataPtr targetItem = std::make_shared<KillingData>(appId, pid, allPids);
     targetItem->m_timerSource = g_timeout_add(timeout, NativeAppLifeHandler::killAppOnTimeout, (gpointer) targetItem.get());
     m_killingList.push_back(targetItem);
 }
 
-void NativeAppLifeHandler::stopTimerToKillApp(const std::string& app_id)
+void NativeAppLifeHandler::stopTimerToKillApp(const std::string& appId)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-             PMLOGKS("status", "cancel_kill_timer"), "");
-
-    KillingDataPtr item = getKillingDataByAppId(app_id);
+    Logger::info(getClassName(), __FUNCTION__, appId, "cancel_kill_timer");
+    KillingDataPtr item = getKillingDataByAppId(appId);
     if (item == nullptr) {
         return;
     }
 
-    removeKillingData(app_id);
+    removeKillingData(appId);
 }
 
-gboolean NativeAppLifeHandler::killAppOnTimeout(gpointer user_data)
+gboolean NativeAppLifeHandler::killAppOnTimeout(gpointer context)
 {
 
-    if (user_data == NULL) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS("status", "null_user_data"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+    if (context == NULL) {
+        Logger::error(NativeAppLifeHandler::getInstance().getClassName(), __FUNCTION__, "null_context");
         return FALSE;
     }
 
-    KillingData* killing_item = static_cast<KillingData*>(user_data);
+    KillingData* killing_item = static_cast<KillingData*>(context);
     if (killing_item == NULL) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS("status", "null_killing_item"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(NativeAppLifeHandler::getInstance().getClassName(), __FUNCTION__, "null_killing_item");
         return FALSE;
     }
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, killing_item->m_appId.c_str()),
-             PMLOGKS("status", "kill_process"), "");
-    g_this->sendSystemSignal(killing_item->m_allPids, SIGKILL);
+    Logger::info(NativeAppLifeHandler::getInstance().getClassName(), __FUNCTION__, killing_item->m_appId, "kill_process");
+    NativeAppLifeHandler::getInstance().sendSystemSignal(killing_item->m_allPids, SIGKILL);
 
     return FALSE;
 }
 
-KillingDataPtr NativeAppLifeHandler::getKillingDataByAppId(const std::string& app_id)
+KillingDataPtr NativeAppLifeHandler::getKillingDataByAppId(const std::string& appId)
 {
-    auto it = std::find_if(m_killingList.begin(), m_killingList.end(), [&app_id](KillingDataPtr data) {
-        return (data->m_appId == app_id);}
+    auto it = std::find_if(m_killingList.begin(), m_killingList.end(), [&appId](KillingDataPtr data) {
+        return (data->m_appId == appId);}
     );
     if (it == m_killingList.end())
         return NULL;
@@ -327,11 +278,11 @@ KillingDataPtr NativeAppLifeHandler::getKillingDataByAppId(const std::string& ap
     return (*it);
 }
 
-void NativeAppLifeHandler::removeKillingData(const std::string& app_id)
+void NativeAppLifeHandler::removeKillingData(const std::string& appId)
 {
     auto it = m_killingList.begin();
     while (it != m_killingList.end()) {
-        if (app_id == (*it)->m_appId) {
+        if (appId == (*it)->m_appId) {
             g_source_remove((*it)->m_timerSource);
             (*it)->m_timerSource = 0;
             it = m_killingList.erase(it);
@@ -344,20 +295,15 @@ void NativeAppLifeHandler::removeKillingData(const std::string& app_id)
 void NativeAppLifeHandler::onKillChildProcess(GPid pid, gint status, gpointer data)
 {
     g_spawn_close_pid(pid);
-    g_this->handleClosedPid(boost::lexical_cast<std::string>(pid), status);
+    NativeAppLifeHandler::getInstance().handleClosedPid(boost::lexical_cast<std::string>(pid), status);
 }
 
 void NativeAppLifeHandler::handleClosedPid(const std::string& pid, gint status)
 {
-    LOG_INFO(MSGID_APPCLOSE, 1,
-             PMLOGKS("closed_pid", pid.c_str()), "");
-
+    Logger::info(getClassName(), __FUNCTION__, "closed_pid");
     NativeClientInfoPtr client = getNativeClientInfoByPid(pid);
     if (client == nullptr) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 3,
-                  PMLOGKS("pid", pid.c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "empty_client_info"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, "empty_client_info");
         return;
     }
 
@@ -365,25 +311,14 @@ void NativeAppLifeHandler::handleClosedPid(const std::string& pid, gint status)
 
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(appId);
     if (RuntimeStatus::CLOSING == runningInfoPtr->getRuntimeStatus()) {
-        LOG_INFO(MSGID_APPCLOSE, 2,
-                 PMLOGKS("pid", pid.c_str()),
-                 PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                 "received event closed by sam");
+        Logger::info(getClassName(), __FUNCTION__, "received event closed by sam");
     } else {
-        LOG_INFO(MSGID_APPCLOSE, 2,
-                 PMLOGKS("pid", pid.c_str()),
-                 PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                 "received event closed by itself");
+        Logger::info(getClassName(), __FUNCTION__, "received event closed by itself");
     }
 
     stopTimerToKillApp(appId);
 
-    LOG_INFO(MSGID_APP_CLOSED, 4,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS(LOG_KEY_TYPE, "native"),
-             PMLOGKS("pid", pid.c_str()),
-             PMLOGKFV("exit_status", "%d", status), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("exit_status(%d)", status));
     removeNativeClientInfo(appId);
 
     EventAppLifeStatusChanged(appId, "", RuntimeStatus::STOP);
@@ -392,51 +327,45 @@ void NativeAppLifeHandler::handleClosedPid(const std::string& pid, gint status)
     handlePendingQOnClosed(appId);
 }
 
-void NativeAppLifeHandler::handlePendingQOnRegistered(const std::string& app_id)
+void NativeAppLifeHandler::handlePendingQOnRegistered(const std::string& appId)
 {
 
     // handle all pending request as relaunch
     auto pending_item = m_launchPendingQueue.begin();
     while (pending_item != m_launchPendingQueue.end()) {
-        if ((*pending_item)->getAppId() != app_id) {
+        if ((*pending_item)->getAppId() != appId) {
             ++pending_item;
             continue;
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 2,
-                     PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                     PMLOGKS(LOG_KEY_ACTION, "launch_app_waiting_registration"), "");
+            Logger::info(getClassName(), __FUNCTION__, appId, "launch_app_waiting_registration");
             launch(*pending_item);
             pending_item = m_launchPendingQueue.erase(pending_item);
         }
     }
 }
 
-void NativeAppLifeHandler::handlePendingQOnClosed(const std::string& app_id)
+void NativeAppLifeHandler::handlePendingQOnClosed(const std::string& appId)
 {
 
     // handle only one pending request
-    LaunchAppItemPtr pending_item = getLaunchPendingItem(app_id);
+    LaunchAppItemPtr pending_item = getLaunchPendingItem(appId);
     if (pending_item) {
-        removeLaunchPendingItem(app_id);
-        LOG_INFO(MSGID_APPLAUNCH, 2,
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "launch_app_waiting_previous_app_closed"), "");
+        removeLaunchPendingItem(appId);
+        Logger::info(getClassName(), __FUNCTION__, appId, "launch_app_waiting_previous_app_closed");
         launch(pending_item);
     }
 }
 
-void NativeAppLifeHandler::cancelLaunchPendingItemAndMakeItDone(const std::string& app_id)
+void NativeAppLifeHandler::cancelLaunchPendingItemAndMakeItDone(const std::string& appId)
 {
 
     auto pending_item = m_launchPendingQueue.begin();
     while (pending_item != m_launchPendingQueue.end()) {
-        if ((*pending_item)->getAppId() != app_id) {
+        if ((*pending_item)->getAppId() != appId) {
             ++pending_item;
             continue;
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 2,
-                     PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                     PMLOGKS(LOG_KEY_ACTION, "cancel_launch_request"), "");
+            Logger::info(getClassName(), __FUNCTION__, appId, "cancel_launch_request");
             (*pending_item)->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "launching_cancled");
             EventLaunchingDone((*pending_item)->getUid());
             pending_item = m_launchPendingQueue.erase(pending_item);

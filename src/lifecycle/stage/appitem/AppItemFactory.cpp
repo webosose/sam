@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,23 +20,18 @@
 #include <package/AppPackage.h>
 #include <package/AppPackageManager.h>
 #include <setting/Settings.h>
-#include <util/JUtil.h>
 #include <util/LSUtils.h>
 
 LaunchAppItemPtr AppItemFactory::createLaunchItem(LifecycleTaskPtr task)
 {
     if (task->getAppId().empty()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_app_id"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error("AppItemFactory", __FUNCTION__, "empty_appId");
         return nullptr;
     }
 
     AppPackagePtr appDesc = AppPackageManager::getInstance().getAppById(task->getAppId());
     if (appDesc == nullptr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "not_exist"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error("AppItemFactory", __FUNCTION__, "not exist");
         return nullptr;
     }
 
@@ -72,11 +67,9 @@ LaunchAppItemPtr AppItemFactory::createLaunchItem(LifecycleTaskPtr task)
         spinner = false;
     }
 
-    LaunchAppItemPtr item = std::make_shared<LaunchAppItem>(task->getAppId(), task->getDisplay(), params4app, task->getLunaTask()->lsmsg());
+    LaunchAppItemPtr item = std::make_shared<LaunchAppItem>(task->getAppId(), task->getDisplay(), params4app, task->getLunaTask()->getRequest());
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "make_shared_error"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error("LaunchAppItemPtr", __FUNCTION__, "make_shared_error");
         return NULL;
     }
 
@@ -87,14 +80,7 @@ LaunchAppItemPtr AppItemFactory::createLaunchItem(LifecycleTaskPtr task)
     item->setShowSpinner(spinner);
     item->setSubStage(static_cast<int>(AppLaunchingStage::PREPARE_PRELAUNCH));
 
-    LOG_INFO(MSGID_APPLAUNCH, 6,
-             PMLOGKS(LOG_KEY_APPID, task->getAppId().c_str()),
-             PMLOGKS("caller_id", item->getCallerId().c_str()),
-             PMLOGKS("keep_alive", (keepAlive?"true":"false")),
-             PMLOGKS("show_splash", (noSplash?"true":"false")),
-             PMLOGKS("show_spinner", (spinner?"true":"false")),
-             PMLOGJSON("params", params4app.stringify().c_str()), "");
-
+    Logger::info("LaunchAppItemPtr", __FUNCTION__, task->getAppId(), Logger::format("keepAlive(%B) noSplash(%B) spinner(%B)", keepAlive, noSplash, spinner), params4app.stringify());
     return item;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,8 @@
 #include <bus/client/SettingService.h>
 #include <package/AppPackage.h>
 #include <setting/Settings.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
+#include <util/JValueUtil.h>
+#include "util/File.h"
 #include <string>
 
 std::string AppPackage::toString(AppType type)
@@ -84,7 +83,7 @@ bool AppPackage::getSelectedPropsFromAppInfo(const pbnjson::JValue& appinfo, con
         if (appinfo.hasKey(strKey))
             result.put(strKey, appinfo[strKey]);
         else
-            JUtil::addStringToStrArrayNoDuplicate(emptyProperty, strKey);
+            JValueUtil::addStringToStrArrayNoDuplicate(emptyProperty, strKey);
     }
 
     // add not-specified info if there's missed keys
@@ -104,9 +103,7 @@ bool AppPackage::getSelectedPropsFromApps(const pbnjson::JValue& apps, const pbn
     for (int i = 0; i < apps.arraySize(); ++i) {
         pbnjson::JValue new_props = pbnjson::Object();
         if (!getSelectedPropsFromAppInfo(apps[i], wanted_props, new_props)) {
-            LOG_WARNING(MSGID_FAIL_GET_SELECTED_PROPS, 2,
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                        PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
+            Logger::warning("AppPackage", __FUNCTION__, "Failed to get selected pros");
             continue;
         }
 
@@ -174,8 +171,8 @@ AppPackage::AppPackage()
       m_removable(false),
       m_visible(true),
       m_requiredMemory(0),
-      m_windowGroup(false),
-      m_windowGroupOwner(false),
+      m_isWindowGroup(false),
+      m_isWindowGroupOwner(false),
       m_splashOnLaunch(true),
       m_spinnerOnLaunch(false),
       m_isLocked(false)
@@ -201,9 +198,7 @@ bool AppPackage::loadJson(pbnjson::JValue& appinfo, const AppTypeByDir& appTypeB
 
     // app_type_by_dir
     if (appTypeByDir <= AppTypeByDir::AppTypeByDir_None) {
-        LOG_WARNING(MSGID_PACKAGE_LOAD, 1,
-                    PMLOGKS("status", "invalide_type"),
-                    "type_by_dir: %d", (int )appTypeByDir);
+        Logger::warning(getClassName(), __FUNCTION__, "invalide_type", Logger::format("type_by_dir: %d", (int )appTypeByDir));
         return false;
     }
     m_typeByDir = appTypeByDir;
@@ -263,7 +258,7 @@ bool AppPackage::loadJson(pbnjson::JValue& appinfo, const AppTypeByDir& appTypeB
     // load system asset
     loadAsset(appinfo);
 
-    // app_id
+    // appId
     m_appId = appinfo["id"].asString();
     if (AppTypeByDir::AppTypeByDir_System_Updatable == appTypeByDir && !isPrivileged())
         return false;
@@ -341,12 +336,10 @@ bool AppPackage::loadJson(pbnjson::JValue& appinfo, const AppTypeByDir& appTypeB
     if (appinfo.hasKey("windowGroup") &&
         appinfo["windowGroup"].hasKey("owner") &&
         appinfo["windowGroup"]["owner"].isBoolean()) {
-        m_windowGroup = true;
-        m_windowGroupOwner = appinfo["windowGroup"]["owner"].asBool();
+        m_isWindowGroup = true;
+        m_isWindowGroupOwner = appinfo["windowGroup"]["owner"].asBool();
 
-        LOG_DEBUG("[AppDesc:WindowGroup] window_group: %s, window_group_owner: %s",
-                  m_windowGroup ? "true" : "false",
-                  m_windowGroupOwner ? "true" : "false");
+        Logger::debug(getClassName(), __FUNCTION__, Logger::format("m_isWindowGroup(%s) m_isWindowGroupOwner(%s)", m_isWindowGroup, m_isWindowGroupOwner));
     }
 
     // splash_on_launch
@@ -367,7 +360,7 @@ void AppPackage::loadAsset(pbnjson::JValue& appinfo)
 
     std::string variant = SettingsImpl::getInstance().m_packageAssetVariant;
     std::string asset_base_path = appinfo.hasKey("sysAssetsBasePath") ? appinfo["sysAssetsBasePath"].asString() : "sys-assets";
-    set_slash_to_base_path(asset_base_path);
+    File::set_slash_to_base_path(asset_base_path);
 
     for (const auto& key : supportingAssets) {
         std::string value;
@@ -390,7 +383,7 @@ void AppPackage::loadAsset(pbnjson::JValue& appinfo)
             std::string path_to_check = "";
 
             // check variant asset first
-            if (!variant.empty() && concatToFilename(assetPath, variant_path, variant)) {
+            if (!variant.empty() && File::concatToFilename(assetPath, variant_path, variant)) {
                 path_to_check = m_folderPath + std::string("/") + variant_path;
                 if (0 == access(path_to_check.c_str(), F_OK)) {
                     appinfo.put(key, variant_path);
@@ -401,7 +394,7 @@ void AppPackage::loadAsset(pbnjson::JValue& appinfo)
 
             // set asset without variant
             path_to_check = m_folderPath + std::string("/") + assetPath;
-            LOG_DEBUG("patch_to_check: %s\n", path_to_check.c_str());
+            Logger::debug(getClassName(), __FUNCTION__, Logger::format("patch_to_check: %s\n", path_to_check.c_str()));
 
             if (0 == access(path_to_check.c_str(), F_OK)) {
                 appinfo.put(key, assetPath);
@@ -416,7 +409,7 @@ void AppPackage::loadAsset(pbnjson::JValue& appinfo)
 
         std::string defaultAsset = asset_base_path + filename;
 
-        if (!variant.empty() && concatToFilename(defaultAsset, variant_path, variant)) {
+        if (!variant.empty() && File::concatToFilename(defaultAsset, variant_path, variant)) {
             std::string path_variant_to_check = m_folderPath + std::string("/") + variant_path;
             if (0 == access(path_variant_to_check.c_str(), F_OK)) {
                 appinfo.put(key, variant_path);
@@ -440,10 +433,7 @@ bool AppPackage::securityChecksVerified()
 {
     if (m_folderPath.length() <= m_appId.length() ||
         strcmp(m_folderPath.c_str() + m_folderPath.length() - m_appId.length(), m_appId.c_str()) != 0) {
-        LOG_ERROR(MSGID_SECURITY_VIOLATION, 3,
-                  PMLOGKS("title", m_title.c_str()),
-                  PMLOGKS("path", m_folderPath.c_str()),
-                  PMLOGKS(LOG_KEY_APPID, m_appId.c_str()), "App path does not match app id");
+        Logger::error(getClassName(), __FUNCTION__, m_appId, "App path does not match app id");
         return false;
     }
     return true;

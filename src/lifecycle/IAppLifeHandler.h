@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ public:
     }
 
     virtual void launch(LaunchAppItemPtr item) = 0;
-    virtual void close(CloseAppItemPtr item, std::string& errText) = 0;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& errText, bool send_life_event = true) = 0;
+    virtual void close(CloseAppItemPtr item, std::string& errorText) = 0;
+    virtual void pause(const std::string& appId, const pbnjson::JValue& params, std::string& errorText, bool send_life_event = true) = 0;
 };
 
 #endif

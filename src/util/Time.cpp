@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <boost/lexical_cast.hpp>
+#include <util/Time.h>
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include <lifecycle/stage/appitem/CloseAppItem.h>
-#include <package/AppPackageManager.h>
+#include <boost/lexical_cast.hpp>
 
-CloseAppItem::CloseAppItem(const std::string& appId, const std::string& pid, const std::string& caller, const std::string& reason)
-    : AppItem(appId, "", pid)
+const double NANO_SECOND = 1000000000;
+
+Time::Time()
 {
-    setReason(reason);
-    setCallerId(caller);
-
-    Logger::info("CloseAppItem", __FUNCTION__, getUid(), "created_close_item");
 }
 
-CloseAppItem::~CloseAppItem()
+Time::~Time()
 {
-    Logger::info("CloseAppItem", __FUNCTION__, getUid(), "removed_close_item");
+}
+
+
+double Time::getCurrentTime()
+{
+    timespec current_time;
+    if (clock_gettime(CLOCK_MONOTONIC, &current_time) == -1)
+        return -1;
+    return (double) current_time.tv_sec * NANO_SECOND + (double) current_time.tv_nsec;
+}
+
+std::string Time::generateUid()
+{
+    boost::uuids::uuid uid = boost::uuids::random_generator()();
+    return std::string(boost::lexical_cast<std::string>(uid));
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,23 @@
 #include <boost/bind.hpp>
 #include <lifecycle/ApplicationErrors.h>
 #include <luna-service2/lunaservice.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 #include <pbnjson.hpp>
 #include <string>
+#include "util/Logger.h"
 
-class DBBase {
+class DBBase : public ISingleton<DBBase>,
+               public IClassName {
+friend class ISingleton<DBBase>;
 public:
-    DBBase();
+    static bool onFind(LSHandle* sh, LSMessage* message, void* context);
+    static bool onPutKind(LSHandle* sh, LSMessage* message, void* context);
+    static bool onPutPermissions(LSHandle* sh, LSMessage* message, void* context);
+
     virtual ~DBBase();
 
-    virtual void init() = 0;
+    virtual void init();
     virtual bool insertData(const pbnjson::JValue& json);
     virtual bool updateData(const pbnjson::JValue& json);
     virtual bool deleteData(const pbnjson::JValue& json);
@@ -39,15 +47,14 @@ public:
 
     boost::signals2::signal<void(const pbnjson::JValue& loaded_db_result)> EventDBLoaded;
 
-protected:
+private:
+    static bool onReturnQueryResult(LSHandle* sh, LSMessage* message, void* context);
+
+    DBBase();
+
     std::string m_name;
     pbnjson::JValue m_permissions;
     pbnjson::JValue m_kind;
-
-private:
-    static bool onReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data);
-
-    bool onReadyToUseDb(pbnjson::JValue result, ErrorInfo err_info, void *user_data);
 };
 
 #endif

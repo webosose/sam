@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@
 #include <glib.h>
 #include <package/AppPackage.h>
 #include <package/AppPackageScanner.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 #include <pbnjson.hpp>
-#include <util/Singleton.h>
 
-
-class Settings {
+class Settings : public ISingleton<Settings>,
+                 public IClassName {
+friend class ISingleton<Settings> ;
 public:
     const std::string& getConfPath()
     {
@@ -53,8 +55,8 @@ public:
     std::string getLaunchReason(const std::string& caller_id, const std::string& reason);
     void addCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason);
     std::string getCloseReason(const std::string& caller_id, const std::string& reason);
-    void addCRIUSupportApp(const std::string& app_id);
-    bool supportCRIU(const std::string& app_id) const;
+    void addCRIUSupportApp(const std::string& appId);
+    bool supportCRIU(const std::string& appId) const;
     unsigned long long int getLaunchExpiredTimeout() const
     {
         return m_launchExpiredTimeout;
@@ -79,13 +81,13 @@ public:
     void deletedSystemAppsToStringVector(std::vector<std::string>& apps);
     void setSystemAppAsRemoved(const std::string& appId);
     bool isDeletedSystemApp(const std::string& appId) const;
-    bool isInHostAppsList(const std::string& app_id) const;
+    bool isInHostAppsList(const std::string& appId) const;
     const std::vector<std::string>& getBootTimeApps() const
     {
         return m_bootTimeApps;
     }
-    void addBootTimeApp(const std::string& app_id);
-    bool isBootTimeApp(const std::string& app_id);
+    void addBootTimeApp(const std::string& appId);
+    bool isBootTimeApp(const std::string& appId);
 
     // common settings
     std::string m_appMgrPreferenceDir;      // /var/preferences/com.webos.applicationManager/
@@ -133,8 +135,6 @@ public:
     pbnjson::JValue m_launchPointPermissions;
 
 private:
-    friend class Singleton<Settings> ;
-
     Settings();
     ~Settings();
 
@@ -149,7 +149,7 @@ private:
 
 };
 
-typedef Singleton<Settings> SettingsImpl;
+typedef ISingleton<Settings> SettingsImpl;
 
 #endif // Settings
 

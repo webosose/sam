@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+#include "util/Logger.h"
 
 using namespace LS;
 using namespace pbnjson;
 
 class Bootd : public ISingleton<Bootd>,
-              public AbsLunaClient {
+              public AbsLunaClient,
+              public IClassName {
 friend class ISingleton<Bootd>;
 public:
     virtual ~Bootd();
@@ -44,11 +47,13 @@ public:
     boost::signals2::signal<void(const pbnjson::JValue&)> EventBootStatusChanged;
 
 private:
-    static bool onGetBootStatus(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static const string NAME;
+
+    static bool onGetBootStatus(LSHandle* sh, LSMessage* message, void* context);
 
     Bootd();
 
-    LSMessageToken m_tokenBootStatus;
+    Call m_getBootStatus;
     std::string m_bootStatusStr;
 };
 

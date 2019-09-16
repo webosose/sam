@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,35 +18,42 @@
 #define WEBAPP_LIFE_HANDLER_H_
 
 #include <lifecycle/IAppLifeHandler.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.h>
 
 
-class WebAppLifeHandler: public IAppLifeHandler {
+class WebAppLifeHandler: public ISingleton<WebAppLifeHandler>,
+                         public IAppLifeHandler,
+                         public IClassName {
+friend class ISingleton<WebAppLifeHandler>;
 public:
-    WebAppLifeHandler();
     virtual ~WebAppLifeHandler();
 
     virtual void launch(LaunchAppItemPtr item) override;
-    virtual void close(CloseAppItemPtr item, std::string& err_text) override;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
+    virtual void close(CloseAppItemPtr item, std::string& errorText) override;
+    virtual void pause(const std::string& appId, const pbnjson::JValue& params, std::string& errorText, bool send_life_event = true) override;
 
-    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
-    boost::signals2::signal<void(const std::string& app_id)> EventRunningAppRemoved;
+    boost::signals2::signal<void(const std::string& appId, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
+    boost::signals2::signal<void(const std::string& appId, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const std::string& appId)> EventRunningAppRemoved;
     boost::signals2::signal<void(const std::string& uid)> EventLaunchingDone;
 
 private:
-    static bool onWAMSubscriptionRunninglist(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnForLaunchRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnForCloseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnForPauseRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onWAMSubscriptionRunninglist(LSHandle* sh, LSMessage* message, void* context);
+    static bool onReturnForLaunchRequest(LSHandle* sh, LSMessage* message, void* context);
+    static bool onReturnForCloseRequest(LSHandle* sh, LSMessage* message, void* context);
+    static bool onReturnForPauseRequest(LSHandle* sh, LSMessage* message, void* context);
+
+    WebAppLifeHandler();
+
     void onListRunningAppsChanged(const pbnjson::JValue& new_list);
 
     LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
     void removeItemFromLSCallRequestList(const std::string& uid);
-    void addLoadingApp(const std::string& app_id);
-    void removeLoadingApp(const std::string& app_id);
-    bool isLoading(const std::string& app_id);
+    void addLoadingApp(const std::string& appId);
+    void removeLoadingApp(const std::string& appId);
+    bool isLoading(const std::string& appId);
 
     LSMessageToken m_wamSubscriptionToken;
     pbnjson::JValue m_runningList;

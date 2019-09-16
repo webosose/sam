@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 #include <bus/client/AppInstallService.h>
 #include <bus/service/ApplicationManager.h>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/JValueUtil.h>
 #include <util/LSUtils.h>
 
-bool AppInstallService::onStatus(LSHandle* handle, LSMessage* lsmsg, void* userData)
+bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(lsmsg));
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
     if (responsePayload.isNull())
         return false;
 
@@ -81,10 +79,7 @@ bool AppInstallService::onStatus(LSHandle* handle, LSMessage* lsmsg, void* userD
     }
 
     std::string appId = packageId.empty() ? id : packageId;
-    LOG_INFO(MSGID_PACKAGE_STATUS, 2,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKFV("status", "%d", packageStatus), "");
-
+    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, std::to_string((int)packageStatus));
     AppInstallService::getInstance().EventStatusChanged(appId, packageStatus);
     return true;
 }
@@ -92,6 +87,7 @@ bool AppInstallService::onStatus(LSHandle* handle, LSMessage* lsmsg, void* userD
 AppInstallService::AppInstallService()
     : AbsLunaClient("com.webos.appInstallService")
 {
+    setClassName("AppInstallService");
 }
 
 AppInstallService::~AppInstallService()

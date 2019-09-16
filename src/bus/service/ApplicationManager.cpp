@@ -19,7 +19,6 @@
 #include "lifecycle/LifecycleManager.h"
 #include <pbnjson.hpp>
 #include <setting/Settings.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
 #include <string>
 #include <vector>
@@ -80,23 +79,23 @@ LSMethod ApplicationManager::ROOT_METHOD_DEV[] = {
 };
 std::map<std::string, LunaApiHandler> ApplicationManager::s_APIHandlerMap;
 
-bool ApplicationManager::onAPICalled(LSHandle* lshandle, LSMessage* lsmsg, void* ctx)
+bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx)
 {
-    LS::Message request(lsmsg);
+    LS::Message request(message);
     LunaApiHandler handler;
     LunaTaskPtr task = nullptr;
     string errorText = "";
     int errorCode = 0;
 
     if (!SchemaChecker::getInstance().checkRequest(request)) {
-        errorCode = API_ERR_CODE_INVALID_PAYLOAD;
+        errorCode = Logger::API_ERR_CODE_INVALID_PAYLOAD;
         errorText = "invalid parameters";
         goto Done;
     }
 
-    task = std::make_shared<LunaTask>(lshandle, request, lsmsg);
+    task = std::make_shared<LunaTask>(sh, request, message);
     if (!task) {
-        errorCode = API_ERR_CODE_GENERAL;
+        errorCode = Logger::API_ERR_CODE_GENERAL;
         errorText = "memory alloc fail";
         goto Done;
     }
@@ -105,7 +104,7 @@ bool ApplicationManager::onAPICalled(LSHandle* lshandle, LSMessage* lsmsg, void*
         handler = ApplicationManager::getInstance().s_APIHandlerMap[request.getKind()];
 
     if (!handler) {
-        errorCode = API_ERR_CODE_DEPRECATED;
+        errorCode = Logger::API_ERR_CODE_DEPRECATED;
         errorText = "deprecated method";
         goto Done;
     }
@@ -216,21 +215,16 @@ void ApplicationManager::addLaunchPoint(LunaTaskPtr task)
         launchPointId = launchPointPtr->getLunchPointId();
     }
 
-    LOG_NORMAL(NLID_LAUNCH_POINT_ADDED, 4,
-               PMLOGKS("caller", task->caller().c_str()),
-               PMLOGKS("status", result?"done":"fail"),
-               PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-               PMLOGKS("lp_id", launchPointId.c_str()), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, launchPointPtr ? "success" : "failed");
     if (!result) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("launchPointId", launchPointId);
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    responsePayload.put("launchPointId", launchPointId);
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::updateLaunchPoint(LunaTaskPtr task)
@@ -249,34 +243,27 @@ void ApplicationManager::updateLaunchPoint(LunaTaskPtr task)
         launchPointId = launchPointPtr->getLunchPointId();
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_UPDATED, 4,
-             PMLOGKS("caller", task->caller().c_str()),
-             PMLOGKS("status", (result ? "done" : "failed")),
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("lp_id", launchPointId.c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, appId, launchPointPtr ? "success" : "failed");
 
     if (!result)
-        task->setError(API_ERR_CODE_GENERAL, errorText);
+        task->setError(Logger::API_ERR_CODE_GENERAL, errorText);
 
     task->reply();
 }
 
 void ApplicationManager::removeLaunchPoint(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& responsePayload = task->getRequestPayload();
 
-    std::string lpid = jmsg["launchPointId"].asString();
+    std::string launchPointId = responsePayload["launchPointId"].asString();
     std::string errorText;
 
     LaunchPointManager::getInstance().removeLP(task->getRequestPayload(), errorText);
 
-    LOG_INFO(MSGID_LAUNCH_POINT_REMOVED, 3,
-             PMLOGKS("caller", task->caller().c_str()),
-             PMLOGKS("status", (errorText.empty() ? "done" : "failed")),
-             PMLOGKS("lp_id", lpid.c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, launchPointId, errorText);
 
     if (!errorText.empty())
-        task->setError(API_ERR_CODE_GENERAL, errorText);
+        task->setError(Logger::API_ERR_CODE_GENERAL, errorText);
 
     task->reply();
 }
@@ -297,21 +284,16 @@ void ApplicationManager::moveLaunchPoint(LunaTaskPtr task)
         launchPointId = launchPointPtr->getLunchPointId();
     }
 
-    LOG_INFO(MSGID_LAUNCH_POINT_MOVED, 4,
-             PMLOGKS("caller", task->caller().c_str()),
-             PMLOGKS("status", (result?"done":"failed")),
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKS("lp_id", launchPointId.c_str()), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, launchPointPtr ? "success" : "failed");
     if (!errorText.empty())
-        task->setError(API_ERR_CODE_GENERAL, errorText);
+        task->setError(Logger::API_ERR_CODE_GENERAL, errorText);
 
     task->reply();
 }
 
 void ApplicationManager::listLaunchPoints(LunaTaskPtr task)
 {
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue responsePayload = pbnjson::Object();
     pbnjson::JValue launchPoints = pbnjson::Array();
     bool subscribed = false;
 
@@ -321,41 +303,33 @@ void ApplicationManager::listLaunchPoints(LunaTaskPtr task)
     if (task->getMessage().isSubscription())
         ApplicationManager::getInstance().m_listLaunchPointsPoint.subscribe(task->getMessage());
 
-    payload.put("subscribed", subscribed);
-    payload.put("launchPoints", launchPoints);
+    responsePayload.put("subscribed", subscribed);
+    responsePayload.put("launchPoints", launchPoints);
 
-    LOG_INFO(MSGID_LAUNCH_POINT_REQUEST, 2,
-             PMLOGKS("STATUS", "done"),
-             PMLOGKS("CALLER", task->caller().c_str()),
-             "reply listLaunchPoint");
-
-    task->replyResult(payload);
+    Logger::info(getClassName(), __FUNCTION__, task->caller(), "reply listLaunchPoint");
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::launch(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& responsePayload = task->getRequestPayload();
 
     std::string appId;
-    if (!JValueUtil::getValue(jmsg, "id", appId)) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
+    if (!JValueUtil::getValue(responsePayload, "id", appId)) {
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
 
     std::string display;
-    if (!JValueUtil::getValue(jmsg, "display", display)) {
+    if (!JValueUtil::getValue(responsePayload, "display", display)) {
         display = ""; // TODO default displayId
     }
 
     std::string mode;
-    if (!JValueUtil::getValue(jmsg, "params", "reason", mode)) {
+    if (!JValueUtil::getValue(responsePayload, "params", "reason", mode)) {
         mode = "normal";
     }
-    LOG_NORMAL(NLID_APP_LAUNCH_BEGIN, 3,
-               PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-               PMLOGKS("caller_id", task->caller().c_str()),
-               PMLOGKS("mode", mode.c_str()), "");
-
+    Logger::info(getClassName(), __FUNCTION__, appId, mode);
     LifecycleTaskPtr lifeCycleTask = std::make_shared<LifecycleTask>(task);
     lifeCycleTask->setAppId(appId);
     lifeCycleTask->setDisplay(display);
@@ -365,12 +339,11 @@ void ApplicationManager::launch(LunaTaskPtr task)
 
 void ApplicationManager::pause(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& responsePayload = task->getRequestPayload();
 
-    std::string appId = jmsg["id"].asString();
+    std::string appId = responsePayload["id"].asString();
     if (appId.length() == 0) {
-        pbnjson::JValue payload = pbnjson::Object();
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "App ID is not specified");
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "App ID is not specified");
         return;
     }
 
@@ -387,15 +360,14 @@ void ApplicationManager::closeByAppId(LunaTaskPtr task)
 
 void ApplicationManager::closeByAppIdForDev(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
-    std::string appId = jmsg["id"].asString();
+    const pbnjson::JValue& responsePayload = task->getRequestPayload();
+    std::string appId = responsePayload["id"].asString();
     AppPackagePtr appPackagePtr = AppPackageManager::getInstance().getAppById(appId);
 
     if (AppTypeByDir::AppTypeByDir_Dev != appPackagePtr->getTypeByDir()) {
-        LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
-                    PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                    "only dev apps should be closed in devmode");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Only Dev app should be closed using /dev category_API");
+        string errorText = "Only Dev app should be closed using /dev category_API";
+        Logger::warning(getClassName(), __FUNCTION__, appId, errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 
@@ -412,134 +384,133 @@ void ApplicationManager::closeAllApps(LunaTaskPtr task)
 
 void ApplicationManager::running(LunaTaskPtr task)
 {
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue responsePayload = pbnjson::Object();
     pbnjson::JValue runningList = pbnjson::Array();
     RunningInfoManager::getInstance().getRunningList(runningList);
 
-    payload.put("returnValue", true);
-    payload.put("running", runningList);
-    if (LSMessageIsSubscription(task->lsmsg())) {
-        payload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_RUNNING, task->lsmsg(), NULL));
+    responsePayload.put("returnValue", true);
+    responsePayload.put("running", runningList);
+    if (LSMessageIsSubscription(task->getRequest())) {
+        responsePayload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_RUNNING, task->getRequest(), NULL));
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::runningForDev(LunaTaskPtr task)
 {
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue responsePayload = pbnjson::Object();
     pbnjson::JValue runningList = pbnjson::Array();
     RunningInfoManager::getInstance().getRunningList(runningList, true);
 
-    payload.put("returnValue", true);
-    payload.put("running", runningList);
-    if (LSMessageIsSubscription(task->lsmsg())) {
-        payload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_DEV_RUNNING, task->lsmsg(), NULL));
+    responsePayload.put("returnValue", true);
+    responsePayload.put("running", runningList);
+    if (LSMessageIsSubscription(task->getRequest())) {
+        responsePayload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_DEV_RUNNING, task->getRequest(), NULL));
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getAppLifeEvents(LunaTaskPtr task)
 {
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue responsePayload = pbnjson::Object();
 
-    if (LSMessageIsSubscription(task->lsmsg())) {
-        if (!LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_GET_APP_LIFE_EVENTS, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
-            payload.put("subscribed", false);
+    if (LSMessageIsSubscription(task->getRequest())) {
+        if (!LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_GET_APP_LIFE_EVENTS, task->getRequest(), NULL)) {
+            task->setError(Logger::API_ERR_CODE_GENERAL, "Subscription failed");
+            responsePayload.put("subscribed", false);
         } else {
-            payload.put("subscribed", true);
+            responsePayload.put("subscribed", true);
         }
     } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
-        payload.put("subscribed", false);
+        task->setError(Logger::API_ERR_CODE_GENERAL, "subscription is required");
+        responsePayload.put("subscribed", false);
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getAppLifeStatus(LunaTaskPtr task)
 {
-    pbnjson::JValue payload = pbnjson::Object();
+    pbnjson::JValue responsePayload = pbnjson::Object();
 
-    if (LSMessageIsSubscription(task->lsmsg())) {
-        if (!LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_GET_APP_LIFE_STATUS, task->lsmsg(), NULL)) {
-            task->setError(API_ERR_CODE_GENERAL, "Subscription failed");
-            payload.put("subscribed", false);
+    if (LSMessageIsSubscription(task->getRequest())) {
+        if (!LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_GET_APP_LIFE_STATUS, task->getRequest(), NULL)) {
+            task->setError(Logger::API_ERR_CODE_GENERAL, "Subscription failed");
+            responsePayload.put("subscribed", false);
         } else {
-            payload.put("subscribed", true);
+            responsePayload.put("subscribed", true);
         }
     } else {
-        task->setError(API_ERR_CODE_GENERAL, "subscription is required");
-        payload.put("subscribed", false);
+        task->setError(Logger::API_ERR_CODE_GENERAL, "subscription is required");
+        responsePayload.put("subscribed", false);
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getForegroundAppInfo(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
 
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("returnValue", true);
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    responsePayload.put("returnValue", true);
 
-    if (jmsg["extraInfo"].asBool() == true) {
-        payload.put("foregroundAppInfo", RunningInfoManager::getInstance().getForegroundInfo());
-        if (LSMessageIsSubscription(task->lsmsg())) {
-            payload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_FOREGROUND_INFO_EX, task->lsmsg(), NULL));
+    if (requestPayload["extraInfo"].asBool() == true) {
+        responsePayload.put("foregroundAppInfo", RunningInfoManager::getInstance().getForegroundInfo());
+        if (LSMessageIsSubscription(task->getRequest())) {
+            responsePayload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_FOREGROUND_INFO_EX, task->getRequest(), NULL));
         }
     } else {
-        payload.put(LOG_KEY_APPID, RunningInfoManager::getInstance().getForegroundAppId());
-        payload.put("windowId", "");
-        payload.put("processId", "");
-        if (LSMessageIsSubscription(task->lsmsg())) {
-            payload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_FOREGROUND_INFO, task->lsmsg(), NULL));
+        responsePayload.put(Logger::LOG_KEY_APPID, RunningInfoManager::getInstance().getForegroundAppId());
+        responsePayload.put("windowId", "");
+        responsePayload.put("processId", "");
+        if (LSMessageIsSubscription(task->getRequest())) {
+            responsePayload.put("subscribed", LSSubscriptionAdd(task->getLSHandle(), SUBSKEY_FOREGROUND_INFO, task->getRequest(), NULL));
         }
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::lockApp(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
 
-    std::string appId = jmsg["id"].asString();
-    bool lock = jmsg["lock"].asBool();
+    std::string appId = requestPayload["id"].asString();
+    bool lock = requestPayload["lock"].asBool();
     std::string errorText;
 
     // TODO: move this property into app info manager
     AppPackageManager::getInstance().lockAppForUpdate(appId, lock, errorText);
 
     if (!errorText.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 
-    pbnjson::JValue payload = pbnjson::Object();
-    payload.put("id", appId);
-    payload.put("locked", lock);
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    responsePayload.put("id", appId);
+    responsePayload.put("locked", lock);
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::registerApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_app_id"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
+        string errorText = "cannot find caller id";
+        Logger::error(getClassName(), __FUNCTION__, "empty app id", errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 
-    std::string error_text;
-    LifecycleManager::getInstance().registerApp(task->caller(), task->lsmsg(), error_text);
+    std::string errorText;
+    LifecycleManager::getInstance().registerApp(task->caller(), task->getRequest(), errorText);
 
-    if (!error_text.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, error_text);
+    if (!errorText.empty()) {
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 }
@@ -547,17 +518,16 @@ void ApplicationManager::registerApp(LunaTaskPtr task)
 void ApplicationManager::registerNativeApp(LunaTaskPtr task)
 {
     if (0 == task->caller().length()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_app_id"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "cannot find caller id");
+        string errorText = "cannot find caller id";
+        Logger::error(getClassName(), __FUNCTION__, "empty app id", errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 
     std::string errorText;
-    LifecycleManager::getInstance().connectNativeApp(task->caller(), task->lsmsg(), errorText);
+    LifecycleManager::getInstance().connectNativeApp(task->caller(), task->getRequest(), errorText);
     if (!errorText.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, errorText);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, errorText);
         return;
     }
 }
@@ -605,149 +575,147 @@ void ApplicationManager::listApps(LunaTaskPtr task)
 
 void ApplicationManager::listAppsForDev(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
     const std::map<std::string, AppPackagePtr>& apps = AppPackageManager::getInstance().allApps();
 
-    pbnjson::JValue payload = pbnjson::Object();
-    pbnjson::JValue apps_info = pbnjson::Array();
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    pbnjson::JValue appsInfo = pbnjson::Array();
 
     for (auto it : apps) {
         if (AppTypeByDir::AppTypeByDir_Dev == it.second->getTypeByDir()) {
-            apps_info.append(it.second->toJValue());
+            appsInfo.append(it.second->toJValue());
         }
     }
 
-    payload.put("returnValue", true);
+    responsePayload.put("returnValue", true);
 
     bool is_full_list_client = true;
-    if (jmsg.hasKey("properties") && jmsg["properties"].isArray()) {
+    if (requestPayload.hasKey("properties") && requestPayload["properties"].isArray()) {
         is_full_list_client = false;
         pbnjson::JValue apps_selected_info = pbnjson::Array();
-        jmsg["properties"].append("id"); // id is required
-        (void) AppPackage::getSelectedPropsFromApps(apps_info, jmsg["properties"], apps_selected_info);
-        payload.put("apps", apps_selected_info);
+        requestPayload["properties"].append("id"); // id is required
+        (void) AppPackage::getSelectedPropsFromApps(appsInfo, requestPayload["properties"], apps_selected_info);
+        responsePayload.put("apps", apps_selected_info);
     } else {
-        payload.put("apps", apps_info);
+        responsePayload.put("apps", appsInfo);
     }
 
     if (task->getMessage().isSubscription()) {
         if (is_full_list_client) {
-            payload.put("subscribed", ApplicationManager::getInstance().m_listDevAppsPoint.subscribe(task->getMessage()));
+            responsePayload.put("subscribed", ApplicationManager::getInstance().m_listDevAppsPoint.subscribe(task->getMessage()));
         } else {
-            payload.put("subscribed", ApplicationManager::getInstance().m_listDevAppsCompactPoint.subscribe(task->getMessage()));
+            responsePayload.put("subscribed", ApplicationManager::getInstance().m_listDevAppsCompactPoint.subscribe(task->getMessage()));
         }
     } else {
-        payload.put("subscribed", false);
+        responsePayload.put("subscribed", false);
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getAppStatus(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
 
-    pbnjson::JValue payload = pbnjson::Object();
-    std::string appId = jmsg[LOG_KEY_APPID].asString();
-    bool requiredAppInfo = (jmsg.hasKey("appInfo") && jmsg["appInfo"].isBoolean() && jmsg["appInfo"].asBool()) ? true : false;
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    std::string appId = requestPayload[Logger::LOG_KEY_APPID].asString();
+    bool requiredAppInfo = (requestPayload.hasKey("appInfo") && requestPayload["appInfo"].isBoolean() && requestPayload["appInfo"].asBool()) ? true : false;
 
     if (appId.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified");
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Invalid appId specified");
         return;
     }
 
     if (task->getMessage().isSubscription()) {
         std::string subs_key = "getappstatus#" + appId + "#" + (requiredAppInfo ? "Y" : "N");
-        if (LSSubscriptionAdd(task->getLSHandle(), subs_key.c_str(), task->lsmsg(), NULL)) {
-            payload.put("subscribed", true);
+        if (LSSubscriptionAdd(task->getLSHandle(), subs_key.c_str(), task->getRequest(), NULL)) {
+            responsePayload.put("subscribed", true);
         } else {
-            LOG_WARNING(MSGID_LUNA_SUBSCRIPTION, 2,
-                        PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                        PMLOGKFV(LOG_KEY_LINE, "%d", __LINE__), "");
-            payload.put("subscribed", false);
+            Logger::warning(getClassName(), __FUNCTION__, "lscall", "failed");
+            responsePayload.put("subscribed", false);
         }
     }
 
     // for first return (event: nothing)
-    payload.put(LOG_KEY_APPID, appId);
-    payload.put("event", "nothing");
+    responsePayload.put(Logger::LOG_KEY_APPID, appId);
+    responsePayload.put("event", "nothing");
 
     AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(appId);
     if (!appDescPtr) {
-        payload.put("status", "notExist");
-        payload.put("exist", false);
-        payload.put("launchable", false);
+        responsePayload.put("status", "notExist");
+        responsePayload.put("exist", false);
+        responsePayload.put("launchable", false);
     } else {
-        payload.put("status", "launchable");
-        payload.put("exist", true);
-        payload.put("launchable", true);
+        responsePayload.put("status", "launchable");
+        responsePayload.put("exist", true);
+        responsePayload.put("launchable", true);
 
         if (requiredAppInfo) {
-            payload.put("appInfo", appDescPtr->toJValue());
+            responsePayload.put("appInfo", appDescPtr->toJValue());
         }
     }
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getAppInfo(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
 
-    pbnjson::JValue payload = pbnjson::Object();
-    pbnjson::JValue app_info = pbnjson::Object();
-    std::string app_id = jmsg["id"].asString();
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    pbnjson::JValue appInfo = pbnjson::Object();
+    std::string appId = requestPayload["id"].asString();
 
-    if (app_id.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified");
+    if (appId.empty()) {
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Invalid appId specified");
         return;
     }
 
-    AppPackagePtr app_desc = AppPackageManager::getInstance().getAppById(app_id);
+    AppPackagePtr app_desc = AppPackageManager::getInstance().getAppById(appId);
     if (!app_desc) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + app_id);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
         return;
     }
 
-    if (jmsg.hasKey("properties") && jmsg["properties"].isArray()) {
+    if (requestPayload.hasKey("properties") && requestPayload["properties"].isArray()) {
         const pbnjson::JValue& origin_app = app_desc->toJValue();
-        if (!AppPackage::getSelectedPropsFromAppInfo(origin_app, jmsg["properties"], app_info)) {
-            task->replyResultWithError(API_ERR_CODE_GENERAL, "Fail to get selected properties from AppInfo: " + app_id);
+        if (!AppPackage::getSelectedPropsFromAppInfo(origin_app, requestPayload["properties"], appInfo)) {
+            task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Fail to get selected properties from AppInfo: " + appId);
             return;
         }
     } else {
-        app_info = app_desc->toJValue();
+        appInfo = app_desc->toJValue();
     }
 
-    payload.put("appInfo", app_info);
-    payload.put(LOG_KEY_APPID, app_id);
-    task->replyResult(payload);
+    responsePayload.put("appInfo", appInfo);
+    responsePayload.put(Logger::LOG_KEY_APPID, appId);
+    task->replyResult(responsePayload);
 }
 
 void ApplicationManager::getAppBasePath(LunaTaskPtr task)
 {
-    const pbnjson::JValue& jmsg = task->getRequestPayload();
+    const pbnjson::JValue& requestPayload = task->getRequestPayload();
 
-    pbnjson::JValue payload = pbnjson::Object();
-    std::string app_id = jmsg[LOG_KEY_APPID].asString();
+    pbnjson::JValue responsePayload = pbnjson::Object();
+    std::string appId = requestPayload[Logger::LOG_KEY_APPID].asString();
 
-    if (app_id.empty()) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified");
+    if (appId.empty()) {
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Invalid appId specified");
         return;
     }
-    if (task->caller() != app_id) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
+    if (task->caller() != appId) {
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
         return;
     }
 
-    AppPackagePtr app_desc = AppPackageManager::getInstance().getAppById(app_id);
+    AppPackagePtr app_desc = AppPackageManager::getInstance().getAppById(appId);
     if (!app_desc) {
-        task->replyResultWithError(API_ERR_CODE_GENERAL, "Invalid appId specified: " + app_id);
+        task->replyResultWithError(Logger::API_ERR_CODE_GENERAL, "Invalid appId specified: " + appId);
         return;
     }
 
-    payload.put(LOG_KEY_APPID, app_id);
-    payload.put("basePath", app_desc->getMain());
+    responsePayload.put(Logger::LOG_KEY_APPID, appId);
+    responsePayload.put("basePath", app_desc->getMain());
 
-    task->replyResult(payload);
+    task->replyResult(responsePayload);
 }

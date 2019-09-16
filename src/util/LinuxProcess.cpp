@@ -14,11 +14,12 @@
 #include <util/LinuxProcess.h>
 #include <signal.h>
 #include <glib.h>
-#include "util/Logging.h"
 #include <proc/readproc.h>
 #include <stdlib.h>
 
-string LinuxProcess::PidsToString(const PidVector& pids)
+const string LinuxProcess::CLASS_NAME = "LinuxProcess";
+
+string LinuxProcess::convertPidsToString(const PidVector& pids)
 {
     string result;
     string delim;
@@ -30,7 +31,7 @@ string LinuxProcess::PidsToString(const PidVector& pids)
     return result;
 }
 
-bool LinuxProcess::kill_processes(const PidVector& pids, int sig)
+bool LinuxProcess::killProcesses(const PidVector& pids, int sig)
 {
     auto it = pids.begin();
     if (it == pids.end())
@@ -44,7 +45,7 @@ bool LinuxProcess::kill_processes(const PidVector& pids, int sig)
     return success;
 }
 
-pid_t LinuxProcess::fork_process(const char **argv, const char **envp)
+pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
 {
     //TODO : Set child's working path
     GPid pid = -1;
@@ -62,36 +63,28 @@ pid_t LinuxProcess::fork_process(const char **argv, const char **envp)
                                                NULL,
                                                &gerr);
     if (gerr) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "fork_fail"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "returned_pid: %d, err_text: %s", (int )pid, gerr->message);
+        Logger::error(CLASS_NAME, __FUNCTION__, "Failed to folk", Logger::format("returned_pid: %d, errorText: %s", pid, gerr->message));
         g_error_free(gerr);
         gerr = NULL;
         return -1;
     }
 
     if (!result) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "return_false_from_gspawn"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "returned_pid: %d", pid);
+        Logger::error(CLASS_NAME, __FUNCTION__, "return_false_from_gspawn", Logger::format("returned_pid: %d", pid));
         return -1;
     }
 
     return pid;
 }
 
-PidVector LinuxProcess::FindChildPids(const std::string& pid)
+PidVector LinuxProcess::findChildPids(const std::string& pid)
 {
     PidVector pids;
     pids.push_back((pid_t) std::atol(pid.c_str()));
 
     proc_t **proctab = readproctab(PROC_FILLSTAT);
     if (!proctab) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 1,
-                  PMLOGKS(LOG_KEY_REASON, "readproctab_error"),
-                  "failed to read proctab");
+        Logger::error(CLASS_NAME, __FUNCTION__, "readproctab_error", "failed to read proctab");
         return pids;
     }
 

@@ -17,6 +17,7 @@
 #include <lifecycle/handler/native_interface/NativeAppLifeCycleInterfaceVer1.h>
 #include <lifecycle/handler/NativeAppLifeHandler.h>
 #include "util/LinuxProcess.h"
+#include "util/Time.h"
 
 NativeAppLifeCycleInterfaceVer1::NativeAppLifeCycleInterfaceVer1()
 {
@@ -28,36 +29,26 @@ NativeAppLifeCycleInterfaceVer1::~NativeAppLifeCycleInterfaceVer1()
 
 void NativeAppLifeCycleInterfaceVer1::close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& errorText)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId());
 
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(client->getAppId());
     if (RuntimeStatus::CLOSING == runningInfoPtr->getRuntimeStatus()) {
-        LOG_INFO(MSGID_APPCLOSE, 3,
-                 PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-                 PMLOGKS("pid", client->getPid().c_str()),
-                 PMLOGKS(LOG_KEY_ACTION, "wait_closing"),
-                 "already being closed");
+        Logger::info(getClassName(), __FUNCTION__, client->getAppId(), "already being closed. wait_closing");
         return;
     }
 
     if (client->getPid().empty()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_pid"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         errorText = "empty pid";
+        Logger::error(getClassName(), __FUNCTION__, client->getAppId(), errorText);
         NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::STOP);
         return;
     }
 
-    PidVector all_pids = LinuxProcess::FindChildPids(client->getPid());
+    PidVector all_pids = LinuxProcess::findChildPids(client->getPid());
+
     if (!NativeAppLifeHandler::getInstance().sendSystemSignal(all_pids, SIGTERM)) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "empty_pids"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
         errorText = "not found any pids to kill";
+        Logger::error(getClassName(), __FUNCTION__, client->getAppId(), errorText);
         NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::STOP);
         return;
     }
@@ -66,25 +57,14 @@ void NativeAppLifeCycleInterfaceVer1::close(NativeClientInfoPtr client, CloseApp
 
     NativeAppLifeHandler::getInstance().startTimerToKillApp(client->getAppId(), client->getPid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
 
-    LOG_INFO(MSGID_APPCLOSE, 3,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("pid", client->getPid().c_str()),
-             PMLOGKS(LOG_KEY_ACTION, "sigterm"), "");
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId(), "sigterm");
 }
 
-void NativeAppLifeCycleInterfaceVer1::pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool sendLifeEvent)
+void NativeAppLifeCycleInterfaceVer1::pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& errorText, bool sendLifeEvent)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId(), "sigterm_to_pause");
 
-    LOG_INFO(MSGID_APPCLOSE, 3,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("pid", client->getPid().c_str()),
-             PMLOGKS(LOG_KEY_ACTION, "sigterm_to_pause"), "");
-
-    PidVector all_pids = LinuxProcess::FindChildPids(client->getPid());
+    PidVector all_pids = LinuxProcess::findChildPids(client->getPid());
     (void) NativeAppLifeHandler::getInstance().sendSystemSignal(all_pids, SIGTERM);
     if (sendLifeEvent)
         NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::CLOSING);
@@ -93,59 +73,33 @@ void NativeAppLifeCycleInterfaceVer1::pause(NativeClientInfoPtr client, const pb
 
 void NativeAppLifeCycleInterfaceVer1::launchFromClosing(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
-
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(item->getAppId());
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-             PMLOGKS("status", "app_is_closing"),
-             PMLOGKS(LOG_KEY_ACTION, "wait_until_being_closed"),
-             "life_status: %d", runningInfoPtr->getRuntimeStatus());
-
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId(), "wait_until_being_closed");
     NativeAppLifeHandler::getInstance().addLaunchingItemIntoPendingQ(item);
 }
 
 void NativeAppLifeCycleInterfaceVer1::launchFromRunning(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
-
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(item->getAppId());
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-             PMLOGKS("preload_mode_on", (runningInfoPtr->getPreloadMode() ? "on":"off")),
-             PMLOGKS("preload_mode", (item->getPreload().empty() ? "empty":item->getPreload().c_str())),
-             "in close_and_launch");
+
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId(), "in close_and_launch");
 
     // if less than 3 sec, just skip
-    double now = getCurrentTime();
+    double now = Time::getCurrentTime();
     if ((now - runningInfoPtr->getLastLaunchTime()) < TIME_LIMIT_OF_APP_LAUNCHING) {
         if (runningInfoPtr->getPreloadMode() && item->getPreload().empty()) {
             // should close and launch if currently being launched in hidden mode
         } else {
-            LOG_INFO(MSGID_APPLAUNCH, 3,
-                     PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                     PMLOGKS("status", "running"),
-                     PMLOGKS(LOG_KEY_ACTION, "skip_by_launching_time"),
-                     "life_cycle: %d", runningInfoPtr->getRuntimeStatus());
+            Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "skip_by_launching_time");
             item->setPid(runningInfoPtr->getPid());
             NativeAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
             return;
         }
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-             PMLOGKS("status", "running"),
-             PMLOGKS(LOG_KEY_ACTION, "close_and_launch"),
-             "life_cycle: %d, pid: %s", runningInfoPtr->getRuntimeStatus(), runningInfoPtr->getPid().c_str());
+    Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "close_and_launch");
 
-    PidVector all_pids = LinuxProcess::FindChildPids(client->getPid());
+    PidVector all_pids = LinuxProcess::findChildPids(client->getPid());
     NativeAppLifeHandler::getInstance().sendSystemSignal(all_pids, SIGTERM);
     NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), item->getUid(), RuntimeStatus::CLOSING);
     NativeAppLifeHandler::getInstance().startTimerToKillApp(client->getAppId(), client->getPid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
@@ -155,10 +109,7 @@ void NativeAppLifeCycleInterfaceVer1::launchFromRunning(NativeClientInfoPtr clie
 bool NativeAppLifeCycleInterfaceVer1::canLaunch(LaunchAppItemPtr item)
 {
     if (NativeAppLifeHandler::getInstance().getLaunchPendingItem(item->getAppId()) != NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "already_in_queue"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "already_in_queue");
         item->setErrCodeText(APP_ERR_NATIVE_IS_LAUNCHING, item->getAppId() + std::string(" is already launching"));
         return false;
     }
@@ -171,7 +122,7 @@ bool NativeAppLifeCycleInterfaceVer1::getLaunchParams(LaunchAppItemPtr item, App
 
     if (AppType::AppType_Native_Qml == appDescPtr->getAppType()) {
         payload.put("main", appDescPtr->getMain());
-        payload.put(LOG_KEY_APPID, appDescPtr->getAppId());
+        payload.put(Logger::LOG_KEY_APPID, appDescPtr->getAppId());
         payload.put("params", item->getParams());
     } else {
         payload = item->getParams().duplicate();

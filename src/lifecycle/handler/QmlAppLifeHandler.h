@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,36 +18,40 @@
 #define QMLAPP_LIFE_HANDLER_H_
 
 #include <lifecycle/IAppLifeHandler.h>
+#include "interface/ISingleton.h"
 
-class QmlAppLifeHandler: public IAppLifeHandler {
+class QmlAppLifeHandler : public ISingleton<QmlAppLifeHandler>,
+                          public IAppLifeHandler {
+friend class ISingleton<QmlAppLifeHandler>;
 public:
-    QmlAppLifeHandler();
     virtual ~QmlAppLifeHandler();
 
     virtual void launch(LaunchAppItemPtr item) override;
-    virtual void close(CloseAppItemPtr item, std::string& err_text) override;
-    virtual void pause(const std::string& app_id, const pbnjson::JValue& params, std::string& err_text, bool send_life_event = true) override;
+    virtual void close(CloseAppItemPtr item, std::string& errorText) override;
+    virtual void pause(const std::string& appId, const pbnjson::JValue& params, std::string& errorText, bool send_life_event = true) override;
 
     LaunchAppItemPtr getLSCallRequestItemByToken(const LSMessageToken& token);
     void removeItemFromLSCallRequestList(const std::string& uid);
 
     void onServiceReady();
 
-private:
-    void initialize();
-    static bool onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnBoosterClose(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onQMLProcessFinished(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-
-    static bool onQMLProcessWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-
-public:
-    boost::signals2::signal<void(const std::string& app_id, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
-    boost::signals2::signal<void(const std::string& app_id, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
-    boost::signals2::signal<void(const std::string& app_id)> EventRunningAppRemoved;
+    boost::signals2::signal<void(const std::string& appId, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
+    boost::signals2::signal<void(const std::string& appId, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const std::string& appId)> EventRunningAppRemoved;
     boost::signals2::signal<void(const std::string& uid)> EventLaunchingDone;
 
 private:
+    static const string LOG_NAME;
+
+    static bool onReturnBoosterLaunch(LSHandle* sh, LSMessage* message, void* context);
+    static bool onReturnBoosterClose(LSHandle* sh, LSMessage* message, void* context);
+    static bool onQMLProcessFinished(LSHandle* sh, LSMessage* message, void* context);
+    static bool onQMLProcessWatcher(LSHandle* sh, LSMessage* message, void* context);
+
+    QmlAppLifeHandler();
+
+    void initialize();
+
     LaunchItemList m_LSCallRequestList;
 };
 

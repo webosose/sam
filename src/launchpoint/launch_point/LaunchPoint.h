@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,14 +40,14 @@ enum class LPType : int8_t {
 
 class LaunchPoint {
 public:
-    LaunchPoint(const std::string& id, const std::string& lp_id);
+    LaunchPoint(const std::string& id, const std::string& launchPointId);
     virtual ~LaunchPoint();
 
     void convertPath(std::string& path);
 
-    void setLpType(const LPType lp_type)
+    void setLpType(const LPType lpType)
     {
-        m_LPType = lp_type;
+        m_LPType = lpType;
     }
     void setFolderPath(const std::string& path)
     {
@@ -62,7 +62,7 @@ public:
     void setIconColor(const std::string& icon_color);
     void setLargeIcon(const std::string& large_icon);
     void setAppDescription(const std::string& app_description);
-    void setUserData(const std::string& user_data);
+    void setUserData(const std::string& context);
     void setParams(const pbnjson::JValue& params);
     void setMiniIcon(const std::string& mini_icon)
     {
@@ -144,7 +144,7 @@ public:
     }
     const std::string& getUserData() const
     {
-        return m_userData;
+        return m_context;
     }
     const pbnjson::JValue& getParams() const
     {
@@ -179,11 +179,11 @@ public:
         return m_storedInDB;
     }
 
-    void updateIfEmptyTitle(LaunchPointPtr lp);
+    void updateIfEmptyTitle(LaunchPointPtr launchPointPtr);
 
     virtual pbnjson::JValue toJValue() const;
     virtual std::string update(const pbnjson::JValue& data);
-    virtual void updateIfEmpty(LaunchPointPtr lp);
+    virtual void updateIfEmpty(LaunchPointPtr launchPointPtr);
     virtual void setAttrWithJson(const pbnjson::JValue& data);
 
 
@@ -227,7 +227,7 @@ protected:
     std::string m_iconColor;
     std::string m_largeIcon;
     std::string m_appDescription;
-    std::string m_userData;
+    std::string m_context;
     pbnjson::JValue m_params;
     std::string m_installTime;
     std::string m_miniIcon;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@
 #include <package/AppPackageScanner.h>
 #include <setting/Settings.h>
 #include <sys/stat.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
+#include <util/JValueUtil.h>
 
 static void TrimPath(std::string &path)
 {
@@ -69,8 +68,7 @@ bool AppPackageScanner::isRunning() const
 void AppPackageScanner::run(ScanMode mode)
 {
     if (m_targetDirs.empty()) {
-        LOG_ERROR(MSGID_APP_SCANNER, 1,
-                  PMLOGKS("err", "no_base_app_dir_registered"), "");
+        Logger::error(getClassName(), __FUNCTION__, "no_base_app_dir_registered");
         return;
     }
     if (ScanMode::FULL_SCAN != mode && ScanMode::PARTIAL_SCAN != mode)
@@ -155,34 +153,26 @@ AppPackagePtr AppPackageScanner::scanApp(std::string& path, AppTypeByDir appType
 
     std::size_t pos = path.rfind("/");
     if (std::string::npos == pos || path.length() <= pos) {
-        LOG_WARNING(MSGID_APP_SCANNER, 1,
-                    PMLOGKS("status", "ignore"),
-                    "invalid path: %s", path.c_str());
+        Logger::warning(getClassName(), __FUNCTION__, Logger::format("invalid path: %s", path.c_str()));
         return nullptr;
     }
 
     struct stat dirStat;
     if (stat(path.c_str(), &dirStat) != 0 || (dirStat.st_mode & S_IFDIR) == 0) {
-        LOG_WARNING(MSGID_APP_SCANNER, 1,
-                    PMLOGKS("status", "ignore"),
-                    "app dir not exist: %s", path.c_str());
+        Logger::warning(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("app dir not exist: %s", path.c_str()));
         return nullptr;
     }
 
     std::string appId = path.substr(pos + 1);
     if (AppTypeByDir::AppTypeByDir_System_BuiltIn == appTypeByDir) {
         if (SettingsImpl::getInstance().isDeletedSystemApp(appId)) {
-            LOG_INFO(MSGID_APP_SCANNER, 1,
-                     PMLOGKS("status", "skip"),
-                     "deleted system app: %s", path.c_str());
+            Logger::info(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("deleted system app: %s", path.c_str()));
             return nullptr;
         }
     }
 
     if (AppTypeByDir::AppTypeByDir_Dev == appTypeByDir && !(SettingsImpl::getInstance().m_isDevMode)) {
-        LOG_INFO(MSGID_APP_SCANNER, 1,
-                 PMLOGKS("status", "skip"),
-                 "dev app, but not in devmode now: %s", path.c_str());
+        Logger::info(getClassName(), __FUNCTION__, "SKIPPED", Logger::format("dev app, but not in devmode now: %s", path.c_str()));
         return nullptr;
     }
 
@@ -202,17 +192,13 @@ AppPackagePtr AppPackageScanner::scanApp(std::string& path, AppTypeByDir appType
     // [ Security check ]
     // * app id should be same with folder name
     if (!appPackagePtr->securityChecksVerified()) {
-        LOG_INFO(MSGID_APP_SCANNER, 1,
-                 PMLOGKS("status", "disallow"),
-                 "different app id/dir: %s:%s", appId.c_str(), path.c_str());
+        Logger::info(getClassName(), __FUNCTION__, "DISALLOWED", Logger::format("different app id/dir: %s:%s", appId.c_str(), path.c_str()));
         return nullptr;
     }
 
     // * ignore apps which has privileged ID, but this is not really privileged
     if (AppTypeByDir::AppTypeByDir_Dev == appTypeByDir && appPackagePtr->isPrivileged()) {
-        LOG_INFO(MSGID_APP_SCANNER, 1,
-                 PMLOGKS("status", "disallow"),
-                 "invalid id for dev app: %s:%s", appId.c_str(), path.c_str());
+        Logger::info(getClassName(), __FUNCTION__, "DISALLOWED", Logger::format("invalid id for dev app: %s:%s", appId.c_str(), path.c_str()));
         return nullptr;
     }
 
@@ -225,35 +211,35 @@ void AppPackageScanner::registerNewAppDesc(AppPackagePtr new_desc, AppDescMaps& 
     if (!new_desc)
         return;
 
-    const std::string& app_id = new_desc->getAppId();
-    if (app_roster.count(app_id) == 0) {
-        app_roster[app_id] = new_desc;
+    const std::string& appId = new_desc->getAppId();
+    if (app_roster.count(appId) == 0) {
+        app_roster[appId] = new_desc;
         return;
     }
 
-    AppPackagePtr current_desc = app_roster[app_id];
+    AppPackagePtr current_desc = app_roster[appId];
     if (current_desc->isHigherVersionThanMe(current_desc, new_desc)) {
-        app_roster[app_id] = new_desc;
+        app_roster[appId] = new_desc;
     } else {
 
     }
 }
 
-AppPackagePtr AppPackageScanner::scanForOneApp(const std::string& app_id)
+AppPackagePtr AppPackageScanner::scanForOneApp(const std::string& appId)
 {
 
-    if (app_id.empty())
+    if (appId.empty())
         return nullptr;
 
     AppDescMaps tmp_roster;
     for (const auto& it : m_targetDirs) {
-        std::string app_path = it.m_path + "/" + app_id;
+        std::string app_path = it.m_path + "/" + appId;
         AppPackagePtr new_desc = scanApp(app_path, it.m_type);
         if (new_desc) {
             registerNewAppDesc(new_desc, tmp_roster);
         }
     }
-    return (tmp_roster.count(app_id) > 0) ? tmp_roster[app_id] : nullptr;
+    return (tmp_roster.count(appId) > 0) ? tmp_roster[appId] : nullptr;
 }
 
 pbnjson::JValue AppPackageScanner::loadAppInfo(const std::string& appDirPath, const AppTypeByDir& appTypeByDir)
@@ -267,14 +253,10 @@ pbnjson::JValue AppPackageScanner::loadAppInfo(const std::string& appDirPath, co
     // (Note that the script dir goes in between the language and region dirs.)
 
     const std::string default_appinfo_path = appDirPath + "/appinfo.json";
-
-    JUtil::Error error;
-    pbnjson::JValue root = JUtil::parseFile(default_appinfo_path, "ApplicationDescription", &error);
+    pbnjson::JValue root = JDomParser::fromFile(default_appinfo_path.c_str(), JValueUtil::getSchema("ApplicationDescription"));
 
     if (root.isNull()) {
-        LOG_INFO(MSGID_APP_SCANNER, 1,
-                 PMLOGKS("status", "ignore"),
-                 "failed_parse_json: %s / reason: %s", default_appinfo_path.c_str(), error.detail().c_str());
+        Logger::info(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("failed_parse_json: %s", default_appinfo_path.c_str()));
         return pbnjson::JValue();
     }
 
@@ -307,12 +289,10 @@ pbnjson::JValue AppPackageScanner::loadAppInfo(const std::string& appDirPath, co
         if (stat(appinfo_path.c_str(), &file_stat) != 0 || (file_stat.st_mode & S_IFREG) == 0)
             continue;
 
-        pbnjson::JValue local_obj = JUtil::parseFile(appinfo_path, "");
+        pbnjson::JValue local_obj = JDomParser::fromFile(appinfo_path.c_str());
 
         if (local_obj.isNull()) {
-            LOG_INFO(MSGID_APP_SCANNER, 1,
-                     PMLOGKS("status", "ignore"),
-                     "failed_to_load_localication: %s", localization_dir.c_str());
+            Logger::info(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("failed_to_load_localication: %s", localization_dir.c_str()));
             continue;
         }
 
@@ -320,18 +300,12 @@ pbnjson::JValue AppPackageScanner::loadAppInfo(const std::string& appDirPath, co
             std::string key = json_it.first.asString();
 
             if (!root.hasKey(key) || root[key].getType() != local_obj[key].getType()) {
-                LOG_WARNING(MSGID_APP_SCANNER, 2,
-                            PMLOGKS("localization", "unmatchted_with_root"),
-                            PMLOGKS("key", key.c_str()),
-                            "file: %s", appinfo_path.c_str());
+                Logger::warning(getClassName(), __FUNCTION__, appinfo_path, "localization is unmatchted with root");
                 continue;
             }
 
             if (std::find(prohibited_props.begin(), prohibited_props.end(), key) != prohibited_props.end()) {
-                LOG_WARNING(MSGID_APP_SCANNER, 2,
-                            PMLOGKS("localization", "prohibited_props"),
-                            PMLOGKS("key", key.c_str()),
-                            "file: %s", appinfo_path.c_str());
+                Logger::warning(getClassName(), __FUNCTION__, appinfo_path, "localization is prohibited_props");
                 continue;
             }
 

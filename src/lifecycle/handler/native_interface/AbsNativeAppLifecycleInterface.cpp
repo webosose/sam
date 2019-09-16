@@ -19,6 +19,7 @@
 #include <boost/lexical_cast.hpp>
 #include <lifecycle/handler/native_interface/AbsNativeAppLifecycleInterface.h>
 #include "util/LinuxProcess.h"
+#include "util/Time.h"
 
 AbsNativeAppLifecycleInterface::AbsNativeAppLifecycleInterface()
 {
@@ -58,11 +59,9 @@ void AbsNativeAppLifecycleInterface::launch(NativeClientInfoPtr client, LaunchAp
         break;
 
     default:
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "invalid_status_to_handle"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
-        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
+        string errorText = "internal error";
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), errorText);
+        item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, errorText);
         return;
     }
 }
@@ -70,23 +69,15 @@ void AbsNativeAppLifecycleInterface::launch(NativeClientInfoPtr client, LaunchAp
 void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "null_poiner"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "null_poiner");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return;
     }
 
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
-
+    Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "start_native_handler");
     AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(item->getAppId());
     if (appDescPtr == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "null_description"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "null_description");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         NativeAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
         return;
@@ -115,20 +106,14 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
         fork_params[5] = "--params";
         fork_params[6] = strParams.c_str();
         fork_params[7] = NULL;
-        LOG_INFO(MSGID_APPLAUNCH, 4,
-                 PMLOGKS("appshellRunnderPath", SettingsImpl::getInstance().m_appshellRunnerPath.c_str()),
-                 PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-                 PMLOGKS("app_folder_path", appDescPtr->getFolderPath().c_str()),
-                 PMLOGJSON("params", strParams.c_str()), "launch with appshell_runner");
+
+        Logger::info(getClassName(), __FUNCTION__, appDescPtr->getAppId(), "launch with appshell_runner");
     } else if (AppType::AppType_Native_Qml == appDescPtr->getAppType()) {
         fork_params[0] = SettingsImpl::getInstance().m_qmlRunnerPath.c_str();
         fork_params[1] = strParams.c_str();
         fork_params[2] = NULL;
 
-        LOG_INFO(MSGID_APPLAUNCH, 3,
-                 PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-                 PMLOGKS("app_path", path.c_str()),
-                 PMLOGJSON("params", strParams.c_str()), "launch with qml_runner");
+        Logger::info(getClassName(), __FUNCTION__, appDescPtr->getAppId(), "launch with qml_runner");
     } else if (SettingsImpl::getInstance().m_isJailMode && !isNojailApp) {
         if (AppTypeByDir::AppTypeByDir_Dev == appDescPtr->getTypeByDir()) {
             jailer_type = "native_devmode";
@@ -163,14 +148,7 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
         fork_params[8] = strParams.c_str();
         fork_params[9] = NULL;
 
-        // This log shows whether native app's launched via Jailer or not
-        // Do not remove this log, until jailer become stable
-        LOG_INFO(MSGID_APPLAUNCH, 6,
-                 PMLOGKS("jailer_path", SettingsImpl::getInstance().m_jailerPath.c_str()),
-                 PMLOGKS("jailer_type", jailer_type),
-                 PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-                 PMLOGKS("app_folder_path", appDescPtr->getFolderPath().c_str()),
-                 PMLOGKS("app_path", path.c_str()), PMLOGJSON("params", strParams.c_str()), "launch with jail");
+        Logger::info(getClassName(), __FUNCTION__, appDescPtr->getAppId(), "launch with jail");
     } else {
         // This log shows whether native app's launched via Jailer or not
         // Do not remove this log, until jailer become stable
@@ -178,11 +156,7 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
         fork_params[1] = strParams.c_str();
         fork_params[2] = NULL;
 
-        LOG_INFO(MSGID_APPLAUNCH, 3,
-                 PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-                 PMLOGKS("app_path", path.c_str()),
-                 PMLOGJSON("params", strParams.c_str()), "launch as root");
-
+        Logger::info(getClassName(), __FUNCTION__, appDescPtr->getAppId(), "launch with root");
     }
 
     if (item->getPreload().empty())
@@ -190,12 +164,10 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
     else
         NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), item->getUid(), RuntimeStatus::PRELOADING);
 
-    int pid = LinuxProcess::fork_process(fork_params, NULL);
+    int pid = LinuxProcess::forkProcess(fork_params, NULL);
 
     if (pid <= 0) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-                  PMLOGKS("path", path.c_str()), "forked_pid: %d", pid);
+        Logger::error(getClassName(), __FUNCTION__, appDescPtr->getAppId(), Logger::format("pid(%d) path(%s)", pid, path.c_str()));
         NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), item->getUid(), RuntimeStatus::STOP);
         item->setErrCodeText(APP_ERR_NATIVE_SPAWN, "Failed to launch process");
         NativeAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
@@ -205,14 +177,10 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
     // set watcher for the child's
     g_child_watch_add(pid, (GChildWatchFunc) NativeAppLifeHandler::onKillChildProcess, NULL);
 
-    double now = getCurrentTime();
+    double now = Time::getCurrentTime();
     double collapse = now - item->launchStartTime();
-    LOG_INFO(MSGID_APP_LAUNCHED, 5,
-             PMLOGKS(LOG_KEY_APPID, appDescPtr->getAppId().c_str()),
-             PMLOGKS(LOG_KEY_TYPE, "native"),
-             PMLOGKFV("pid", "%d", pid),
-             PMLOGKFV("start_time", "%f", item->launchStartTime()),
-             PMLOGKFV("collapse_time", "%f", collapse), "");
+
+    Logger::info(getClassName(), __FUNCTION__, appDescPtr->getAppId(), Logger::format("pid(%d) collapse(%f)", pid, collapse));
 
     std::string new_pid = boost::lexical_cast<std::string>(pid);
     item->setPid(new_pid);
@@ -230,10 +198,7 @@ void AbsNativeAppLifecycleInterface::launchFromStop(NativeClientInfoPtr client, 
 
 void AbsNativeAppLifecycleInterface::launchFromRegistered(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId());
 
     pbnjson::JValue payload = pbnjson::Object();
     AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(item->getAppId());
@@ -243,9 +208,7 @@ void AbsNativeAppLifecycleInterface::launchFromRegistered(NativeClientInfoPtr cl
     NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), item->getUid(), RuntimeStatus::LAUNCHING);
 
     if (client->sendEvent(payload) == false) {
-        LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
-                    PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-                    "failed_to_send_relaunch_event");
+        Logger::warning(getClassName(), __FUNCTION__, client->getAppId(), "failed_to_send_relaunch_event");
     }
 
     NativeAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());

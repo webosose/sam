@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,14 +18,16 @@
 #define LAUNCH_POINT_FACTORY_H
 
 #include <launchpoint/launch_point/LaunchPoint.h>
+#include "interface/IClassName.h"
 #include <map>
+#include "util/Logger.h"
 
-class LaunchPointFactory {
+class LaunchPointFactory : public IClassName {
 public:
     LaunchPointFactory();
     virtual ~LaunchPointFactory();
 
-    virtual LaunchPointPtr createLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& errText);
+    virtual LaunchPointPtr createLaunchPoint(const LPType type, const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText);
 
 private:
     LaunchPointFactory(const LaunchPointFactory&);

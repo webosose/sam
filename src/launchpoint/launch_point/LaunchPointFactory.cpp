@@ -15,7 +15,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <launchpoint/launch_point/LaunchPointFactory.h>
-#include "util/Logging.h"
 
 LaunchPointFactory::LaunchPointFactory()
 {
@@ -32,14 +31,13 @@ void LaunchPointFactory::registerItem(const LPType type, CreateLaunchPointFunc f
     m_factoryMap[type] = func;
 }
 
-LaunchPointPtr LaunchPointFactory::createLaunchPoint(const LPType type, const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LaunchPointFactory::createLaunchPoint(const LPType type, const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText)
 {
     auto item = m_factoryMap.find(type);
     if (item != m_factoryMap.end())
-        return item->second(lp_id, data, err_text);
+        return item->second(launchPointId, data, errorText);
 
-    LOG_ERROR(MSGID_LAUNCH_POINT_ERROR, 1,
-              PMLOGKS("status", "fail_to_create_launch_point"), "");
-    err_text = "unknown type";
+    Logger::error(getClassName(), __FUNCTION__, "", "fail_to_create_launch_point");
+    errorText = "unknown type";
     return nullptr;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,39 +14,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef BUS_CLIENT_DB8_H_
-#define BUS_CLIENT_DB8_H_
+#ifndef BUS_CLIENT_NOTIFICATION_H_
+#define BUS_CLIENT_NOTIFICATION_H_
 
-#include "AbsLunaClient.h"
-#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
 
+#include "AbsLunaClient.h"
+#include "interface/ISingleton.h"
+
 using namespace LS;
 using namespace pbnjson;
 
-class DB8 : public ISingleton<DB8>,
-            public AbsLunaClient {
-friend class ISingleton<DB8>;
+class Notification : public ISingleton<Notification>,
+                     public AbsLunaClient {
+friend class ISingleton<Notification>;
 public:
-    DB8();
-    virtual ~DB8();
+    virtual ~Notification();
 
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
-    // API
-    Call find(LSFilterFunc func, const string& name);
-    Call putKind(LSFilterFunc func, JValue& requestPayload);
-    Call putPermissions(LSFilterFunc func, JValue& requestPayload);
-    Call put(LSFilterFunc func, string query);
-    Call merge(LSFilterFunc func, string query);
-    Call del(LSFilterFunc func, string query);
+    // APIs
+    Call createPincodePrompt(LSFilterFunc func);
 
+private:
+    static const std::string NAME;
 
-    static const std::string WEBOS_SERVICE_DB;
+    Notification();
 };
 
-#endif /* BUS_CLIENT_DB8_H_ */
+#endif /* BUS_CLIENT_NOTIFICATION_H_ */

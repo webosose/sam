@@ -24,8 +24,8 @@ public:
     NativeAppLifeCycleInterfaceVer2();
     virtual ~NativeAppLifeCycleInterfaceVer2();
 
-    virtual void close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& err_text) override;
-    virtual void pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool send_life_event) override;
+    virtual void close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& errorText) override;
+    virtual void pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& errorText, bool send_life_event) override;
 
 private:
     virtual void launchFromClosing(NativeClientInfoPtr client, LaunchAppItemPtr item) override;

@@ -21,12 +21,14 @@
 #include <lifecycle/RunningInfo.h>
 #include <package/AppPackageManager.h>
 #include <pbnjson.hpp>
-#include <util/Singleton.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 
 using namespace std;
 
-class RunningInfoManager: public Singleton<RunningInfoManager> {
-friend class Singleton<RunningInfoManager> ;
+class RunningInfoManager: public ISingleton<RunningInfoManager>,
+                          public IClassName {
+friend class ISingleton<RunningInfoManager> ;
 public:
     static std::string toString(const LifeStatus& status);
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,30 +15,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <launchpoint/launch_point/LaunchPointBookmark.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
 
-
-LaunchPointPtr LaunchPointBookmark::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LaunchPointBookmark::create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText)
 {
-    std::string app_id = data["id"].asString();
-    if (app_id.empty())
+    std::string appId = data["id"].asString();
+    if (appId.empty())
         return nullptr;
 
-    LaunchPointPtr new_lp = std::make_shared<LaunchPointBookmark>(app_id, lp_id);
-    if (new_lp == nullptr)
+    LaunchPointPtr newLaunchPoint = std::make_shared<LaunchPointBookmark>(appId, launchPointId);
+    if (newLaunchPoint == nullptr)
         return nullptr;
 
-    new_lp->setAttrWithJson(data);
+    newLaunchPoint->setAttrWithJson(data);
 
-    new_lp->setLpType(LPType::BOOKMARK);
-    new_lp->setDefaultLp(false);
-    new_lp->setRemovable(true);
-    new_lp->setSystemApp(false);
-    new_lp->setVisible(true);
+    newLaunchPoint->setLpType(LPType::BOOKMARK);
+    newLaunchPoint->setDefaultLp(false);
+    newLaunchPoint->setRemovable(true);
+    newLaunchPoint->setSystemApp(false);
+    newLaunchPoint->setVisible(true);
 
-    return new_lp;
+    return newLaunchPoint;
 }
 
 std::string LaunchPointBookmark::update(const pbnjson::JValue& data)

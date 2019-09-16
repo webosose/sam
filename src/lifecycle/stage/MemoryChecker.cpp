@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ MemoryChecker::~MemoryChecker()
 void MemoryChecker::add_item(LaunchAppItemPtr item)
 {
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "null_pointer"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, "null_pointer");
         return;
     }
 
@@ -38,20 +36,13 @@ void MemoryChecker::add_item(LaunchAppItemPtr item)
         return (it->getUid() == item->getUid());
     });
     if (it != m_queue.end()) {
-        LOG_WARNING(MSGID_APPLAUNCH_ERR, 4,
-                    PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                    PMLOGKS("uid", item->getUid().c_str()),
-                    PMLOGKS(LOG_KEY_REASON, "already_in_queue"),
-                    PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "already_in_queue");
         return;
     }
 
     LaunchAppItemPtr new_item = std::static_pointer_cast<LaunchAppItem>(item);
     if (new_item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "pointer_cast_error"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(getClassName(), __FUNCTION__, item->getAppId(), "pointer_cast_error");
         return;
     }
 
@@ -83,9 +74,7 @@ void MemoryChecker::run()
 void MemoryChecker::cancel_all()
 {
     for (auto& launching_item : m_queue) {
-        LOG_INFO(MSGID_APPLAUNCH, 2,
-                 PMLOGKS(LOG_KEY_APPID, launching_item->getAppId().c_str()),
-                 PMLOGKS("status", "cancel_launching"), "");
+        Logger::info(getClassName(), __FUNCTION__, launching_item->getAppId(), "cancel_launching");
         launching_item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "cancel all request");
         EventMemoryCheckingDone(launching_item->getUid());
     }

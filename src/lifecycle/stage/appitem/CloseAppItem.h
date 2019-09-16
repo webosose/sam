@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 class CloseAppItem : public AppItem {
 public:
-    CloseAppItem(const std::string& app_id, const std::string& pid, const std::string& caller, const std::string& reason);
+    CloseAppItem(const std::string& appId, const std::string& pid, const std::string& caller, const std::string& reason);
     virtual ~CloseAppItem();
 
     bool isMemoryReclaim() const

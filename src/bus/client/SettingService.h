@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+#include "util/Logger.h"
 
 using namespace LS;
 using namespace pbnjson;
 
 class SettingService : public ISingleton<SettingService>,
-                       public AbsLunaClient {
+                       public AbsLunaClient,
+                       public IClassName {
 friend class ISingleton<SettingService>;
 public:
     virtual ~SettingService();
@@ -37,6 +40,9 @@ public:
     virtual void onServerStatusChanged(bool isConnected);
 
     void onRestInit();
+
+    // API
+    Call batch(LSFilterFunc func, const string& appId);
 
     const std::string& localeInfo() const
     {
@@ -58,10 +64,10 @@ public:
     boost::signals2::signal<void(std::string, std::string, std::string)> EventLocaleChanged;
 
 private:
-    SettingService();
+    static const string NAME;
+    static bool onGetSystemSettings(LSHandle* sh, LSMessage* message, void* context);
 
-    void onSettingServiceStatusChanaged(bool connection);
-    static bool onLocaleInfoReceived(LSHandle *sh, LSMessage *message, void *user_data);
+    SettingService();
 
     void updateLocaleInfo(const pbnjson::JValue& j_locale);
     void setLocaleInfo(const std::string& locale);
@@ -71,7 +77,8 @@ private:
     std::string m_script;
     std::string m_region;
 
-    LSMessageToken m_localeInfoToken;
+    Call m_getSystemSettingsCall;
+
 };
 #endif // BUS_CLIENT_SETTINGSERVICE_H_
 

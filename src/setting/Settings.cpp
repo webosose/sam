@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,22 +19,39 @@
 #include <setting/SettingsConf.h>
 #include <setting/Settings.h>
 #include <unistd.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
+#include <util/JValueUtil.h>
+#include <util/File.h>
 #include <string>
 
 const std::string DELETED_LIST_KEY = "deletedList";
 
-Settings::Settings() :
-        m_appMgrPreferenceDir(kAppMgrPreferenceDir), m_deletedSystemAppListPath(kDeletedSystemAppListPath), m_devModePath("/var/luna/preferences/devmode_enabled"), m_localeInfoPath(kLocaleInfoFile), m_schemaPath(
-                kSchemaPath), m_respawnedPath("/tmp/sam-respawned"), m_jailModePath("/var/luna/preferences/jailer_disabled"), m_logPath(kLogBasePath), m_isRespawned(false), m_isDevMode(false), m_isJailMode(
-                false), m_isRestLoaded(false), m_qmlRunnerPath("/usr/bin/qml-runner"), m_appshellRunnerPath("/usr/bin/app-shell/run_appshell"), m_jailerPath("/usr/bin/jailer"), m_useQmlBooster(false), m_launchExpiredTimeout(
-                120000000000ULL), // 120sec
-        m_loadingExpiredTimeout(30000000000ULL), // 30sec
-        m_lastLoadingAppTimeout(30000), // 30sec
-        m_appInstallBase(kAppInstallBase), m_appInstallRelative("usr/palm/applications"), m_devAppsBasePath("/media/developer/apps"), m_tempAliasAppBasePath("/tmp/alias/apps"), m_aliasAppBasePath(
-                "/media/alias/apps"), m_deletedSystemApps(pbnjson::Object()), m_usePartialKeywordAppSearch(true)
+Settings::Settings()
+    : m_appMgrPreferenceDir(kAppMgrPreferenceDir),
+      m_deletedSystemAppListPath(kDeletedSystemAppListPath),
+      m_devModePath("/var/luna/preferences/devmode_enabled"),
+      m_localeInfoPath(kLocaleInfoFile),
+      m_schemaPath(kSchemaPath),
+      m_respawnedPath("/tmp/sam-respawned"),
+      m_jailModePath("/var/luna/preferences/jailer_disabled"),
+      m_logPath(kLogBasePath),
+      m_isRespawned(false),
+      m_isDevMode(false),
+      m_isJailMode(false),
+      m_isRestLoaded(false),
+      m_qmlRunnerPath("/usr/bin/qml-runner"),
+      m_appshellRunnerPath("/usr/bin/app-shell/run_appshell"),
+      m_jailerPath("/usr/bin/jailer"),
+      m_useQmlBooster(false),
+      m_launchExpiredTimeout(120000000000ULL), // 120sec
+      m_loadingExpiredTimeout(30000000000ULL), // 30sec
+      m_lastLoadingAppTimeout(30000), // 30sec
+      m_appInstallBase(kAppInstallBase),
+      m_appInstallRelative("usr/palm/applications"),
+      m_devAppsBasePath("/media/developer/apps"),
+      m_tempAliasAppBasePath("/tmp/alias/apps"),
+      m_aliasAppBasePath("/media/alias/apps"),
+      m_deletedSystemApps(pbnjson::Object()),
+      m_usePartialKeywordAppSearch(true)
 {
     m_launchPointDbkind = pbnjson::Object();
     m_launchPointPermissions = pbnjson::Object();
@@ -98,41 +115,32 @@ void Settings::loadConfigOnRWFilesystemReady()
         }
     }
 
-    LOG_INFO(MSGID_SETTING_INFO, 1,
-             PMLOGKS("key", "devmode"),
-             "val: %s", (m_isDevMode ? "on" : "off"));
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("isDevMode(%B)", m_isDevMode));
 
     if (0 == access(m_respawnedPath.c_str(), F_OK)) {
         m_isRespawned = true;
     } else {
         //create respawnded file
-        if (!writeFile(m_respawnedPath.c_str(), "")) {
-            LOG_WARNING(MSGID_SETTINGS_ERR, 1,
-                        PMLOGKS("respawnedPath", m_respawnedPath.c_str()),
-                        "cannot create respawned file");
+        if (!File::writeFile(m_respawnedPath.c_str(), "")) {
+            Logger::info(getClassName(), __FUNCTION__, "cannot create respawned file");
         }
     }
 
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 2,
-             PMLOGKS("status", "analyze_loading_reason"),
-             PMLOGKS("loading_status", (m_isRespawned ? "respawned" : "fresh_start")), "");
-
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("m_isRespawned(%B)", m_isRespawned));
     if (0 != g_mkdir_with_parents(m_appMgrPreferenceDir.c_str(), 0700)) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1,
-                    PMLOGKS("PreferencesDir", m_appMgrPreferenceDir.c_str()),
-                    "cannot create PreferenceDir");
+        Logger::warning(getClassName(), __FUNCTION__, "cannot create PreferenceDir");
     }
 
     // Load Deleted SystemApp list
-    pbnjson::JValue json = JUtil::parseFile(m_deletedSystemAppListPath, "deletedSystemAppList", NULL);
+    pbnjson::JValue json = JDomParser::fromFile(m_deletedSystemAppListPath.c_str(), JValueUtil::getSchema("deletedSystemAppList"));
     if (json.isNull()) {
-        LOG_DEBUG("[DELETED SYSTEM APP LIST] fail to launch list");
+        Logger::debug(getClassName(), __FUNCTION__, "Failed to launch list");
         m_deletedSystemApps.put(DELETED_LIST_KEY, pbnjson::Array());
     } else {
         m_deletedSystemApps = json;
     }
 
-    LOG_DEBUG("[Load deletedList] %s", m_deletedSystemApps.stringify().c_str());
+    Logger::debug(getClassName(), __FUNCTION__, m_deletedSystemApps.stringify());
 }
 
 bool Settings::loadStaticConfig(const char* filePath)
@@ -143,12 +151,10 @@ bool Settings::loadStaticConfig(const char* filePath)
     if (conf_path.empty())
         conf_path = kSettingsFile;
 
-    LOG_DEBUG("LoadConf : %s", conf_path.c_str());
-
-    JUtil::Error error;
-    pbnjson::JValue root = JUtil::parseFile(conf_path, "sam-conf", &error);
+    Logger::debug(getClassName(), __FUNCTION__, conf_path);
+    pbnjson::JValue root = JDomParser::fromFile(conf_path.c_str(), JValueUtil::getSchema("sam-conf"));
     if (root.isNull()) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1, PMLOGKS("FILE", conf_path.c_str()), "");
+        Logger::warning(getClassName(), __FUNCTION__, conf_path);
         return false;
     }
 
@@ -195,14 +201,13 @@ bool Settings::loadStaticConfig(const char* filePath)
             else
                 continue;
 
-            LOG_DEBUG("PathType : %s, Path : %s", type.c_str(), path.c_str());
+            Logger::debug(getClassName(), __FUNCTION__, Logger::format("type(%s), path(%s)", type.c_str(), path.c_str()));
 
             addBaseAppDirPath(path, typeByDir);
         }
 
         if (m_baseAppDirs.size() < 1) {
-            LOG_WARNING(MSGID_NO_APP_PATHS, 1,
-                        PMLOGKS("FILE", conf_path.c_str()), "");
+            Logger::warning(getClassName(), __FUNCTION__, conf_path);
             return false;
         }
     }
@@ -228,8 +233,7 @@ bool Settings::loadStaticConfig(const char* filePath)
                 root["HostAppsForAlias"][i].asString(appId) != CONV_OK)
                 continue;
 
-            LOG_INFO("HOSTAPPS", 1,
-                     PMLOGKS(LOG_KEY_APPID, appId.c_str()), "");
+            Logger::info(getClassName(), __FUNCTION__, "HOSTAPPS", appId);
             m_hostAppsForAlias.push_back(appId);
         }
     }
@@ -242,7 +246,7 @@ bool Settings::loadStaticConfig(const char* filePath)
             if (appList[i].asString(str) != CONV_OK)
                 continue;
             m_noJailApps.push_back(str);
-            LOG_DEBUG("NoJailApp: %s", str.c_str());
+            Logger::info(getClassName(), __FUNCTION__, "NoJailApp", str);
         }
     }
 
@@ -264,13 +268,11 @@ bool Settings::loadSAMConf()
 {
     std::string conf_path = kBasicSettingsFile;
 
-    LOG_DEBUG("Base LoadConf : %s", conf_path.c_str());
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("Base LoadConf(%s)", conf_path.c_str()));
 
-    JUtil::Error error;
-    pbnjson::JValue root = JUtil::parseFile(conf_path, "", &error);
+    pbnjson::JValue root = JDomParser::fromFile(conf_path.c_str());
     if (root.isNull()) {
-        LOG_WARNING(MSGID_SETTINGS_ERR, 1,
-                    PMLOGKS("FILE", conf_path.c_str()), "");
+        Logger::warning(getClassName(), __FUNCTION__, conf_path);
         return false;
     }
 
@@ -310,29 +312,22 @@ void Settings::setKeepAliveApps(const pbnjson::JValue& apps)
         return;
     m_keepAliveApps.clear();
 
-    LOG_INFO(MSGID_CONFIGD_INIT, 1,
-             PMLOGKS("CONFIG_TYPE", "keep_alive_apps"),
-             "%s", apps.duplicate().stringify().c_str());
-
+    Logger::info(getClassName(), __FUNCTION__, "keep_alive_apps", apps.duplicate().stringify());
     int apps_num = apps.arraySize();
     for (int i = 0; i < apps_num; ++i) {
-        std::string app_id = "";
-        if (!apps[i].isString() || apps[i].asString(app_id) != CONV_OK)
+        std::string appId = "";
+        if (!apps[i].isString() || apps[i].asString(appId) != CONV_OK)
             continue;
 
-        LOG_INFO(MSGID_CONFIGD_INIT, 2,
-                 PMLOGKS("CONFIG_TYPE", "keep_alive_apps"),
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()), "");
-        m_keepAliveApps.push_back(app_id);
+        Logger::info(getClassName(), __FUNCTION__, "keep_alive_apps", appId);
+        m_keepAliveApps.push_back(appId);
     }
 }
 
 void Settings::setSupportQMLBooster(bool value)
 {
     m_useQmlBooster = value;
-    LOG_INFO(MSGID_CONFIGD_INIT, 2,
-             PMLOGKS("CONFIG_TYPE", "support_qml_booster"),
-             PMLOGKS("value", (value?"true":"false")), "");
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("support_qml_booster(%B)", value));
 }
 
 void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
@@ -340,10 +335,7 @@ void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
 
     m_assetFallbackPrecedence.clear();
 
-    LOG_INFO(MSGID_CONFIGD_INIT, 1,
-             PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"),
-             "%s", keys_arr.duplicate().stringify().c_str());
-
+    Logger::info(getClassName(), __FUNCTION__, "asset_fallback_precedence", keys_arr.duplicate().stringify());
     if (!keys_arr.isArray())
         return;
 
@@ -354,9 +346,7 @@ void Settings::setAssetFallbackKeys(const pbnjson::JValue& keys_arr)
         if (!keys_arr[i].isString() || keys_arr[i].asString(key) != CONV_OK)
             continue;
 
-        LOG_INFO(MSGID_CONFIGD_INIT, 2,
-                 PMLOGKS("CONFIG_TYPE", "asset_fallback_precedence"),
-                 PMLOGKS("key", key.c_str()), "");
+        Logger::info(getClassName(), __FUNCTION__, "asset_fallback_precedence", key);
         m_assetFallbackPrecedence.push_back(key);
     }
 }
@@ -366,9 +356,9 @@ std::string Settings::getAppInstallBase(bool verified) const
     return (verified) ? m_appInstallBase : m_devAppsBasePath;
 }
 
-bool Settings::isInHostAppsList(const std::string& app_id) const
+bool Settings::isInHostAppsList(const std::string& appId) const
 {
-    auto it = std::find(m_hostAppsForAlias.begin(), m_hostAppsForAlias.end(), app_id);
+    auto it = std::find(m_hostAppsForAlias.begin(), m_hostAppsForAlias.end(), appId);
     if (it != m_hostAppsForAlias.end())
         return true;
     return false;
@@ -390,18 +380,18 @@ bool Settings::isInNoJailApps(const std::string& appId) const
     return false;
 }
 
-void Settings::addBootTimeApp(const std::string& app_id)
+void Settings::addBootTimeApp(const std::string& appId)
 {
-    auto it = std::find(m_bootTimeApps.begin(), m_bootTimeApps.end(), app_id);
+    auto it = std::find(m_bootTimeApps.begin(), m_bootTimeApps.end(), appId);
     if (it != m_bootTimeApps.end())
         return;
-    m_bootTimeApps.push_back(app_id);
+    m_bootTimeApps.push_back(appId);
 }
 
-bool Settings::isBootTimeApp(const std::string& app_id)
+bool Settings::isBootTimeApp(const std::string& appId)
 {
     for (auto& id : m_bootTimeApps)
-        if (app_id == id)
+        if (appId == id)
             return true;
     return false;
 }
@@ -420,7 +410,7 @@ void Settings::deletedSystemAppsToStringVector(std::vector<std::string>& apps)
 void Settings::setSystemAppAsRemoved(const std::string& appId)
 {
     if (isDeletedSystemApp(appId)) {
-        LOG_DEBUG("Already in deleted list");
+        Logger::debug(getClassName(), __FUNCTION__, "Already in deleted list");
         return;
     }
 
@@ -428,12 +418,9 @@ void Settings::setSystemAppAsRemoved(const std::string& appId)
 
     std::string deletedList = m_deletedSystemApps.stringify();
 
-    LOG_DEBUG("[REMOVE SYSTEM APP] deletedList: %s", deletedList.c_str());
-
+    Logger::debug(getClassName(), __FUNCTION__, "deletedList", deletedList);
     if (!g_file_set_contents(m_deletedSystemAppListPath.c_str(), deletedList.c_str(), deletedList.length(), NULL)) {
-        LOG_WARNING(MSGID_FAIL_WRITING_DELETEDLIST, 2,
-                    PMLOGKS("CONTENT", deletedList.c_str()),
-                    PMLOGKS("PATH", m_deletedSystemAppListPath.c_str()), "");
+        Logger::warning(getClassName(), __FUNCTION__, "Failed to save deletedList");
     }
 }
 
@@ -535,21 +522,19 @@ std::string Settings::getCloseReason(const std::string& caller_id, const std::st
     }
 }
 
-void Settings::addCRIUSupportApp(const std::string& app_id)
+void Settings::addCRIUSupportApp(const std::string& appId)
 {
-    if (supportCRIU(app_id))
+    if (supportCRIU(appId))
         return;
 
-    LOG_INFO(MSGID_SETTING_INFO, 2,
-             PMLOGKS("set_key", "criu_app"),
-             PMLOGKS(LOG_KEY_APPID, app_id.c_str()), "");
-    m_criuSupportApps.push_back(app_id);
+    Logger::info(getClassName(), __FUNCTION__, "criu_app", appId);
+    m_criuSupportApps.push_back(appId);
 }
 
-bool Settings::supportCRIU(const std::string& app_id) const
+bool Settings::supportCRIU(const std::string& appId) const
 {
     for (auto id : m_criuSupportApps) {
-        if (id == app_id)
+        if (id == appId)
             return true;
     }
     return false;

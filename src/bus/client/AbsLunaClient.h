@@ -52,7 +52,7 @@ public:
     boost::signals2::signal<void(bool)> EventServiceStatusChanged;
 
 private:
-    static bool _onServerStatus(LSHandle *lshandle, LSMessage *message, void *userData);
+    static bool _onServerStatus(LSHandle* sh, LSMessage* message, void* context);
 
     string m_name;
     bool m_isConnected;

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,21 @@ public:
 
     static LaunchAppItemPtr createLaunchItem(LifecycleTaskPtr task);
     static CloseAppItemPtr createCloseItem(LifecycleTaskPtr task);
+
+private:
+    static std::string getCallerID(const std::string& caller)
+    {
+        if (std::string::npos == caller.find(" "))
+            return caller;
+        return caller.substr(0, caller.find(" "));
+    }
+
+    static std::string getCallerPID(const std::string& caller)
+    {
+        if (std::string::npos == caller.find(" "))
+            return "";
+        return caller.substr(caller.find(" ") + 1);
+    }
 };
 
 #endif

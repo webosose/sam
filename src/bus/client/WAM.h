@@ -19,15 +19,18 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+#include "util/Logger.h"
 
 using namespace LS;
 using namespace pbnjson;
 
 class WAM : public ISingleton<WAM>,
-            public AbsLunaClient {
+            public AbsLunaClient,
+            public IClassName {
 friend class ISingleton<WAM>;
 public:
     WAM();
@@ -40,7 +43,7 @@ public:
     boost::signals2::signal<void(JValue&)> EventListRunningAppsChanged;
 
 private:
-    static bool onListRunningApps(LSHandle* handle, LSMessage* lsmsg, void* userData);
+    static bool onListRunningApps(LSHandle* sh, LSMessage* message, void* context);
 
     Call m_listRunningAppsCall;
 };

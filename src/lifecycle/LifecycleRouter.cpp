@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #include <lifecycle/LifecycleRouter.h>
 #include <lifecycle/RunningInfoManager.h>
-#include <util/Logging.h>
 
 const LifecycleRoutePolicy LifecycleRouter::m_invalidRoutePolicy = { LifeStatus::INVALID, RouteAction::IGNORE, RouteLog::ERROR };
 
@@ -260,17 +259,11 @@ void LifecycleRouter::setRuntimeStatus(const std::string& appId, RuntimeStatus n
         return next == policy.first;
     });
     if (it == m_runtimeRouteMap[runningInfoPtr->getRuntimeStatus()].end() || (*it).second != RouteAction::SET) {
-        LOG_INFO(MSGID_RUNTIME_STATUS, 2,
-                 PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-                 PMLOGKFV("current", "%d", (int)runningInfoPtr->getRuntimeStatus()),
-                 "skip set runtime status (%d)", (int )next);
+        Logger::info("LifecycleRouter", __FUNCTION__, appId, Logger::format("skip set runtime status: current(%d) next(%d)", runningInfoPtr->getRuntimeStatus(), next));
         return;
     }
 
-    LOG_INFO(MSGID_RUNTIME_STATUS, 3,
-             PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-             PMLOGKFV("current", "%d", (int)runningInfoPtr->getRuntimeStatus()),
-             PMLOGKFV("new", "%d", (int)next), "runtime_status_changed");
+    Logger::info("LifecycleRouter", __FUNCTION__, appId, Logger::format("runtime_status_changed: current(%d) next(%d)", runningInfoPtr->getRuntimeStatus(), next));
     runningInfoPtr->setRuntimeStatus(next);
 }
 

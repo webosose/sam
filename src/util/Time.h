@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef DB_LAUNCH_POINT_H
-#define DB_LAUNCH_POINT_H
+#ifndef UTIL_TIME_H_
+#define UTIL_TIME_H_
 
-#include <launchpoint/DBBase.h>
-#include <string>
+#include <iostream>
 
-class DBLaunchPoint: public DBBase {
+using namespace std;
+
+class Time {
 public:
-    DBLaunchPoint();
-    virtual ~DBLaunchPoint();
+    static double getCurrentTime();
+    static std::string generateUid();
 
-    virtual void init() override;
-
-    virtual bool insertData(const pbnjson::JValue& json) override;
-    virtual bool updateData(const pbnjson::JValue& json) override;
-    virtual bool deleteData(const pbnjson::JValue& json) override;
-
+    Time();
+    virtual ~Time();
 };
 
-#endif
+#endif /* UTIL_TIME_H_ */

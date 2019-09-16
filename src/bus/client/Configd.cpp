@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 #include <bus/client/Configd.h>
 #include <bus/service/ApplicationManager.h>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
 
+const string Configd::NAME = "com.webos.service.config";
+
 Configd::Configd()
-    : AbsLunaClient("com.webos.service.config"),
-      m_tokenConfigInfo(0)
+    : AbsLunaClient(NAME)
 {
+    setClassName(NAME);
 }
 
 Configd::~Configd()
@@ -38,60 +38,41 @@ void Configd::onInitialze()
 
 void Configd::onServerStatusChanged(bool isConnected)
 {
+    static std::string method = std::string("luna://") + getName() + std::string("/getConfigs");
+
     if (isConnected) {
-        requestConfigInfo();
-    } else {
-        if (0 != m_tokenConfigInfo) {
-            (void) LSCallCancel(ApplicationManager::getInstance().get(), m_tokenConfigInfo, NULL);
-            m_tokenConfigInfo = 0;
+        if (m_getConfigsCall.isActive())
+            return;
+
+        if (m_configNames.empty())
+            return;
+
+        pbnjson::JValue requestPayload = pbnjson::Object();
+        pbnjson::JValue configNames = pbnjson::Array();
+
+        requestPayload.put("subscribe", true);
+        for (auto& key : m_configNames) {
+            configNames.append(key);
         }
+        requestPayload.put("configNames", configNames);
+
+        m_getConfigsCall = ApplicationManager::getInstance().callMultiReply(
+            method.c_str(),
+            requestPayload.stringify().c_str(),
+            onGetConfigs,
+            nullptr
+        );
+    } else {
+        m_getConfigsCall.cancel();
     }
 }
 
-void Configd::requestConfigInfo()
+bool Configd::onGetConfigs(LSHandle* sh, LSMessage* message, void* context)
 {
-    if (m_tokenConfigInfo != 0)
-        return;
-    if (m_configKeys.empty())
-        return;
-
-    pbnjson::JValue payload = pbnjson::Object();
-    pbnjson::JValue configs = pbnjson::Array();
-
-    payload.put("subscribe", true);
-    for (auto& key : m_configKeys) {
-        configs.append(key);
-    }
-    payload.put("configNames", configs);
-
-    std::string method = std::string("luna://") + getName() + std::string("/getConfigs");
-
-    LSErrorSafe lserror;
-    if (!LSCall(ApplicationManager::getInstance().get(),
-                method.c_str(),
-                payload.stringify().c_str(),
-                configInfoCallback,
-                this,
-                &m_tokenConfigInfo,
-                &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 4,
-                  PMLOGKS(LOG_KEY_TYPE, "lscall"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  PMLOGKS(LOG_KEY_ERRORTEXT, lserror.message), "");
-    }
-}
-
-bool Configd::configInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* userData)
-{
-    Configd* subscriber = static_cast<Configd*>(userData);
-    if (!subscriber)
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    if (responsePayload.isNull())
         return false;
 
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-    if (jmsg.isNull())
-        return false;
-
-    subscriber->EventConfigInfo(jmsg);
+    Configd::getInstance().EventConfigInfo(responsePayload);
     return true;
 }

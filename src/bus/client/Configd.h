@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,17 +19,22 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+#include "util/Logger.h"
 
 using namespace LS;
 using namespace pbnjson;
 
 class Configd : public ISingleton<Configd>,
-                public AbsLunaClient {
+                public AbsLunaClient,
+                public IClassName {
 friend class ISingleton<Configd>;
 public:
+    static bool onGetConfigs(LSHandle* sh, LSMessage* response, void* context);
+
     virtual ~Configd();
 
     // AbsLunaClient
@@ -38,20 +43,18 @@ public:
 
     void addRequiredKey(const std::string& key)
     {
-        m_configKeys.push_back(key);
+        m_configNames.push_back(key);
     }
-
-    static bool configInfoCallback(LSHandle* handle, LSMessage* lsmsg, void* userData);
 
     boost::signals2::signal<void(const pbnjson::JValue&)> EventConfigInfo;
 
 private:
+    static const string NAME;
+
     Configd();
 
-    void requestConfigInfo();
-
-    std::vector<std::string> m_configKeys;
-    LSMessageToken m_tokenConfigInfo;
+    std::vector<std::string> m_configNames;
+    Call m_getConfigsCall;
 };
 
 #endif  // BUS_CLIENT_CONFIGD_H_

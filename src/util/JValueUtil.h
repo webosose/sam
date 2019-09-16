@@ -15,6 +15,7 @@
 #define UTIL_JVALUEUTIL_H_
 
 #include <iostream>
+#include <map>
 #include <pbnjson.hpp>
 
 using namespace std;
@@ -25,7 +26,7 @@ public:
     JValueUtil() {}
     virtual ~JValueUtil() {}
 
-    static bool hasKey(const JValue& json, const string& firstKey, const string& secondKey = "", const string& thirdKey = "");
+    static void addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str);
 
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value);
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value);
@@ -41,6 +42,13 @@ public:
     static bool getValue(const JValue& json, const string& key, string& value);
     static bool getValue(const JValue& json, const string& key, int& value);
     static bool getValue(const JValue& json, const string& key, bool& value);
+
+    static JSchema getSchema(string name);
+
+    static bool hasKey(const JValue& json, const string& firstKey, const string& secondKey = "", const string& thirdKey = "");
+
+private:
+    static map<string, JSchema> s_schemas;
 };
 
 #endif /* UTIL_JVALUEUTIL_H_ */

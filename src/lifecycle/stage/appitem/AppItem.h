@@ -23,7 +23,7 @@ using namespace std;
 
 class AppItem {
 public:
-    AppItem(const std::string& app_id, const std::string& display, const std::string& pid);
+    AppItem(const std::string& appId, const std::string& display, const std::string& pid);
     virtual ~AppItem();
 
     const std::string& getUid() const

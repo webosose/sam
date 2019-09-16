@@ -21,12 +21,13 @@
 #include <lifecycle/RunningInfoManager.h>
 #include <iostream>
 #include "lifecycle/stage/appitem/LaunchAppItem.h"
+#include "interface/IClassName.h"
 #include "lifecycle/stage/appitem/CloseAppItem.h"
 #include "lifecycle/handler/NativeClientInfo.h"
 
 #define TIME_LIMIT_OF_APP_LAUNCHING 3000000000u // 3 secs
 
-class AbsNativeAppLifecycleInterface {
+class AbsNativeAppLifecycleInterface : public IClassName {
 public:
     AbsNativeAppLifecycleInterface();
     virtual ~AbsNativeAppLifecycleInterface();

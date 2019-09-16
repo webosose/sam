@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/ResBundleAdaptor.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
-#include <util/Utils.h>
-
 
 ResBundleAdaptor::ResBundleAdaptor()
 {
+    setClassName("ResBundleAdaptor");
 }
 
 ResBundleAdaptor::~ResBundleAdaptor()
@@ -37,7 +34,7 @@ std::string ResBundleAdaptor::getLocString(const std::string& key)
 void ResBundleAdaptor::setLocale(const std::string& locale)
 {
     if (locale.empty()) {
-        LOG_DEBUG("locale is empty");
+        Logger::debug(getClassName(), __FUNCTION__, "", "locale is empty");
         return;
     }
 
@@ -45,5 +42,5 @@ void ResBundleAdaptor::setLocale(const std::string& locale)
     m_resPath = "/usr/share/localization/sam";
 
     m_resBundle = std::make_shared<ResBundle>(locale, m_resFile, m_resPath);
-    LOG_DEBUG("Locale is set as %s", locale.c_str());
+    Logger::debug(getClassName(), __FUNCTION__, "", Logger::format("Locale is set as %s", locale.c_str()));
 }

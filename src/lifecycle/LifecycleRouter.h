@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public:
 
     void initialize();
     const LifecycleRoutePolicy& getLifeCycleRoutePolicy(LifeStatus current, LifeStatus next);
-    void setRuntimeStatus(const std::string& app_id, RuntimeStatus next);
+    void setRuntimeStatus(const std::string& appId, RuntimeStatus next);
     LifeStatus getLifeStatusFromRuntimeStatus(RuntimeStatus runtime_status);
     LifeEvent getLifeEventFromLifeStatus(LifeStatus status);
 

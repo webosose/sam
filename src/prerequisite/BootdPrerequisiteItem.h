@@ -25,8 +25,6 @@
 #include <prerequisite/PrerequisiteItem.h>
 #include "util/JValueUtil.h"
 
-#include "util/Logging.h"
-
 class BootdPrerequisiteItem: public PrerequisiteItem {
 public:
     BootdPrerequisiteItem()
@@ -46,9 +44,7 @@ public:
 
     void onGetBootStatus(const pbnjson::JValue& responsePayload)
     {
-        LOG_INFO(MSGID_BOOTSTATUS_RECEIVED, 1,
-                 PMLOGJSON(LOG_KEY_PAYLOAD, responsePayload.duplicate().stringify().c_str()), "");
-
+        Logger::info("BootdPrerequisiteItem", __FUNCTION__, responsePayload.duplicate().stringify());
         bool coreBootDone;
         if (!JValueUtil::getValue(responsePayload, "signals", "core-boot-done", coreBootDone))
             return;

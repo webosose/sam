@@ -21,19 +21,18 @@
 #include <luna-service2/lunaservice.hpp>
 #include <memory>
 #include <pbnjson.hpp>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <string>
+#include "util/Logger.h"
 
 using namespace std;
 using namespace pbnjson;
 
 class LunaTask {
 public:
-    LunaTask(LSHandle* lshandle, LS::Message& request, LSMessage* lsMessage)
-        : m_lshandle(lshandle),
+    LunaTask(LSHandle* sh, LS::Message& request, LSMessage* message)
+        : m_lshandle(sh),
           m_message(request),
-          m_lsMessage(lsMessage),
+          m_request(message),
           m_responsePayload(pbnjson::Object()),
           m_errorCode(0),
           m_errorText("")
@@ -52,8 +51,8 @@ public:
             m_responsePayload.put("returnValue", (m_errorText.empty() ? true : false));
         }
         if (!m_errorText.empty()) {
-            m_responsePayload.put(LOG_KEY_ERRORCODE, m_errorCode);
-            m_responsePayload.put(LOG_KEY_ERRORTEXT, m_errorText);
+            m_responsePayload.put(Logger::LOG_KEY_ERRORCODE, m_errorCode);
+            m_responsePayload.put(Logger::LOG_KEY_ERRORTEXT, m_errorText);
             writeErrorLog(m_errorText);
         }
         m_message.respond(m_responsePayload.stringify().c_str());
@@ -98,9 +97,9 @@ public:
         }
         return caller;
     }
-    LSMessage* lsmsg() const
+    LSMessage* getRequest() const
     {
-        return m_lsMessage;
+        return m_request;
     }
     const pbnjson::JValue& getRequestPayload() const
     {
@@ -119,27 +118,18 @@ public:
 
     void writeInfoLog(const string& status)
     {
-        LOG_INFO(MSGID_API_REQUEST, 4,
-                 PMLOGKS("category", m_message.getCategory()),
-                 PMLOGKS("method", m_message.getMethod()),
-                 PMLOGKS("caller", this->caller().c_str()),
-                 PMLOGKS("status", status.c_str()), "");
-        LOG_DEBUG("params:%s", m_requestPayload.stringify().c_str());
+        Logger::info(this->caller(), __FUNCTION__, m_message.getKind(), status, m_requestPayload.stringify());
     }
 
     void writeErrorLog(const string& errorText)
     {
-        LOG_WARNING(MSGID_API_REQUEST, 4,
-                    PMLOGKS("category", m_message.getCategory()),
-                    PMLOGKS("method", m_message.getMethod()),
-                    PMLOGKS("caller", this->caller().c_str()),
-                    PMLOGKS("errorText", errorText.c_str()), "");
+        Logger::warning(this->caller(), __FUNCTION__, m_message.getKind(), errorText);
     }
 
 private:
     LSHandle* m_lshandle;
     LS::Message m_message;
-    LSMessage* m_lsMessage;
+    LSMessage* m_request;
 
     pbnjson::JValue m_requestPayload;
     pbnjson::JValue m_responsePayload;

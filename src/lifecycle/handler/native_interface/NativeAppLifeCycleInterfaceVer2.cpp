@@ -26,29 +26,23 @@ NativeAppLifeCycleInterfaceVer2::~NativeAppLifeCycleInterfaceVer2()
 {
 }
 
-void NativeAppLifeCycleInterfaceVer2::close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& err_text)
+void NativeAppLifeCycleInterfaceVer2::close(NativeClientInfoPtr client, CloseAppItemPtr item, std::string& errorText)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
-
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId());
     NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::CLOSING);
 
     // if registered
     if (client->isRegistered()) {
         pbnjson::JValue payload = pbnjson::Object();
         payload.put("event", "close");
-        payload.put(LOG_KEY_REASON, item->getReason());
+        payload.put(Logger::LOG_KEY_REASON, item->getReason());
         payload.put("returnValue", true);
 
         if (client->sendEvent(payload) == false) {
-            LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
-                        PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-                        "failed_to_send_close_event");
+            Logger::warning(getClassName(), __FUNCTION__, client->getAppId(), "failed_to_send_close_event");
         }
 
-        PidVector all_pids = LinuxProcess::FindChildPids(client->getPid());
+        PidVector all_pids = LinuxProcess::findChildPids(client->getPid());
         if (item->isMemoryReclaim()) {
             //start force kill timer()
             NativeAppLifeHandler::getInstance().startTimerToKillApp(client->getAppId(), client->getPid(), all_pids, TIMEOUT_FOR_FORCE_KILL);
@@ -61,22 +55,19 @@ void NativeAppLifeCycleInterfaceVer2::close(NativeClientInfoPtr client, CloseApp
         NativeAppLifeHandler::getInstance().cancelLaunchPendingItemAndMakeItDone(client->getAppId());
 
         // send sigkill
-        PidVector all_pids = LinuxProcess::FindChildPids(client->getPid());
+        PidVector all_pids = LinuxProcess::findChildPids(client->getPid());
         NativeAppLifeHandler::getInstance().sendSystemSignal(all_pids, SIGKILL);
     }
 }
 
-void NativeAppLifeCycleInterfaceVer2::pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& err_text, bool sendLifeEvent)
+void NativeAppLifeCycleInterfaceVer2::pause(NativeClientInfoPtr client, const pbnjson::JValue& params, std::string& errorText, bool sendLifeEvent)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId());
 
     if (client->isRegistered()) {
         pbnjson::JValue payload = pbnjson::Object();
         payload.put("event", "pause");
-        payload.put(LOG_KEY_REASON, "keepAlive");
+        payload.put(Logger::LOG_KEY_REASON, "keepAlive");
         payload.put("parameters", params);
         payload.put("returnValue", true);
 
@@ -84,9 +75,7 @@ void NativeAppLifeCycleInterfaceVer2::pause(NativeClientInfoPtr client, const pb
             NativeAppLifeHandler::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::PAUSING);
 
         if (client->sendEvent(payload) == false) {
-            LOG_WARNING(MSGID_APPCLOSE_ERR, 1,
-                        PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-                        "failed_to_send_pause_event");
+            Logger::warning(getClassName(), __FUNCTION__, client->getAppId(), "failed_to_send_pause_event");
         }
     } else {
         // clean up pending queue
@@ -101,27 +90,14 @@ void NativeAppLifeCycleInterfaceVer2::pause(NativeClientInfoPtr client, const pb
 
 void NativeAppLifeCycleInterfaceVer2::launchFromClosing(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
-
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(item->getAppId());
-    LOG_INFO(MSGID_APPLAUNCH, 3,
-             PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-             PMLOGKS("status", "app_is_closing"),
-             PMLOGKS(LOG_KEY_ACTION, "wait_until_being_closed"),
-             "life_status: %d", runningInfoPtr->getRuntimeStatus());
-
+    Logger::info(getClassName(), __FUNCTION__, item->getAppId(), "app_is_closing: wait_until_being_closed");
     NativeAppLifeHandler::getInstance().addLaunchingItemIntoPendingQ(item);
 }
 
 void NativeAppLifeCycleInterfaceVer2::launchFromRunning(NativeClientInfoPtr client, LaunchAppItemPtr item)
 {
-    LOG_INFO(MSGID_NATIVE_APP_HANDLER, 2,
-             PMLOGKS(LOG_KEY_APPID, client->getAppId().c_str()),
-             PMLOGKS("start_native_handler", __FUNCTION__),
-             "ver: %d", client->getInterfaceVersion());
+    Logger::info(getClassName(), __FUNCTION__, client->getAppId());
 
     if (client->isRegistrationExpired()) {
         // clean up previous launch reqeust from pending queue
@@ -144,8 +120,8 @@ bool NativeAppLifeCycleInterfaceVer2::getLaunchParams(LaunchAppItemPtr item, App
 {
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("event", "launch");
-    payload.put(LOG_KEY_REASON, item->getReason());
-    payload.put(LOG_KEY_APPID, item->getAppId());
+    payload.put(Logger::LOG_KEY_REASON, item->getReason());
+    payload.put(Logger::LOG_KEY_APPID, item->getAppId());
     payload.put("interfaceVersion", 2);
     payload.put("interfaceMethod", "registerApp");
     payload.put("parameters", item->getParams());
@@ -167,8 +143,8 @@ bool NativeAppLifeCycleInterfaceVer2::getLaunchParams(LaunchAppItemPtr item, App
 bool NativeAppLifeCycleInterfaceVer2::getRelaunchParams(LaunchAppItemPtr item, AppPackagePtr appDescPtr, pbnjson::JValue& params)
 {
     params.put("event", "relaunch");
-    params.put(LOG_KEY_REASON, item->getReason());
-    params.put(LOG_KEY_APPID, item->getAppId());
+    params.put(Logger::LOG_KEY_REASON, item->getReason());
+    params.put(Logger::LOG_KEY_APPID, item->getAppId());
     params.put("parameters", item->getParams());
     params.put("returnValue", true);
     return true;

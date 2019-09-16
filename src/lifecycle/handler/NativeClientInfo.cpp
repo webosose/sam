@@ -16,60 +16,56 @@
 
 #include <lifecycle/handler/NativeClientInfo.h>
 #include <util/LSUtils.h>
-#include <util/Utils.h>
+#include <util/Time.h>
 
-NativeClientInfo::NativeClientInfo(const std::string& app_id)
-    : m_appId(app_id),
+NativeClientInfo::NativeClientInfo(const std::string& appId)
+    : m_appId(appId),
       m_interfaceVersion(1),
       m_isRegistered(false),
       m_isRegistrationExpired(false),
-      m_lsmsg(NULL),
+      m_request(NULL),
       m_registrationCheckTimerSource(0),
       m_registrationCheckStartTime(0),
       m_lifecycleHandler(NULL)
 {
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1,
-             PMLOGKS(LOG_KEY_APPID, m_appId.c_str()),
-             "client_info_created");
+    Logger::info(getClassName(), __FUNCTION__, m_appId, "client_info_created");
 }
 
 NativeClientInfo::~NativeClientInfo()
 {
-    if (m_lsmsg != NULL)
-        LSMessageUnref(m_lsmsg);
+    if (m_request != NULL)
+        LSMessageUnref(m_request);
     stopTimerForCheckingRegistration();
 
-    LOG_INFO(MSGID_NATIVE_CLIENT_INFO, 1,
-             PMLOGKS(LOG_KEY_APPID, m_appId.c_str()),
-             "client_info_removed");
+    Logger::info(getClassName(), __FUNCTION__, m_appId, "client_info_removed");
 }
 
-void NativeClientInfo::Register(LSMessage* lsmsg)
+void NativeClientInfo::Register(LSMessage* request)
 {
-    if (lsmsg == NULL) {
+    if (request == NULL) {
         // leave warning log
         return;
     }
 
-    if (m_lsmsg != NULL) {
+    if (m_request != NULL) {
         // leave log for release previous connection
-        LSMessageUnref(m_lsmsg);
-        m_lsmsg = NULL;
+        LSMessageUnref(m_request);
+        m_request = NULL;
     }
 
     stopTimerForCheckingRegistration();
 
-    m_lsmsg = lsmsg;
-    LSMessageRef(m_lsmsg);
+    m_request = request;
+    LSMessageRef(m_request);
     m_isRegistered = true;
     m_isRegistrationExpired = false;
 }
 
 void NativeClientInfo::Unregister()
 {
-    if (m_lsmsg != NULL) {
-        LSMessageUnref(m_lsmsg);
-        m_lsmsg = NULL;
+    if (m_request != NULL) {
+        LSMessageUnref(m_request);
+        m_request = NULL;
     }
     m_isRegistered = false;
 }
@@ -79,7 +75,7 @@ void NativeClientInfo::startTimerForCheckingRegistration()
     stopTimerForCheckingRegistration();
 
     m_registrationCheckTimerSource = g_timeout_add(TIMEOUT_FOR_REGISTER_V2, NativeClientInfo::checkRegistration, (gpointer) (this));
-    m_registrationCheckStartTime = getCurrentTime();
+    m_registrationCheckStartTime = Time::getCurrentTime();
     m_isRegistrationExpired = false;
 }
 
@@ -91,9 +87,9 @@ void NativeClientInfo::stopTimerForCheckingRegistration()
     }
 }
 
-gboolean NativeClientInfo::checkRegistration(gpointer user_data)
+gboolean NativeClientInfo::checkRegistration(gpointer context)
 {
-    NativeClientInfo* native_client = static_cast<NativeClientInfo*>(user_data);
+    NativeClientInfo* native_client = static_cast<NativeClientInfo*>(context);
 
     if (!native_client->isRegistered()) {
         native_client->m_isRegistrationExpired = true;
@@ -113,9 +109,7 @@ bool NativeClientInfo::sendEvent(pbnjson::JValue& payload)
 {
 
     if (!m_isRegistered) {
-        LOG_WARNING(MSGID_NATIVE_APP_LIFE_CYCLE_EVENT, 1,
-                    PMLOGKS(LOG_KEY_REASON, "app_is_not_registered"),
-                    "payload: %s", payload.stringify().c_str());
+        Logger::warning(getClassName(), __FUNCTION__, m_appId, "app_is_not_registered");
         return false;
     }
 
@@ -124,12 +118,8 @@ bool NativeClientInfo::sendEvent(pbnjson::JValue& payload)
     }
 
     LSErrorSafe lserror;
-    if (!LSMessageRespond(m_lsmsg, payload.stringify().c_str(), &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "respond"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "err: %s", lserror.message);
+    if (!LSMessageRespond(m_request, payload.stringify().c_str(), &lserror)) {
+        Logger::error(getClassName(), __FUNCTION__, m_appId, "respond");
         return false;
     }
 

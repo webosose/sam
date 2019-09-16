@@ -38,9 +38,9 @@ JValue& AbsLunaClient::getSubscriptionPayload()
     return subscription;
 }
 
-bool AbsLunaClient::_onServerStatus(LSHandle *lshandle, LSMessage *message, void *userData)
+bool AbsLunaClient::_onServerStatus(LSHandle* sh, LSMessage* message, void* context)
 {
-    AbsLunaClient* client = static_cast<AbsLunaClient*>(userData);
+    AbsLunaClient* client = static_cast<AbsLunaClient*>(context);
     pbnjson::JValue subscriptionPayload = JDomParser::fromString(LSMessageGetPayload(message));
 
     bool connected = false;

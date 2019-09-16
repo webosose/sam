@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,24 +14,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _LSUTILS_H_
-#define _LSUTILS_H_
+#ifndef UTIL_FILE_H_
+#define UTIL_FILE_H_
 
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
-#include <vector>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-#include <luna-service2/lunaservice.h>
+using namespace std;
 
-class LSErrorSafe: public LSError {
+class File {
 public:
-    LSErrorSafe()
-    {
-        LSErrorInit(this);
-    }
-    ~LSErrorSafe()
-    {
-        LSErrorFree(this);
-    }
+    static void set_slash_to_base_path(std::string& path);
+    static std::string readFile(const std::string& file_name);
+    static bool writeFile(const std::string& filePath, const std::string& buffer);
+    static bool concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr);
+
+    File();
+    virtual ~File();
+
 };
 
-#endif
+#endif /* UTIL_FILE_H_ */

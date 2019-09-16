@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,12 @@
 #include <package/AppPackage.h>
 #include <package/AppPackageManager.h>
 #include <setting/Settings.h>
-#include <util/JUtil.h>
 
 bool PrelauncherStage::setPrelaunchingStages(LaunchAppItemPtr item)
 {
     AppPackagePtr appDesc = AppPackageManager::getInstance().getAppById(item->getAppId());
     if (!appDesc) {
-        LOG_ERROR(MSGID_APPLAUNCH, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "null_description"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error("PrelauncherStage", __FUNCTION__, item->getAppId(), "null_description");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         return false;
     }
@@ -49,10 +45,7 @@ StageHandlerReturn PrelauncherStage::handleExecutionLockStatus(LaunchAppItemPtr 
 {
     AppPackagePtr appDescPtr = AppPackageManager::getInstance().getAppById(item->getAppId());
     if (appDescPtr == nullptr || appDescPtr->isLocked()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "execution_lock"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error("PrelauncherStage", __FUNCTION__, item->getAppId(), "app is locked");
         item->setErrCodeText(APP_ERR_LOCKED, "app is locked");
         return StageHandlerReturn::ERROR;
     }

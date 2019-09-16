@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <luna-service2/lunaservice.h>
-#include <util/Singleton.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 #include <webosi18n.h>
 #include <memory>
+#include "util/Logger.h"
 
-class ResBundleAdaptor: public Singleton<ResBundleAdaptor> {
+class ResBundleAdaptor: public ISingleton<ResBundleAdaptor>,
+                        public IClassName {
+friend class ISingleton<ResBundleAdaptor> ;
 private:
     std::string m_resFile;
     std::string m_resPath;
@@ -31,8 +35,6 @@ private:
 
     ResBundleAdaptor();
     virtual ~ResBundleAdaptor();
-
-    friend class Singleton<ResBundleAdaptor> ;
 
 public:
     std::string getLocString(const std::string& key);

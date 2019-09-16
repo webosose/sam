@@ -16,27 +16,21 @@
 
 #include <bus/client/WAM.h>
 #include "bus/service/ApplicationManager.h"
-#include "util/Logging.h"
 
-bool WAM::onListRunningApps(LSHandle* handle, LSMessage* lsmsg, void* userData)
+bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(LSMessageGetPayload(lsmsg));
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(LSMessageGetPayload(message));
 
     if (subscriptionPayload.isNull()) {
-        LOG_ERROR(MSGID_WAM_RUNNING_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "parsing_fail"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(WAM::getInstance().getClassName(), __FUNCTION__, "lscall", "parsing_fail");
         return false;
     }
 
     pbnjson::JValue runningList = pbnjson::Array();
     if (!subscriptionPayload.hasKey("running") || !subscriptionPayload["running"].isArray()) {
-        LOG_ERROR(MSGID_WAM_RUNNING_ERR, 3,
-                  PMLOGKS(LOG_KEY_REASON, "invalid_running"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, subscriptionPayload.stringify().c_str()), "");
+        Logger::error(WAM::getInstance().getClassName(), __FUNCTION__, "lscall", "invalid_running", subscriptionPayload.stringify());
     } else {
-        LOG_DEBUG("WAM_RUNNING: %s", subscriptionPayload.stringify().c_str());
+        Logger::debug(WAM::getInstance().getClassName(), __FUNCTION__, "lscall", "running", subscriptionPayload.stringify());
         runningList = subscriptionPayload["running"];
     }
 

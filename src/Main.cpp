@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@
 
 #include <gio/gio.h>
 #include <MainDaemon.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
+#include "util/Logger.h"
+#include "util/File.h"
 
 MainDaemon service;
+
+static const char* LOG_NAME = "Main";
 
 void signal_handler(int signal, siginfo_t *siginfo, void *context)
 {
@@ -40,42 +42,21 @@ void signal_handler(int signal, siginfo_t *siginfo, void *context)
     sender_cmdline = "/proc/" + sender_pid + "/cmdline";
     si_code = siginfo->si_code;
 
-    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4,
-                PMLOGKFV("signal_no", "%d", signal),
-                PMLOGKFV("signal_code", "%d", si_code),
-                PMLOGKS("sender_pid", sender_pid.c_str()),
-                PMLOGKS("sender_cmdline", sender_cmdline.c_str()),
-                "received signal");
-
-    buf = readFile(sender_cmdline.c_str());
+    Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender_pid(%s) sender_cmdline(%s)", signal, si_code, sender_pid.c_str(), sender_cmdline.c_str()));
+    buf = File::readFile(sender_cmdline.c_str());
     if (buf.empty()) {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 4,
-                    PMLOGKFV("signal_no", "%d", signal),
-                    PMLOGKFV("signal_code", "%d", si_code),
-                    PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid),
-                    PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid),
-                    "fopen fail");
+        Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) si_pid(%d), si_uid(%d)", signal, si_code, siginfo->si_pid, siginfo->si_uid));
         goto Done;
     }
 
-    LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 5,
-                PMLOGKFV("signal_no", "%d", signal),
-                PMLOGKFV("signal_code", "%d", si_code),
-                PMLOGKS("sender_name", buf.c_str()),
-                PMLOGKFV("sender_pid", "%d", (int)siginfo->si_pid),
-                PMLOGKFV("sender_uid", "%d", (int)siginfo->si_uid),
-                "signal information");
+    Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender(%s) si_pid(%d), si_uid(%d)", signal, si_code, buf.c_str(), siginfo->si_pid, siginfo->si_uid));
 
 Done:
     if (signal == SIGHUP || signal == SIGINT || signal == SIGPIPE) {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1,
-                    PMLOGKS(LOG_KEY_ACTION, "ignore"),
-                    "just ignore");
+        Logger::warning(LOG_NAME, __FUNCTION__, "Ignore received signal");
         return;
     } else {
-        LOG_WARNING(MSGID_RECEIVED_SYS_SIGNAL, 1,
-                    PMLOGKS(LOG_KEY_ACTION, "terminate"),
-                    "sam process is now terminating");
+        Logger::warning(LOG_NAME, __FUNCTION__, "Try to terminate SAM process");
     }
 
     service.stop();
@@ -83,8 +64,7 @@ Done:
 
 int main(int argc, char **argv)
 {
-    LOG_INFO(MSGID_SAM_LOADING_SEQ, 1,
-             PMLOGKS("status", "starting"), "");
+    Logger::info(LOG_NAME, __FUNCTION__, "Starting SAM process");
 
     // tracking sender if we get some signal
     struct sigaction act;

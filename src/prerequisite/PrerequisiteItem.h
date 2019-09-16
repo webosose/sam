@@ -21,7 +21,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "interface/IListener.h"
 
 enum class PrerequisiteItemStatus : int8_t {
     READY = 1,
@@ -32,15 +31,7 @@ enum class PrerequisiteItemStatus : int8_t {
 
 class PrerequisiteItem;
 
-class PrerequisiteItemListener {
-public:
-    PrerequisiteItemListener() {};
-    virtual ~PrerequisiteItemListener() {}
-
-    virtual void onPrerequisiteItemStatusChanged(PrerequisiteItem* item) = 0;
-};
-
-class PrerequisiteItem : public IListener<PrerequisiteItemListener> {
+class PrerequisiteItem {
 friend class PrerequisiteMonitor;
 public:
     PrerequisiteItem()
@@ -58,6 +49,8 @@ public:
         return m_status;
     }
 
+    boost::signals2::signal<void(PrerequisiteItem* item)> EventItemStatusChanged;
+
 protected:
     void setStatus(PrerequisiteItemStatus status)
     {
@@ -65,8 +58,7 @@ protected:
             return;
 
         m_status = status;
-        if (m_listener)
-            m_listener->onPrerequisiteItemStatusChanged(this);
+        EventItemStatusChanged(this);
     }
 
     PrerequisiteItemStatus m_status;

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@
 
 #include <boost/signals2.hpp>
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
+#include "interface/IClassName.h"
+#include "util/Logger.h"
 
-class MemoryChecker {
+class MemoryChecker : public IClassName {
 public:
     MemoryChecker();
     virtual ~MemoryChecker();

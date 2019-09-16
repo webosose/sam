@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,181 +15,93 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/service/ApplicationManager.h>
+#include <bus/client/DB8.h>
 #include <launchpoint/DBBase.h>
-#include <util/CallChain.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
 #include <util/LSUtils.h>
-
-namespace CallChain_DBConfig {
-class CheckKind: public LSCallItem {
-public:
-    CheckKind(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
-    {
-    }
-
-protected:
-    virtual bool onReceiveCall(pbnjson::JValue message)
-    {
-        if (message["returnValue"].asBool()) {
-            if (!message.hasKey("results") || !message["results"].isArray()) {
-                std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
-
-                if (error_text.empty())
-                    error_text = "results is not valid";
-                setError(DBREGISTER_ERR_KEYFIND, error_text);
-
-                return false;
-            }
-
-            pbnjson::JValue chain_data = getChainData();
-            chain_data.put("find_results", message["results"]);
-            setChainData(chain_data);
-
-            return true;
-        }
-
-        return false;
-    }
-};
-
-class RegKind: public LSCallItem {
-public:
-    RegKind(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
-    {
-    }
-
-protected:
-    virtual bool onReceiveCall(pbnjson::JValue message)
-    {
-        if (message["returnValue"].asBool())
-            return true;
-
-        std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
-
-        if (error_text.empty())
-            error_text = "register kind is failed";
-        setError(DBREGISTER_ERR_KINDREG, error_text);
-
-        return false;
-    }
-};
-
-class RegPermission: public LSCallItem {
-public:
-    RegPermission(LSHandle *handle, const char *uri, const char *payload)
-        : LSCallItem(handle, uri, payload)
-    {
-    }
-
-protected:
-    virtual bool onReceiveCall(pbnjson::JValue message)
-    {
-        if (message["returnValue"].asBool())
-            return true;
-
-        std::string error_text = message[LOG_KEY_ERRORTEXT].asString();
-
-        if (error_text.empty())
-            error_text = "register Permission is failed";
-        setError(DBREGISTER_ERR_PERMITREG, error_text);
-
-        return false;
-    }
-};
-}
+#include <setting/Settings.h>
+#include <util/JValueUtil.h>
 
 DBBase::DBBase()
 {
-    m_permissions = pbnjson::Object();
+    m_name = "com.webos.applicationManager.launchPoints:1";
     m_kind = pbnjson::Object();
+    m_permissions = pbnjson::Object();
 }
 
 DBBase::~DBBase()
 {
 }
 
-void DBBase::loadDb()
+bool DBBase::onFind(LSHandle* sh, LSMessage* message, void* context)
 {
-    LOG_INFO(MSGID_DB_LOAD, 2,
-             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-             PMLOGKS("name", m_name.c_str()), "");
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    JValue results;
+    string errorText;
 
-    //using call chain
-    CallChain& call_chain = CallChain::acquire(std::bind(&DBBase::onReadyToUseDb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), NULL, NULL);
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+    JValueUtil::getValue(responsePayload, "results", results);
 
-    std::string qry = "{\"query\":{\"from\":\"" + m_name + "\", \"orderBy\":\"_rev\"}}";
-    const char* qry_ptr = qry.c_str();
-
-    //1. check key from DB
-    auto check_kind = std::make_shared<CallChain_DBConfig::CheckKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/find", qry_ptr);
-
-    call_chain.add(check_kind);
-
-    //2. register kind to DB
-    auto reg_kind = std::make_shared<CallChain_DBConfig::RegKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/putKind", m_kind.stringify().c_str());
-
-    call_chain.addIf(check_kind, false, reg_kind);
-
-    //3. register permisson
-    pbnjson::JValue permission_data = pbnjson::Object();
-    permission_data.put("permissions", m_permissions);
-
-    auto reg_permission = std::make_shared<CallChain_DBConfig::RegPermission>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/putPermissions",
-            permission_data.stringify().c_str());
-
-    call_chain.addIf(reg_kind, true, reg_permission);
-
-    auto get_kind = std::make_shared<CallChain_DBConfig::CheckKind>(ApplicationManager::getInstance().get(), "luna://com.webos.service.db/find", qry_ptr);
-
-    call_chain.addIf(reg_permission, true, get_kind);
-
-    call_chain.run();
-}
-
-bool DBBase::onReadyToUseDb(pbnjson::JValue result, ErrorInfo errInfo, void *user_data)
-{
-    if (!result.hasKey("returnValue")) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", "returnValue_does_not_exist"), "%s", errInfo.errorText.c_str());
-        return false;
+    if (!returnValue || !results.isArray()) {
+        if (!errorText.empty())
+            Logger::warning("DBBase", __FUNCTION__, errorText);
+        else
+            Logger::warning("DBBase", __FUNCTION__, "results is not valid");
+        Call call = DB8::getInstance().putKind(onPutKind, getInstance().m_kind);
+        return true;
     }
-
-    if (!result["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 2,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  "%s", errInfo.errorText.c_str());
-        return false;
-    }
-
-    if (!result.hasKey("find_results") || !result["find_results"].isArray()) {
-        LOG_ERROR(MSGID_DB_LOAD_ERR, 3,
-                  PMLOGKS("status", "on_ready_to_use_db"),
-                  PMLOGKS("result", result["returnValue"].asBool()?"success":"fail"),
-                  PMLOGKS(LOG_KEY_REASON, "loaded_db_results_is_not_valid"), "");
-        return false;
-    }
-
-    pbnjson::JValue loaded_db_result = result["find_results"];
-
-    LOG_INFO(MSGID_DB_LOAD, 2,
-             PMLOGKS("status", "on_ready_to_use_db"),
-             PMLOGKS(LOG_KEY_REASON, "received_find_db"), "");
-    EventDBLoaded(loaded_db_result);
+    Logger::info(DBBase::getInstance().getClassName(), __FUNCTION__, DBBase::getInstance().m_name, "received_find_db");
+    DBBase::getInstance().EventDBLoaded(results);
 
     return true;
 }
 
+bool DBBase::onPutKind(LSHandle* sh, LSMessage* message, void* context)
+{
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    string errorText;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!returnValue) {
+        Logger::error(DBBase::getInstance().getClassName(), __FUNCTION__, errorText);
+        return true;
+    } else {
+        Call call = DB8::getInstance().putPermissions(onPutPermissions, getInstance().m_permissions);
+    }
+    return true;
+}
+
+bool DBBase::onPutPermissions(LSHandle* sh, LSMessage* message, void* context)
+{
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    string errorText;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!returnValue) {
+        Logger::error(DBBase::getInstance().getClassName(), __FUNCTION__, errorText);
+        return true;
+    } else {
+        Call call = DB8::getInstance().find(onPutPermissions, getInstance().m_name);
+    }
+    return true;
+}
+
+void DBBase::loadDb()
+{
+    Logger::info(getClassName(), __FUNCTION__, m_name, "start load database");
+    Call call = DB8::getInstance().find(onFind, m_name);
+}
+
 bool DBBase::query(const std::string& cmd, const std::string& query)
 {
-
-    LOG_INFO(MSGID_DB_LOAD, 2,
-             PMLOGKS("api", cmd.c_str()),
-             PMLOGKS("name", m_name.c_str()), "");
+    Logger::info(getClassName(), __FUNCTION__, m_name, cmd);
 
     LSErrorSafe lserror;
     if (!LSCallOneReply(ApplicationManager::getInstance().get(),
@@ -199,45 +111,158 @@ bool DBBase::query(const std::string& cmd, const std::string& query)
                         this,
                         NULL,
                         &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "lscall_one_reply"),
-                  PMLOGKS(LOG_KEY_SERVICE, "com.webos.service.db"),
-                  PMLOGKS("api", cmd.c_str()),
-                  "err: %s", lserror.message);
+        Logger::error(getClassName(), __FUNCTION__, "LS2", cmd, lserror.message);
         return false;
     }
 
     return true;
 }
 
-bool DBBase::onReturnQueryResult(LSHandle* lshandle, LSMessage* message, void* user_data)
+bool DBBase::onReturnQueryResult(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue result = JUtil::parse(LSMessageGetPayload(message), std::string(""));
+    pbnjson::JValue result = JDomParser::fromString(LSMessageGetPayload(message));
 
     if (result.isNull()) {
-        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1,
-                  PMLOGKS("result", "Null"), "");
+        // TODO
+        Logger::error("DBBase", __FUNCTION__, "LS2", "response is null");
     }
 
     if (!result["returnValue"].asBool()) {
-        LOG_ERROR(MSGID_LSCALL_RETURN_FAIL, 1,
-                  PMLOGKFV("db errorText", "%s", result[LOG_KEY_ERRORTEXT].asString().c_str()), "");
+        // TODO
+        Logger::error("DBBase", __FUNCTION__, "LS2", "'returnValue' is false", result.stringify());
     }
 
     return true;
+}
+
+void DBBase::init()
+{
+    m_kind = SettingsImpl::getInstance().m_launchPointDbkind;
+    m_permissions = SettingsImpl::getInstance().m_launchPointPermissions;
 }
 
 bool DBBase::insertData(const pbnjson::JValue& json)
 {
-    return true;
+    std::string db8_api = "luna://com.webos.service.db/put";
+    std::string db8_qry;
+    pbnjson::JValue json_db_qry = pbnjson::Object();
+
+    if (json.hasKey("appDescription"))
+        json_db_qry.put("appDescription", json["appDescription"]);
+    if (json.hasKey("bgColor"))
+        json_db_qry.put("bgColor", json["bgColor"]);
+    if (json.hasKey("bgImage"))
+        json_db_qry.put("bgImage", json["bgImage"]);
+    if (json.hasKey("bgImages"))
+        json_db_qry.put("bgImages", json["bgImages"]);
+    if (json.hasKey("favicon"))
+        json_db_qry.put("favicon", json["favicon"]);
+    if (json.hasKey("icon"))
+        json_db_qry.put("icon", json["icon"]);
+    if (json.hasKey("iconColor"))
+        json_db_qry.put("iconColor", json["iconColor"]);
+    if (json.hasKey("imageForRecents"))
+        json_db_qry.put("imageForRecents", json["imageForRecents"]);
+    if (json.hasKey("largeIcon"))
+        json_db_qry.put("largeIcon", json["largeIcon"]);
+    if (json.hasKey("unmovable"))
+        json_db_qry.put("unmovable", json["unmovable"]);
+    if (json.hasKey("params"))
+        json_db_qry.put("params", json["params"]);
+    if (json.hasKey("relaunch"))
+        json_db_qry.put("relaunch", json["relaunch"]);
+    if (json.hasKey("title"))
+        json_db_qry.put("title", json["title"]);
+    if (json.hasKey("miniicon"))
+        json_db_qry.put("miniicon", json["miniicon"]);
+
+    if (json_db_qry.isNull())
+        return false;
+
+    json_db_qry.put("_kind", m_name);
+    json_db_qry.put("id", json["id"]);
+    json_db_qry.put("lptype", json["lptype"]);
+    json_db_qry.put("launchPointId", json["launchPointId"]);
+
+    db8_qry = "{\"objects\":[" + json_db_qry.stringify() + "]}";
+
+    return query(db8_api, db8_qry);
 }
 
 bool DBBase::updateData(const pbnjson::JValue& json)
 {
-    return true;
+    std::string db8_api = "luna://com.webos.service.db/merge";
+    std::string db8_qry;
+    pbnjson::JValue json_db_qry = pbnjson::Object();
+    pbnjson::JValue json_where = pbnjson::Object();
+
+    json_db_qry.put("props", pbnjson::Object());
+
+    if (json.hasKey("appDescription"))
+        json_db_qry["props"].put("appDescription", json["appDescription"]);
+    if (json.hasKey("bgColor"))
+        json_db_qry["props"].put("bgColor", json["bgColor"]);
+    if (json.hasKey("bgImage"))
+        json_db_qry["props"].put("bgImage", json["bgImage"]);
+    if (json.hasKey("bgImages"))
+        json_db_qry["props"].put("bgImages", json["bgImages"]);
+    if (json.hasKey("favicon"))
+        json_db_qry["props"].put("favicon", json["favicon"]);
+    if (json.hasKey("icon"))
+        json_db_qry["props"].put("icon", json["icon"]);
+    if (json.hasKey("iconColor"))
+        json_db_qry["props"].put("iconColor", json["iconColor"]);
+    if (json.hasKey("imageForRecents"))
+        json_db_qry["props"].put("imageForRecents", json["imageForRecents"]);
+    if (json.hasKey("largeIcon"))
+        json_db_qry["props"].put("largeIcon", json["largeIcon"]);
+    if (json.hasKey("unmovable"))
+        json_db_qry["props"].put("unmovable", json["unmovable"]);
+    if (json.hasKey("params"))
+        json_db_qry["props"].put("params", json["params"]);
+    if (json.hasKey("relaunch"))
+        json_db_qry["props"].put("relaunch", json["relaunch"]);
+    if (json.hasKey("title"))
+        json_db_qry["props"].put("title", json["title"]);
+    if (json.hasKey("userData"))
+        json_db_qry["props"].put("userData", json["userData"]);
+    if (json.hasKey("miniicon"))
+        json_db_qry["props"].put("miniicon", json["miniicon"]);
+
+    if (json_db_qry["props"].isNull())
+        return false;
+
+    json_db_qry.put("query", pbnjson::Object());
+    json_db_qry["query"].put("from", m_name);
+    json_db_qry["query"].put("where", pbnjson::Array());
+
+    json_where.put("prop", "launchPointId");
+    json_where.put("op", "=");
+    json_where.put("val", json["launchPointId"]);
+    json_db_qry["query"]["where"].append(json_where);
+
+    db8_qry = json_db_qry.stringify();
+
+    return query(db8_api, db8_qry);
 }
 
 bool DBBase::deleteData(const pbnjson::JValue& json)
 {
-    return true;
+    std::string db8_api = "luna://com.webos.service.db/del";
+    std::string db8_qry;
+    pbnjson::JValue json_db_qry = pbnjson::Object();
+    pbnjson::JValue json_where = pbnjson::Object();
+
+    json_db_qry.put("query", pbnjson::Object());
+    json_db_qry["query"].put("from", m_name);
+    json_db_qry["query"].put("where", pbnjson::Array());
+
+    json_where.put("prop", "launchPointId");
+    json_where.put("op", "=");
+    json_where.put("val", json["launchPointId"]);
+    json_db_qry["query"]["where"].append(json_where);
+
+    db8_qry = json_db_qry.stringify();
+
+    return query(db8_api, db8_qry);
 }

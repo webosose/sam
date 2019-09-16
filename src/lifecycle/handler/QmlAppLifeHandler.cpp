@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,13 @@
 #include <lifecycle/handler/QmlAppLifeHandler.h>
 #include <lifecycle/RunningInfoManager.h>
 #include <package/AppPackageManager.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
+#include <util/Time.h>
 #include <util/LSUtils.h>
-#include <util/Utils.h>
 
-static QmlAppLifeHandler* g_this = NULL;
+const string QmlAppLifeHandler::LOG_NAME = "QmlAppLifeHandler";
 
 QmlAppLifeHandler::QmlAppLifeHandler()
 {
-    g_this = this;
     ApplicationManager::getInstance().EventServiceReady.connect(boost::bind(&QmlAppLifeHandler::onServiceReady, this));
 }
 
@@ -48,11 +45,7 @@ void QmlAppLifeHandler::onServiceReady()
                 this,
                 NULL,
                 &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "lscall"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, R"({"category":"/booster","method":"processFinished"})"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "err: %s", lserror.message);
+        Logger::error(LOG_NAME, __FUNCTION__, "lscall", lserror.message);
     }
 }
 
@@ -60,10 +53,7 @@ void QmlAppLifeHandler::launch(LaunchAppItemPtr item)
 {
     AppPackagePtr app_desc = AppPackageManager::getInstance().getAppById(item->getAppId());
     if (app_desc == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 3,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "null_description"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__), "");
+        Logger::error(LOG_NAME, __FUNCTION__, item->getAppId(), "null_description");
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         EventLaunchingDone(item->getUid());
         return;
@@ -71,7 +61,7 @@ void QmlAppLifeHandler::launch(LaunchAppItemPtr item)
 
     pbnjson::JValue payload = pbnjson::Object();
     payload.put("main", app_desc->getMain());
-    payload.put(LOG_KEY_APPID, item->getAppId());
+    payload.put(Logger::LOG_KEY_APPID, item->getAppId());
     payload.put("params", item->getParams().duplicate().stringify());
 
     LSMessageToken token = 0;
@@ -83,11 +73,7 @@ void QmlAppLifeHandler::launch(LaunchAppItemPtr item)
                         this,
                         &token,
                         &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "lscallonereply"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "err: %s", lserror.message);
+        Logger::error(LOG_NAME, __FUNCTION__, item->getAppId(), lserror.message);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "internal error");
         EventLaunchingDone(item->getUid());
         return;
@@ -98,107 +84,87 @@ void QmlAppLifeHandler::launch(LaunchAppItemPtr item)
     else
         EventAppLifeStatusChanged(item->getAppId(), item->getUid(), RuntimeStatus::PRELOADING);
 
-    double current_time = getCurrentTime();
+    double current_time = Time::getCurrentTime();
     double elapsed_time = current_time - item->launchStartTime();
-    LOG_INFO(MSGID_APP_LAUNCHED, 5,
-             PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-             PMLOGKS(LOG_KEY_TYPE, "qml"), PMLOGKS("pid", ""),
-             PMLOGKFV("start_time", "%f", item->launchStartTime()),
-             PMLOGKFV("collapse_time", "%f", elapsed_time), "");
+    Logger::info(LOG_NAME, __FUNCTION__, item->getAppId(), Logger::format("elapsed_time(%f)", elapsed_time));
 
     item->setReturnToken(token);
     m_LSCallRequestList.push_back(item);
 }
 
-bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool QmlAppLifeHandler::onReturnBoosterLaunch(LSHandle* sh, LSMessage* message, void* context)
 {
     LSMessageToken token = 0;
     std::string uid = "";
     LaunchAppItemPtr item = NULL;
 
-    token = LSMessageGetResponseToken(lsmsg);
-    item = g_this->getLSCallRequestItemByToken(token);
+    token = LSMessageGetResponseToken(message);
+    item = QmlAppLifeHandler::getInstance().getLSCallRequestItemByToken(token);
 
     if (item == NULL) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "null_launching_item"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "internal error");
+        Logger::error(LOG_NAME, __FUNCTION__, "null_launching_item");
         return false;
     }
 
     uid = item->getUid();
-    g_this->removeItemFromLSCallRequestList(uid);
+    QmlAppLifeHandler::getInstance().removeItemFromLSCallRequestList(uid);
     item->resetReturnToken();
 
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-    if (jmsg.isNull()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "parsing_fail"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "internal error");
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    if (responsePayload.isNull()) {
+        Logger::error(LOG_NAME, __FUNCTION__, "parsing_fail");
+
         // TODO: set proper life status for this error case
-        // g_this->signal_app_life_status_changed(item->app_id(), "", RuntimeStatus::STOP);
+        // QmlAppLifeHandler::getInstance().signal_app_life_status_changed(item->appId(), "", RuntimeStatus::STOP);
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->EventLaunchingDone(item->getUid());
+        QmlAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
         return false;
     }
 
-    if (!jmsg.hasKey("returnValue") || jmsg["returnValue"].asBool() == false) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "invalid_return"),
-                  "invalid_booster_return err: %s", jmsg.stringify().c_str());
+    if (!responsePayload.hasKey("returnValue") || responsePayload["returnValue"].asBool() == false) {
+        Logger::error(LOG_NAME, __FUNCTION__, item->getAppId(), responsePayload.stringify());
 
         // TODO: set proper life status for this error case
-        g_this->EventAppLifeStatusChanged(item->getAppId(), "", RuntimeStatus::STOP);
+        QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), "", RuntimeStatus::STOP);
 
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->EventLaunchingDone(item->getUid());
+        QmlAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
         return true;
     }
 
-    std::string app_id = jmsg.hasKey(LOG_KEY_APPID) && jmsg[LOG_KEY_APPID].isString() ? jmsg[LOG_KEY_APPID].asString() : "";
-    std::string pid = jmsg.hasKey("pid") && jmsg["pid"].isNumber() ? boost::lexical_cast<std::string>(jmsg["pid"].asNumber<int>()) : "";
+    std::string appId = responsePayload.hasKey(Logger::LOG_KEY_APPID) && responsePayload[Logger::LOG_KEY_APPID].isString() ? responsePayload[Logger::LOG_KEY_APPID].asString() : "";
+    std::string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>()) : "";
 
-    if (app_id.empty()) {
-        LOG_WARNING(MSGID_APPLAUNCH, 2,
-                    PMLOGKS("status", "received_empty_app_id"),
-                    PMLOGKS("restoring_app_id", item->getAppId().c_str()), "now restore app_id from sam info");
-        app_id = item->getAppId();
+    if (appId.empty()) {
+        Logger::warning(LOG_NAME, __FUNCTION__, item->getAppId(), "now restore appId from sam info");
+        appId = item->getAppId();
     }
 
     if (pid.empty()) {
-        LOG_ERROR(MSGID_APPLAUNCH_ERR, 2,
-                  PMLOGKS(LOG_KEY_APPID, item->getAppId().c_str()),
-                  PMLOGKS(LOG_KEY_REASON, "received_empty_pid"),
-                  "invalid_booster_return err: %s", jmsg.stringify().c_str());
+        Logger::error(LOG_NAME, __FUNCTION__, item->getAppId(), responsePayload.stringify());
 
         // TODO: set proper life status for this error case
-        g_this->EventAppLifeStatusChanged(item->getAppId(), "", RuntimeStatus::STOP);
+        QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(item->getAppId(), "", RuntimeStatus::STOP);
 
         item->setErrCodeText(APP_LAUNCH_ERR_GENERAL, "booster error");
-        g_this->EventLaunchingDone(item->getUid());
+        QmlAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
         return true;
     }
 
-    LOG_INFO(MSGID_APPLAUNCH, 2,
-             PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-             PMLOGKS("status", "booster_launched_app"), "");
-
+    Logger::error(LOG_NAME, __FUNCTION__, appId, "booster_launched_app");
     item->setPid(pid);
-    g_this->EventRunningAppAdded(app_id, pid, "");
-    g_this->EventAppLifeStatusChanged(app_id, "", RuntimeStatus::RUNNING);
+    QmlAppLifeHandler::getInstance().EventRunningAppAdded(appId, pid, "");
+    QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::RUNNING);
 
-    g_this->EventLaunchingDone(item->getUid());
+    QmlAppLifeHandler::getInstance().EventLaunchingDone(item->getUid());
 
     return true;
 }
 
-void QmlAppLifeHandler::close(CloseAppItemPtr item, std::string& err_text)
+void QmlAppLifeHandler::close(CloseAppItemPtr item, std::string& errorText)
 {
     pbnjson::JValue payload = pbnjson::Object();
-    payload.put(LOG_KEY_APPID, item->getAppId());
+    payload.put(Logger::LOG_KEY_APPID, item->getAppId());
 
     LSErrorSafe lserror;
     if (!LSCallOneReply(ApplicationManager::getInstance().get(),
@@ -208,93 +174,63 @@ void QmlAppLifeHandler::close(CloseAppItemPtr item, std::string& err_text)
                         NULL,
                         NULL,
                         &lserror)) {
-        LOG_ERROR(MSGID_LSCALL_ERR, 3,
-                  PMLOGKS(LOG_KEY_TYPE, "lscallonereply"),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, payload.stringify().c_str()),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "err: %s", lserror.message);
-        err_text = "close request fail";
+        Logger::error(LOG_NAME, __FUNCTION__, "lscallonereply", lserror.message);
+        errorText = "close request fail";
     }
 
     EventAppLifeStatusChanged(item->getAppId(), "", RuntimeStatus::CLOSING);
 }
 
-bool QmlAppLifeHandler::onReturnBoosterClose(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool QmlAppLifeHandler::onReturnBoosterClose(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-    if (jmsg.isNull()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "parsing_fail"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "internal error");
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    if (responsePayload.isNull()) {
+        Logger::error(LOG_NAME, __FUNCTION__, "parsing_fail");
         return false;
     }
 
-    if (jmsg["returnValue"].asBool()) {
-        std::string app_id = jmsg.hasKey(LOG_KEY_APPID) && jmsg[LOG_KEY_APPID].isString() ? jmsg[LOG_KEY_APPID].asString() : "";
-        std::string pid = jmsg.hasKey("pid") && jmsg["pid"].isNumber() ? boost::lexical_cast<std::string>(jmsg["pid"].asNumber<int>()) : "";
-        LOG_INFO(MSGID_APPCLOSE, 3,
-                 PMLOGKS(LOG_KEY_APPID, app_id.c_str()),
-                 PMLOGKS("pid", pid.c_str()),
-                 PMLOGKS("status", "received_close_return_from_booster"), "");
+    if (responsePayload["returnValue"].asBool()) {
+        std::string appId = responsePayload.hasKey(Logger::LOG_KEY_APPID) && responsePayload[Logger::LOG_KEY_APPID].isString() ? responsePayload[Logger::LOG_KEY_APPID].asString() : "";
+        std::string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>()) : "";
+
+        Logger::info(LOG_NAME, __FUNCTION__, appId, "received_close_return_from_booster");
     } else {
-        std::string err_text = jmsg[LOG_KEY_ERRORTEXT].asString();
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "return_false"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "err: %s", err_text.c_str());
+        std::string errorText = responsePayload[Logger::LOG_KEY_ERRORTEXT].asString();
+        Logger::error(LOG_NAME, __FUNCTION__, errorText);
     }
 
     return true;
 }
 
-void QmlAppLifeHandler::pause(const std::string& appId, const pbnjson::JValue& params, std::string& err_text, bool send_life_event)
+void QmlAppLifeHandler::pause(const std::string& appId, const pbnjson::JValue& params, std::string& errorText, bool send_life_event)
 {
-    LOG_ERROR(MSGID_APPPAUSE, 1,
-              PMLOGKS(LOG_KEY_APPID, appId.c_str()),
-              "no interface defined for qml booster");
-    err_text = "no interface defined for qml booster";
+    errorText = "no interface defined for qml booster";
+    Logger::error(LOG_NAME, __FUNCTION__, appId, errorText);
     return;
 }
 
-bool QmlAppLifeHandler::onQMLProcessWatcher(LSHandle* handle, LSMessage* lsmsg, void* user_data)
+bool QmlAppLifeHandler::onQMLProcessWatcher(LSHandle* sh, LSMessage* message, void* context)
 {
-    LOG_INFO(MSGID_APPCLOSE, 1,
-             PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-             "received closed event");
-
-    pbnjson::JValue jmsg = JUtil::parse(LSMessageGetPayload(lsmsg), std::string(""));
-    if (jmsg.isNull()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_REASON, "parsing_fail"),
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  "internal error");
+    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    if (responsePayload.isNull()) {
+        Logger::error(LOG_NAME, __FUNCTION__, "parsing_fail");
         return true;
     }
-    if (!jmsg.hasKey("pid") || !jmsg["pid"].isNumber()) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_FUNC, __FUNCTION__),
-                  PMLOGJSON(LOG_KEY_PAYLOAD, jmsg.stringify().c_str()),
-                  "invalid pid info");
+    if (!responsePayload.hasKey("pid") || !responsePayload["pid"].isNumber()) {
+        Logger::error(LOG_NAME, __FUNCTION__, "invalid pid info", responsePayload.stringify());
         return true;
     }
 
-    std::string pid = boost::lexical_cast<std::string>(jmsg["pid"].asNumber<int>());
+    std::string pid = boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>());
     RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfoByPid(pid);
     if (runningInfoPtr == nullptr) {
-        LOG_ERROR(MSGID_APPCLOSE_ERR, 2,
-                  PMLOGKS(LOG_KEY_APPID, "empty"),
-                  PMLOGKS("pid", pid.c_str()), "err: no app_id matched by pid");
+        Logger::error(LOG_NAME, __FUNCTION__, "err: no appId matched by pid");
         return true;
     }
 
-    LOG_INFO(MSGID_APP_CLOSED, 3,
-             PMLOGKS(LOG_KEY_APPID, runningInfoPtr->getAppId().c_str()),
-             PMLOGKS(LOG_KEY_TYPE, "qml"),
-             PMLOGKS("pid", pid.c_str()), "");
-
-    g_this->EventAppLifeStatusChanged(runningInfoPtr->getAppId(), "", RuntimeStatus::STOP);
-    g_this->EventRunningAppRemoved(runningInfoPtr->getAppId());
+    Logger::info(LOG_NAME, __FUNCTION__, runningInfoPtr->getAppId());
+    QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(runningInfoPtr->getAppId(), "", RuntimeStatus::STOP);
+    QmlAppLifeHandler::getInstance().EventRunningAppRemoved(runningInfoPtr->getAppId());
 
     return true;
 }
@@ -316,11 +252,7 @@ void QmlAppLifeHandler::removeItemFromLSCallRequestList(const std::string& uid)
     if (it == m_LSCallRequestList.end())
         return;
 
-    LOG_INFO(MSGID_APPLAUNCH, 2,
-             PMLOGKS(LOG_KEY_APPID, (*it)->getAppId().c_str()),
-             PMLOGKS("uid", uid.c_str()),
-             "removed from checking queue");
-
+    Logger::info(LOG_NAME, __FUNCTION__, (*it)->getAppId(), "removed from checking queue");
     m_LSCallRequestList.erase(it);
 }
 

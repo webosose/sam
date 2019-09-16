@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,13 +39,13 @@ public:
     virtual void init();
     virtual void handleDBState(bool connection);
     virtual void reloadDBData(bool connection);
-    virtual void makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visible_lps, const pbnjson::JValue& changed_reason);
+    virtual void makeLaunchPointsInOrder(const std::vector<LaunchPointPtr>& visibleLaunchPoints, const pbnjson::JValue& changed_reason);
 
-    virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visible_lps, std::string& err_text);
+    virtual bool SetOrder(const pbnjson::JValue& data, const std::vector<LaunchPointPtr>& visibleLaunchPoints, std::string& errorText);
 
-    virtual int insertLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-    virtual int updateLPInOrder(const std::string& lp_id, const pbnjson::JValue& data, int position = INVALID_POSITION);
-    virtual void deleteLPInOrder(const std::string& lp_id);
+    virtual int insertLPInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual int updateLPInOrder(const std::string& launchPointId, const pbnjson::JValue& data, int position = INVALID_POSITION);
+    virtual void deleteLPInOrder(const std::string& launchPointId);
 
     virtual std::vector<std::string> getOrderedList()
     {

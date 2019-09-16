@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2018 LG Electronics, Inc.
+// Copyright (c) 2012-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 
 #include <launchpoint/launch_point/LaunchPoint.h>
 #include <launchpoint/launch_point/LaunchPointFactory.h>
-#include <util/JUtil.h>
-#include <util/Logging.h>
-#include <util/Utils.h>
-
 
 const char* LOCAL_FILE_URI = "file://";
 
@@ -63,34 +59,34 @@ std::string LaunchPoint::update(const pbnjson::JValue& data)
     return "";
 }
 
-void LaunchPoint::updateIfEmptyTitle(LaunchPointPtr lp)
+void LaunchPoint::updateIfEmptyTitle(LaunchPointPtr launchPointPtr)
 {
-    if (lp == nullptr)
+    if (launchPointPtr == nullptr)
         return;
 
     if (getTitle().empty())
-        setTitle(lp->getTitle());
+        setTitle(launchPointPtr->getTitle());
 }
 
-void LaunchPoint::updateIfEmpty(LaunchPointPtr lp)
+void LaunchPoint::updateIfEmpty(LaunchPointPtr launchPointPtr)
 {
-    if (lp == nullptr)
+    if (launchPointPtr == nullptr)
         return;
 
     if (m_appDescription.empty())
-        setAppDescription(lp->getAppDescription());
+        setAppDescription(launchPointPtr->getAppDescription());
     if (m_bgColor.empty())
-        setBgColor(lp->getBgColor());
+        setBgColor(launchPointPtr->getBgColor());
     if (m_bgImage.empty())
-        setBgImage(lp->getBgImage());
+        setBgImage(launchPointPtr->getBgImage());
     if (m_iconColor.empty())
-        setIconColor(lp->getIconColor());
+        setIconColor(launchPointPtr->getIconColor());
     if (m_icon.empty())
-        setIcon(lp->getIcon());
+        setIcon(launchPointPtr->getIcon());
     if (m_imageForRecents.empty())
-        setImageForRecents(lp->getImageForRecents());
+        setImageForRecents(launchPointPtr->getImageForRecents());
     if (m_largeIcon.empty())
-        setLargeIcon(lp->getLargeIcon());
+        setLargeIcon(launchPointPtr->getLargeIcon());
 }
 
 void LaunchPoint::setAttrWithJson(const pbnjson::JValue& data)
@@ -106,7 +102,7 @@ void LaunchPoint::setAttrWithJson(const pbnjson::JValue& data)
     setImageForRecents(data["imageForRecents"].asString());
     setLargeIcon(data["largeIcon"].asString());
     setTitle(data["title"].asString());
-    setUserData(data["userData"].asString());
+    setUserData(data["context"].asString());
     setFavicon(data["favicon"].asString());
 
     if (data.hasKey("params"))
@@ -206,11 +202,11 @@ void LaunchPoint::setAppDescription(const std::string& app_description)
     m_appDescription = app_description;
 }
 
-void LaunchPoint::setUserData(const std::string& user_data)
+void LaunchPoint::setUserData(const std::string& context)
 {
-    if (user_data.empty())
+    if (context.empty())
         return;
-    m_userData = user_data;
+    m_context = context;
 }
 
 void LaunchPoint::setParams(const pbnjson::JValue& params)
@@ -242,7 +238,6 @@ pbnjson::JValue LaunchPoint::toJValue() const
     json.put("relaunch", isRelaunch());
     json.put("systemApp", isSystemApp());
     json.put("title", getTitle());
-    json.put("userData", getUserData());
     json.put("miniicon", getMiniIcon());
 
     if (!getParams().isNull())
@@ -290,28 +285,28 @@ void LaunchPoint::setIcons(const pbnjson::JValue& icons)
 /****************************/
 /***** LPDefault ************/
 /****************************/
-LaunchPointPtr LPDefault::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LPDefault::create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText)
 {
-    std::string app_id = data["id"].asString();
-    if (app_id.empty())
+    std::string appId = data["id"].asString();
+    if (appId.empty())
         return nullptr;
 
-    LaunchPointPtr new_lp = std::make_shared<LPDefault>(app_id, lp_id);
-    if (new_lp == nullptr) {
-        err_text = "fail to create instance";
+    LaunchPointPtr newLaunchPoint = std::make_shared<LPDefault>(appId, launchPointId);
+    if (newLaunchPoint == nullptr) {
+        errorText = "fail to create instance";
         return nullptr;
     }
 
-    new_lp->setAttrWithJson(data);
+    newLaunchPoint->setAttrWithJson(data);
 
-    new_lp->setLpType(LPType::DEFAULT);
-    new_lp->setDefaultLp(true);
-    new_lp->setRemovable(data["removable"].asBool());
-    new_lp->setSystemApp(data["systemApp"].asBool());
-    new_lp->setVisible(data["visible"].asBool());
-    new_lp->setMiniIcon(data["miniicon"].asString());
+    newLaunchPoint->setLpType(LPType::DEFAULT);
+    newLaunchPoint->setDefaultLp(true);
+    newLaunchPoint->setRemovable(data["removable"].asBool());
+    newLaunchPoint->setSystemApp(data["systemApp"].asBool());
+    newLaunchPoint->setVisible(data["visible"].asBool());
+    newLaunchPoint->setMiniIcon(data["miniicon"].asString());
 
-    return new_lp;
+    return newLaunchPoint;
 }
 
 std::string LPDefault::update(const pbnjson::JValue& data)
@@ -323,25 +318,25 @@ std::string LPDefault::update(const pbnjson::JValue& data)
 /****************************/
 /******** LPBookmark ********/
 /****************************/
-LaunchPointPtr LPBookmark::create(const std::string& lp_id, const pbnjson::JValue& data, std::string& err_text)
+LaunchPointPtr LPBookmark::create(const std::string& launchPointId, const pbnjson::JValue& data, std::string& errorText)
 {
-    std::string app_id = data["id"].asString();
-    if (app_id.empty())
+    std::string appId = data["id"].asString();
+    if (appId.empty())
         return nullptr;
 
-    LaunchPointPtr new_lp = std::make_shared<LPBookmark>(app_id, lp_id);
-    if (new_lp == nullptr)
+    LaunchPointPtr newLaunchPoint = std::make_shared<LPBookmark>(appId, launchPointId);
+    if (newLaunchPoint == nullptr)
         return nullptr;
 
-    new_lp->setAttrWithJson(data);
+    newLaunchPoint->setAttrWithJson(data);
 
-    new_lp->setLpType(LPType::BOOKMARK);
-    new_lp->setDefaultLp(false);
-    new_lp->setRemovable(true);
-    new_lp->setSystemApp(false);
-    new_lp->setVisible(true);
+    newLaunchPoint->setLpType(LPType::BOOKMARK);
+    newLaunchPoint->setDefaultLp(false);
+    newLaunchPoint->setRemovable(true);
+    newLaunchPoint->setSystemApp(false);
+    newLaunchPoint->setVisible(true);
 
-    return new_lp;
+    return newLaunchPoint;
 }
 
 std::string LPBookmark::update(const pbnjson::JValue& data)

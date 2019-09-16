@@ -17,6 +17,7 @@
 #include <iostream>
 #include <vector>
 #include <fcntl.h>
+#include "util/Logger.h"
 
 using namespace std;
 
@@ -27,10 +28,13 @@ public:
     LinuxProcess() {}
     virtual ~LinuxProcess() {}
 
-    static string PidsToString(const PidVector& pids);
-    static bool kill_processes(const PidVector& pids, int sig);
-    static pid_t fork_process(const char **argv, const char **envp);
-    static PidVector FindChildPids(const std::string& pid);
+    static string convertPidsToString(const PidVector& pids);
+    static bool killProcesses(const PidVector& pids, int sig);
+    static pid_t forkProcess(const char **argv, const char **envp);
+    static PidVector findChildPids(const std::string& pid);
+
+private:
+    static const string CLASS_NAME;
 };
 
 #endif /* UTIL_LINUXPROCESS_H_ */

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,22 +18,27 @@
 #define PRELAUNCHER_H
 
 #include <lifecycle/stage/appitem/LaunchAppItem.h>
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
 
-class Prelauncher {
+class Prelauncher : public ISingleton<Prelauncher>,
+                    public IClassName {
+friend class ISingleton<Prelauncher>;
 public:
-    Prelauncher();
     virtual ~Prelauncher();
 
     virtual void addItem(LaunchAppItemPtr item);
     virtual void removeItem(const std::string& app_uid);
-    virtual void inputBridgedReturn(LaunchAppItemPtr item, const pbnjson::JValue& jmsg);
+    virtual void inputBridgedReturn(LaunchAppItemPtr item, const pbnjson::JValue& responsePayload);
     virtual void cancelAll();
 
     boost::signals2::signal<void (const std::string& uid)> EventPrelaunchingDone;
 
 private:
-    static bool onReturnLSCall(LSHandle* handle, LSMessage* lsmsg, void* user_data);
-    static bool onReturnLSCallForBridgedRequest(LSHandle* handle, LSMessage* lsmsg, void* user_data);
+    static bool onReturnLSCall(LSHandle* sh, LSMessage* message, void* context);
+    static bool onReturnLSCallForBridgedRequest(LSHandle* sh, LSMessage* message, void* context);
+
+    Prelauncher();
 
     void runStages(LaunchAppItemPtr item);
     void handleStages(LaunchAppItemPtr prelaunching_item);

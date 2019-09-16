@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 LG Electronics, Inc.
+// Copyright (c) 2017-2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 #include <boost/bind.hpp>
 #include <launchpoint/handler/DBHandler.h>
-#include <util/Logging.h>
-#include <util/Logging.h>
+#include <launchpoint/DBBase.h>
 
 DBHandler::DBHandler()
     : m_isDBLoaded(false),
@@ -31,19 +30,16 @@ DBHandler::~DBHandler()
 
 void DBHandler::init()
 {
-    m_launchPointDB.init();
-    m_launchPointDB.EventDBLoaded.connect(boost::bind(&DBHandler::onLaunchPointDbLoaded, this, _1));
+    DBBase::getInstance().init();
+    DBBase::getInstance().EventDBLoaded.connect(boost::bind(&DBHandler::onLaunchPointDbLoaded, this, _1));
 }
 
 void DBHandler::handleDbState(bool connection)
 {
-    LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 3,
-             PMLOGKS("status", "handle_launch_points_db_state"),
-             PMLOGKS("db_connected", connection?"done":"not_ready_yet"),
-             PMLOGKFV("db_load_count", "%d", m_DBLoadCount), "");
+    Logger::info(getClassName(), __FUNCTION__, "", Logger::format("connection(%B) m_DBLoadCount(%d)", connection, m_DBLoadCount));
 
     if (!m_isDBLoaded)
-        m_launchPointDB.loadDb();
+        DBBase::getInstance().loadDb();
 }
 
 void DBHandler::onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
@@ -56,25 +52,22 @@ void DBHandler::onLaunchPointDbLoaded(const pbnjson::JValue& loaded_db_result)
 
 void DBHandler::reloadDbData(bool connection)
 {
-    LOG_INFO(MSGID_LAUNCH_POINT_DB_HANDLE, 2,
-             PMLOGKS("status", "reload_db_data"),
-             PMLOGKS("db_connected", connection ? "done" : "not_ready_yet"), "");
-
+    Logger::info(getClassName(), __FUNCTION__, "", "reload_db_data");
     m_isDBLoaded = false;
     handleDbState(connection);
 }
 
 bool DBHandler::insertData(const pbnjson::JValue& json)
 {
-    return m_launchPointDB.insertData(json);
+    return DBBase::getInstance().insertData(json);
 }
 
 bool DBHandler::updateData(const pbnjson::JValue& json)
 {
-    return m_launchPointDB.updateData(json);
+    return DBBase::getInstance().updateData(json);
 }
 
 bool DBHandler::deleteData(const pbnjson::JValue& json)
 {
-    return m_launchPointDB.deleteData(json);
+    return DBBase::getInstance().deleteData(json);
 }
