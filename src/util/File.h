@@ -33,6 +33,18 @@ public:
     static bool writeFile(const std::string& filePath, const std::string& buffer);
     static bool concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr);
 
+    static bool isDirectory(const string& path);
+    static bool isFile(const string& path);
+    static bool createFile(const string& path);
+
+    static string join(const string& a, const string& b);
+
+    static void trimPath(std::string &path)
+    {
+        if (path.back() == '/')
+            path.erase(std::prev(path.end()));
+    }
+
     File();
     virtual ~File();
 

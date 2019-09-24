@@ -14,9 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/AbsLunaClient.h>
-#include "bus/service/ApplicationManager.h"
-#include "util/JValueUtil.h"
+#include "AbsLunaClient.h"
 
 JValue& AbsLunaClient::getEmptyPayload()
 {
@@ -58,6 +56,7 @@ AbsLunaClient::AbsLunaClient(const string& name)
     : m_name(name),
       m_isConnected(false)
 {
+    setClassName("AbsLunaClient");
 }
 
 AbsLunaClient::~AbsLunaClient()

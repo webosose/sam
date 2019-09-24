@@ -16,17 +16,17 @@
 
 map<string, JSchema> JValueUtil::s_schemas;
 
-void JValueUtil::addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str)
+void JValueUtil::addUniqueItemToArray(pbnjson::JValue& array, std::string& item)
 {
-    if (arr.isNull() || !arr.isArray() || str.empty())
+    if (array.isNull() || !array.isArray() || item.empty())
         return;
 
-    for (int i = 0; i < arr.arraySize(); ++i) {
-        if (arr[i].isString() && 0 == str.compare(arr[i].asString()))
+    for (int i = 0; i < array.arraySize(); ++i) {
+        if (array[i].isString() && 0 == item.compare(array[i].asString()))
             return;
     }
 
-    arr.append(str);
+    array.append(item);
 }
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value)
@@ -157,7 +157,7 @@ JSchema JValueUtil::getSchema(string name)
     if (it != s_schemas.end())
         return it->second;
 
-    std::string path = kSchemaPath + name + ".schema";
+    std::string path = PATH_SAM_SCHEMAS + name + ".schema";
     pbnjson::JSchema schema = JSchema::fromFile(path.c_str());
     if (!schema.isInitialized())
         return JSchema::AllSchema();

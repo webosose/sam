@@ -33,12 +33,14 @@ friend class ISingleton<Notification>;
 public:
     virtual ~Notification();
 
+    // APIs
+    static bool onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void* context);
+    Call createPincodePrompt(LSFilterFunc func);
+
+protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
-
-    // APIs
-    Call createPincodePrompt(LSFilterFunc func);
 
 private:
     static const std::string NAME;

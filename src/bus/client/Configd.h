@@ -19,41 +19,40 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
 #include "util/Logger.h"
 
+using namespace std;
 using namespace LS;
 using namespace pbnjson;
 
 class Configd : public ISingleton<Configd>,
-                public AbsLunaClient,
-                public IClassName {
+                public AbsLunaClient {
 friend class ISingleton<Configd>;
 public:
-    static bool onGetConfigs(LSHandle* sh, LSMessage* response, void* context);
-
     virtual ~Configd();
-
-    // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
 
     void addRequiredKey(const std::string& key)
     {
         m_configNames.push_back(key);
     }
 
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventConfigInfo;
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventGetConfigs;
+
+protected:
+    // AbsLunaClient
+    virtual void onInitialze();
+    virtual void onServerStatusChanged(bool isConnected);
 
 private:
-    static const string NAME;
+    static bool onGetConfigs(LSHandle* sh, LSMessage* response, void* context);
 
     Configd();
 
-    std::vector<std::string> m_configNames;
+    vector<string> m_configNames;
+    JValue configNames;
     Call m_getConfigsCall;
 };
 

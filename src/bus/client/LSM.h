@@ -19,7 +19,6 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
@@ -29,18 +28,18 @@ using namespace LS;
 using namespace pbnjson;
 
 class LSM : public ISingleton<LSM>,
-            public AbsLunaClient,
-            public IClassName {
+            public AbsLunaClient {
 friend class ISingleton<LSM>;
 public:
     virtual ~LSM();
 
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventRecentsAppListChanged;
+
+protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventForegroundAppInfoChanged;
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventRecentsAppListChanged;
 private:
     static const string NAME;
     static const string NAME_GET_FOREGROUND_APP_INFO;
@@ -52,6 +51,7 @@ private:
 
     LSM();
 
+    bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
     void subscribeGetForegroundAppInfo();
     void subscribeGetRecentsAppList();
 

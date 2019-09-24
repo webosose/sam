@@ -26,7 +26,7 @@ public:
     JValueUtil() {}
     virtual ~JValueUtil() {}
 
-    static void addStringToStrArrayNoDuplicate(pbnjson::JValue& arr, std::string& str);
+    static void addUniqueItemToArray(pbnjson::JValue& arr, std::string& str);
 
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value);
     static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value);

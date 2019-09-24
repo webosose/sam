@@ -11,13 +11,54 @@
  * LICENSE@@@
  */
 
-#include <util/LinuxProcess.h>
 #include <signal.h>
 #include <glib.h>
 #include <proc/readproc.h>
 #include <stdlib.h>
 
+#include "util/LinuxProcess.h"
+
 const string LinuxProcess::CLASS_NAME = "LinuxProcess";
+
+bool LinuxProcess::sendSigTerm(const std::string& pid)
+{
+    if (pid.empty()) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
+        return false;
+    }
+
+    PidVector allPids = LinuxProcess::findChildPids(pid);
+    if (allPids.empty()) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "empty_pids");
+        return false;
+    }
+
+    if (!LinuxProcess::killProcesses(allPids, SIGTERM)) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "seding_signal_error");
+        return false;
+    }
+    return true;
+}
+
+bool LinuxProcess::sendSigKill(const std::string& pid)
+{
+    if (pid.empty()) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
+        return false;
+    }
+
+    PidVector allPids = LinuxProcess::findChildPids(pid);
+    if (allPids.empty()) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "empty_pids");
+        return false;
+    }
+
+    if (!LinuxProcess::killProcesses(allPids, SIGKILL)) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "seding_signal_error");
+        return false;
+    }
+    return true;
+}
 
 string LinuxProcess::convertPidsToString(const PidVector& pids)
 {
@@ -52,16 +93,19 @@ pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
     GError* gerr = NULL;
     GSpawnFlags flags = (GSpawnFlags) (G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_DO_NOT_REAP_CHILD);
 
-    gboolean result = g_spawn_async_with_pipes(NULL,
-                                               const_cast<char**>(argv),  // cmd arguments
-                                               const_cast<char**>(envp),  // environment variables
-                                               flags,
-                                               NULL,
-                                               NULL, &pid,
-                                               NULL,
-                                               NULL,
-                                               NULL,
-                                               &gerr);
+    gboolean result = g_spawn_async_with_pipes(
+        NULL,
+        const_cast<char**>(argv),  // cmd arguments
+        const_cast<char**>(envp),  // environment variables
+        flags,
+        NULL,
+        NULL,
+        &pid,
+        NULL,
+        NULL,
+        NULL,
+        &gerr
+    );
     if (gerr) {
         Logger::error(CLASS_NAME, __FUNCTION__, "Failed to folk", Logger::format("returned_pid: %d, errorText: %s", pid, gerr->message));
         g_error_free(gerr);
@@ -105,6 +149,5 @@ PidVector LinuxProcess::findChildPids(const std::string& pid)
     }
 
     free(proctab);
-
     return pids;
 }

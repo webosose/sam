@@ -15,6 +15,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "File.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 void File::set_slash_to_base_path(std::string& path)
@@ -85,6 +88,52 @@ bool File::concatToFilename(const std::string originPath, std::string& returnPat
     return true;
 }
 
+bool File::isDirectory(const string& path)
+{
+    struct stat dirStat;
+    if (stat(path.c_str(), &dirStat) != 0 || (dirStat.st_mode & S_IFDIR) == 0) {
+        return false;
+    }
+    return true;
+}
+
+bool File::isFile(const string& path)
+{
+    struct stat fileStat;
+
+    if (stat(path.c_str(), &fileStat) != 0 || (fileStat.st_mode & S_IFREG) == 0) {
+        return false;
+    }
+    return true;
+}
+
+bool File::createFile(const string& path)
+{
+    return File::writeFile(path, "");
+}
+
+string File::join(const string& a, const string& b)
+{
+    string path = "";
+
+    if (a.back() == '/') {
+        if (b.front() == '/') {
+            path = a + b.substr(1);
+        }
+        else {
+            path = a + b;
+        }
+    } else {
+        if (b.front() == '/') {
+            path = a + b;
+        }
+        else {
+            path = a + "/" + b;
+        }
+    }
+    return path;
+}
+
 File::File()
 {
 }
@@ -92,4 +141,3 @@ File::File()
 File::~File()
 {
 }
-

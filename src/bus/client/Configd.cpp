@@ -15,16 +15,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/client/Configd.h>
-#include <bus/service/ApplicationManager.h>
 #include <pbnjson.hpp>
-#include <util/LSUtils.h>
-
-const string Configd::NAME = "com.webos.service.config";
 
 Configd::Configd()
-    : AbsLunaClient(NAME)
+    : AbsLunaClient("com.webos.service.config")
 {
-    setClassName(NAME);
+    setClassName("Configd");
+
+    configNames = pbnjson::Array();
+    configNames.append("system.sysAssetFallbackPrecedence");
+    configNames.append("com.webos.applicationManager.keepAliveApps");
+    configNames.append("com.webos.applicationManager.supportQmlBooster");
+    configNames.append("com.webos.applicationManager.lifeCycle");
 }
 
 Configd::~Configd()
@@ -44,16 +46,8 @@ void Configd::onServerStatusChanged(bool isConnected)
         if (m_getConfigsCall.isActive())
             return;
 
-        if (m_configNames.empty())
-            return;
-
         pbnjson::JValue requestPayload = pbnjson::Object();
-        pbnjson::JValue configNames = pbnjson::Array();
-
         requestPayload.put("subscribe", true);
-        for (auto& key : m_configNames) {
-            configNames.append(key);
-        }
         requestPayload.put("configNames", configNames);
 
         m_getConfigsCall = ApplicationManager::getInstance().callMultiReply(
@@ -69,10 +63,13 @@ void Configd::onServerStatusChanged(bool isConnected)
 
 bool Configd::onGetConfigs(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull())
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
+
+    if (subscriptionPayload.isNull())
         return false;
 
-    Configd::getInstance().EventConfigInfo(responsePayload);
+    Configd::getInstance().EventGetConfigs(subscriptionPayload);
     return true;
 }

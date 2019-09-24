@@ -14,10 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <lifecycle/LifecycleRouter.h>
-#include <lifecycle/RunningInfoManager.h>
+#include "LifecycleRouter.h"
 
-const LifecycleRoutePolicy LifecycleRouter::m_invalidRoutePolicy = { LifeStatus::INVALID, RouteAction::IGNORE, RouteLog::ERROR };
+#include "base/RunningAppList.h"
+#include "base/LaunchPointList.h"
+
+const LifecycleRoutePolicy LifecycleRouter::INVALID_ROUTE_POLICY = {
+    LifeStatus::INVALID, RouteAction::IGNORE, RouteLog::ERROR
+};
 
 LifecycleRouter::LifecycleRouter()
 {
@@ -220,11 +224,11 @@ void LifecycleRouter::initialize()
 const LifecycleRoutePolicy& LifecycleRouter::getConvRoutePolilcy(LifeStatus current, LifeStatus next)
 {
     if (m_lifestatusConvMap.count(current) == 0) {
-        return m_invalidRoutePolicy;
+        return INVALID_ROUTE_POLICY;
     }
 
     if (m_lifestatusConvMap[current].count(next) == 0) {
-        return m_invalidRoutePolicy;
+        return INVALID_ROUTE_POLICY;
     }
 
     return m_lifestatusConvMap[current][next];
@@ -232,15 +236,15 @@ const LifecycleRoutePolicy& LifecycleRouter::getConvRoutePolilcy(LifeStatus curr
 
 const LifecycleRoutePolicy& LifecycleRouter::getLifeCycleRoutePolicy(LifeStatus current, LifeStatus next)
 {
-
     if (m_lifecycleRouteMap.count(current) == 0) {
-        return m_invalidRoutePolicy;
+        return INVALID_ROUTE_POLICY;
     }
-    auto it = std::find_if(m_lifecycleRouteMap[current].begin(), m_lifecycleRouteMap[current].end(), [&next](const LifecycleRoutePolicy policy) {
+    auto it = std::find_if(m_lifecycleRouteMap[current].begin(), m_lifecycleRouteMap[current].end(),
+                           [&next](const LifecycleRoutePolicy policy) {
         return next == std::get<0>(policy);
     });
     if (it == m_lifecycleRouteMap[current].end())
-        return m_invalidRoutePolicy;
+        return INVALID_ROUTE_POLICY;
 
     if (RouteAction::CONVERT == std::get<1>(*it)) {
         return getConvRoutePolilcy(current, next);
@@ -251,20 +255,19 @@ const LifecycleRoutePolicy& LifecycleRouter::getLifeCycleRoutePolicy(LifeStatus 
 
 void LifecycleRouter::setRuntimeStatus(const std::string& appId, RuntimeStatus next)
 {
-    RunningInfoPtr runningInfoPtr = RunningInfoManager::getInstance().getRunningInfo(appId);
-    if (runningInfoPtr == nullptr) {
-        runningInfoPtr = RunningInfoManager::getInstance().addRunningInfo(appId);
-    }
-    auto it = std::find_if(m_runtimeRouteMap[runningInfoPtr->getRuntimeStatus()].begin(), m_runtimeRouteMap[runningInfoPtr->getRuntimeStatus()].end(), [&next](const RuntimeRoutePolicy policy) {
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId, true);
+
+    auto it = std::find_if(m_runtimeRouteMap[runningApp->getRuntimeStatus()].begin(), m_runtimeRouteMap[runningApp->getRuntimeStatus()].end(), [&next](const RuntimeRoutePolicy policy) {
         return next == policy.first;
     });
-    if (it == m_runtimeRouteMap[runningInfoPtr->getRuntimeStatus()].end() || (*it).second != RouteAction::SET) {
-        Logger::info("LifecycleRouter", __FUNCTION__, appId, Logger::format("skip set runtime status: current(%d) next(%d)", runningInfoPtr->getRuntimeStatus(), next));
+    if (it == m_runtimeRouteMap[runningApp->getRuntimeStatus()].end() || (*it).second != RouteAction::SET) {
+        Logger::info("LifecycleRouter", __FUNCTION__, appId, Logger::format("skip set runtime status: current(%d) next(%d)", runningApp->getRuntimeStatus(), next));
         return;
     }
 
-    Logger::info("LifecycleRouter", __FUNCTION__, appId, Logger::format("runtime_status_changed: current(%d) next(%d)", runningInfoPtr->getRuntimeStatus(), next));
-    runningInfoPtr->setRuntimeStatus(next);
+    Logger::info("LifecycleRouter", __FUNCTION__, appId,
+                 Logger::format("current(%s) next(%s)", RunningApp::toString(runningApp->getRuntimeStatus()), RunningApp::toString(next)));
+    runningApp->setRuntimeStatus(next);
 }
 
 LifeStatus LifecycleRouter::getLifeStatusFromRuntimeStatus(RuntimeStatus runtime_status)

@@ -17,26 +17,38 @@
 #ifndef BUS_SERVICE_APPLICATIONMANAGER_H_
 #define BUS_SERVICE_APPLICATIONMANAGER_H_
 
-#include <boost/function.hpp>
-#include <boost/signals2.hpp>
-#include <bus/service/compat/ApplicationManagerCompat.h>
-#include <luna-service2/lunaservice.hpp>
-#include "../LunaTask.h"
-#include "interface/IClassName.h"
-#include "interface/ISingleton.h"
 #include <map>
 #include <memory>
-#include <pbnjson.hpp>
-#include "util/Logger.h"
 #include <string>
+#include <boost/function.hpp>
+#include <boost/signals2.hpp>
 
-#define SUBSKEY_RUNNING              "running"
-#define SUBSKEY_DEV_RUNNING          "dev_running"
-#define SUBSKEY_FOREGROUND_INFO      "foregroundAppInfo"
-#define SUBSKEY_FOREGROUND_INFO_EX   "foregroundAppInfoEx"
-#define SUBSKEY_GET_APP_LIFE_EVENTS  "getAppLifeEvents"
-#define SUBSKEY_GET_APP_LIFE_STATUS  "getAppLifeStatus"
-#define SUBSKEY_ON_LAUNCH            "onLaunch"
+#include <pbnjson.hpp>
+#include <luna-service2/lunaservice.hpp>
+
+#include "base/AppDescriptionList.h"
+#include "base/LunaTask.h"
+#include "base/LaunchPoint.h"
+#include "base/LaunchPointList.h"
+#include "base/RunningAppList.h"
+#include "bus/service/compat/ApplicationManagerCompat.h"
+#include "interface/IClassName.h"
+#include "interface/ISingleton.h"
+#include "setting/Settings.h"
+#include "util/Logger.h"
+#include "util/File.h"
+
+#define SUBSKEY_RUNNING               "running"
+#define SUBSKEY_DEV_RUNNING           "dev_running"
+#define SUBSKEY_FOREGROUND_INFO       "foregroundAppInfo"
+#define SUBSKEY_FOREGROUND_INFO_EX    "foregroundAppInfoEx"
+#define SUBSKEY_GET_APP_LIFE_EVENTS   "getAppLifeEvents"
+#define SUBSKEY_GET_APP_LIFE_STATUS   "getAppLifeStatus"
+#define SUBSKEY_ON_LAUNCH             "onLaunch"
+#define SUBSKEY_LIST_APPS             "listApps"
+#define SUBSKEY_LIST_APPS_COMPACT     "listAppsCompact"
+#define SUBSKEY_DEV_LIST_APPS         "listDevApps"
+#define SUBSKEY_DEV_LIST_APPS_COMPACT "listDevAppsCompact"
 
 using namespace LS;
 
@@ -47,124 +59,302 @@ class ApplicationManager : public LS::Handle,
                            public IClassName {
 friend class ISingleton<ApplicationManager> ;
 public:
-    ApplicationManager();
-    virtual ~ApplicationManager();
+    static const char* CATEGORY_ROOT;
+    static const char* CATEGORY_DEV;
 
-    virtual void exportAPI();
-    virtual void exportDevAPI();
+    static const char* METHOD_LAUNCH;
+    static const char* METHOD_PAUSE;
+    static const char* METHOD_CLOSE_BY_APPID;
+    static const char* METHOD_RUNNING;
+    static const char* METHOD_GET_APP_LIFE_EVENTS;
+    static const char* METHOD_GET_APP_LIFE_STATUS;
+    static const char* METHOD_GET_FOREGROUND_APPINFO;
+    static const char* METHOD_LOCK_APP;
+    static const char* METHOD_REGISTER_APP;
+
+    static const char* METHOD_LIST_APPS;
+    static const char* METHOD_GET_APP_STATUS;
+    static const char* METHOD_GET_APP_INFO;
+    static const char* METHOD_GET_APP_BASE_PATH;
+
+    static const char* METHOD_ADD_LAUNCHPOINT;
+    static const char* METHOD_UPDATE_LAUNCHPOINT;
+    static const char* METHOD_REMOVE_LAUNCHPOINT;
+    static const char* METHOD_MOVE_LAUNCHPOINT;
+    static const char* METHOD_LIST_LAUNCHPOINTS;
+
+    static const char* METHOD_MANAGER_INFO;
+
+    virtual ~ApplicationManager();
 
     virtual bool attach(GMainLoop* gml);
     virtual void detach();
 
-    void registerApiHandler(const std::string& category, const std::string& method, LunaApiHandler handler);
+    // APIs
+    void launch(LunaTaskPtr lunaTask);
+    void pause(LunaTaskPtr lunaTask);
+    void closeByAppId(LunaTaskPtr lunaTask);
+    void running(LunaTaskPtr lunaTask);
+    void runningForDev(LunaTaskPtr lunaTask);
+    void getAppLifeEvents(LunaTaskPtr lunaTask);
+    void getAppLifeStatus(LunaTaskPtr lunaTask);
+    void getForegroundAppInfo(LunaTaskPtr lunaTask);
+    void lockApp(LunaTaskPtr lunaTask);
+    void registerApp(LunaTaskPtr lunaTask);
+    void registerNativeApp(LunaTaskPtr lunaTask);
 
-    void onServiceReady();
-    void setServiceStatus(bool status)
+    void listApps(LunaTaskPtr lunaTask);
+    void getAppStatus(LunaTaskPtr lunaTask);
+    void getAppInfo(LunaTaskPtr lunaTask);
+    void getAppBasePath(LunaTaskPtr lunaTask);
+
+    void addLaunchPoint(LunaTaskPtr lunaTask);
+    void updateLaunchPoint(LunaTaskPtr lunaTask);
+    void removeLaunchPoint(LunaTaskPtr lunaTask);
+    void moveLaunchPoint(LunaTaskPtr lunaTask);
+    void listLaunchPoints(LunaTaskPtr lunaTask);
+
+    void managerInfo(LunaTaskPtr lunaTask);
+
+    void enableSubscription();
+    void disableSubscription();
+
+    void postListLaunchPoints(LaunchPointPtr launchPoint)
     {
-        m_serviceReady = status;
-    }
-    bool isServiceReady() const
-    {
-        return m_serviceReady;
+        if (launchPoint && !launchPoint->isVisible())
+            return;
+
+        pbnjson::JValue launchPoints;
+        if (launchPoint == nullptr) {
+            launchPoints = pbnjson::Array();
+            LaunchPointList::getInstance().toJson(launchPoints);
+        } else {
+            launchPoint->toJson(launchPoints);
+        }
+
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        subscriptionPayload.put("subscribed", true);
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("launchPoints", launchPoints);
+
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_listLaunchPointsPoint, subscriptionPayload);
+        m_listLaunchPointsPoint.post(subscriptionPayload.stringify().c_str());
     }
 
-    void postListLaunchPoints(JValue& subscriptionPayload)
+    void postGetAppLifeEvents(pbnjson::JValue subscriptionPayload)
     {
-        Logger::info(getClassName(), __FUNCTION__, "LS2", "reply_lp_list_to_subscribers");
-        if (!m_listLaunchPointsPoint.post(subscriptionPayload.stringify().c_str())) {
-            Logger::error(getClassName(), __FUNCTION__, "LS2", "Failed to post subscription");
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
+        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
+    }
+
+    void postGetAppLifeStatus(pbnjson::JValue subscriptionPayload)
+    {
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
+        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
+    }
+
+    void postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEvent event)
+    {
+        if (!appDesc) {
+            return;
+        }
+
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+
+        switch (event) {
+        case AppStatusEvent::AppStatusEvent_Installed:
+        case AppStatusEvent::AppStatusEvent_UpdateCompleted:
+            subscriptionPayload.put("status", "launchable");
+            subscriptionPayload.put("exist", true);
+            subscriptionPayload.put("launchable", true);
+            break;
+
+        case AppStatusEvent::AppStatusEvent_Uninstalled:
+            subscriptionPayload.put("status", "notExist");
+            subscriptionPayload.put("exist", false);
+            subscriptionPayload.put("launchable", false);
+            break;
+
+        default:
+            return;
+        }
+
+        subscriptionPayload.put("appId", appDesc->getAppId());
+        subscriptionPayload.put("event", AppDescription::toString(event));
+        subscriptionPayload.put("returnValue", true);
+
+        std::string nKey = "getappstatus#" + appDesc->getAppId() + "#N";
+        if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), nKey.c_str(), subscriptionPayload.stringify().c_str(), NULL)) {
+            Logger::warning(getClassName(), __FUNCTION__, "LS2", nKey);
+        }
+
+        switch (event) {
+        case AppStatusEvent::AppStatusEvent_Installed:
+        case AppStatusEvent::AppStatusEvent_UpdateCompleted:
+            subscriptionPayload.put("appInfo", appDesc->getJson());
+            break;
+
+        default:
+            break;
+        }
+
+        std::string yKey = "getappstatus#" + appDesc->getAppId() + "#Y";
+        if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), yKey.c_str(), subscriptionPayload.stringify().c_str(), NULL)) {
+            Logger::warning(getClassName(), __FUNCTION__, "LS2", yKey);
         }
     }
 
-    void postListApps(JValue& subscriptionPayload)
+    void postGetForegroundAppIfo(const std::string& appId)
     {
-        m_listAppsPoint.post(subscriptionPayload.stringify().c_str());
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        subscriptionPayload.put("appId", appId);
+        subscriptionPayload.put("windowId", "");
+        subscriptionPayload.put("processId", "");
+
+        Logger::info(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload.stringify());
+
+        if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
+                                 SUBSKEY_FOREGROUND_INFO,
+                                 subscriptionPayload.stringify().c_str(),
+                                 NULL)) {
+            Logger::error(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload.stringify());
+            return;
+        }
     }
 
-    void postListAppsCompact(JValue& subscriptionPayload)
+    void postGetForegroundAppIfoExtra(const pbnjson::JValue& foreground_info)
     {
-        m_listAppsCompactPoint.post(subscriptionPayload.stringify().c_str());
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        subscriptionPayload.put("foregroundAppInfo", foreground_info);
+
+        Logger::info(getClassName(), __FUNCTION__, "LS2", SUBSKEY_FOREGROUND_INFO_EX, subscriptionPayload.stringify());
+        if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
+                                 SUBSKEY_FOREGROUND_INFO_EX,
+                                 subscriptionPayload.stringify().c_str(),
+                                 NULL)) {
+            Logger::error(getClassName(), __FUNCTION__, "LS2", "subscriptionreply", subscriptionPayload.stringify());
+            return;
+        }
     }
 
-    void postListDevApps(JValue& subscriptionPayload)
+    void postListApps(const string& appId, const string& change, const string& changeReason)
     {
-        m_listDevAppsPoint.post(subscriptionPayload.stringify().c_str());
+        JValue subscriptionPayload = pbnjson::Object();
+        subscriptionPayload.put("change", change);
+        subscriptionPayload.put("changeReason", changeReason);
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+
+        AppDescriptionPtr appDesc = nullptr;
+        if (!appId.empty()) {
+            appDesc = AppDescriptionList::getInstance().getById(appId);
+            Logger::warning(getClassName(), __FUNCTION__, appId, "Cannot fine the appId");
+            return;
+        }
+
+        LSSubscriptionIter *iter = NULL;
+        if (!LSSubscriptionAcquire(ApplicationManager::getInstance().get(), METHOD_LIST_APPS, &iter, NULL))
+            return;
+
+        while (LSSubscriptionHasNext(iter)) {
+            LSMessage* message = LSSubscriptionNext(iter);
+            Message request(message);
+            bool isDevmode = (strcmp(request.getKind(), "/dev/listApps") == 0);
+
+            if (isDevmode && !Settings::getInstance().isDevmodeEnabled()) {
+                continue;
+            }
+
+            pbnjson::JValue requestPayload = JDomParser::fromString(request.getPayload(), JValueUtil::getSchema("applicationManager.listApps"));
+            if (requestPayload.isNull()) {
+                continue;
+            }
+
+            JValue properties;
+            if (JValueUtil::getValue(requestPayload, "properties", properties) && properties.isArray()) {
+                properties.append("id");
+            }
+
+            if (appDesc != nullptr) {
+                if (appDesc->isDevmodeApp() != isDevmode)
+                    continue;
+                pbnjson::JValue app = appDesc->getJson(properties);
+                subscriptionPayload.put("app", app);
+            } else {
+                pbnjson::JValue apps = pbnjson::Array();
+                AppDescriptionList::getInstance().toJson(apps, properties, isDevmode);
+                subscriptionPayload.put("apps", apps);
+            }
+            request.respond(subscriptionPayload.stringify().c_str());
+        }
+        LSSubscriptionRelease(iter);
+        iter = NULL;
     }
 
-    void postListDevAppsCompact(JValue& subscriptionPayload)
+    void postRunning(bool devmode = false)
     {
-        m_listDevAppsCompactPoint.post(subscriptionPayload.stringify().c_str());
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        std::string kind = devmode ? SUBSKEY_DEV_RUNNING : SUBSKEY_RUNNING;
+
+        JValue running = pbnjson::Array();
+        if (devmode) {
+            RunningAppList::getInstance().toJson(running, true);
+        } else {
+            RunningAppList::getInstance().toJson(running);
+        }
+
+        subscriptionPayload.put("running", running);
+        subscriptionPayload.put("returnValue", true);
+
+        if (devmode) {
+            Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_runningDev, subscriptionPayload);
+            m_runningDev.post(subscriptionPayload.stringify().c_str());
+        } else {
+            Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_running, subscriptionPayload);
+            m_running.post(subscriptionPayload.stringify().c_str());
+        }
     }
-
-    void addLaunchPoint(LunaTaskPtr task);
-    void updateLaunchPoint(LunaTaskPtr task);
-    void removeLaunchPoint(LunaTaskPtr task);
-    void moveLaunchPoint(LunaTaskPtr task);
-    void listLaunchPoints(LunaTaskPtr task);
-    void launch(LunaTaskPtr task);
-    void pause(LunaTaskPtr task);
-    void closeByAppId(LunaTaskPtr task);
-    void closeByAppIdForDev(LunaTaskPtr task);
-    void closeAllApps(LunaTaskPtr task);
-    void running(LunaTaskPtr task);
-    void runningForDev(LunaTaskPtr task);
-    void getAppLifeEvents(LunaTaskPtr task);
-    void getAppLifeStatus(LunaTaskPtr task);
-    void getForegroundAppInfo(LunaTaskPtr task);
-    void lockApp(LunaTaskPtr task);
-    void registerApp(LunaTaskPtr task);
-    void registerNativeApp(LunaTaskPtr task);
-    void notifyAlertClosed(LunaTaskPtr task);
-    void listApps(LunaTaskPtr task);
-    void listAppsForDev(LunaTaskPtr task);
-    void getAppStatus(LunaTaskPtr task);
-    void getAppInfo(LunaTaskPtr task);
-    void getAppBasePath(LunaTaskPtr task);
-
-    static const char* API_CATEGORY_ROOT;
-    static const char* API_CATEGORY_DEV;
-
-    static const char* API_LAUNCH;
-    static const char* API_PAUSE;
-    static const char* API_CLOSE_BY_APPID;
-    static const char* API_RUNNING;
-    static const char* API_GET_APP_LIFE_EVENTS;
-    static const char* API_GET_APP_LIFE_STATUS;
-    static const char* API_GET_FOREGROUND_APPINFO;
-    static const char* API_LOCK_APP;
-    static const char* API_REGISTER_APP;
-    static const char* API_LIST_APPS;
-    static const char* API_GET_APP_STATUS;
-    static const char* API_GET_APP_INFO;
-    static const char* API_GET_APP_BASE_PATH;
-    static const char* API_ADD_LAUNCHPOINT;
-    static const char* API_UPDATE_LAUNCHPOINT;
-    static const char* API_REMOVE_LAUNCHPOINT;
-    static const char* API_MOVE_LAUNCHPOINT;
-    static const char* API_LIST_LAUNCHPOINTS;
-
-    boost::signals2::signal<void()> EventServiceReady;
 
 private:
     static bool onAPICalled(LSHandle* sh, LSMessage* message, void* context);
 
-    static LSMethod ROOT_METHOD[];
-    static LSMethod ROOT_METHOD_DEV[];
-    static std::map<std::string, LunaApiHandler> s_APIHandlerMap;
+    ApplicationManager();
+
+    void registerApiHandler(const std::string& category, const std::string& method, LunaApiHandler handler)
+    {
+        std::string api = File::join(category, method);
+        m_APIHandlers[api] = handler;
+    }
+
+    static LSMethod METHODS_ROOT[];
+    static LSMethod METHODS_DEV[];
+
+    std::map<std::string, LunaApiHandler> m_APIHandlers;
 
     LS::SubscriptionPoint m_listLaunchPointsPoint;
     LS::SubscriptionPoint m_listAppsPoint;
     LS::SubscriptionPoint m_listAppsCompactPoint;
     LS::SubscriptionPoint m_listDevAppsPoint;
     LS::SubscriptionPoint m_listDevAppsCompactPoint;
-
-    std::vector<LunaTaskPtr> m_pendingTasks;
+    LS::SubscriptionPoint m_getAppLifeEvents;
+    LS::SubscriptionPoint m_getAppLifeStatus;
+    LS::SubscriptionPoint m_running;
+    LS::SubscriptionPoint m_runningDev;
 
     // TODO: Following should be deleted
     ApplicationManagerCompat m_compat1;
     ApplicationManagerCompat m_compat2;
 
-    bool m_serviceReady;
+    bool m_enableSubscription;
+
 };
 
 #endif

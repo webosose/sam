@@ -22,11 +22,28 @@
 #include <pbnjson.hpp>
 #include <boost/signals2.hpp>
 
+#include "bus/service/ApplicationManager.h"
+#include "interface/IClassName.h"
+#include "util/JValueUtil.h"
+
 using namespace std;
 using namespace LS;
 using namespace pbnjson;
 
-class AbsLunaClient {
+class LSErrorSafe: public LSError {
+public:
+    LSErrorSafe()
+    {
+        LSErrorInit(this);
+    }
+
+    ~LSErrorSafe()
+    {
+        LSErrorFree(this);
+    }
+};
+
+class AbsLunaClient : public IClassName {
 public:
     static JValue& getEmptyPayload();
     static JValue& getSubscriptionPayload();
@@ -35,9 +52,6 @@ public:
     virtual ~AbsLunaClient();
 
     virtual void initialize() final;
-
-    virtual void onInitialze() = 0;
-    virtual void onServerStatusChanged(bool isConnected) = 0;
 
     const string& getName()
     {
@@ -50,6 +64,10 @@ public:
     }
 
     boost::signals2::signal<void(bool)> EventServiceStatusChanged;
+
+protected:
+    virtual void onInitialze() = 0;
+    virtual void onServerStatusChanged(bool isConnected) = 0;
 
 private:
     static bool _onServerStatus(LSHandle* sh, LSMessage* message, void* context);

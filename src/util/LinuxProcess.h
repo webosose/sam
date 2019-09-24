@@ -25,8 +25,8 @@ typedef std::vector<pid_t> PidVector;
 
 class LinuxProcess {
 public:
-    LinuxProcess() {}
-    virtual ~LinuxProcess() {}
+    static bool sendSigTerm(const std::string& pid);
+    static bool sendSigKill(const std::string& pid);
 
     static string convertPidsToString(const PidVector& pids);
     static bool killProcesses(const PidVector& pids, int sig);
@@ -35,6 +35,9 @@ public:
 
 private:
     static const string CLASS_NAME;
+
+    LinuxProcess() {}
+    virtual ~LinuxProcess() {}
 };
 
 #endif /* UTIL_LINUXPROCESS_H_ */

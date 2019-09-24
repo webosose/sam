@@ -14,14 +14,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/Notification.h>
-#include <bus/service/ApplicationManager.h>
+#include "bus/client/Notification.h"
+
+#include "util/Logger.h"
+#include "util/JValueUtil.h"
 
 const std::string Notification::NAME = "com.webos.notification";
 
 Notification::Notification()
     : AbsLunaClient(NAME)
 {
+    setClassName("Notification");
 }
 
 Notification::~Notification()
@@ -36,6 +39,27 @@ void Notification::onInitialze()
 void Notification::onServerStatusChanged(bool isConnected)
 {
 
+}
+
+bool Notification::onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void* context)
+{
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    bool matched = false;
+
+    if (!JValueUtil::getValue(responsePayload, "returnValue", returnValue) || !JValueUtil::getValue(responsePayload, "matched", matched)) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get required params");
+        return true;
+    }
+
+
+    if (matched == false) {
+        Logger::info(getInstance().getClassName(), __FUNCTION__, "uninstallation is canceled because of invalid pincode");
+    } else {
+        // TODO: appId should be passed
+        // AppPackageManager::getInstance().removeApp(appId, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    }
+    return true;
 }
 
 Call Notification::createPincodePrompt(LSFilterFunc func)

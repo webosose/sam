@@ -19,7 +19,6 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
@@ -29,53 +28,34 @@ using namespace LS;
 using namespace pbnjson;
 
 class SettingService : public ISingleton<SettingService>,
-                       public AbsLunaClient,
-                       public IClassName {
+                       public AbsLunaClient {
 friend class ISingleton<SettingService>;
 public:
     virtual ~SettingService();
 
-    // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
-
-    void onRestInit();
-
     // API
-    Call batch(LSFilterFunc func, const string& appId);
+    static bool onCheckParentalLock(LSHandle* sh, LSMessage* message, void* context);
+    Call checkParentalLock(LSFilterFunc func, const string& appId);
 
     const std::string& localeInfo() const
     {
         return m_localeInfo;
     }
-    const std::string& language() const
-    {
-        return m_language;
-    }
-    const std::string& script() const
-    {
-        return m_script;
-    }
-    const std::string& region() const
-    {
-        return m_region;
-    }
 
-    boost::signals2::signal<void(std::string, std::string, std::string)> EventLocaleChanged;
+protected:
+    // AbsLunaClient
+    virtual void onInitialze();
+    virtual void onServerStatusChanged(bool isConnected);
 
 private:
-    static const string NAME;
-    static bool onGetSystemSettings(LSHandle* sh, LSMessage* message, void* context);
+    static bool onLocaleChanged(LSHandle* sh, LSMessage* message, void* context);
 
     SettingService();
 
-    void updateLocaleInfo(const pbnjson::JValue& j_locale);
+    void updateLocaleInfo(const pbnjson::JValue& localeInfo);
     void setLocaleInfo(const std::string& locale);
 
     std::string m_localeInfo;
-    std::string m_language;
-    std::string m_script;
-    std::string m_region;
 
     Call m_getSystemSettingsCall;
 

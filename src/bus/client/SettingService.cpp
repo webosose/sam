@@ -14,23 +14,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/SettingService.h>
-#include <bus/ResBundleAdaptor.h>
-#include <bus/service/ApplicationManager.h>
 #include <stdlib.h>
 #include <unicode/locid.h>
 
 #include <pbnjson.hpp>
+
+#include "base/AppDescriptionList.h"
+#include <bus/client/SettingService.h>
+#include <bus/service/ApplicationManager.h>
 #include <setting/Settings.h>
-
-#include <util/LSUtils.h>
-
-const string SettingService::NAME = "com.webos.settingsservice";
+#include "util/JValueUtil.h"
 
 SettingService::SettingService()
-    : AbsLunaClient(NAME)
+    : AbsLunaClient("com.webos.settingsservice")
 {
-    setClassName(NAME);
+    setClassName("SettingService");
+
+    pbnjson::JValue localeInfo = JDomParser::fromFile(PATH_LOCALE_INFO);
+    updateLocaleInfo(localeInfo);
 }
 
 SettingService::~SettingService()
@@ -48,13 +49,13 @@ void SettingService::onServerStatusChanged(bool isConnected)
 
     if (isConnected) {
         JValue requestPayload = pbnjson::Object();
-        requestPayload.put("subscribe", "true");
+        requestPayload.put("subscribe", true);
         requestPayload.put("key", "localeInfo");
 
         m_getSystemSettingsCall = ApplicationManager::getInstance().callMultiReply(
             method.c_str(),
             requestPayload.stringify().c_str(),
-            onGetSystemSettings,
+            onLocaleChanged,
             nullptr
         );
     } else {
@@ -62,13 +63,57 @@ void SettingService::onServerStatusChanged(bool isConnected)
     }
 }
 
-void SettingService::onRestInit()
+bool SettingService::onCheckParentalLock(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue localeInfo = JDomParser::fromFile(SettingsImpl::getInstance().m_localeInfoPath.c_str());
-    updateLocaleInfo(localeInfo);
+    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    bool returnValue = false;
+    string errorText;
+
+    bool isParentalControlValid = false;
+    bool parentalControl = false;
+    bool isApplockPerAppValid = false;
+    bool applockPerApp = false;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!responsePayload.hasKey("results") || !responsePayload["results"].isArray()) {
+        Logger::debug(getInstance().getClassName(), __FUNCTION__, Logger::format("result fail: %s", responsePayload.stringify().c_str()));
+        goto Done;
+    }
+
+    for (int i = 0; i < responsePayload["results"].arraySize(); ++i) {
+        if (!responsePayload["results"][i].hasKey("settings") || !responsePayload["results"][i]["settings"].isObject())
+            continue;
+
+        if (responsePayload["results"][i]["settings"].hasKey("parentalControl") && responsePayload["results"][i]["settings"]["parentalControl"].isBoolean()) {
+            parentalControl = responsePayload["results"][i]["settings"]["parentalControl"].asBool();
+            isParentalControlValid = true;
+        }
+
+        if (responsePayload["results"][i]["settings"].hasKey("applockPerApp") && responsePayload["results"][i]["settings"]["applockPerApp"].isBoolean()) {
+            applockPerApp = responsePayload["results"][i]["settings"]["applockPerApp"].asBool();
+            isApplockPerAppValid = true;
+        }
+    }
+
+    if (!isParentalControlValid || !isApplockPerAppValid) {
+        Logger::debug("CheckAppLockStatus", __FUNCTION__, Logger::format("receiving valid result fail: %s", responsePayload.stringify().c_str()));
+        goto Done;
+    }
+
+    if (parentalControl && applockPerApp) {
+        // Notification::getInstance().createPincodePrompt(onCreatePincodePrompt);
+        return true;
+    }
+
+Done:
+    // TODO: appId should be passed
+    // AppPackageManager::getInstance().removeApp(appId, false, AppStatusChangeEvent::AppStatusChangeEvent_Uninstalled);
+    return true;
 }
 
-Call SettingService::batch(LSFilterFunc func, const string& appId)
+Call SettingService::checkParentalLock(LSFilterFunc func, const string& appId)
 {
     static string method = std::string("luna://") + getName() + std::string("/batch");
     JValue requestPayload = pbnjson::Object();
@@ -95,38 +140,41 @@ Call SettingService::batch(LSFilterFunc func, const string& appId)
     return call;
 }
 
-bool SettingService::onGetSystemSettings(LSHandle* sh, LSMessage* message, void* context)
+bool SettingService::onLocaleChanged(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue json = JDomParser::fromString(LSMessageGetPayload(message));
+    LS::Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
 
-    Logger::debug(getInstance().getClassName(), __FUNCTION__, "subscription-client", json.stringify());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    if (json.isNull() || !json["returnValue"].asBool() || !json["settings"].isObject()) {
-        Logger::warning(getInstance().getClassName(), __FUNCTION__, "lscall", "received invaild message from settings service");
+    bool returnValue = true;
+    if (!JValueUtil::getValue(subscriptionPayload, "returnValue", returnValue) || !returnValue) {
+        Logger::warning(getInstance().getClassName(), __FUNCTION__, "received invaild message from settings service");
         return true;
     }
 
-    SettingService::getInstance().updateLocaleInfo(json["settings"]);
+    if (!subscriptionPayload["settings"].isObject()) {
+        return true;
+    }
 
+    SettingService::getInstance().updateLocaleInfo(subscriptionPayload["settings"]);
     return true;
 }
 
-void SettingService::updateLocaleInfo(const pbnjson::JValue& j_locale)
+void SettingService::updateLocaleInfo(const pbnjson::JValue& settings)
 {
-    std::string ui_locale_info;
+    std::string localeInfo;
 
-    // load language info
-    if (j_locale.isNull() || j_locale.isObject() == false)
+    if (settings.isNull() || !settings.isObject()) {
         return;
-
-    if (j_locale.hasKey("localeInfo") &&
-        j_locale["localeInfo"].hasKey("locales") &&
-        j_locale["localeInfo"]["locales"].hasKey("UI")) {
-        ui_locale_info = j_locale["localeInfo"]["locales"]["UI"].asString();
     }
 
-    if (!ui_locale_info.empty() && ui_locale_info != m_localeInfo) {
-        m_localeInfo = ui_locale_info;
+    if (!JValueUtil::getValue(settings, "localeInfo", "locales", "UI", localeInfo)) {
+        return;
+    }
+
+    if (!localeInfo.empty() && localeInfo != m_localeInfo) {
+        m_localeInfo = localeInfo;
         setLocaleInfo(m_localeInfo);
     }
 }
@@ -144,23 +192,23 @@ void SettingService::setLocaleInfo(const std::string& locale)
         region = "";
     } else {
         icu::Locale icu_UI_locale = icu::Locale::createFromName(locale.c_str());
-
         language = icu_UI_locale.getLanguage();
         script = icu_UI_locale.getScript();
         region = icu_UI_locale.getCountry();
     }
 
-    if (language == m_language && script == m_script && region == m_region) {
+    if (language == Settings::getInstance().getLanguage() &&
+        script == Settings::getInstance().getScript() &&
+        region == Settings::getInstance().getRegion()) {
         return;
     }
 
-    m_language = language;
-    m_script = script;
-    m_region = region;
+    Logger::info(getClassName(), __FUNCTION__, "Changed Locale",
+                 Logger::format("language(%s=>%s) script(%s=>%s) region(%s=>%s)",
+                 Settings::getInstance().getLanguage().c_str(), language.c_str(),
+                 Settings::getInstance().getScript().c_str(), script.c_str(),
+                 Settings::getInstance().getRegion().c_str(), region.c_str()));
 
-    Logger::info(getClassName(), __FUNCTION__, "lscall",
-                 Logger::format("locale(%s) language(%s) script(%s) region(%s)", locale.c_str(), m_language.c_str(), m_script.c_str(), m_region.c_str()));
-
-    ResBundleAdaptor::getInstance().setLocale(locale);
-    EventLocaleChanged(m_language, m_script, m_region);
+    Settings::getInstance().setLocale(language, script, region);
+    AppDescriptionList::getInstance().changeLocale();
 }

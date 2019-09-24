@@ -19,7 +19,6 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
@@ -29,32 +28,24 @@ using namespace LS;
 using namespace pbnjson;
 
 class Bootd : public ISingleton<Bootd>,
-              public AbsLunaClient,
-              public IClassName {
+              public AbsLunaClient {
 friend class ISingleton<Bootd>;
 public:
     virtual ~Bootd();
 
+    boost::signals2::signal<void(const pbnjson::JValue&)> EventGetBootStatus;
+
+protected:
     // AbsLunaClient
     virtual void onInitialze() override;
     virtual void onServerStatusChanged(bool isConnected) override;
 
-    const std::string& getBootStatus() const
-    {
-        return m_bootStatusStr;
-    }
-
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventBootStatusChanged;
-
 private:
-    static const string NAME;
-
     static bool onGetBootStatus(LSHandle* sh, LSMessage* message, void* context);
 
     Bootd();
 
-    Call m_getBootStatus;
-    std::string m_bootStatusStr;
+    Call m_getBootStatusCall;
 };
 
 #endif  // BUS_CLIENT_BOOTD_H_

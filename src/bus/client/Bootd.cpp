@@ -15,16 +15,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/client/Bootd.h>
-#include <bus/service/ApplicationManager.h>
 #include <pbnjson.hpp>
-#include <util/LSUtils.h>
-
-const string Bootd::NAME = "com.webos.bootManager";
+#include "util/JValueUtil.h"
 
 Bootd::Bootd()
-    : AbsLunaClient(NAME)
+    : AbsLunaClient("com.webos.bootManager")
 {
-    setClassName(NAME);
+    setClassName("Bootd");
 }
 
 Bootd::~Bootd()
@@ -41,31 +38,30 @@ void Bootd::onServerStatusChanged(bool isConnected)
     static std::string method = std::string("luna://") + getName() + std::string("/getBootStatus");
 
     if (isConnected) {
-        if (m_getBootStatus.isActive())
+        if (m_getBootStatusCall.isActive())
             return;
 
-        m_getBootStatus = ApplicationManager::getInstance().callMultiReply(
+        m_getBootStatusCall = ApplicationManager::getInstance().callMultiReply(
             method.c_str(),
             AbsLunaClient::getSubscriptionPayload().stringify().c_str(),
             onGetBootStatus,
             this
         );
+        Logger::logSubscriptionRequest(getClassName(), __FUNCTION__, method, AbsLunaClient::getSubscriptionPayload());
     } else {
-        m_getBootStatus.cancel();
+        m_getBootStatusCall.cancel();
     }
 }
 
 bool Bootd::onGetBootStatus(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull())
-        return false;
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    if (responsePayload.hasKey("bootStatus")) {
-        // factory, normal, firstUse
-        Bootd::getInstance().m_bootStatusStr = responsePayload["bootStatus"].asString();
-    }
+    if (subscriptionPayload.isNull())
+        return true;
 
-    Bootd::getInstance().EventBootStatusChanged(responsePayload);
+    Bootd::getInstance().EventGetBootStatus(subscriptionPayload);
     return true;
 }

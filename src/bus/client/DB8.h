@@ -30,23 +30,33 @@ class DB8 : public ISingleton<DB8>,
             public AbsLunaClient {
 friend class ISingleton<DB8>;
 public:
-    DB8();
     virtual ~DB8();
 
+    bool insertLaunchPoint(pbnjson::JValue& json);
+    bool updateLaunchPoint(const pbnjson::JValue& json);
+    void deleteLaunchPoint(const string& launchPointId);
+
+protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
-    // API
-    Call find(LSFilterFunc func, const string& name);
-    Call putKind(LSFilterFunc func, JValue& requestPayload);
-    Call putPermissions(LSFilterFunc func, JValue& requestPayload);
-    Call put(LSFilterFunc func, string query);
-    Call merge(LSFilterFunc func, string query);
-    Call del(LSFilterFunc func, string query);
+private:
+    static const char* KIND_NAME;
 
+    static bool onResponse(LSHandle* sh, LSMessage* message, void* context);
 
-    static const std::string WEBOS_SERVICE_DB;
+    static bool onFind(LSHandle* sh, LSMessage* message, void* context);
+    void find();
+
+    static bool onPutKind(LSHandle* sh, LSMessage* message, void* context);
+    void putKind();
+
+    static bool onPutPermissions(LSHandle* sh, LSMessage* message, void* context);
+    void putPermissions();
+
+    DB8();
+
 };
 
 #endif /* BUS_CLIENT_DB8_H_ */

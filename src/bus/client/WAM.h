@@ -18,6 +18,7 @@
 #define BUS_CLIENT_WAM_H_
 
 #include "AbsLunaClient.h"
+#include "base/LunaTask.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
@@ -29,23 +30,34 @@ using namespace LS;
 using namespace pbnjson;
 
 class WAM : public ISingleton<WAM>,
-            public AbsLunaClient,
-            public IClassName {
+            public AbsLunaClient {
 friend class ISingleton<WAM>;
 public:
-    WAM();
     virtual ~WAM();
 
+    void discardCodeCache();
+    bool launchApp(LunaTaskPtr lunaTask);
+    bool killApp(LunaTaskPtr lunaTask);
+
+protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
-    boost::signals2::signal<void(JValue&)> EventListRunningAppsChanged;
-
 private:
     static bool onListRunningApps(LSHandle* sh, LSMessage* message, void* context);
 
+    static bool onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context);
+    static bool onLaunchApp(LSHandle* sh, LSMessage* message, void* context);
+    static bool onKillApp(LSHandle* sh, LSMessage* message, void* context);
+    static bool onPauseApp(LSHandle* sh, LSMessage* message, void* context);
+
+    WAM();
+
     Call m_listRunningAppsCall;
+    Call m_discardCodeCacheCall;
+
+    pbnjson::JValue m_prevRunning;
 };
 
 #endif /* BUS_CLIENT_WAM_H_ */

@@ -33,7 +33,7 @@ friend class ISingleton<SchemaChecker>;
 public:
     virtual ~SchemaChecker();
 
-    bool checkRequest(Message& request);
+    JValue getRequestPayloadWithSchema(Message& request);
     string getAPISchemaFilePath(const string& method);
 
 private:

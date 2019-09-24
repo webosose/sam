@@ -17,16 +17,9 @@
 #ifndef MAIN_DAEMON_H
 #define MAIN_DAEMON_H
 
-#include <launchpoint/handler/DBHandler.h>
-#include <launchpoint/handler/OrderingHandler.h>
-#include <launchpoint/launch_point/LaunchPointFactory.h>
-#include "package/AppPackageManager.h"
-#include "lifecycle/stage/appitem/LaunchAppItem.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.h>
-#include <prerequisite/BootdPrerequisiteItem.h>
-#include <prerequisite/ConfigdPrerequisiteItem.h>
-#include <prerequisite/PrerequisiteItem.h>
+#include "base/LunaTask.h"
+#include "interface/IClassName.h"
 
 class MainDaemon : public IClassName {
 public:
@@ -36,26 +29,18 @@ public:
     void start();
     void stop();
 
-    void onPrerequisiteItemStatusChanged(PrerequisiteItem* item);
-
-    void onLaunchPointsListChanged(const pbnjson::JValue& launchPoints);
-    void onLaunchPointChanged(const std::string& change, const pbnjson::JValue& launchPoint);
-
-    void onForegroundAppChanged(const std::string& appId);
-    void onExtraForegroundInfoChanged(const pbnjson::JValue& foreground_info);
-    void onLifeCycleEventGenarated(const pbnjson::JValue& event);
-
-    void onListAppsChanged(const pbnjson::JValue& apps, const std::vector<std::string>& changes, bool dev);
-    void onOneAppChanged(const pbnjson::JValue& app, const std::string& change, const std::string& reason, bool dev);
-    void onAppStatusChanged(AppStatusChangeEvent event, AppPackagePtr app_desc);
-
 private:
-    void onLaunchingFinished(LaunchAppItemPtr item);
+    void onGetBootStatus(const JValue& subscriptionPayload);
+    void onGetConfigs(const JValue& subscriptionPayload);
+
+    void checkPreconditions();
+    void scan();
+
+    bool m_isCBDGenerated;
+    bool m_isConfigsReceived;
 
     GMainLoop *m_mainLoop;
 
-    ConfigdPrerequisiteItem m_configdPrerequisiteItem;
-    BootdPrerequisiteItem m_bootdPrerequisiteItem;
 };
 
 #endif

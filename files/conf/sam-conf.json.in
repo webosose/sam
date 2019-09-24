@@ -88,10 +88,6 @@
         "com.webos.app.webapphost"
     ],
 
-    "BootTimeApps": [],
-
-    "StoreApp": "com.webos.app.discovery",
-
     "ReservedResource": {
         "mime": [
             "application/vnd.lge.appstore"
@@ -104,8 +100,8 @@
         "schema":{
             "properties":{
                 "id":{"type":"string", "description":"unique id of app", "optional":false},
-                "lptype":{"type":"number", "description":"type of launchpoint", "optional":false},
-                "lpid":{"type":"string", "description":"unique id of launchpoint", "optional":false},
+                "type":{"type":"string", "description":"type of launchpoint", "optional":false},
+                "launchPointId":{"type":"string", "description":"unique id of launchpoint", "optional":false},
                 "title":{"type":"string", "description":"title of app", "optional":true},
                 "icon":{"type":"string", "description":"path of icon", "optional":true},
                 "bgImage":{"type":"string", "description":"path of backgroundImage", "optional":true},
@@ -125,13 +121,14 @@
 
         "indexes":[
             {"name":"id", "props":[{"name":"id"}]},
-            {"name":"lptype", "props":[{"name":"lptype"}]},
-            {"name":"lpid", "props":[{"name":"lpid"}]},
-            {"name":"id_lpid", "props":[{"name":"id"}, {"name":"lpid"}]}
+            {"name":"type", "props":[{"name":"type"}]},
+            {"name":"launchPointId", "props":[{"name":"launchPointId"}]},
+	    {"name":"revision", "props":[{"name":"_rev"}]}
         ]
     },
 
-    "LaunchPointDBPermissions": [
+    "LaunchPointDBPermissions": {
+	"permissions": [
         {
             "type"      : "db.kind",
             "object"    : "com.webos.applicationManager.launchpoints:1",
@@ -144,5 +141,5 @@
                 "delete"    : "allow"
             }
         }
-    ]
+    ]}
 }

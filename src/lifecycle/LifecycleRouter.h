@@ -22,40 +22,7 @@
 #include <tuple>
 #include <vector>
 
-enum class LifeStatus : int8_t {
-    INVALID = -1,
-    STOP = 0,
-    PRELOADING,
-    LAUNCHING,
-    RELAUNCHING,
-    FOREGROUND,
-    BACKGROUND,
-    CLOSING,
-    PAUSING,
-    RUNNING, // internal event
-};
-
-enum class LifeEvent : int8_t {
-    INVALID = -1,
-    SPLASH = 0,
-    PRELOAD,
-    LAUNCH,
-    FOREGROUND,
-    BACKGROUND,
-    PAUSE,
-    CLOSE,
-    STOP,
-};
-
-enum class RuntimeStatus : int8_t {
-    STOP = 0,
-    LAUNCHING,
-    PRELOADING,
-    RUNNING,
-    REGISTERED,
-    CLOSING,
-    PAUSING, // internal status
-};
+#include "base/RunningApp.h"
 
 enum class RouteAction : int8_t {
     SET = 0,
@@ -86,6 +53,8 @@ public:
     LifeEvent getLifeEventFromLifeStatus(LifeStatus status);
 
 private:
+    static const LifecycleRoutePolicy INVALID_ROUTE_POLICY;
+
     const LifecycleRoutePolicy& getConvRoutePolilcy(LifeStatus current, LifeStatus next);
 
     std::map<LifeStatus, std::vector<LifecycleRoutePolicy>> m_lifecycleRouteMap;
@@ -93,7 +62,6 @@ private:
     std::map<RuntimeStatus, std::vector<RuntimeRoutePolicy>> m_runtimeRouteMap;
     std::map<RuntimeStatus, LifeStatus> m_runtimeStatusConvMap;
     std::map<LifeStatus, LifeEvent> m_lifeEventConvMap;
-    static const LifecycleRoutePolicy m_invalidRoutePolicy;
 };
 
 #endif // APP_LIFE_STATUS_H_

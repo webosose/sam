@@ -64,7 +64,7 @@ Done:
 
 int main(int argc, char **argv)
 {
-    Logger::info(LOG_NAME, __FUNCTION__, "Starting SAM process");
+    Logger::info(LOG_NAME, __FUNCTION__, "Start SAM process");
 
     // tracking sender if we get some signal
     struct sigaction act;

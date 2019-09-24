@@ -19,7 +19,6 @@
 
 #include "AbsLunaClient.h"
 #include "interface/ISingleton.h"
-#include "interface/IClassName.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <util/Logger.h>
@@ -28,28 +27,19 @@
 using namespace LS;
 using namespace pbnjson;
 
-enum class PackageStatus : int8_t {
-    Unknown = 0,
-    Installed,
-    InstallFailed,
-    Uninstalled,
-    UninstallFailed,
-    AboutToUninstall,
-    ResetToDefault,
-};
-
 class AppInstallService : public ISingleton<AppInstallService>,
-                          public AbsLunaClient,
-                          public IClassName {
+                          public AbsLunaClient {
 friend class ISingleton<AppInstallService>;
 public:
     virtual ~AppInstallService();
 
+    static bool onRemove(LSHandle* sh, LSMessage *message, void* context);
+    Call remove(const string& appId);
+
+protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
-
-    boost::signals2::signal<void(const std::string&, const PackageStatus&)> EventStatusChanged;
 
 private:
     static bool onStatus(LSHandle* sh, LSMessage* message, void* context);

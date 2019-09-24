@@ -14,56 +14,293 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/DB8.h>
-#include <util/Logger.h>
-#include <bus/service/ApplicationManager.h>
+#include "bus/client/DB8.h"
 
-const std::string DB8::WEBOS_SERVICE_DB = "com.webos.service.db";
+#include "base/LaunchPointList.h"
+#include "bus/service/ApplicationManager.h"
+#include "setting/Settings.h"
+#include "util/JValueUtil.h"
+#include "util/Logger.h"
+
+const char* DB8::KIND_NAME = "com.webos.applicationManager.launchpoints:1";
+
+bool DB8::onResponse(LSHandle* sh, LSMessage* message, void* context)
+{
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+    return true;
+}
 
 DB8::DB8()
-    : AbsLunaClient(WEBOS_SERVICE_DB)
+    : AbsLunaClient("com.webos.service.db")
 {
+    setClassName("DB8");
 }
 
 DB8::~DB8()
 {
+
+}
+
+bool DB8::insertLaunchPoint(pbnjson::JValue& json)
+{
+    static string method = std::string("luna://") + getName() + std::string("/put");
+
+    if (json.isNull())
+        return false;
+
+    json.put("_kind", KIND_NAME);
+
+    JValue requestPayload = pbnjson::Object();
+    requestPayload.put("objects", pbnjson::Array());
+    requestPayload["objects"].append(json);
+
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onResponse,
+        nullptr,
+        nullptr,
+        nullptr
+    );
+    return true;
+}
+
+bool DB8::updateLaunchPoint(const pbnjson::JValue& props)
+{
+    static string method = std::string("luna://") + getName() + std::string("/merge");
+    JValue requestPayload = pbnjson::Object();
+    JValue where = pbnjson::Array();
+    JValue query = pbnjson::Object();
+
+    if (props.isNull())
+        return false;
+
+    where.put("prop", "launchPointId");
+    where.put("op", "=");
+    where.put("val", props["launchPointId"]);
+
+    query.put("where", where);
+    query.put("from", KIND_NAME);
+
+    requestPayload.put("props", props);
+    requestPayload.put("query", query);
+
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onResponse,
+        nullptr,
+        nullptr,
+        nullptr
+    );
+    return true;
+}
+
+void DB8::deleteLaunchPoint(const string& launchPointId)
+{
+    static string method = std::string("luna://") + getName() + std::string("/del");
+    JValue requestPayload = pbnjson::Object();
+    JValue where = pbnjson::Object();
+
+    requestPayload.put("query", pbnjson::Object());
+    requestPayload["query"].put("from", KIND_NAME);
+    requestPayload["query"].put("where", pbnjson::Array());
+
+    where.put("prop", "launchPointId");
+    where.put("op", "=");
+    where.put("val", launchPointId);
+    requestPayload["query"]["where"].append(where);
+
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onResponse,
+        nullptr,
+        nullptr,
+        nullptr
+    );
 }
 
 void DB8::onInitialze()
 {
-
+    // nothing
 }
 
 void DB8::onServerStatusChanged(bool isConnected)
 {
-
+    if (isConnected) {
+        Logger::info(getClassName(), __FUNCTION__, "DB8 is connected. Start loading launchPoints");
+        find();
+    }
 }
 
-Call DB8::find(LSFilterFunc func, const string& name)
+bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
+{
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    bool returnValue = false;
+    JValue results;
+    string errorText;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+    JValueUtil::getValue(responsePayload, "results", results);
+
+    if (!returnValue || !results.isArray()) {
+        if (!errorText.empty())
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, errorText);
+        else
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, "results is not valid");
+        getInstance().putKind();
+        return true;
+    }
+    Logger::info(getInstance().getClassName(), __FUNCTION__, "Start to sync DB8");
+
+    string appId;
+    string launchPointId;
+    string type;
+    AppDescriptionPtr appDesc = nullptr;
+    LaunchPointPtr launchPoint = nullptr;
+    int size = results.arraySize();
+    for (int i = 0; i < size; ++i) {
+        if (!JValueUtil::getValue(results[i], "id", appId) ||
+            !JValueUtil::getValue(results[i], "launchPointId", launchPointId) ||
+            !JValueUtil::getValue(results[i], "type", type)) {
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, "Invalid data in DB8");
+            continue;
+        }
+
+        if (appId.empty() || type.empty()) {
+            DB8::getInstance().deleteLaunchPoint(launchPointId);
+            continue;
+        }
+
+        appDesc = AppDescriptionList::getInstance().getById(appId);
+        if (appDesc == nullptr) {
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, "The app is already uninstalled");
+            DB8::getInstance().deleteLaunchPoint(launchPointId);
+            continue;
+        }
+
+        launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+        if (type == "default") {
+            launchPoint->setDatabase(results[i]);
+        } else if (type == "bookmark") {
+            if (launchPoint == nullptr) {
+                launchPoint = LaunchPointList::getInstance().createBootmark(appDesc, results[i]);
+                LaunchPointList::getInstance().add(launchPoint);
+            }
+        }
+    }
+    Logger::info(getInstance().getClassName(), __FUNCTION__, "Complete to sync DB8");
+
+    // 여기서 LaunchPoints를 만들어 넣어야 함.
+    return true;
+}
+
+void DB8::find()
 {
     static string method = std::string("luna://") + getName() + std::string("/find");
 
     JValue requestPayload = pbnjson::Object();
     requestPayload.put("query", pbnjson::Object());
-    requestPayload["query"].put("from", name);
+    requestPayload["query"].put("from", KIND_NAME);
     requestPayload["query"].put("orderBy", "_rev");
 
-    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
-    return call;
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onFind,
+        nullptr,
+        nullptr,
+        nullptr
+    );
 }
 
-Call DB8::putKind(LSFilterFunc func, JValue& requestPayload)
+bool DB8::onPutKind(LSHandle* sh, LSMessage* message, void* context)
+{
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    bool returnValue = false;
+    string errorText;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!returnValue) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, errorText);
+        return true;
+    } else {
+        getInstance().putPermissions();
+    }
+    return true;
+}
+
+void DB8::putKind()
 {
     static string method = std::string("luna://") + getName() + std::string("/putKind");
 
-    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
-    return call;
+    JValue requestPayload = SettingsImpl::getInstance().getDBSchema();
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onPutKind,
+        nullptr,
+        nullptr,
+        nullptr
+    );
 }
 
-Call DB8::putPermissions(LSFilterFunc func, JValue& requestPayload)
+bool DB8::onPutPermissions(LSHandle* sh, LSMessage* message, void* context)
+{
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    bool returnValue = false;
+    string errorText;
+
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+    JValueUtil::getValue(responsePayload, "errorText", errorText);
+
+    if (!returnValue) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, errorText);
+        return true;
+    } else {
+        getInstance().find();
+    }
+    return true;
+}
+
+void DB8::putPermissions()
 {
     static string method = std::string("luna://") + getName() + std::string("/putPermissions");
 
-    Call call = ApplicationManager::getInstance().callOneReply(method.c_str(), requestPayload.stringify().c_str(), func, nullptr);
-    return call;
+    JValue requestPayload = SettingsImpl::getInstance().getDBPermission();
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
+    LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onPutPermissions,
+        nullptr,
+        nullptr,
+        nullptr
+    );
 }

@@ -21,132 +21,277 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include <glib.h>
-#include <package/AppPackage.h>
-#include <package/AppPackageScanner.h>
+#include <pbnjson.hpp>
+
+#include "base/AppDescription.h"
 #include "interface/IClassName.h"
 #include "interface/ISingleton.h"
-#include <pbnjson.hpp>
+#include "setting/SettingsConf.h"
 
 class Settings : public ISingleton<Settings>,
                  public IClassName {
 friend class ISingleton<Settings> ;
 public:
-    const std::string& getConfPath()
-    {
-        return m_confPath;
-    }
-    void setConfPath(const char* path)
-    {
-        m_confPath = path;
-    }
-    bool load(const char* filePath);
-    bool loadSAMConf();
-    void onRestLoad();
+    virtual ~Settings();
 
-    // lifecycle related
-    void setKeepAliveApps(const pbnjson::JValue& apps);
-    void setSupportQMLBooster(bool value);
-    bool isKeepAliveApp(const std::string&) const;
-    bool isInNoJailApps(const std::string&) const;
     void setLifeCycleReason(const pbnjson::JValue& data);
     void addLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason);
     std::string getLaunchReason(const std::string& caller_id, const std::string& reason);
     void addCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason);
     std::string getCloseReason(const std::string& caller_id, const std::string& reason);
-    void addCRIUSupportApp(const std::string& appId);
-    bool supportCRIU(const std::string& appId) const;
-    unsigned long long int getLaunchExpiredTimeout() const
-    {
-        return m_launchExpiredTimeout;
-    }
-    unsigned long long int getLoadingExpiredTimeout() const
-    {
-        return m_loadingExpiredTimeout;
-    }
-    guint getLastLoadingAppTimeout() const
-    {
-        return m_lastLoadingAppTimeout;
-    }
 
     // package related
-    void addBaseAppDirPath(const std::string& path, AppTypeByDir type);
-    const BaseScanPaths& getBaseAppDirs() const
+    void addAppDir(std::string path, AppLocation type);
+    const map<std::string, AppLocation>& getAppDirs() const
     {
-        return m_baseAppDirs;
+        return m_appDirs;
     }
-    std::string getAppInstallBase(bool verified = true) const;
-    void setAssetFallbackKeys(const pbnjson::JValue& keys);
-    void deletedSystemAppsToStringVector(std::vector<std::string>& apps);
-    void setSystemAppAsRemoved(const std::string& appId);
-    bool isDeletedSystemApp(const std::string& appId) const;
-    bool isInHostAppsList(const std::string& appId) const;
-    const std::vector<std::string>& getBootTimeApps() const
+
+    string getAppShellRunnerPath()
     {
-        return m_bootTimeApps;
+        string AppShellRunnerPath = "/usr/bin/app-shell/run_appshell";
+        JValueUtil::getValue(m_readOnlyDatabase, "AppShellRunnerPath", AppShellRunnerPath);
+        return AppShellRunnerPath;
     }
-    void addBootTimeApp(const std::string& appId);
-    bool isBootTimeApp(const std::string& appId);
 
-    // common settings
-    std::string m_appMgrPreferenceDir;      // /var/preferences/com.webos.applicationManager/
-    std::string m_deletedSystemAppListPath; // /var/preferences/com.webos.applicationManager/deletedSystemAppList.json
-    std::string m_devModePath;              // /var/luna/preferences/devmode_enabled
-    std::string m_localeInfoPath;           // /var/luna/preferences/localeInfo
-    std::string m_schemaPath;               // /etc/palm/schemas/sam/
-    std::string m_respawnedPath;            // /tmp/sam-respawned
-    std::string m_jailModePath;             // /var/luna/preferences/jailer_disabled
-    std::string m_logPath;
-    bool m_isRespawned;
-    bool m_isDevMode;
-    bool m_isJailMode;
-    bool m_isRestLoaded;
+    string getDevModePath()
+    {
+        string DevModePath = "/var/luna/preferences/devmode_enabled";
+        JValueUtil::getValue(m_readOnlyDatabase, "DevModePath", DevModePath);
+        return DevModePath;
+    }
 
-    // lifecycle related
-    std::vector<std::string> m_fullscreenWindowTypes;
-    std::vector<std::string> m_keepAliveApps;
-    std::vector<std::string> m_noJailApps;
-    std::vector<std::string> m_hostAppsForAlias;
-    std::string m_appStoreId;
-    std::string m_qmlRunnerPath; // /usr/bin/qml-runner
-    std::string m_appshellRunnerPath; // /usr/bin/app-shell/run_appshell
-    std::string m_jailerPath;    // /usr/bin/jailer
-    bool m_useQmlBooster;
-    std::map<std::string, std::string> m_launchEventReasonMap;
-    std::map<std::string, std::string> m_closeEventReasonMap;
-    unsigned long long int m_launchExpiredTimeout;
-    unsigned long long int m_loadingExpiredTimeout;
-    guint m_lastLoadingAppTimeout;
+    string getRespawnedPath()
+    {
+        string RespawnedPath = "/tmp/sam-respawned";
+        JValueUtil::getValue(m_readOnlyDatabase, "RespawnedPath", RespawnedPath);
+        return RespawnedPath;
+    }
 
-    // package related
-    std::string m_appInstallBase;       // /media/cryptofs/apps
-    std::string m_appInstallRelative;   // /usr/palm/applications
-    std::string m_devAppsBasePath;      // /media/developer/apps
-    std::string m_tempAliasAppBasePath; // /tmp/alias/apps
-    std::string m_aliasAppBasePath;     // /media/alias/apps
-    pbnjson::JValue m_deletedSystemApps;
-    std::vector<std::string> m_assetFallbackPrecedence;
-    std::string m_packageAssetVariant;
-    bool m_usePartialKeywordAppSearch;
-    std::string m_lunaCmdHandlerSavedPath;  // TODO: make it deprecated or restructured
+    string getJailModePath()
+    {
+        string JailModePath = "/var/luna/preferences/jailer_disabled";
+        JValueUtil::getValue(m_readOnlyDatabase, "JailModePath", JailModePath);
+        return JailModePath;
+    }
 
-    pbnjson::JValue m_launchPointDbkind;
-    pbnjson::JValue m_launchPointPermissions;
+    string getJailerPath()
+    {
+        string JailerPath = "/usr/bin/jailer";
+        JValueUtil::getValue(m_readOnlyDatabase, "JailerPath", JailerPath);
+        return JailerPath;
+    }
+
+    string getQmlRunnerPath()
+    {
+        string QmlRunnerPath = "/usr/bin/qml-runner";
+        JValueUtil::getValue(m_readOnlyDatabase, "QmlRunnerPath", QmlRunnerPath);
+        return QmlRunnerPath;
+    }
+
+    bool isNoJailApp(const std::string& appId) const
+    {
+        JValue NoJailApps;
+        if (!JValueUtil::getValue(m_readOnlyDatabase, "NoJailApps", NoJailApps) || !NoJailApps.isArray()) {
+            return false;
+        }
+
+        int size = NoJailApps.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (NoJailApps[i].asString() == appId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isFullscreenWindowTypes(string type)
+    {
+        JValue FullscreenWindowType;
+        if (!JValueUtil::getValue(m_readOnlyDatabase, "FullscreenWindowType", FullscreenWindowType) || !FullscreenWindowType.isArray()) {
+            return false;
+        }
+        int size = FullscreenWindowType.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (FullscreenWindowType[i].asString() == type) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    JValue getDBSchema() const
+    {
+        JValue LaunchPointDBKind = pbnjson::Object();
+        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBKind", LaunchPointDBKind);
+        return LaunchPointDBKind;
+    }
+
+    JValue getDBPermission() const
+    {
+        JValue LaunchPointDBPermissions = pbnjson::Object();
+        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBPermissions", LaunchPointDBPermissions);
+        return LaunchPointDBPermissions;
+    }
+
+    void setKeepAliveApps(const pbnjson::JValue& array)
+    {
+        if (!array.isArray())
+            return;
+
+        JValue keepAliveApps;
+        if (JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) && keepAliveApps == array)
+            return;
+
+        m_readWriteDatabase.put("keepAliveApps", array);
+        saveReadWriteConf();
+    }
+
+    JValue getSysAssetFallbackPrecedence() const
+    {
+        JValue sysAssetFallbackPrecedence = pbnjson::Array();
+        JValueUtil::getValue(m_readWriteDatabase, "sysAssetFallbackPrecedence", sysAssetFallbackPrecedence);
+        return sysAssetFallbackPrecedence;
+    }
+
+    void setSysAssetFallbackPrecedence(const pbnjson::JValue& array)
+    {
+        if (!array.isArray())
+            return;
+
+        JValue sysAssetFallbackPrecedence;
+        if (JValueUtil::getValue(m_readWriteDatabase, "sysAssetFallbackPrecedence", sysAssetFallbackPrecedence) && sysAssetFallbackPrecedence == array)
+            return;
+
+        m_readWriteDatabase.put("sysAssetFallbackPrecedence", array);
+        saveReadWriteConf();
+    }
+
+    bool isKeepAliveApp(const std::string& appId) const
+    {
+        JValue keepAliveApps;
+        if (!JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) || !keepAliveApps.isArray()) {
+            return false;
+        }
+
+        int size = keepAliveApps.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (keepAliveApps[i].asString() == appId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void appendDeletedSystemApp(const std::string& appId)
+    {
+        if (isDeletedSystemApp(appId)) {
+            return;
+        }
+
+        JValue deletedSystemApps;
+        if (!JValueUtil::getValue(m_readWriteDatabase, "deletedSystemApps", deletedSystemApps) || !deletedSystemApps.isArray()) {
+            m_readWriteDatabase.put("deletedSystemApps", pbnjson::Array());
+        }
+        m_readWriteDatabase["deletedSystemApps"].append(appId);
+        saveReadWriteConf();
+    }
+
+    bool isDeletedSystemApp(const std::string& appId) const
+    {
+        JValue deletedSystemApps;
+        if (!JValueUtil::getValue(m_readWriteDatabase, "deletedSystemApps", deletedSystemApps) || !deletedSystemApps.isArray()) {
+            return false;
+        }
+
+        int size = deletedSystemApps.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (deletedSystemApps[i].asString() == appId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void setSupportQMLBooster(bool value)
+    {
+        bool isSupportQmlBooster = false;
+        if (JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster) && isSupportQmlBooster == value)
+            return;
+        m_readWriteDatabase.put("isSupportQmlBooster", value);
+        saveReadWriteConf();
+    }
+
+    const std::string getLanguage() const
+    {
+        string language = "";
+        JValueUtil::getValue(m_readWriteDatabase, "language", language);
+        return language;
+    }
+
+    const std::string getScript() const
+    {
+        string script = "";
+        JValueUtil::getValue(m_readWriteDatabase, "script", script);
+        return script;
+    }
+
+    const std::string getRegion() const
+    {
+        string region = "";
+        JValueUtil::getValue(m_readWriteDatabase, "region", region);
+        return region;
+    }
+
+    void setLocale(const string& language, const string& script, const string& region)
+    {
+        if (language == getLanguage() && script == getScript() && region == getRegion())
+            return;
+        m_readWriteDatabase.put("language", language);
+        m_readWriteDatabase.put("script", script);
+        m_readWriteDatabase.put("region", region);
+        saveReadWriteConf();
+    }
+
+    bool isSupportQmlBooster()
+    {
+        bool isSupportQmlBooster = false;
+        JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster);
+        return isSupportQmlBooster;
+    }
+
+    bool isRespawned()
+    {
+        return m_isRespawned;
+    }
+
+    bool isDevmodeEnabled()
+    {
+        return m_isDevmodeEnabled;
+    }
+
+    bool isJailerDisabled()
+    {
+        return m_isJailerDisabled;
+    }
 
 private:
     Settings();
-    ~Settings();
 
-    bool loadStaticConfig(const char* filePath);
-    void loadConfigOnRWFilesystemReady();
+    bool loadReadOnlyConf();
+    void loadReadWriteConf();
+    void saveReadWriteConf();
 
-    std::string m_confPath;
-    BaseScanPaths m_baseAppDirs;
-    std::vector<std::string> m_devAppsPaths;
-    std::vector<std::string> m_bootTimeApps;
-    std::vector<std::string> m_criuSupportApps;
+    map<std::string, AppLocation> m_appDirs;
+    vector<std::string> m_devAppsPaths;
 
+    JValue m_readOnlyDatabase;
+    JValue m_readWriteDatabase;
+
+    bool m_isRespawned;
+    bool m_isDevmodeEnabled;
+    bool m_isJailerDisabled;
 };
 
 typedef ISingleton<Settings> SettingsImpl;
