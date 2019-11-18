@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2019 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,33 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef MAIN_DAEMON_H
-#define MAIN_DAEMON_H
+#ifndef ENVIRONMENT_H_
+#define ENVIRONMENT_H_
 
-#include <luna-service2/lunaservice.h>
+static const char* const PATH_RO_SAM_CONF           = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/sam-conf.json";
+static const char* const PATH_RW_SAM_CONF           = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
+static const char* const PATH_SAM_SCHEMAS           = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/schemas/sam/";
+static const char* const PATH_LOCALE_INFO           = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/localeInfo";
 
-#include "base/LunaTask.h"
-#include "interface/IClassName.h"
-
-class MainDaemon : public IClassName {
-public:
-    MainDaemon();
-    virtual ~MainDaemon();
-
-    void start();
-    void stop();
-
-private:
-    void onGetBootStatus(const JValue& subscriptionPayload);
-    void onGetConfigs(const JValue& subscriptionPayload);
-
-    void checkPreconditions();
-
-    bool m_isCBDGenerated;
-    bool m_isConfigsReceived;
-
-    GMainLoop *m_mainLoop;
-
-};
-
-#endif
+#endif  // ENVIRONMENT_H_

@@ -23,14 +23,6 @@
         {
             "typeByDir": "dev",
             "path": "@WEBOS_INSTALL_MEDIADIR@/developer/apps/usr/palm/applications"
-        },
-        {
-            "typeByDir": "alias",
-            "path": "@WEBOS_INSTALL_MEDIADIR@/alias/apps/usr/palm/applications"
-        },
-        {
-            "typeByDir": "tmp_alias",
-            "path": "@WEBOS_INSTALL_ROOT@/tmp/alias/apps/usr/palm/applications"
         }
     ],
 

@@ -24,20 +24,23 @@
 
 bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull())
-        return false;
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    if (!responsePayload["details"].isObject())
+    if (subscriptionPayload.isNull())
+        return true;
+
+    if (!subscriptionPayload["details"].isObject())
         return false;
 
     string packageId = "";
     string id = "";
     string type = "";
 
-    JValueUtil::getValue(responsePayload, "id", id);
-    JValueUtil::getValue(responsePayload, "details", "packageId", packageId);
-    JValueUtil::getValue(responsePayload, "details", "type", type);
+    JValueUtil::getValue(subscriptionPayload, "id", id);
+    JValueUtil::getValue(subscriptionPayload, "details", "packageId", packageId);
+    JValueUtil::getValue(subscriptionPayload, "details", "type", type);
 
     if ((packageId.empty() && id.empty())) {
         return true;
@@ -46,7 +49,7 @@ bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
 
     int statusValue;
-    if (!JValueUtil::getValue(responsePayload, "statusValue", statusValue)) {
+    if (!JValueUtil::getValue(subscriptionPayload, "statusValue", statusValue)) {
         return true;
     }
 
@@ -161,10 +164,13 @@ void AppInstallService::onServerStatusChanged(bool isConnected)
 
 bool AppInstallService::onRemove(LSHandle* sh, LSMessage *message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
-    if (responsePayload.isNull()) {
-    }
+    if (responsePayload.isNull())
+        return true;
+
     return true;
 }
 

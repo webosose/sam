@@ -69,10 +69,25 @@ LunaTaskPtr LunaTaskList::getByToken(const LSMessageToken& token)
     return nullptr;
 }
 
-void LunaTaskList::remove(LunaTaskPtr lunaTask)
+void LunaTaskList::removeAboutWAM()
+{
+    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+        // launch 이면서 webapp인 케이스를 찾아서 제거.
+    }
+}
+
+void LunaTaskList::removeAboutLSM()
+{
+    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+        // launch인 케이스를 모두 제거
+    }
+}
+
+void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
+            (*it)->reply();
             m_list.erase(it);
             return;
         }

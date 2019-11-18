@@ -55,6 +55,11 @@ void Logger::logSubscriptionPost(const string& className, const string& function
     getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", Logger::format("Count=%d", point.getSubscribersCount()), subscriptionPayload.stringify("    "));
 }
 
+void Logger::logSubscriptionPost(const string& className, const string& functionName, const string& key, JValue& subscriptionPayload)
+{
+    getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", key, subscriptionPayload.stringify("    "));
+}
+
 void Logger::debug(const string& className, const string& functionName, const string& what)
 {
     getInstance().write(LogLevel_DEBUG, className, functionName, EMPTY, what, EMPTY);

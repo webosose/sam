@@ -70,12 +70,16 @@ class AppDescription;
 typedef std::shared_ptr<AppDescription> AppDescriptionPtr;
 typedef std::tuple<uint16_t, uint16_t, uint16_t> AppIntVersion;
 
-class AppDescription : public IClassName {
+class AppDescription {
 friend class AppDescriptionList;
 public:
     static string toString(const AppStatusEvent& event);
+
     static std::string toString(AppType type);
-    AppType toEum(const string& type);
+    static AppType toAppType(const string& type);
+
+    static std::string toString(AppLocation location);
+    static AppLocation toAppLocation(const string& type);
 
     AppDescription(const std::string& appId);
     virtual ~AppDescription();
@@ -226,7 +230,7 @@ public:
     {
         if (m_folderPath.length() <= m_appId.length() ||
             strcmp(m_folderPath.c_str() + m_folderPath.length() - m_appId.length(), m_appId.c_str()) != 0) {
-            Logger::error(getClassName(), __FUNCTION__, m_appId, "App path does not match app id");
+            Logger::error(CLASS_NAME, __FUNCTION__, m_appId, "App path does not match app id");
             return false;
         }
         return true;
@@ -305,6 +309,7 @@ private:
     static const std::vector<std::string> PROPS_PROHIBITED;
     static const std::vector<std::string> PROPS_IMAGES;
     static const std::vector<std::string> ASSETS_SUPPORTED;
+    static const string CLASS_NAME;
 
     AppDescription& operator=(const AppDescription& appDesc) = delete;
     AppDescription(const AppDescription& appDesc) = delete;

@@ -53,7 +53,6 @@ private:
     SettingService();
 
     void updateLocaleInfo(const pbnjson::JValue& localeInfo);
-    void setLocaleInfo(const std::string& locale);
 
     std::string m_localeInfo;
 

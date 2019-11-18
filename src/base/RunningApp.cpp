@@ -25,96 +25,35 @@ const string RunningApp::CLASS_NAME = "RunningApp";
 const char* RunningApp::toString(LifeStatus status)
 {
     switch (status) {
-    case LifeStatus::INVALID:
+    case LifeStatus::LifeStatus_INVALID:
         return "invalid";
 
-    case LifeStatus::STOP:
+    case LifeStatus::LifeStatus_STOP:
         return "stop";
 
-    case LifeStatus::PRELOADING:
+    case LifeStatus::LifeStatus_PRELOADING:
         return "preloading";
 
-    case LifeStatus::LAUNCHING:
+    case LifeStatus::LifeStatus_LAUNCHING:
         return "launching";
 
-    case LifeStatus::RELAUNCHING:
+    case LifeStatus::LifeStatus_RELAUNCHING:
         return "relaunching";
 
-    case LifeStatus::FOREGROUND:
+    case LifeStatus::LifeStatus_FOREGROUND:
         return "foreground";
 
-    case LifeStatus::BACKGROUND:
+    case LifeStatus::LifeStatus_BACKGROUND:
         return "background";
 
-    case LifeStatus::CLOSING:
+    case LifeStatus::LifeStatus_CLOSING:
         return "closing";
 
-    case LifeStatus::PAUSING:
+    case LifeStatus::LifeStatus_PAUSING:
         return "pausing";
 
-    case LifeStatus::RUNNING:
+    case LifeStatus::LifeStatus_RUNNING:
         return "running";
-    }
-    return "unknown";
-}
-
-const char* RunningApp::toString(LifeEvent status)
-{
-    switch (status) {
-    case LifeEvent::INVALID:
-        return "invalid";
-
-    case LifeEvent::SPLASH:
-        return "splash";
-
-    case LifeEvent::PRELOAD:
-        return "preload";
-
-    case LifeEvent::LAUNCH:
-        return "launch";
-
-    case LifeEvent::FOREGROUND:
-        return "foreground";
-
-    case LifeEvent::BACKGROUND:
-        return "background";
-
-    case LifeEvent::PAUSE:
-        return "pause";
-
-    case LifeEvent::CLOSE:
-        return "close";
-
-    case LifeEvent::STOP:
-        return "stop";
-
-    }
-    return "unknown";
-}
-
-const char* RunningApp::toString(RuntimeStatus status)
-{
-    switch (status) {
-    case RuntimeStatus::STOP:
-        return "stop";
-
-    case RuntimeStatus::LAUNCHING:
-        return "launching";
-
-    case RuntimeStatus::PRELOADING:
-        return "preloading";
-
-    case RuntimeStatus::RUNNING:
-        return "running";
-
-    case RuntimeStatus::REGISTERED:
-        return "registered";
-
-    case RuntimeStatus::CLOSING:
-        return "closing";
-
-    case RuntimeStatus::PAUSING:
-        return "pausing";
     }
     return "unknown";
 }
@@ -126,8 +65,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_isRegistered(false),
       m_killingTimer(0),
       m_lastLaunchTime(0),
-      m_lifeStatus(LifeStatus::STOP),
-      m_runtimeStatus(RuntimeStatus::STOP)
+      m_lifeStatus(LifeStatus::LifeStatus_STOP)
 {
     m_requestPayload = pbnjson::Object();
 }
@@ -141,7 +79,7 @@ bool RunningApp::launch(LunaTaskPtr lunaTask)
 {
     LifeHandlerType type = getLaunchPoint()->getAppDesc()->getHandlerType();
 
-    if (RuntimeStatus::LAUNCHING == getRuntimeStatus()) {
+    if (LifeStatus::LifeStatus_LAUNCHING == getLifeStatus()) {
         // TODO this is already launching
         return false;
     }
@@ -167,7 +105,12 @@ bool RunningApp::close(LunaTaskPtr lunaTask)
 {
     LifeHandlerType type = getLaunchPoint()->getAppDesc()->getHandlerType();
 
-    if (RuntimeStatus::CLOSING == getRuntimeStatus()) {
+//    if (RuntimeStatus::RuntimeStatus_CLOSING == getRuntimeStatus()) {
+//        // TODO this is already closing status
+//        return false;
+//    }
+
+    if (getLifeStatus() == LifeStatus::LifeStatus_CLOSING) {
         // TODO this is already closing status
         return false;
     }
@@ -179,7 +122,8 @@ bool RunningApp::close(LunaTaskPtr lunaTask)
     case LifeHandlerType::LifeHandlerType_Native:
         if (!m_isRegistered) {
             if (!LinuxProcess::sendSigKill(m_pid)) {
-                lunaTask->reply(Logger::ERRCODE_GENERAL, "not found any pids to kill");
+                lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
+                LunaTaskList::getInstance().removeAfterReply(lunaTask);
                 return false;
             }
             break;
@@ -191,7 +135,8 @@ bool RunningApp::close(LunaTaskPtr lunaTask)
         sendEvent(payload);
 
         if (!LinuxProcess::sendSigTerm(m_pid)) {
-            lunaTask->reply(Logger::ERRCODE_GENERAL, "not found any pids to kill");
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
+            LunaTaskList::getInstance().removeAfterReply(lunaTask);
             return false;
         }
 
@@ -217,9 +162,9 @@ bool RunningApp::close(LunaTaskPtr lunaTask)
 
 bool RunningApp::registerApp(LunaTaskPtr lunaTask)
 {
-    if (RuntimeStatus::RUNNING != getRuntimeStatus() &&
-        RuntimeStatus::REGISTERED != getRuntimeStatus()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "invalid status");
+    if (isRegistered()) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The app is already registered");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return false;
     }
 
@@ -315,6 +260,33 @@ JValue RunningApp::getRelaunchParams(LunaTaskPtr lunaTask)
         params.put("appId", lunaTask->getAppId());
     }
     return params;
+}
+
+void RunningApp::setLifeStatus(const LifeStatus& lifeStatus)
+{
+    switch (lifeStatus) {
+    case LifeStatus::LifeStatus_LAUNCHING:
+    case LifeStatus::LifeStatus_RELAUNCHING:
+        setPreloadMode(false);
+        break;
+
+    case LifeStatus::LifeStatus_PRELOADING:
+        setPreloadMode(true);
+        break;
+
+    case LifeStatus::LifeStatus_STOP:
+    case LifeStatus::LifeStatus_FOREGROUND:
+        setPreloadMode(false);
+        break;
+
+    case LifeStatus::LifeStatus_PAUSING:
+        break;
+
+    default:
+        break;
+    }
+    m_lifeStatus = lifeStatus;
+    ApplicationManager::getInstance().postGetAppLifeStatus(*this);
 }
 
 gboolean RunningApp::onKillingTimer(gpointer context)

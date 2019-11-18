@@ -48,25 +48,30 @@ void Booster::onServerStatusChanged(bool isConnected)
 
 bool Booster::onProcessFinished(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull()) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "parsing_fail");
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
+
+    if (subscriptionPayload.isNull())
         return true;
-    }
-    if (!responsePayload.hasKey("pid") || !responsePayload["pid"].isNumber()) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "invalid pid info", responsePayload.stringify());
+
+    int pid = -1;
+    JValueUtil::getValue(subscriptionPayload, "pid", pid);
+    if (pid < 0) {
+        Logger::info(getInstance().getClassName(), __FUNCTION__, "No valid pid");
         return true;
     }
 
-    std::string pid = boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>());
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByPid(pid);
+    std::string pidstr = boost::lexical_cast<std::string>(subscriptionPayload["pid"].asNumber<int>());
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByPid(pidstr);
     if (runningApp == nullptr) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "err: no appId matched by pid");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find running app");
         return true;
     }
 
-//    QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(runningApp->getInstanceId(), "", RuntimeStatus::STOP);
-//    QmlAppLifeHandler::getInstance().EventRunningAppRemoved(runningApp->getInstanceId());
+    // booster앱을 여기서 제거해야함.
+    // QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(runningApp->getInstanceId(), "", RuntimeStatus::STOP);
+    // QmlAppLifeHandler::getInstance().EventRunningAppRemoved(runningApp->getInstanceId());
 
     return true;
 }
@@ -87,34 +92,32 @@ void Booster::processFinished()
 
 bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
 {
-    LSMessageToken token = LSMessageGetResponseToken(message);
-    std::string uid = "";
-    LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
+    LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(response.getResponseToken());
     if (lunaTask == NULL) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "null_launching_item");
         return false;
     }
 
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
     if (responsePayload.isNull()) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "parsing_fail");
-
         // TODO: set proper life status for this error case
         // QmlAppLifeHandler::getInstance().signal_app_life_status_changed(item->appId(), "", RuntimeStatus::STOP);
-        lunaTask->reply(APP_LAUNCH_ERR_GENERAL, "booster error");
-        LunaTaskList::getInstance().remove(lunaTask);
-        return false;
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "booster error");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
     }
 
     if (!responsePayload.hasKey("returnValue") || responsePayload["returnValue"].asBool() == false) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, lunaTask->getAppId(), responsePayload.stringify());
 
         // TODO: set proper life status for this error case
-//        QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), "", RuntimeStatus::STOP);
+        // QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), "", RuntimeStatus::STOP);
 
-        lunaTask->reply(APP_LAUNCH_ERR_GENERAL, "booster error");
-        LunaTaskList::getInstance().remove(lunaTask);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "booster error");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
@@ -132,8 +135,8 @@ bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
         // TODO: set proper life status for this error case
 //        QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), "", RuntimeStatus::STOP);
 
-        lunaTask->reply(APP_LAUNCH_ERR_GENERAL, "booster error");
-        LunaTaskList::getInstance().remove(lunaTask);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "booster error");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
@@ -143,9 +146,8 @@ bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
 //    QmlAppLifeHandler::getInstance().EventRunningAppAdded(appId, pid, "");
 //    QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::RUNNING);
 
-    lunaTask->reply();
-    LunaTaskList::getInstance().remove(lunaTask);
-
+    lunaTask->getResponsePayload().put("returnValue", true);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
 }
 
@@ -171,7 +173,8 @@ bool Booster::launch(LunaTaskPtr lunaTask)//LSFilterFunc func, const string& app
         &error
     );
     if (!result) {
-        lunaTask->reply(error.error_code, error.message);
+        lunaTask->setErrCodeAndText(error.error_code, error.message);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return false;
     }
 
@@ -189,11 +192,12 @@ bool Booster::launch(LunaTaskPtr lunaTask)//LSFilterFunc func, const string& app
 
 bool Booster::onClose(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull()) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "parsing_fail");
-        return false;
-    }
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    if (responsePayload.isNull())
+        return true;
 
     if (responsePayload["returnValue"].asBool()) {
         std::string appId = responsePayload.hasKey("appId") && responsePayload["appId"].isString() ? responsePayload["appId"].asString() : "";
@@ -234,7 +238,8 @@ bool Booster::close(LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        lunaTask->reply(error.error_code, error.message);
+        lunaTask->setErrCodeAndText(error.error_code, error.message);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return false;
     }
     lunaTask->setToken(token);
@@ -245,6 +250,7 @@ bool Booster::close(LunaTaskPtr lunaTask)
 
 bool Booster::pause(LunaTaskPtr lunaTask)
 {
-    lunaTask->reply(Logger::ERRCODE_GENERAL, "no interface defined for qml booster");
+    lunaTask->setErrCodeAndText(ErrCode_GENERAL, "no interface defined for qml booster");
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return false;
 }

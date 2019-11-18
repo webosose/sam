@@ -16,7 +16,7 @@
 
 #include <bus/service/SchemaChecker.h>
 #include "ApplicationManager.h"
-#include "setting/SettingsConf.h"
+#include "Environment.h"
 
 SchemaChecker::SchemaChecker()
 {

@@ -58,7 +58,6 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
         }
     }
 
-
     string lifeStatue;
     string appId;
     string webprocessid;
@@ -128,12 +127,20 @@ void WAM::onServerStatusChanged(bool isConnected)
     } else {
         if (m_listRunningAppsCall.isActive())
             m_listRunningAppsCall.cancel();
+
+        LunaTaskList::getInstance().removeAboutWAM();
     }
 }
 
 bool WAM::onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    if (responsePayload.isNull())
+        return true;
+
     WAM::getInstance().m_discardCodeCacheCall.cancel();
     return true;
 }
@@ -177,16 +184,15 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
 
     if (!returnValue) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "Failed to launch webapp");
-        lunaTask->reply(APP_LAUNCH_ERR_GENERAL, "WebAppMgr's launchApp is failed");
-        LunaTaskList::getInstance().remove(lunaTask);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "WebAppMgr's launchApp is failed");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         // WebAppLifeHandler::getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::STOP);
         return true;
     }
 
     Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "received_launch_return_from_wam");
     lunaTask->setPid(procId);
-    lunaTask->reply();
-    LunaTaskList::getInstance().remove(lunaTask);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
 }
 
@@ -217,7 +223,7 @@ bool WAM::launchApp(LunaTaskPtr lunaTask)
 
     Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
     if (!LSCallOneReply(
-        lunaTask->getHandle(),
+        ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
         onLaunchApp,
@@ -263,14 +269,15 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     if (!returnValue) {
         string errorText = "Unknown Error";
         JValueUtil::getValue(responsePayload, "errorText", errorText);
-        lunaTask->reply(Logger::ERRCODE_GENERAL, errorText);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, errorText);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
     Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "received_close_return_from_wam");
     // How could we get the previous status? We should restore it.
     // WebAppLifeHandler::getInstance().signal_app_life_status_changed(appId(), "", RuntimeStatus::STOP);
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
 }
 
@@ -292,7 +299,7 @@ bool WAM::killApp(LunaTaskPtr lunaTask)
     bool result = true;
     Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
     result = LSCallOneReply(
-        lunaTask->getHandle(),
+        ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
         onKillApp,
@@ -301,7 +308,8 @@ bool WAM::killApp(LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        lunaTask->reply(error.error_code, error.message);
+        lunaTask->setErrCodeAndText(error.error_code, error.message);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return false;
     }
     lunaTask->setToken(token);

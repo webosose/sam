@@ -22,7 +22,7 @@
 #include <string>
 #include <boost/function.hpp>
 #include <boost/signals2.hpp>
-
+#include <conf/SAMConf.h>
 #include <pbnjson.hpp>
 #include <luna-service2/lunaservice.hpp>
 
@@ -30,11 +30,11 @@
 #include "base/LunaTask.h"
 #include "base/LaunchPoint.h"
 #include "base/LaunchPointList.h"
+#include "base/RunningApp.h"
 #include "base/RunningAppList.h"
 #include "bus/service/compat/ApplicationManagerCompat.h"
 #include "interface/IClassName.h"
 #include "interface/ISingleton.h"
-#include "setting/Settings.h"
 #include "util/Logger.h"
 #include "util/File.h"
 
@@ -119,6 +119,148 @@ public:
     void enableSubscription();
     void disableSubscription();
 
+    void postGetAppLifeEvents(RunningApp& runningApp)
+    {
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        pbnjson::JValue info = pbnjson::JValue();
+        subscriptionPayload.put("appId", runningApp.getAppId());
+        subscriptionPayload.put("instanceId", runningApp.getInstanceId());
+
+        switch (runningApp.getLifeStatus()) {
+        case LifeStatus::LifeStatus_STOP:
+            subscriptionPayload.put("event", "stop");
+            subscriptionPayload.put("reason", runningApp.getReason());
+            break;
+
+        case LifeStatus::LifeStatus_PRELOADING:
+            subscriptionPayload.put("event", "preload");
+            subscriptionPayload.put("preload", runningApp.getPreload());
+            break;
+
+        case LifeStatus::LifeStatus_LAUNCHING:
+            // generate splash event only for fresh launch case
+            if (!runningApp.isShowSplash())
+                return;
+            if (LifeStatus::LifeStatus_BACKGROUND == runningApp.getLifeStatus() && runningApp.getPreloadMode() == false)
+                return;
+            if (LifeStatus::LifeStatus_STOP != runningApp.getLifeStatus() &&
+                LifeStatus::LifeStatus_PRELOADING != runningApp.getLifeStatus() &&
+                LifeStatus::LifeStatus_BACKGROUND != runningApp.getLifeStatus())
+                return;
+
+            subscriptionPayload.put("event", "splash");
+            subscriptionPayload.put("title", runningApp.getLaunchPoint()->getTitle());
+            subscriptionPayload.put("showSplash", runningApp.isShowSplash());
+            subscriptionPayload.put("showSpinner", runningApp.isShowSplash());
+
+            if (runningApp.isShowSplash())
+                subscriptionPayload.put("splashBackground", runningApp.getLaunchPoint()->getAppDesc()->getSplashBackground());
+
+            // TODO Slash and launch를 나눠야함
+
+        case LifeStatus::LifeStatus_RELAUNCHING:
+            subscriptionPayload.put("event", "launch");
+            subscriptionPayload.put("reason", runningApp.getReason());
+            break;
+
+        case LifeStatus::LifeStatus_FOREGROUND:
+            subscriptionPayload.put("event", "foreground");
+            RunningAppList::getInstance().getForegroundInfoById(runningApp.getAppId(), info);
+            if (!info.isNull() && info.isObject()) {
+                for (auto it : info.children()) {
+                    const std::string key = it.first.asString();
+                    if ("windowType" == key ||
+                        "windowGroup" == key ||
+                        "windowGroupOwner" == key ||
+                        "windowGroupOwnerId" == key) {
+                        subscriptionPayload.put(key, info[key]);
+                    }
+                }
+            }
+            break;
+
+        case LifeStatus::LifeStatus_BACKGROUND:
+            subscriptionPayload.put("event", "background");
+            if (runningApp.getPreloadMode())
+                subscriptionPayload.put("status", "preload");
+            else
+                subscriptionPayload.put("status", "normal");
+            break;
+
+        case LifeStatus::LifeStatus_CLOSING:
+            subscriptionPayload.put("event", "close");
+            subscriptionPayload.put("reason", runningApp.getReason());
+            break;
+
+        case LifeStatus::LifeStatus_PAUSING:
+            subscriptionPayload.put("event", "pause");
+            break;
+
+        case LifeStatus::LifeStatus_RUNNING:
+            break;
+        }
+
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
+        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
+    }
+
+    void postGetAppLifeStatus(RunningApp& runningApp)
+    {
+        pbnjson::JValue subscriptionPayload = pbnjson::Object();
+        if (subscriptionPayload.isNull()) {
+            Logger::warning(getClassName(), __FUNCTION__, "make pbnjson failed");
+            return;
+        }
+
+        subscriptionPayload.put("appId", runningApp.getAppId());
+        subscriptionPayload.put("instanceId", runningApp.getInstanceId());
+        subscriptionPayload.put("status", RunningApp::toString(runningApp.getLifeStatus()));
+        subscriptionPayload.put("processId", runningApp.getPid());
+        subscriptionPayload.put("type", AppDescription::toString(runningApp.getLaunchPoint()->getAppDesc()->getAppType()));
+
+        pbnjson::JValue fg_info = pbnjson::JValue();
+        switch(runningApp.getLifeStatus()) {
+        case LifeStatus::LifeStatus_LAUNCHING:
+        case LifeStatus::LifeStatus_RELAUNCHING:
+            subscriptionPayload.put("reason", runningApp.getReason());
+            break;
+
+        case LifeStatus::LifeStatus_FOREGROUND:
+            RunningAppList::getInstance().getForegroundInfoById(runningApp.getAppId(), fg_info);
+            if (!fg_info.isNull() && fg_info.isObject()) {
+                for (auto it : fg_info.children()) {
+                    const std::string key = it.first.asString();
+                    if ("windowType" == key ||
+                        "windowGroup" == key ||
+                        "windowGroupOwner" == key ||
+                        "windowGroupOwnerId" == key) {
+                        subscriptionPayload.put(key, fg_info[key]);
+                    }
+                }
+            }
+            break;
+
+        case LifeStatus::LifeStatus_BACKGROUND:
+            if (runningApp.getPreloadMode())
+                subscriptionPayload.put("backgroundStatus", "preload");
+            else
+                subscriptionPayload.put("backgroundStatus", "normal");
+            break;
+
+        case LifeStatus::LifeStatus_STOP:
+        case LifeStatus::LifeStatus_CLOSING:
+            subscriptionPayload.put("reason", runningApp.getReason());
+            break;
+        }
+
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
+        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
+    }
+
     void postListLaunchPoints(LaunchPointPtr launchPoint)
     {
         if (launchPoint && !launchPoint->isVisible())
@@ -139,22 +281,6 @@ public:
 
         Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_listLaunchPointsPoint, subscriptionPayload);
         m_listLaunchPointsPoint.post(subscriptionPayload.stringify().c_str());
-    }
-
-    void postGetAppLifeEvents(pbnjson::JValue subscriptionPayload)
-    {
-        subscriptionPayload.put("returnValue", true);
-        subscriptionPayload.put("subscribed", true);
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
-        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
-    }
-
-    void postGetAppLifeStatus(pbnjson::JValue subscriptionPayload)
-    {
-        subscriptionPayload.put("returnValue", true);
-        subscriptionPayload.put("subscribed", true);
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
-        m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
     }
 
     void postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEvent event)
@@ -188,8 +314,9 @@ public:
         subscriptionPayload.put("returnValue", true);
 
         std::string nKey = "getappstatus#" + appDesc->getAppId() + "#N";
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, nKey, subscriptionPayload);
         if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), nKey.c_str(), subscriptionPayload.stringify().c_str(), NULL)) {
-            Logger::warning(getClassName(), __FUNCTION__, "LS2", nKey);
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to post subscription");
         }
 
         switch (event) {
@@ -203,8 +330,9 @@ public:
         }
 
         std::string yKey = "getappstatus#" + appDesc->getAppId() + "#Y";
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, yKey, subscriptionPayload);
         if (!LSSubscriptionReply(ApplicationManager::getInstance().get(), yKey.c_str(), subscriptionPayload.stringify().c_str(), NULL)) {
-            Logger::warning(getClassName(), __FUNCTION__, "LS2", yKey);
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to post subscription");
         }
     }
 
@@ -217,8 +345,7 @@ public:
         subscriptionPayload.put("windowId", "");
         subscriptionPayload.put("processId", "");
 
-        Logger::info(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload.stringify());
-
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO, subscriptionPayload);
         if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
                                  SUBSKEY_FOREGROUND_INFO,
                                  subscriptionPayload.stringify().c_str(),
@@ -235,7 +362,7 @@ public:
         subscriptionPayload.put("subscribed", true);
         subscriptionPayload.put("foregroundAppInfo", foreground_info);
 
-        Logger::info(getClassName(), __FUNCTION__, "LS2", SUBSKEY_FOREGROUND_INFO_EX, subscriptionPayload.stringify());
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, SUBSKEY_FOREGROUND_INFO_EX, subscriptionPayload);
         if (!LSSubscriptionReply(ApplicationManager::getInstance().get(),
                                  SUBSKEY_FOREGROUND_INFO_EX,
                                  subscriptionPayload.stringify().c_str(),
@@ -269,7 +396,7 @@ public:
             Message request(message);
             bool isDevmode = (strcmp(request.getKind(), "/dev/listApps") == 0);
 
-            if (isDevmode && !Settings::getInstance().isDevmodeEnabled()) {
+            if (isDevmode && !SAMConf::getInstance().isDevmodeEnabled()) {
                 continue;
             }
 

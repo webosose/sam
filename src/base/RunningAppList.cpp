@@ -95,7 +95,7 @@ RunningAppPtr RunningAppList::getByInstanceId(const string& launchPointId)
 RunningAppPtr RunningAppList::getForeground()
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLifeStatus() == LifeStatus::FOREGROUND)
+        if ((*it)->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND)
             return *it;
     }
     return nullptr;
@@ -132,7 +132,7 @@ bool RunningAppList::isForeground(const string& appId)
 {
     RunningAppPtr runningApp = getByAppId(appId);
     if (runningApp == nullptr) return false;
-    return (runningApp->getLifeStatus() == LifeStatus::FOREGROUND);
+    return (runningApp->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND);
 }
 
 void RunningAppList::toJson(JValue& array, bool devmodeOnly)

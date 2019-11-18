@@ -41,9 +41,7 @@ public:
     virtual void launch(LunaTaskPtr item);
     virtual void close(LunaTaskPtr item);
 
-    boost::signals2::signal<void(const std::string& appId, const std::string& uid, const RuntimeStatus& life_status)> EventAppLifeStatusChanged;
     boost::signals2::signal<void(const std::string& appId, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
-    boost::signals2::signal<void(const std::string& appId)> EventRunningAppRemoved;
 
 private:
     static const int TIMEOUT_1_SECOND = 1000;

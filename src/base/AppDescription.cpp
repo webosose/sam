@@ -14,19 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <base/AppDescription.h>
 #include <glib.h>
 #include <stdio.h>
 #include <sys/stat.h>
-
+#include <string>
 #include <cstring>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <bus/client/SettingService.h>
-#include <setting/Settings.h>
-#include <util/JValueUtil.h>
+
+#include "base/AppDescription.h"
+#include "bus/client/SettingService.h"
+#include "conf/SAMConf.h"
+#include "util/JValueUtil.h"
 #include "util/File.h"
-#include <string>
 
 const std::vector<std::string> AppDescription::PROPS_PROHIBITED = {
     "id", "type", "trustLevel"
@@ -37,6 +37,8 @@ const std::vector<std::string> AppDescription::ASSETS_SUPPORTED = {
 const std::vector<std::string> AppDescription::PROPS_IMAGES = {
     "icon", "largeIcon", "bgImage", "splashBackground", "miniicon", "mediumIcon", "splashicon", "imageForRecents"
 };
+
+const string AppDescription::CLASS_NAME = "AppDescription";
 
 std::string AppDescription::toString(const AppStatusEvent& event)
 {
@@ -65,40 +67,48 @@ std::string AppDescription::toString(const AppStatusEvent& event)
 
 std::string AppDescription::toString(AppType type)
 {
-    std::string str_appType;
+    std::string str;
     switch (type) {
     case AppType::AppType_Web:
-        str_appType = "web";
+        str = "web";
         break;
+
     case AppType::AppType_Stub:
-        str_appType = "stub";
+        str = "stub";
         break;
+
     case AppType::AppType_Native:
-        str_appType = "native";
+        str = "native";
         break;
+
     case AppType::AppType_Native_Builtin:
-        str_appType = "native_builtin";
+        str = "native_builtin";
         break;
+
     case AppType::AppType_Native_Mvpd:
-        str_appType = "native_mvpd";
+        str = "native_mvpd";
         break;
+
     case AppType::AppType_Native_Qml:
-        str_appType = "native_qml";
+        str = "native_qml";
         break;
+
     case AppType::AppType_Native_AppShell:
-        str_appType = "native_appshell";
+        str = "native_appshell";
         break;
+
     case AppType::AppType_Booster:
-        str_appType = "qml";
+        str = "qml";
         break;
+
     default:
-        str_appType = "unknown";
+        str = "unknown";
         break;
     }
-    return str_appType;
+    return str;
 }
 
-AppType AppDescription::toEum(const string& type)
+AppType AppDescription::toAppType(const string& type)
 {
     if (type == "web") {
         return AppType::AppType_Web;
@@ -119,6 +129,54 @@ AppType AppDescription::toEum(const string& type)
     }
 
     return AppType::AppType_None;
+}
+
+std::string AppDescription::toString(AppLocation location)
+{
+    std::string str;
+    switch (location) {
+    case AppLocation::AppLocation_Devmode:
+        str = "web";
+        break;
+
+    case AppLocation::AppLocation_AppStore_Internal:
+        str = "store_internal";
+        break;
+
+    case AppLocation::AppLocation_AppStore_External:
+        str = "store_external";
+        break;
+
+    case AppLocation::AppLocation_System_ReadWrite:
+        str = "system_updatable";
+        break;
+
+    case AppLocation::AppLocation_System_ReadOnly:
+        str = "system_builtin";
+        break;
+
+    default:
+        str = "unknown";
+        break;
+    }
+    return str;
+}
+
+AppLocation AppDescription::toAppLocation(const string& type)
+{
+    if (type == "store" || type == "store_internal") {
+        return AppLocation::AppLocation_AppStore_Internal;
+    } else if (type == "store_external") { // TODO
+        return AppLocation::AppLocation_AppStore_External;
+    } else if (type == "system_updatable") {
+        return AppLocation::AppLocation_System_ReadWrite;
+    } else if (type == "system_builtin") {
+        return AppLocation::AppLocation_System_ReadOnly;
+    } else if (type == "dev") {
+        return AppLocation::AppLocation_Devmode;
+    } else {
+        return AppLocation::AppLocation_None;
+    }
 }
 
 AppDescription::AppDescription(const std::string& appId)
@@ -225,7 +283,7 @@ bool AppDescription::loadAppinfo()
     const string appinfoPath = File::join(m_folderPath, "/appinfo.json");
     m_appinfo = JDomParser::fromFile(appinfoPath.c_str(), JValueUtil::getSchema("ApplicationDescription"));
     if (m_appinfo.isNull()) {
-        Logger::info(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("Failed to parse appinfo.json(%s)", appinfoPath.c_str()));
+        Logger::info(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("Failed to parse appinfo.json(%s)", appinfoPath.c_str()));
         m_appinfo = pbnjson::JValue();
         return false;
     }
@@ -234,13 +292,13 @@ bool AppDescription::loadAppinfo()
     m_appinfo.put("folderPath", m_folderPath);
 
     std::vector<std::string> localizationDirs;
-    std::string resourcePath = m_folderPath + "/resources/" + Settings::getInstance().getLanguage() + "/";
+    std::string resourcePath = m_folderPath + "/resources/" + SAMConf::getInstance().getLanguage() + "/";
     localizationDirs.push_back(resourcePath);
 
-    resourcePath += Settings::getInstance().getScript() + "/";
+    resourcePath += SAMConf::getInstance().getScript() + "/";
     localizationDirs.push_back(resourcePath);
 
-    resourcePath += Settings::getInstance().getRegion() + "/";
+    resourcePath += SAMConf::getInstance().getRegion() + "/";
     localizationDirs.push_back(resourcePath);
 
     // apply localization (overwrite from low to high)
@@ -254,7 +312,7 @@ bool AppDescription::loadAppinfo()
 
         pbnjson::JValue localeAppinfo = JDomParser::fromFile(AbsoluteLocaleAppinfoPath.c_str());
         if (localeAppinfo.isNull()) {
-            Logger::info(getClassName(), __FUNCTION__, "IGNORRED", Logger::format("failed_to_load_localication: %s", localizationDir.c_str()));
+            Logger::info(CLASS_NAME, __FUNCTION__, "IGNORRED", Logger::format("failed_to_load_localication: %s", localizationDir.c_str()));
             continue;
         }
 
@@ -262,17 +320,16 @@ bool AppDescription::loadAppinfo()
             std::string key = item.first.asString();
 
             if (!m_appinfo.hasKey(key) || m_appinfo[key].getType() != localeAppinfo[key].getType()) {
-                Logger::warning(getClassName(), __FUNCTION__, AbsoluteLocaleAppinfoPath, "localization is unmatchted with root");
+                Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, AbsoluteLocaleAppinfoPath, "localization is unmatchted with root");
                 continue;
             }
 
             if (m_appinfo[key] == localeAppinfo[key]) {
-                Logger::warning(getClassName(), __FUNCTION__, AbsoluteLocaleAppinfoPath, "Same key ignored");
                 continue;
             }
 
             if (std::find(PROPS_PROHIBITED.begin(), PROPS_PROHIBITED.end(), key) != PROPS_PROHIBITED.end()) {
-                Logger::warning(getClassName(), __FUNCTION__, AbsoluteLocaleAppinfoPath, "localization is prohibited_props");
+                Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, AbsoluteLocaleAppinfoPath, "localization is prohibited_props");
                 continue;
             }
 
@@ -375,13 +432,13 @@ bool AppDescription::readAppinfo()
 
     // app_type
     bool privilegedJail = m_appinfo.hasKey("privilegedJail") ? m_appinfo["privilegedJail"].asBool() : false;
-    m_appType = toEum(m_appinfo["type"].asString());
+    m_appType = toAppType(m_appinfo["type"].asString());
 
     if (m_appType == AppType::AppType_Native && privilegedJail)
         m_appType = AppType::AppType_Native_Mvpd;
 
     if (m_appType == AppType::AppType_Booster) {
-        if (!SettingsImpl::getInstance().isSupportQmlBooster())
+        if (!SAMConf::getInstance().isSupportQmlBooster())
             m_appType = AppType::AppType_Native_Qml;
         else if (!isSystemApp() || !isSystemApp())
             m_appType = AppType::AppType_Native_Qml;
@@ -445,14 +502,14 @@ void AppDescription::readAsset()
         std::string filename = value.substr(1);
         bool foundAsset = false;
 
-        JValue fallbacks = SettingsImpl::getInstance().getSysAssetFallbackPrecedence();
+        JValue fallbacks = SAMConf::getInstance().getSysAssetFallbackPrecedence();
         for (int i = 0; i < fallbacks.arraySize(); i++) {
             std::string assetPath = File::join(File::join(sysAssetsBasePath, fallbacks[i].asString()), filename);
             std::string pathToCheck = "";
 
             // set asset without variant
             pathToCheck = m_folderPath + std::string("/") + assetPath;
-            Logger::debug(getClassName(), __FUNCTION__, Logger::format("patch_to_check: %s\n", pathToCheck.c_str()));
+            Logger::debug(CLASS_NAME, __FUNCTION__, Logger::format("patch_to_check: %s\n", pathToCheck.c_str()));
 
             if (0 == access(pathToCheck.c_str(), F_OK)) {
                 m_appinfo.put(key, assetPath);

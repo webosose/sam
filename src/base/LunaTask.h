@@ -34,13 +34,13 @@ using namespace std;
 using namespace pbnjson;
 
 class LunaTask;
+class LunaTaskList;
 
 typedef std::shared_ptr<LunaTask> LunaTaskPtr;
-typedef boost::function<void(LunaTaskPtr)> APICallback;
-
-const std::string SYS_LAUNCHING_UID = "alertId";
+typedef boost::function<void(LunaTaskPtr)> LunaTaskCallback;
 
 class LunaTask {
+friend class LunaTaskList;
 public:
     LunaTask(LSHandle* sh, LS::Message& request, JValue& requestPayload, LSMessage* message)
         : m_handle(sh),
@@ -49,15 +49,11 @@ public:
           m_requestPayload(requestPayload),
           m_responsePayload(pbnjson::Object()),
           m_params(pbnjson::Object()),
-          m_errorCode(0),
+          m_errorCode(ErrCode_UNKNOWN),
           m_errorText(""),
-          m_instanceId(""),
           m_pid(""),
           m_reason(""),
           m_preload(""),
-          m_showSplash(true),
-          m_showSpinner(true),
-          m_keepAlive(false),
           m_stopTime(0)
     {
         if (m_request.getApplicationID() != nullptr){
@@ -79,35 +75,6 @@ public:
     virtual ~LunaTask()
     {
 
-    }
-
-    void reply()
-    {
-        bool returnValue = true;
-        if (!m_errorText.empty() && !m_responsePayload.hasKey("errorText")) {
-            m_responsePayload.put("errorText", m_errorText);
-            returnValue = false;
-        }
-        if (m_errorCode != 0 && !m_responsePayload.hasKey("errorCode")) {
-            m_responsePayload.put("errorCode", m_errorCode);
-            returnValue = false;
-        }
-        m_responsePayload.put("returnValue", returnValue);
-        m_request.respond(m_responsePayload.stringify().c_str());
-    }
-
-    void reply(const pbnjson::JValue& responsePayload)
-    {
-        m_responsePayload = responsePayload.duplicate();
-        JValueUtil::getValue(m_responsePayload, "errorText", m_errorText);
-        JValueUtil::getValue(m_responsePayload, "errorCode", m_errorCode);
-        reply();
-    }
-
-    void reply(int32_t errorCode, const std::string& errorText)
-    {
-        setErrorCodeAndText(errorCode, errorText);
-        reply();
     }
 
     LSHandle* getHandle() const
@@ -133,19 +100,6 @@ public:
     {
         m_token = token;
     }
-    void resetToken()
-    {
-        m_token = 0;
-    }
-
-    LS::Call& getCall()
-    {
-        return m_call;
-    }
-    void setCall(LS::Call& call)
-    {
-        m_call = std::move(call);
-    }
 
     const pbnjson::JValue& getRequestPayload() const
     {
@@ -162,27 +116,25 @@ public:
         return m_params;
     }
 
-    int getErrorCode() const
-    {
-        return m_errorCode;
-    }
-    const std::string& getErrorText() const
-    {
-        return m_errorText;
-    }
-    void setErrorCodeAndText(int errorCode, std::string errorText)
+    void setErrCodeAndText(int errorCode, std::string errorText)
     {
         m_errorCode = errorCode;
         m_errorText = errorText;
+        m_responsePayload.put("returnValue", false);
     }
 
-    const std::string& getInstanceId() const
+    const std::string getInstanceId() const
     {
-        return m_instanceId;
+        string instanceId = "";
+        JValueUtil::getValue(m_requestPayload, "instanceId", instanceId);
+        return instanceId;
     }
-    void setInstanceId(const std::string& instanceId)
+
+    const std::string getLaunchPointId() const
     {
-        m_instanceId = instanceId;
+        string launchPointId = "";
+        JValueUtil::getValue(m_requestPayload, "launchPointId", launchPointId);
+        return launchPointId;
     }
 
     const std::string getAppId() const
@@ -234,31 +186,11 @@ public:
         m_preload = preload;
     }
 
-    bool isShowSplash() const
-    {
-        return m_showSplash;
-    }
-    void setNoSplash(bool v)
-    {
-        m_showSplash = v;
-    }
-
-    bool isShowSpinner() const
-    {
-        return m_showSpinner;
-    }
-    void setSpinner(bool v)
-    {
-        m_showSpinner = v;
-    }
-
     bool isKeepAlive() const
     {
-        return m_keepAlive;
-    }
-    void setKeepAlive(bool v)
-    {
-        m_keepAlive = v;
+        bool keepAlive = false;
+        JValueUtil::getValue(m_requestPayload, "keepAlive", keepAlive);
+        return keepAlive;
     }
 
     double getTotalTime() const
@@ -271,11 +203,11 @@ public:
         m_stopTime = Time::getCurrentTime();
     }
 
-    APICallback getAPICallback()
+    LunaTaskCallback getAPICallback()
     {
         return m_APICallback;
     }
-    void setAPICallback(APICallback callback)
+    void setAPICallback(LunaTaskCallback callback)
     {
         m_APICallback = callback;
     }
@@ -301,19 +233,32 @@ private:
     LunaTask& operator=(const LunaTask& lunaTask) = delete;
     LunaTask(const LunaTask& lunaTask) = delete;
 
+    void reply()
+    {
+        bool returnValue = true;
+        if (!m_errorText.empty() && !m_responsePayload.hasKey("errorText")) {
+            m_responsePayload.put("errorText", m_errorText);
+            returnValue = false;
+        }
+        if (m_errorCode != 0 && !m_responsePayload.hasKey("errorCode")) {
+            m_responsePayload.put("errorCode", m_errorCode);
+            returnValue = false;
+        }
+        m_responsePayload.put("returnValue", returnValue);
+        m_request.respond(m_responsePayload.stringify().c_str());
+    }
+
     LSHandle* m_handle;
     LS::Message m_request;
     LSMessageToken m_token;
-    LS::Call m_call;
 
     pbnjson::JValue m_requestPayload;
     pbnjson::JValue m_responsePayload;
     pbnjson::JValue m_params;
 
-    int32_t m_errorCode;
+    int m_errorCode;
     string m_errorText;
 
-    string m_instanceId;
     string m_pid;
 
     string m_caller;
@@ -322,14 +267,10 @@ private:
     string m_reason;
     string m_preload;
 
-    bool m_showSplash;
-    bool m_showSpinner;
-    bool m_keepAlive;
-
     double m_startTime;
     double m_stopTime;
 
-    APICallback m_APICallback;
+    LunaTaskCallback m_APICallback;
     string m_nextStep;
 };
 

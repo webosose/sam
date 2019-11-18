@@ -19,10 +19,10 @@
 
 #include <base/AppDescription.h>
 #include <bus/client/SAM.h>
+#include <conf/SAMConf.h>
 #include "base/LunaTaskList.h"
 #include "base/AppDescriptionList.h"
 #include "base/RunningAppList.h"
-#include "setting/Settings.h"
 
 SAM::SAM()
 {
@@ -37,24 +37,24 @@ void SAM::launch(LunaTaskPtr lunaTask)
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId(), true);
     if (runningApp == nullptr) {
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), "no_client");
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "internal error");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "no_client");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    switch (runningApp->getRuntimeStatus()) {
-    case RuntimeStatus::STOP:
+    switch (runningApp->getLifeStatus()) {
+    case LifeStatus::LifeStatus_STOP:
         launchFromStop(lunaTask);
         break;
 
-    case RuntimeStatus::RUNNING:
-        launchFromRunning(lunaTask);
+    case LifeStatus::LifeStatus_RUNNING:
+        if (!runningApp->isRegistered())
+            launchFromRunning(lunaTask);
+        else
+            launchFromRegistered(lunaTask);
         break;
 
-    case RuntimeStatus::REGISTERED:
-        launchFromRegistered(lunaTask);
-        break;
-
-    case RuntimeStatus::CLOSING:
+    case LifeStatus::LifeStatus_CLOSING:
         // 강제로 죽이고 실행해야 하는거...
         // 멀티플 인스턴스가 나오면...그냥 실행으로 가야한다...
         launchFromClosing(lunaTask);
@@ -63,7 +63,8 @@ void SAM::launch(LunaTaskPtr lunaTask)
     default:
         string errorText = "internal error";
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), errorText);
-        lunaTask->setErrorCodeAndText(APP_LAUNCH_ERR_GENERAL, errorText);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, errorText);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 }
@@ -73,15 +74,17 @@ void SAM::close(LunaTaskPtr lunaTask)
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
     if (runningApp == nullptr) {
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), "no_client");
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "native app is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "native app is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId());
     runningApp->close(lunaTask);
 
-    if (RuntimeStatus::STOP == runningApp->getRuntimeStatus()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "native app is not running");
+    if (LifeStatus::LifeStatus_STOP == runningApp->getLifeStatus()) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "native app is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     runningApp->close(lunaTask);
@@ -98,7 +101,7 @@ void SAM::onKillChildProcess(GPid pid, gint status, gpointer data)
         Logger::error(getInstance().getClassName(), __FUNCTION__, "empty_client_info");
         return;
     }
-    if (RuntimeStatus::CLOSING == runningApp->getRuntimeStatus()) {
+    if (LifeStatus::LifeStatus_CLOSING == runningApp->getLifeStatus()) {
         Logger::info(getInstance().getClassName(), __FUNCTION__, "received event closed by sam");
     } else {
         Logger::info(getInstance().getClassName(), __FUNCTION__, "received event closed by itself");
@@ -106,25 +109,25 @@ void SAM::onKillChildProcess(GPid pid, gint status, gpointer data)
 
     string appId = runningApp->getLaunchPoint()->getAppDesc()->getAppId();
     Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("exit_status(%d)", status));
-
-    getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::STOP);
-    getInstance().EventRunningAppRemoved(appId);
+    RunningAppList::getInstance().remove(runningApp);
+    // RunningAppList::getInstance().removeByAppId(appId);
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_STOP);
 }
 
 void SAM::launchFromStop(LunaTaskPtr lunaTask)
 {
     if (lunaTask == NULL) {
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), "null_poiner");
-        lunaTask->setErrorCodeAndText(APP_LAUNCH_ERR_GENERAL, "internal error");
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "internal error");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     Logger::info(getClassName(), __FUNCTION__, lunaTask->getAppId(), "start_native_handler");
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(lunaTask->getAppId());
     if (appDesc == NULL) {
-        Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), "null_description");
-        lunaTask->reply(APP_LAUNCH_ERR_GENERAL, "null_description");
-        LunaTaskList::getInstance().remove(lunaTask);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "null_description");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -138,10 +141,10 @@ void SAM::launchFromStop(LunaTaskPtr lunaTask)
 
     const char* forkParams[10] = { 0, };
     const char* jailer_type = "";
-    bool isNojailApp = SettingsImpl::getInstance().isNoJailApp(appDesc->getAppId());
+    bool isNojailApp = SAMConf::getInstance().isNoJailApp(appDesc->getAppId());
 
     if (AppType::AppType_Native_AppShell == appDesc->getAppType()) {
-        forkParams[0] = SettingsImpl::getInstance().getAppShellRunnerPath().c_str();
+        forkParams[0] = SAMConf::getInstance().getAppShellRunnerPath().c_str();
         forkParams[1] = "--appid";
         forkParams[2] = appDesc->getAppId().c_str();
         forkParams[3] = "--folder";
@@ -152,12 +155,12 @@ void SAM::launchFromStop(LunaTaskPtr lunaTask)
 
         Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "launch with appshell_runner");
     } else if (AppType::AppType_Native_Qml == appDesc->getAppType()) {
-        forkParams[0] = SettingsImpl::getInstance().getQmlRunnerPath().c_str();
+        forkParams[0] = SAMConf::getInstance().getQmlRunnerPath().c_str();
         forkParams[1] = strParams.c_str();
         forkParams[2] = NULL;
 
         Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "launch with qml_runner");
-    } else if (SettingsImpl::getInstance().isJailerDisabled() && !isNojailApp) {
+    } else if (SAMConf::getInstance().isJailerDisabled() && !isNojailApp) {
         if (AppLocation::AppLocation_Devmode == appDesc->getAppLocation()) {
             jailer_type = "native_devmode";
         } else {
@@ -180,7 +183,7 @@ void SAM::launchFromStop(LunaTaskPtr lunaTask)
             }
         }
 
-        forkParams[0] = SettingsImpl::getInstance().getJailerPath().c_str();
+        forkParams[0] = SAMConf::getInstance().getJailerPath().c_str();
         forkParams[1] = "-t";
         forkParams[2] = jailer_type;
         forkParams[3] = "-i";
@@ -203,17 +206,17 @@ void SAM::launchFromStop(LunaTaskPtr lunaTask)
     }
 
     if (lunaTask->getPreload().empty())
-        SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::LAUNCHING);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     else
-        SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::PRELOADING);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
 
     int pid = LinuxProcess::forkProcess(forkParams, NULL);
 
     if (pid <= 0) {
         Logger::error(getClassName(), __FUNCTION__, appDesc->getAppId(), Logger::format("pid(%d) path(%s)", pid, path.c_str()));
-        SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::STOP);
-        lunaTask->reply(APP_ERR_NATIVE_SPAWN, "Failed to launch process");
-        LunaTaskList::getInstance().remove(lunaTask);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_STOP);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch process");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -226,17 +229,15 @@ void SAM::launchFromStop(LunaTaskPtr lunaTask)
     std::string new_pid = boost::lexical_cast<std::string>(pid);
     lunaTask->setPid(new_pid);
     runningApp->setPid(new_pid);
+    runningApp->setWebprocid("");
 
     RunningAppPtr runningInfo = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
     if (runningInfo)
         runningInfo->saveLastLaunchTime();
 
-    SAM::getInstance().EventRunningAppAdded(lunaTask->getAppId(), new_pid, "");
-    SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::RUNNING);
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_RUNNING);
 
-
-    lunaTask->reply();
-    LunaTaskList::getInstance().remove(lunaTask);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     //NativeAppLifeHandler::getInstance().EventLaunchingDone(lunaTask->getInstanceId());
 }
 
@@ -247,15 +248,14 @@ void SAM::launchFromRegistered(LunaTaskPtr lunaTask)
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
     pbnjson::JValue payload = runningApp->getRelaunchParams(lunaTask);
     Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId());
-
-    SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::LAUNCHING);
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
 
     if (runningApp->sendEvent(payload) == false) {
         Logger::warning(getClassName(), __FUNCTION__, runningApp->getInstanceId(), "failed_to_send_relaunch_event");
     }
 
-    lunaTask->reply();
-    LunaTaskList::getInstance().remove(lunaTask);
+    lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     //NativeAppLifeHandler::getInstance().EventLaunchingDone(item->getInstanceId());
 }
 
@@ -272,7 +272,7 @@ void SAM::launchFromRunning(LunaTaskPtr item)
 
     if (!runningApp->isRegistered()) {
         // clean up previous launch reqeust from pending queue
-        SAM::getInstance().EventAppLifeStatusChanged(item->getAppId(), item->getInstanceId(), RuntimeStatus::CLOSING);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
         LinuxProcess::sendSigKill(runningApp->getPid());
     }
 }

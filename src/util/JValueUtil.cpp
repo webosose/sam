@@ -12,7 +12,7 @@
  */
 
 #include "util/JValueUtil.h"
-#include "setting/SettingsConf.h"
+#include "Environment.h"
 
 map<string, JSchema> JValueUtil::s_schemas;
 

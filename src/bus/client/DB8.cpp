@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <conf/SAMConf.h>
 #include "bus/client/DB8.h"
 
 #include "base/LaunchPointList.h"
 #include "bus/service/ApplicationManager.h"
-#include "setting/Settings.h"
 #include "util/JValueUtil.h"
 #include "util/Logger.h"
 
@@ -29,6 +29,9 @@ bool DB8::onResponse(LSHandle* sh, LSMessage* message, void* context)
     Message response(message);
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    if (responsePayload.isNull())
+        return true;
     return true;
 }
 
@@ -148,6 +151,9 @@ bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
+    if (responsePayload.isNull())
+        return true;
+
     bool returnValue = false;
     JValue results;
     string errorText;
@@ -235,6 +241,9 @@ bool DB8::onPutKind(LSHandle* sh, LSMessage* message, void* context)
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
+    if (responsePayload.isNull())
+        return true;
+
     bool returnValue = false;
     string errorText;
 
@@ -254,7 +263,7 @@ void DB8::putKind()
 {
     static string method = std::string("luna://") + getName() + std::string("/putKind");
 
-    JValue requestPayload = SettingsImpl::getInstance().getDBSchema();
+    JValue requestPayload = SAMConf::getInstance().getDBSchema();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
     LSCallOneReply(
         ApplicationManager::getInstance().get(),
@@ -292,7 +301,7 @@ void DB8::putPermissions()
 {
     static string method = std::string("luna://") + getName() + std::string("/putPermissions");
 
-    JValue requestPayload = SettingsImpl::getInstance().getDBPermission();
+    JValue requestPayload = SAMConf::getInstance().getDBPermission();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
     LSCallOneReply(
         ApplicationManager::getInstance().get(),

@@ -27,11 +27,15 @@ using namespace std;
 using namespace LS;
 using namespace pbnjson;
 
-enum {
-    APP_LAUNCH_ERR_GENERAL = -1,
-    APP_ERR_LOCKED = -102,
-    APP_ERR_NATIVE_SPAWN = -202,
-    APP_ERR_NATIVE_IS_LAUNCHING = -203,
+enum ErrCode {
+    ErrCode_NATIVE_SPAWN = -202,
+    ErrCode_APP_LOCKED = -102,
+    ErrCode_LAUNCH = -1,
+    ErrCode_UNKNOWN = 0,
+    ErrCode_NATIVE_IS_LAUNCHING = -203,
+    ErrCode_GENERAL = 1,
+    ErrCode_INVALID_PAYLOAD = 2,
+    ErrCode_DEPRECATED = 999
 };
 
 enum LogLevel {
@@ -48,10 +52,6 @@ enum LogType {
 
 class Logger {
 public:
-    static const int ERRCODE_GENERAL = 1;
-    static const int ERRCODE_INVALID_PAYLOAD = 2;
-    static const int ERRCODE_DEPRECATED = 999;
-
     template<typename ... Args>
     static const string format(const std::string& format, Args ... args)
     {
@@ -80,6 +80,7 @@ public:
     static void logSubscriptionRequest(const string& className, const string& functionName, const string& method, JValue& requestPayload);
     static void logSubscriptionResponse(const string& className, const string& functionName, Message& response, JValue& subscriptionPayload);
     static void logSubscriptionPost(const string& className, const string& functionName, const LS::SubscriptionPoint& point, JValue& subscriptionPayload);
+    static void logSubscriptionPost(const string& className, const string& functionName, const string& key, JValue& subscriptionPayload);
 
     static void debug(const string& className, const string& functionName, const string& what);
     static void info(const string& className, const string& functionName, const string& what);

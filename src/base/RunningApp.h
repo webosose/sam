@@ -24,50 +24,27 @@
 
 #include "base/LaunchPoint.h"
 #include "base/LunaTask.h"
+#include "base/LunaTaskList.h"
 #include "util/Logger.h"
 #include "util/Time.h"
 
 enum class LifeStatus : int8_t {
-    INVALID = -1,
-    STOP = 0,
-    PRELOADING,
-    LAUNCHING,
-    RELAUNCHING,
-    FOREGROUND,
-    BACKGROUND,
-    CLOSING,
-    PAUSING,
-    RUNNING, // internal event
-};
-
-enum class LifeEvent : int8_t {
-    INVALID = -1,
-    SPLASH = 0,
-    PRELOAD,
-    LAUNCH,
-    FOREGROUND,
-    BACKGROUND,
-    PAUSE,
-    CLOSE,
-    STOP,
-};
-
-enum class RuntimeStatus : int8_t {
-    STOP = 0,
-    LAUNCHING,
-    PRELOADING,
-    RUNNING,
-    REGISTERED,
-    CLOSING,
-    PAUSING, // internal status
+    LifeStatus_INVALID = -1,
+    LifeStatus_STOP = 0,
+    LifeStatus_PRELOADING,
+    LifeStatus_LAUNCHING,
+    LifeStatus_RELAUNCHING,
+    LifeStatus_FOREGROUND,
+    LifeStatus_BACKGROUND,
+    LifeStatus_CLOSING,
+    LifeStatus_PAUSING,
+    LifeStatus_RUNNING, // internal event
 };
 
 class RunningApp {
 friend class RunningAppList;
 public:
     static const char* toString(LifeStatus status);
-    static const char* toString(LifeEvent status);
-    static const char* toString(RuntimeStatus status);
 
     RunningApp(LaunchPointPtr launchPoint);
     virtual ~RunningApp();
@@ -81,9 +58,14 @@ public:
     string getLaunchParams(LunaTaskPtr item);
     JValue getRelaunchParams(LunaTaskPtr item);
 
-    LaunchPointPtr getLaunchPoint() const
+    string getAppId() const
     {
-        return m_launchPoint;
+        return m_launchPoint->getAppDesc()->getAppId();
+    }
+
+    string getLaunchPointId() const
+    {
+        return m_launchPoint->getLaunchPointId();
     }
 
     const std::string& getInstanceId() const
@@ -93,6 +75,11 @@ public:
     void setInstanceId(const std::string& instanceId)
     {
         m_instanceId = instanceId;
+    }
+
+    LaunchPointPtr getLaunchPoint() const
+    {
+        return m_launchPoint;
     }
 
     const std::string& getDisplayId() const
@@ -152,6 +139,13 @@ public:
         m_isPreloadMode = mode;
     }
 
+    string getPreload() const
+    {
+        string preload = "";
+        JValueUtil::getValue(m_requestPayload, "preload", preload);
+        return preload;
+    }
+
     double getLastLaunchTime() const
     {
         return m_lastLaunchTime;
@@ -165,29 +159,22 @@ public:
     {
         return m_lifeStatus;
     }
-    void setLifeStatus(const LifeStatus& status)
-    {
-        m_lifeStatus = status;
-    }
-
-    void setRuntimeStatus(RuntimeStatus status)
-    {
-        // SAM::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::STOP);
-        // SAM::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::CLOSING);
-        // SAM::getInstance().EventAppLifeStatusChanged(client->getAppId(), "", RuntimeStatus::CLOSING);
-        m_runtimeStatus = status;
-    }
-    RuntimeStatus getRuntimeStatus() const
-    {
-        return m_runtimeStatus;
-    }
+    void setLifeStatus(const LifeStatus& lifeStatus);
 
     bool isShowSplash()
     {
-        bool noSplash = false;
+        bool noSplash = true;
         if (JValueUtil::getValue(m_requestPayload, "noSplash", noSplash))
             return noSplash;
         return this->getLaunchPoint()->getAppDesc()->isNoSplashOnLaunch();
+    }
+
+    bool isShowSpinner() const
+    {
+        bool spinner = true;
+        if (JValueUtil::getValue(m_requestPayload, "spinner", spinner))
+            return spinner;
+        return this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
     }
 
     void toJson(JValue& object)
@@ -229,7 +216,6 @@ private:
     double m_lastLaunchTime;
 
     LifeStatus m_lifeStatus;
-    RuntimeStatus m_runtimeStatus;
 
 };
 

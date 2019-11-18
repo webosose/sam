@@ -33,11 +33,14 @@ friend class ISingleton<AppDescriptionList>;
 public:
     static bool compare(AppDescriptionPtr me, AppDescriptionPtr another);
     static bool compareVersion(AppDescriptionPtr me, AppDescriptionPtr another);
-    static string findForderPath(const string& appId);
 
     virtual ~AppDescriptionList();
 
     void changeLocale();
+
+    void scanFull();
+    void scanDir(const string& path, const AppLocation& appLocation);
+    void scanApp(const string& appId, const string& folderPath, const AppLocation& appLocation);
 
     AppDescriptionPtr create(const std::string& appId);
     AppDescriptionPtr add(AppDescriptionPtr appDesc);

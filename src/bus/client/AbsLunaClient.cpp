@@ -39,12 +39,22 @@ JValue& AbsLunaClient::getSubscriptionPayload()
 bool AbsLunaClient::_onServerStatus(LSHandle* sh, LSMessage* message, void* context)
 {
     AbsLunaClient* client = static_cast<AbsLunaClient*>(context);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(LSMessageGetPayload(message));
+
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+
+    if (subscriptionPayload.isNull())
+        return true;
 
     bool connected = false;
     if (!JValueUtil::getValue(subscriptionPayload, "connected", connected)) {
         return true;
     }
+
+    if (connected)
+        Logger::info(client->getClassName(), __FUNCTION__, "Service is up");
+    else
+        Logger::info(client->getClassName(), __FUNCTION__, "Service is down");
 
     client->m_isConnected = connected;
     client->EventServiceStatusChanged(connected);
@@ -63,7 +73,6 @@ AbsLunaClient::~AbsLunaClient()
 {
 }
 
-// This API should be called after bus registration
 void AbsLunaClient::initialize()
 {
     JValue requestPayload = pbnjson::Object();

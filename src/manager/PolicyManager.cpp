@@ -17,7 +17,6 @@
 #include "manager/PolicyManager.h"
 
 #include "bus/client/MemoryManager.h"
-#include "manager/LifecycleManager.h"
 
 PolicyManager::PolicyManager()
 {
@@ -50,7 +49,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
         runningApp->launch(lunaTask);
     } else {
-        lunaTask->reply();
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
     }
 }
 
@@ -59,15 +58,16 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 
 }
 
-void PolicyManager::checkExecutionLock(LunaTaskPtr item)
+void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
 {
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(item->getAppId());
+    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(lunaTask->getAppId());
     if (appDesc == nullptr || appDesc->isLocked()) {
-        Logger::error("PrelauncherStage", __FUNCTION__, item->getAppId(), "app is locked");
-        item->setErrorCodeAndText(APP_ERR_LOCKED, "app is locked");
+        Logger::error("PrelauncherStage", __FUNCTION__, lunaTask->getAppId(), "app is locked");
+        lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         // TODO reply error
         // return false;
     }
 
-    item->getAPICallback()(item);
+    lunaTask->getAPICallback()(lunaTask);
 }

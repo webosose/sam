@@ -38,7 +38,9 @@ public:
     LunaTaskPtr getByInstanceId(const string& instanceId);
     LunaTaskPtr getByToken(const LSMessageToken& token);
 
-    void remove(LunaTaskPtr lunaTask);
+    void removeAboutWAM();
+    void removeAboutLSM();
+    void removeAfterReply(LunaTaskPtr lunaTask);
     void toJson(JValue& array);
 
 private:

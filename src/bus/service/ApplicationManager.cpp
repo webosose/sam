@@ -15,16 +15,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <bus/service/ApplicationManager.h>
+#include <conf/SAMConf.h>
 #include "base/LunaTaskList.h"
 #include "base/LaunchPointList.h"
 #include "base/AppDescriptionList.h"
 #include "base/RunningAppList.h"
 #include "bus/client/AppInstallService.h"
 #include "bus/client/DB8.h"
-#include <manager/LifecycleManager.h>
 #include <manager/PolicyManager.h>
 #include <pbnjson.hpp>
-#include <setting/Settings.h>
 #include <string>
 #include <vector>
 #include "SchemaChecker.h"
@@ -96,20 +95,20 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
     Message request(message);
     JValue requestPayload = SchemaChecker::getInstance().getRequestPayloadWithSchema(request);
     LunaApiHandler handler;
-    LunaTaskPtr task = nullptr;
+    LunaTaskPtr lunaTask = nullptr;
     string errorText = "";
     int errorCode = 0;
 
     Logger::logAPIRequest(getInstance().getClassName(), __FUNCTION__, request, requestPayload);
     if (requestPayload.isNull()) {
-        errorCode = Logger::ERRCODE_INVALID_PAYLOAD;
+        errorCode = ErrCode_INVALID_PAYLOAD;
         errorText = "invalid parameters";
         goto Done;
     }
 
-    task = std::make_shared<LunaTask>(sh, request, requestPayload, message);
-    if (!task) {
-        errorCode = Logger::ERRCODE_GENERAL;
+    lunaTask = std::make_shared<LunaTask>(sh, request, requestPayload, message);
+    if (!lunaTask) {
+        errorCode = ErrCode_GENERAL;
         errorText = "memory alloc fail";
         goto Done;
     }
@@ -118,13 +117,13 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
         handler = getInstance().m_APIHandlers[request.getKind()];
 
     if (!handler) {
-        errorCode = Logger::ERRCODE_DEPRECATED;
+        errorCode = ErrCode_DEPRECATED;
         errorText = "deprecated method";
         goto Done;
     }
 
-    LunaTaskList::getInstance().add(task);
-    handler(task);
+    LunaTaskList::getInstance().add(lunaTask);
+    handler(lunaTask);
 
 Done:
     if (!errorText.empty()) {
@@ -183,7 +182,7 @@ bool ApplicationManager::attach(GMainLoop* gml)
     m_compat1.registerCategory(CATEGORY_ROOT, METHODS_ROOT, nullptr, nullptr);
     m_compat2.registerCategory(CATEGORY_ROOT, METHODS_ROOT, nullptr, nullptr);
 
-    if (SettingsImpl::getInstance().isDevmodeEnabled()) {
+    if (SAMConf::getInstance().isDevmodeEnabled()) {
         this->registerCategory(CATEGORY_DEV, METHODS_DEV, nullptr, nullptr);
         m_compat1.registerCategory(CATEGORY_DEV, METHODS_DEV, nullptr, nullptr);
         m_compat2.registerCategory(CATEGORY_DEV, METHODS_DEV, nullptr, nullptr);
@@ -214,8 +213,6 @@ void ApplicationManager::detach()
 
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
     string appId = lunaTask->getAppId();
     string reason = "";
     bool keepAlive = false;
@@ -224,23 +221,17 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
     pbnjson::JValue params;
 
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "App ID is not specified");
-        return;
-    }
-    if (LunaTaskList::getInstance().getByKindAndId(lunaTask->getRequest().getKind(), appId) != nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is already launching");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    JValueUtil::getValue(requestPayload, "keepAlive", keepAlive);
-    JValueUtil::getValue(requestPayload, "noSplash", noSplash);
-    JValueUtil::getValue(requestPayload, "spinner", spinner);
-    JValueUtil::getValue(requestPayload, "params", params);
-    JValueUtil::getValue(requestPayload, "params", "reason", reason);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "params", params);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "params", "reason", reason);
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (appDesc == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "App ID is not exist");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not exist");
         return;
     }
     if (!appDesc->isSpinnerOnLaunch()) {
@@ -249,16 +240,13 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
     if (!appDesc->isNoSplashOnLaunch()) {
         noSplash = false;
     }
-    if (SettingsImpl::getInstance().isKeepAliveApp(lunaTask->getAppId())) {
+    if (SAMConf::getInstance().isKeepAliveApp(lunaTask->getAppId())) {
         keepAlive = true;
     }
     if (reason.empty()) {
         reason = "normal";
     }
 
-    lunaTask->setKeepAlive(keepAlive);
-    lunaTask->setNoSplash(noSplash);
-    lunaTask->setSpinner(spinner);
     lunaTask->setReason(reason);
 
     Logger::info(getClassName(), __FUNCTION__, appId,
@@ -269,39 +257,39 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
     string appId = "";
-    if (!JValueUtil::getValue(requestPayload, "id", appId)) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "App ID is not specified");
+    if (!JValueUtil::getValue(lunaTask->getRequestPayload(), "id", appId)) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
         return;
     }
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
         return;
     }
 
-    lunaTask->reply(Logger::ERRCODE_GENERAL, "This API is not implemented");
+    lunaTask->setErrCodeAndText(ErrCode_GENERAL, "This API is not implemented");
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return;
 }
 
 void ApplicationManager::closeByAppId(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
     string appId = "";
-    if (!JValueUtil::getValue(requestPayload, "id", appId)) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "App ID is not specified");
+    if (!JValueUtil::getValue(lunaTask->getRequestPayload(), "id", appId)) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (LunaTaskList::getInstance().getByKindAndId(lunaTask->getRequest().getKind(), appId) != nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is already closing");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is already closing");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (strcmp(lunaTask->getRequest().getCategory(), "/dev") == 0 &&
@@ -315,9 +303,9 @@ void ApplicationManager::closeByAppId(LunaTaskPtr lunaTask)
     bool letAppHandle = false;
     std::string reason = "";
 
-    JValueUtil::getValue(requestPayload, "preloadOnly", preloadOnly);
-    JValueUtil::getValue(requestPayload, "reason", reason);
-    JValueUtil::getValue(requestPayload, "letAppHandle", letAppHandle);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "preloadOnly", preloadOnly);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "reason", reason);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "letAppHandle", letAppHandle);
 
     if (preloadOnly) {
         Logger::warning(getClassName(), __FUNCTION__, appId, "app is being launched by user");
@@ -333,120 +321,108 @@ void ApplicationManager::closeByAppId(LunaTaskPtr lunaTask)
 
 void ApplicationManager::running(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    pbnjson::JValue runningList = pbnjson::Array();
+    pbnjson::JValue running = pbnjson::Array();
 
-    RunningAppList::getInstance().toJson(runningList);
-    responsePayload.put("returnValue", true);
-    responsePayload.put("running", runningList);
+    RunningAppList::getInstance().toJson(running);
+    lunaTask->getResponsePayload().put("returnValue", true);
+    lunaTask->getResponsePayload().put("running", running);
     if (LSMessageIsSubscription(lunaTask->getMessage())) {
-        responsePayload.put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_RUNNING, lunaTask->getMessage(), NULL));
+        lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_RUNNING, lunaTask->getMessage(), NULL));
     }
-
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::runningForDev(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    pbnjson::JValue runningList = pbnjson::Array();
+    pbnjson::JValue running = pbnjson::Array();
 
-    RunningAppList::getInstance().toJson(runningList, true);
-    responsePayload.put("returnValue", true);
-    responsePayload.put("running", runningList);
+    RunningAppList::getInstance().toJson(running, true);
+    lunaTask->getResponsePayload().put("returnValue", true);
+    lunaTask->getResponsePayload().put("running", running);
     if (LSMessageIsSubscription(lunaTask->getMessage())) {
-        responsePayload.put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_DEV_RUNNING, lunaTask->getMessage(), NULL));
+        lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_DEV_RUNNING, lunaTask->getMessage(), NULL));
     }
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppLifeEvents(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
-
     if (LSMessageIsSubscription(lunaTask->getMessage())) {
         if (!LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_GET_APP_LIFE_EVENTS, lunaTask->getMessage(), NULL)) {
-            lunaTask->setErrorCodeAndText(Logger::ERRCODE_GENERAL, "Subscription failed");
-            responsePayload.put("subscribed", false);
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Subscription failed");
+            lunaTask->getResponsePayload().put("subscribed", false);
         } else {
-            responsePayload.put("subscribed", true);
+            lunaTask->getResponsePayload().put("subscribed", true);
         }
     } else {
-        lunaTask->setErrorCodeAndText(Logger::ERRCODE_GENERAL, "subscription is required");
-        responsePayload.put("subscribed", false);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "subscription is required");
+        lunaTask->getResponsePayload().put("subscribed", false);
     }
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppLifeStatus(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
-
     if (LSMessageIsSubscription(lunaTask->getMessage())) {
         if (!LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_GET_APP_LIFE_STATUS, lunaTask->getMessage(), NULL)) {
-            lunaTask->setErrorCodeAndText(Logger::ERRCODE_GENERAL, "Subscription failed");
-            responsePayload.put("subscribed", false);
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Subscription failed");
+            lunaTask->getResponsePayload().put("subscribed", false);
         } else {
-            responsePayload.put("subscribed", true);
+            lunaTask->getResponsePayload().put("subscribed", true);
         }
     } else {
-        lunaTask->setErrorCodeAndText(Logger::ERRCODE_GENERAL, "subscription is required");
-        responsePayload.put("subscribed", false);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "subscription is required");
+        lunaTask->getResponsePayload().put("subscribed", false);
     }
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getForegroundAppInfo(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
+    lunaTask->getResponsePayload().put("returnValue", true);
 
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    responsePayload.put("returnValue", true);
-
-    if (requestPayload["extraInfo"].asBool() == true) {
-        responsePayload.put("foregroundAppInfo", RunningAppList::getInstance().getForegroundInfo());
+    if (lunaTask->getRequestPayload()["extraInfo"].asBool() == true) {
+        lunaTask->getResponsePayload().put("foregroundAppInfo", RunningAppList::getInstance().getForegroundInfo());
         if (LSMessageIsSubscription(lunaTask->getMessage())) {
-            responsePayload.put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_FOREGROUND_INFO_EX, lunaTask->getMessage(), NULL));
+            lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_FOREGROUND_INFO_EX, lunaTask->getMessage(), NULL));
         }
     } else {
-        responsePayload.put("appId", RunningAppList::getInstance().getForegroundAppId());
-        responsePayload.put("windowId", "");
-        responsePayload.put("processId", "");
+        lunaTask->getResponsePayload().put("appId", RunningAppList::getInstance().getForegroundAppId());
+        lunaTask->getResponsePayload().put("windowId", "");
+        lunaTask->getResponsePayload().put("processId", "");
         if (LSMessageIsSubscription(lunaTask->getMessage())) {
-            responsePayload.put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_FOREGROUND_INFO, lunaTask->getMessage(), NULL));
+            lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_FOREGROUND_INFO, lunaTask->getMessage(), NULL));
         }
     }
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
     std::string appId;
     bool lock;
     std::string errorText;
 
-    JValueUtil::getValue(requestPayload, "id", appId);
-    JValueUtil::getValue(requestPayload, "lock", lock);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "id", appId);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "lock", lock);
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (!appDesc) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " was not found OR Unsupported Application Type");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " was not found OR Unsupported Application Type");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("lock(%s)", Logger::toString(lock)));
     appDesc->lock();
 
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    responsePayload.put("id", appId);
-    responsePayload.put("locked", lock);
-    lunaTask->reply(responsePayload);
+    lunaTask->getResponsePayload().put("id", appId);
+    lunaTask->getResponsePayload().put("locked", lock);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return;
 }
 
@@ -454,131 +430,133 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
 {
     string appId = lunaTask->getRequest().getApplicationID();
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "cannot find caller id");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find caller id");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     if (runningApp->getInterfaceVersion() != 2) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     runningApp->registerApp(lunaTask);
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::registerNativeApp(LunaTaskPtr lunaTask)
 {
     string appId = lunaTask->getRequest().getApplicationID();
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "cannot find caller id");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find caller id");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, appId + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     if (runningApp->getInterfaceVersion() != 1) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     runningApp->registerApp(lunaTask);
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::listApps(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
-    pbnjson::JValue responsePayload = pbnjson::Object();
     pbnjson::JValue apps = pbnjson::Array();
     pbnjson::JValue properties = pbnjson::Array();
 
-    if (JValueUtil::getValue(requestPayload, "properties", properties) && properties.arraySize() > 0) {
+    if (JValueUtil::getValue(lunaTask->getRequestPayload(), "properties", properties) && properties.arraySize() > 0) {
         properties.append("id");
     }
 
     bool isDevmode = (strcmp(lunaTask->getRequest().getKind(), "/dev/listApps") == 0);
     AppDescriptionList::getInstance().toJson(apps, properties, isDevmode);
-    responsePayload.put("apps", apps);
+    lunaTask->getResponsePayload().put("apps", apps);
 
     if (lunaTask->getRequest().isSubscription()) {
-        responsePayload.put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), METHOD_LIST_APPS, lunaTask->getMessage(), nullptr));
+        lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), METHOD_LIST_APPS, lunaTask->getMessage(), nullptr));
     } else {
-        responsePayload.put("subscribed", false);
+        lunaTask->getResponsePayload().put("subscribed", false);
     }
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppStatus(LunaTaskPtr lunaTask)
 {
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
+    string appId = lunaTask->getAppId();
+    bool appInfo = false;
 
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    std::string appId = requestPayload["appId"].asString();
-    bool requiredAppInfo = (requestPayload.hasKey("appInfo") && requestPayload["appInfo"].isBoolean() && requestPayload["appInfo"].asBool()) ? true : false;
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "appInfo", appInfo);
 
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
     if (lunaTask->getRequest().isSubscription()) {
-        std::string subs_key = "getappstatus#" + appId + "#" + (requiredAppInfo ? "Y" : "N");
-        if (LSSubscriptionAdd(lunaTask->getHandle(), subs_key.c_str(), lunaTask->getMessage(), NULL)) {
-            responsePayload.put("subscribed", true);
+        std::string subscriptionKey = "getappstatus#" + appId + "#" + (appInfo ? "Y" : "N");
+        if (LSSubscriptionAdd(lunaTask->getHandle(), subscriptionKey.c_str(), lunaTask->getMessage(), NULL)) {
+            lunaTask->getResponsePayload().put("subscribed", true);
         } else {
-            Logger::warning(getClassName(), __FUNCTION__, "lscall", "failed");
-            responsePayload.put("subscribed", false);
+            lunaTask->getResponsePayload().put("subscribed", false);
         }
     }
 
     // for first return (event: nothing)
-    responsePayload.put("appId", appId);
-    responsePayload.put("event", "nothing");
+    lunaTask->getResponsePayload().put("appId", appId);
+    lunaTask->getResponsePayload().put("event", "nothing");
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (!appDesc) {
-        responsePayload.put("status", "notExist");
-        responsePayload.put("exist", false);
-        responsePayload.put("launchable", false);
+        lunaTask->getResponsePayload().put("status", "notExist");
+        lunaTask->getResponsePayload().put("exist", false);
+        lunaTask->getResponsePayload().put("launchable", false);
     } else {
-        responsePayload.put("status", "launchable");
-        responsePayload.put("exist", true);
-        responsePayload.put("launchable", true);
+        lunaTask->getResponsePayload().put("status", "launchable");
+        lunaTask->getResponsePayload().put("exist", true);
+        lunaTask->getResponsePayload().put("launchable", true);
 
-        if (requiredAppInfo) {
-            responsePayload.put("appInfo", appDesc->getJson());
+        if (appInfo) {
+            lunaTask->getResponsePayload().put("appInfo", appDesc->getJson());
         }
     }
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppInfo(LunaTaskPtr lunaTask)
 {
     const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
 
-    pbnjson::JValue responsePayload = pbnjson::Object();
     std::string appId = requestPayload["id"].asString();
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (!appDesc) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -590,36 +568,38 @@ void ApplicationManager::getAppInfo(LunaTaskPtr lunaTask)
         appInfo = appDesc->getJson();
     }
 
-    responsePayload.put("appInfo", appInfo);
-    responsePayload.put("appId", appId);
-    lunaTask->reply(responsePayload);
+    lunaTask->getResponsePayload().put("appInfo", appInfo);
+    lunaTask->getResponsePayload().put("appId", appId);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppBasePath(LunaTaskPtr lunaTask)
 {
     const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
 
-    pbnjson::JValue responsePayload = pbnjson::Object();
     std::string appId = requestPayload["appId"].asString();
 
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (!appDesc) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified: " + appId);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (lunaTask->getCaller() != appId) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    responsePayload.put("appId", appId);
-    responsePayload.put("basePath", appDesc->getAbsMain());
+    lunaTask->getResponsePayload().put("appId", appId);
+    lunaTask->getResponsePayload().put("basePath", appDesc->getAbsMain());
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::addLaunchPoint(LunaTaskPtr lunaTask)
@@ -628,29 +608,33 @@ void ApplicationManager::addLaunchPoint(LunaTaskPtr lunaTask)
 
     std::string appId;
     if (!JValueUtil::getValue(requestPayload, "id", appId)) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "missing required 'id' parameter");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "missing required 'id' parameter");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (appId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
     if (!appDesc) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().createBootmark(appDesc, requestPayload);
     if (!launchPoint) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Cannot create bookmark");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot create bookmark");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     LaunchPointList::getInstance().add(launchPoint);
     lunaTask->getResponsePayload().put("launchPointId", launchPoint->getLaunchPointId());
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::updateLaunchPoint(LunaTaskPtr lunaTask)
@@ -659,19 +643,21 @@ void ApplicationManager::updateLaunchPoint(LunaTaskPtr lunaTask)
 
     std::string launchPointId = "";
     if (!JValueUtil::getValue(requestPayload, "launchPointId", launchPointId)) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "launchPointId is empty");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "launchPointId is empty");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find launch point");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     requestPayload.remove("launchPointId");
     launchPoint->updateDatabase(requestPayload);
     launchPoint->syncDatabase();
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
@@ -680,16 +666,19 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 
     std::string launchPointId = "";
     if (!JValueUtil::getValue(requestPayload, "launchPointId", launchPointId)) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "launchPointId is empty");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "launchPointId is empty");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find launch point");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (!launchPoint->isRemovable()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "this launch point cannot be removable");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "this launch point cannot be removable");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -716,12 +705,12 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
         break;
 
     default:
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "Invalid launch point type");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid launch point type");
         return;
 
     }
 
-    lunaTask->reply();
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::moveLaunchPoint(LunaTaskPtr lunaTask)
@@ -735,31 +724,32 @@ void ApplicationManager::moveLaunchPoint(LunaTaskPtr lunaTask)
     JValueUtil::getValue(requestPayload, "launchPointId", launchPointId);
     JValueUtil::getValue(requestPayload, "position", position);
     if (launchPointId.empty()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "launchPointId is empty");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "launchPointId is empty");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (position < 0) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "position number should be over 0");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "position number should be over 0");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint == nullptr) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find launch point");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (!launchPoint->isVisible()) {
-        lunaTask->reply(Logger::ERRCODE_GENERAL, "this launch point is not visible");
-         return;
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "this launch point is not visible");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
     }
 
     // TODO position needs to be set
-
-    lunaTask->reply();
 }
 
 void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
     pbnjson::JValue launchPoints = pbnjson::Array();
     bool subscribed = false;
 
@@ -768,33 +758,32 @@ void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
     if (lunaTask->getRequest().isSubscription())
         ApplicationManager::getInstance().m_listLaunchPointsPoint.subscribe(lunaTask->getRequest());
 
-    responsePayload.put("subscribed", subscribed);
-    responsePayload.put("launchPoints", launchPoints);
+    lunaTask->getResponsePayload().put("subscribed", subscribed);
+    lunaTask->getResponsePayload().put("launchPoints", launchPoints);
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::managerInfo(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue responsePayload = pbnjson::Object();
-    responsePayload.put("returnValue", true);
+    lunaTask->getResponsePayload().put("returnValue", true);
 
 //    pbnjson::JValue apps = pbnjson::Array();
 //    pbnjson::JValue properties = pbnjson::Array();
 //    AppDescriptionList::getInstance().toJson(apps, properties);
-//    responsePayload.put("apps", apps);
+//    lunaTask->getResponsePayload().put("apps", apps);
 //
 //    pbnjson::JValue launchPoints = pbnjson::Array();
 //    LaunchPointList::getInstance().toJson(launchPoints);
-//    responsePayload.put("launchPoints", launchPoints);
+//    lunaTask->getResponsePayload().put("launchPoints", launchPoints);
 
     pbnjson::JValue running = pbnjson::Array();
     RunningAppList::getInstance().toJson(running);
-    responsePayload.put("running", running);
+    lunaTask->getResponsePayload().put("running", running);
 
     pbnjson::JValue lunaTasks = pbnjson::Array();
     LunaTaskList::getInstance().toJson(lunaTasks);
-    responsePayload.put("lunaTasks", lunaTasks);
+    lunaTask->getResponsePayload().put("lunaTasks", lunaTasks);
 
-    lunaTask->reply(responsePayload);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }

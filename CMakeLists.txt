@@ -82,7 +82,7 @@ webos_add_linker_options(ALL --no-undefined)
 # Build the sam executable
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
-webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/setting/SettingsConf.h)
+webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/Environment.h)
 
 include_directories(src)
 include_directories(${PROJECT_BINARY_DIR}/Configured/src)

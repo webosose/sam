@@ -21,7 +21,6 @@
 #include "base/LaunchPoint.h"
 #include "base/RunningApp.h"
 #include "base/RunningAppList.h"
-#include "manager/LifecycleManager.h"
 #include "bus/service/ApplicationManager.h"
 #include "util/JValueUtil.h"
 
@@ -68,17 +67,21 @@ void LSM::onServerStatusChanged(bool isConnected)
 
 bool LSM::onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull())
-        return false;
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    Logger::debug(LSM::getInstance().getClassName(), __FUNCTION__, "lscall", responsePayload.stringify());
-    if (!responsePayload.hasKey("/") || !responsePayload["/"].isArray() || responsePayload["/"].arraySize() < 1)
+    if (subscriptionPayload.isNull())
         return true;
 
-    int arraySize = responsePayload["/"].arraySize();
+    if (!subscriptionPayload.hasKey("/") ||
+        !subscriptionPayload["/"].isArray() ||
+        subscriptionPayload["/"].arraySize() < 1)
+        return true;
+
+    int arraySize = subscriptionPayload["/"].arraySize();
     for (int i = 0; i < arraySize; ++i) {
-        std::string method = responsePayload["/"][i].asString();
+        std::string method = subscriptionPayload["/"][i].asString();
         if (method.compare(NAME_GET_FOREGROUND_APP_INFO) == 0) {
             LSM::getInstance().subscribeGetForegroundAppInfo();
         } else if (method.compare(NAME_GET_RECENTS_APP_LIST) == 0) {
@@ -112,14 +115,17 @@ bool LSM::isFullscreenWindowType(const pbnjson::JValue& foregroundInfo)
     if (!windowGroupOwner)
         return false;
 
-    return SettingsImpl::getInstance().isFullscreenWindowTypes(windowType);
+    return SAMConf::getInstance().isFullscreenWindowTypes(windowType);
 }
 
 bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(LSMessageGetPayload(message));
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
+
     if (subscriptionPayload.isNull())
-        return false;
+        return true;
 
     pbnjson::JValue rawForegroundAppInfo;
     if (!JValueUtil::getValue(subscriptionPayload, "foregroundAppInfo", rawForegroundAppInfo)) {
@@ -171,9 +177,9 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         if (found == false) {
             RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(oldAppId);
             switch (runningApp->getLifeStatus()) {
-            case LifeStatus::FOREGROUND:
-            case LifeStatus::PAUSING:
-                LifecycleManager::getInstance().setAppLifeStatus(oldAppId, "", LifeStatus::BACKGROUND);
+            case LifeStatus::LifeStatus_FOREGROUND:
+            case LifeStatus::LifeStatus_PAUSING:
+                runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
                 break;
 
             default:
@@ -184,7 +190,8 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
     // set foreground
     for (auto& newAppId : newForegroundApps) {
-        LifecycleManager::getInstance().setAppLifeStatus(newAppId, "", LifeStatus::FOREGROUND);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(newAppId);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
 
         if (!RunningAppList::getInstance().isRunning(newAppId)) {
             Logger::info(getInstance().getClassName(), __FUNCTION__, newAppId, "no running info, but received foreground info");
@@ -227,10 +234,13 @@ void LSM::subscribeGetRecentsAppList()
 
 bool LSM::onGetRecentsAppList(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = JDomParser::fromString(LSMessageGetPayload(message));
-    if (responsePayload.isNull())
-        return false;
+    Message response(message);
+    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    LSM::getInstance().EventRecentsAppListChanged(responsePayload);
+    if (subscriptionPayload.isNull())
+        return true;
+
+    LSM::getInstance().EventRecentsAppListChanged(subscriptionPayload);
     return true;
 }

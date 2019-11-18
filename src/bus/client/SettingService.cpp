@@ -20,9 +20,9 @@
 #include <pbnjson.hpp>
 
 #include "base/AppDescriptionList.h"
-#include <bus/client/SettingService.h>
-#include <bus/service/ApplicationManager.h>
-#include <setting/Settings.h>
+#include "bus/client/SettingService.h"
+#include "bus/service/ApplicationManager.h"
+#include "conf/SAMConf.h"
 #include "util/JValueUtil.h"
 
 SettingService::SettingService()
@@ -65,7 +65,13 @@ void SettingService::onServerStatusChanged(bool isConnected)
 
 bool SettingService::onCheckParentalLock(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    if (responsePayload.isNull())
+        return true;
+
     bool returnValue = false;
     string errorText;
 
@@ -142,10 +148,12 @@ Call SettingService::checkParentalLock(LSFilterFunc func, const string& appId)
 
 bool SettingService::onLocaleChanged(LSHandle* sh, LSMessage* message, void* context)
 {
-    LS::Message response(message);
+    Message response(message);
     pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
-
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
+
+    if (subscriptionPayload.isNull())
+        return true;
 
     bool returnValue = true;
     if (!JValueUtil::getValue(subscriptionPayload, "returnValue", returnValue) || !returnValue) {
@@ -173,42 +181,40 @@ void SettingService::updateLocaleInfo(const pbnjson::JValue& settings)
         return;
     }
 
-    if (!localeInfo.empty() && localeInfo != m_localeInfo) {
-        m_localeInfo = localeInfo;
-        setLocaleInfo(m_localeInfo);
+    if (localeInfo.empty() || localeInfo == m_localeInfo) {
+        return;
     }
-}
 
-/// separate the substrings of BCP-47 (langauge-Script-COUNTRY)
-void SettingService::setLocaleInfo(const std::string& locale)
-{
+    m_localeInfo = localeInfo;
     std::string language;
     std::string script;
     std::string region;
 
-    if (locale.empty()) {
+    if (m_localeInfo.empty()) {
         language = "";
         script = "";
         region = "";
     } else {
-        icu::Locale icu_UI_locale = icu::Locale::createFromName(locale.c_str());
+        icu::Locale icu_UI_locale = icu::Locale::createFromName(m_localeInfo.c_str());
         language = icu_UI_locale.getLanguage();
         script = icu_UI_locale.getScript();
         region = icu_UI_locale.getCountry();
     }
 
-    if (language == Settings::getInstance().getLanguage() &&
-        script == Settings::getInstance().getScript() &&
-        region == Settings::getInstance().getRegion()) {
+    if (language == SAMConf::getInstance().getLanguage() &&
+        script == SAMConf::getInstance().getScript() &&
+        region == SAMConf::getInstance().getRegion()) {
+        Logger::info(getClassName(), __FUNCTION__, "Same localization info");
         return;
     }
 
     Logger::info(getClassName(), __FUNCTION__, "Changed Locale",
                  Logger::format("language(%s=>%s) script(%s=>%s) region(%s=>%s)",
-                 Settings::getInstance().getLanguage().c_str(), language.c_str(),
-                 Settings::getInstance().getScript().c_str(), script.c_str(),
-                 Settings::getInstance().getRegion().c_str(), region.c_str()));
+                 SAMConf::getInstance().getLanguage().c_str(), language.c_str(),
+                 SAMConf::getInstance().getScript().c_str(), script.c_str(),
+                 SAMConf::getInstance().getRegion().c_str(), region.c_str()));
 
-    Settings::getInstance().setLocale(language, script, region);
+    SAMConf::getInstance().setLocale(language, script, region);
     AppDescriptionList::getInstance().changeLocale();
+
 }

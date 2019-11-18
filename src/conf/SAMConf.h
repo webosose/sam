@@ -14,38 +14,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef __Settings_h__
-#define __Settings_h__
+#ifndef __CONF_SAM_FONF_H__
+#define __CONF_SAM_FONF_H__
 
-#include <map>
 #include <string>
-#include <utility>
-#include <vector>
-#include <glib.h>
 #include <pbnjson.hpp>
 
-#include "base/AppDescription.h"
+#include "Environment.h"
 #include "interface/IClassName.h"
 #include "interface/ISingleton.h"
-#include "setting/SettingsConf.h"
+#include "util/JValueUtil.h"
+#include "util/Logger.h"
+#include "util/File.h"
 
-class Settings : public ISingleton<Settings>,
-                 public IClassName {
-friend class ISingleton<Settings> ;
+class SAMConf : public ISingleton<SAMConf>,
+                public IClassName {
+friend class ISingleton<SAMConf> ;
 public:
-    virtual ~Settings();
+    virtual ~SAMConf();
 
-    void setLifeCycleReason(const pbnjson::JValue& data);
-    void addLaunchReason(const std::string& caller_id, const std::string& reason, const std::string& launch_reason);
-    std::string getLaunchReason(const std::string& caller_id, const std::string& reason);
-    void addCloseReason(const std::string& caller_id, const std::string& reason, const std::string& close_reason);
-    std::string getCloseReason(const std::string& caller_id, const std::string& reason);
+    void initialize();
 
-    // package related
-    void addAppDir(std::string path, AppLocation type);
-    const map<std::string, AppLocation>& getAppDirs() const
+    /** READ ONLY CONFIGS **/
+
+    JValue getApplicationPaths()
     {
-        return m_appDirs;
+        JValue ApplicationPaths = pbnjson::Array();
+        JValueUtil::getValue(m_readOnlyDatabase, "ApplicationPaths", ApplicationPaths);
+        return ApplicationPaths;
     }
 
     string getAppShellRunnerPath()
@@ -55,25 +51,25 @@ public:
         return AppShellRunnerPath;
     }
 
+    JValue getDBPermission() const
+    {
+        JValue LaunchPointDBPermissions = pbnjson::Object();
+        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBPermissions", LaunchPointDBPermissions);
+        return LaunchPointDBPermissions;
+    }
+
+    JValue getDBSchema() const
+    {
+        JValue LaunchPointDBKind = pbnjson::Object();
+        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBKind", LaunchPointDBKind);
+        return LaunchPointDBKind;
+    }
+
     string getDevModePath()
     {
         string DevModePath = "/var/luna/preferences/devmode_enabled";
         JValueUtil::getValue(m_readOnlyDatabase, "DevModePath", DevModePath);
         return DevModePath;
-    }
-
-    string getRespawnedPath()
-    {
-        string RespawnedPath = "/tmp/sam-respawned";
-        JValueUtil::getValue(m_readOnlyDatabase, "RespawnedPath", RespawnedPath);
-        return RespawnedPath;
-    }
-
-    string getJailModePath()
-    {
-        string JailModePath = "/var/luna/preferences/jailer_disabled";
-        JValueUtil::getValue(m_readOnlyDatabase, "JailModePath", JailModePath);
-        return JailModePath;
     }
 
     string getJailerPath()
@@ -83,11 +79,40 @@ public:
         return JailerPath;
     }
 
+    string getJailModePath()
+    {
+        string JailModePath = "/var/luna/preferences/jailer_disabled";
+        JValueUtil::getValue(m_readOnlyDatabase, "JailModePath", JailModePath);
+        return JailModePath;
+    }
+
     string getQmlRunnerPath()
     {
         string QmlRunnerPath = "/usr/bin/qml-runner";
         JValueUtil::getValue(m_readOnlyDatabase, "QmlRunnerPath", QmlRunnerPath);
         return QmlRunnerPath;
+    }
+
+    string getRespawnedPath()
+    {
+        string RespawnedPath = "/tmp/sam-respawned";
+        JValueUtil::getValue(m_readOnlyDatabase, "RespawnedPath", RespawnedPath);
+        return RespawnedPath;
+    }
+
+    bool isFullscreenWindowTypes(string type)
+    {
+        JValue FullscreenWindowType;
+        if (!JValueUtil::getValue(m_readOnlyDatabase, "FullscreenWindowType", FullscreenWindowType) || !FullscreenWindowType.isArray()) {
+            return false;
+        }
+        int size = FullscreenWindowType.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (FullscreenWindowType[i].asString() == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool isNoJailApp(const std::string& appId) const
@@ -106,33 +131,22 @@ public:
         return false;
     }
 
-    bool isFullscreenWindowTypes(string type)
+    /** READ WRIETE CONFIGS **/
+
+    bool isKeepAliveApp(const std::string& appId) const
     {
-        JValue FullscreenWindowType;
-        if (!JValueUtil::getValue(m_readOnlyDatabase, "FullscreenWindowType", FullscreenWindowType) || !FullscreenWindowType.isArray()) {
+        JValue keepAliveApps;
+        if (!JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) || !keepAliveApps.isArray()) {
             return false;
         }
-        int size = FullscreenWindowType.arraySize();
+
+        int size = keepAliveApps.arraySize();
         for (int i = 0; i < size; ++i) {
-            if (FullscreenWindowType[i].asString() == type) {
+            if (keepAliveApps[i].asString() == appId) {
                 return true;
             }
         }
         return false;
-    }
-
-    JValue getDBSchema() const
-    {
-        JValue LaunchPointDBKind = pbnjson::Object();
-        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBKind", LaunchPointDBKind);
-        return LaunchPointDBKind;
-    }
-
-    JValue getDBPermission() const
-    {
-        JValue LaunchPointDBPermissions = pbnjson::Object();
-        JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBPermissions", LaunchPointDBPermissions);
-        return LaunchPointDBPermissions;
     }
 
     void setKeepAliveApps(const pbnjson::JValue& array)
@@ -168,16 +182,16 @@ public:
         saveReadWriteConf();
     }
 
-    bool isKeepAliveApp(const std::string& appId) const
+    bool isDeletedSystemApp(const std::string& appId) const
     {
-        JValue keepAliveApps;
-        if (!JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) || !keepAliveApps.isArray()) {
+        JValue deletedSystemApps;
+        if (!JValueUtil::getValue(m_readWriteDatabase, "deletedSystemApps", deletedSystemApps) || !deletedSystemApps.isArray()) {
             return false;
         }
 
-        int size = keepAliveApps.arraySize();
+        int size = deletedSystemApps.arraySize();
         for (int i = 0; i < size; ++i) {
-            if (keepAliveApps[i].asString() == appId) {
+            if (deletedSystemApps[i].asString() == appId) {
                 return true;
             }
         }
@@ -198,20 +212,11 @@ public:
         saveReadWriteConf();
     }
 
-    bool isDeletedSystemApp(const std::string& appId) const
+    bool isSupportQmlBooster()
     {
-        JValue deletedSystemApps;
-        if (!JValueUtil::getValue(m_readWriteDatabase, "deletedSystemApps", deletedSystemApps) || !deletedSystemApps.isArray()) {
-            return false;
-        }
-
-        int size = deletedSystemApps.arraySize();
-        for (int i = 0; i < size; ++i) {
-            if (deletedSystemApps[i].asString() == appId) {
-                return true;
-            }
-        }
-        return false;
+        bool isSupportQmlBooster = false;
+        JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster);
+        return isSupportQmlBooster;
     }
 
     void setSupportQMLBooster(bool value)
@@ -254,13 +259,6 @@ public:
         saveReadWriteConf();
     }
 
-    bool isSupportQmlBooster()
-    {
-        bool isSupportQmlBooster = false;
-        JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster);
-        return isSupportQmlBooster;
-    }
-
     bool isRespawned()
     {
         return m_isRespawned;
@@ -277,14 +275,11 @@ public:
     }
 
 private:
-    Settings();
+    SAMConf();
 
-    bool loadReadOnlyConf();
+    void loadReadOnlyConf();
     void loadReadWriteConf();
     void saveReadWriteConf();
-
-    map<std::string, AppLocation> m_appDirs;
-    vector<std::string> m_devAppsPaths;
 
     JValue m_readOnlyDatabase;
     JValue m_readWriteDatabase;
@@ -294,7 +289,5 @@ private:
     bool m_isJailerDisabled;
 };
 
-typedef ISingleton<Settings> SettingsImpl;
-
-#endif // Settings
+#endif // __CONF_SAM_FONF_H__
 
