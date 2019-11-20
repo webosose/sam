@@ -31,16 +31,17 @@ public:
     virtual ~LunaTaskList();
 
     LunaTaskPtr create();
-    LunaTaskPtr add(LunaTaskPtr lunaTask);
 
     LunaTaskPtr getByKindAndId(const char* kind, const string& appId);
     LunaTaskPtr getByAppId(const string& appId);
     LunaTaskPtr getByInstanceId(const string& instanceId);
     LunaTaskPtr getByToken(const LSMessageToken& token);
 
-    void removeAboutWAM();
-    void removeAboutLSM();
-    void removeAfterReply(LunaTaskPtr lunaTask);
+    bool add(LunaTaskPtr lunaTask);
+    bool removeAboutWAM();
+    bool removeAboutLSM();
+    bool removeAfterReply(LunaTaskPtr lunaTask);
+
     void toJson(JValue& array);
 
 private:

@@ -27,105 +27,226 @@ RunningAppList::~RunningAppList()
 {
 }
 
-RunningAppPtr RunningAppList::create(LaunchPointPtr launchPoint)
+RunningAppPtr RunningAppList::createByAppId(const string& appId)
 {
-    RunningAppPtr runningApp = std::make_shared<RunningApp>(launchPoint);
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(appId);
+    if (launchPoint == nullptr) {
+        Logger::warning(getClassName(), __FUNCTION__, "Cannot find proper launchPoint");
+        return nullptr;
+    }
+    return createByLaunchPoint(launchPoint);
+}
+
+RunningAppPtr RunningAppList::createByLaunchPoint(LaunchPointPtr launchPoint)
+{
+    RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
     if (runningApp == nullptr) {
-        Logger::error(getClassName(), __FUNCTION__, "failed_create_new_app_info");
+        Logger::error(getClassName(), __FUNCTION__, "Failed to create new RunningApp");
         return nullptr;
     }
     return runningApp;
 }
 
-RunningAppPtr RunningAppList::add(RunningAppPtr runningApp)
+RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
 {
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+    if (launchPoint == nullptr) {
+        Logger::warning(getClassName(), __FUNCTION__, "Cannot find proper launchPoint");
+        return nullptr;
+    }
+    return createByLaunchPoint(launchPoint);
+}
+
+RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
+{
+    string appId = lunaTask->getAppId();
+    string launchPointId = lunaTask->getLaunchPointId();
+    string instanceId = lunaTask->getInstanceId();
+
+    return getByIds(instanceId, launchPointId, appId);
+}
+
+RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& launchPointId, const string& appId)
+{
+    RunningAppPtr runningApp = nullptr;
+    if (!instanceId.empty())
+        runningApp = getByInstanceId(instanceId);
+    else if (!launchPointId.empty())
+        runningApp = getByLaunchPointId(launchPointId);
+    else if (!appId.empty())
+        runningApp = getByAppId(appId);
+
     if (runningApp == nullptr)
         return nullptr;
 
-    m_list.push_back(runningApp);
-    ApplicationManager::getInstance().postRunning(runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp());
+    if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
+        return nullptr;
+    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
+            return nullptr;
+    if (!appId.empty() && appId != runningApp->getAppId())
+            return nullptr;
     return runningApp;
 }
 
-RunningAppPtr RunningAppList::getByAppId(const string& appId, bool createIfNotExist)
+RunningAppPtr RunningAppList::getByInstanceId(const string& launchPointId)
 {
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLaunchPoint()->getAppDesc()->getAppId() == appId)
-            return *it;
+    if (m_map.find(launchPointId) == m_map.end()) {
+        return nullptr;
     }
-
-    if (!createIfNotExist)
-        return nullptr;
-
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(appId);
-    if (launchPoint == nullptr)
-        return nullptr;
-    RunningAppPtr runningApp = create(launchPoint);
-    add(runningApp);
-    return runningApp;
+    return m_map[launchPointId];
 }
 
 RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId)
 {
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLaunchPoint()->getLaunchPointId() == launchPointId)
-            return *it;
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getLaunchPointId() == launchPointId) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
+RunningAppPtr RunningAppList::getByAppId(const string& appId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getAppId() == appId) {
+            return it->second;
+        }
     }
     return nullptr;
 }
 
 RunningAppPtr RunningAppList::getByPid(const string& pid)
 {
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getPid() == pid)
-            return *it;
-    }
-    return nullptr;
-}
-
-RunningAppPtr RunningAppList::getByInstanceId(const string& launchPointId)
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getInstanceId() == launchPointId)
-            return *it;
-    }
-    return nullptr;
-}
-
-RunningAppPtr RunningAppList::getForeground()
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND)
-            return *it;
-    }
-    return nullptr;
-}
-
-void RunningAppList::remove(RunningAppPtr runningApp)
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it) == runningApp) {
-            m_list.erase(it);
-            ApplicationManager::getInstance().postRunning(runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp());
-            return;
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getProcessId() == pid) {
+            return it->second;
         }
     }
+    return nullptr;
 }
 
-void RunningAppList::removeByAppId(const string& appId)
+bool RunningAppList::add(RunningAppPtr runningApp)
 {
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLaunchPoint()->getAppDesc()->getAppId() == appId) {
-            m_list.erase(it);
-            ApplicationManager::getInstance().postRunning((*it)->getLaunchPoint()->getAppDesc()->isDevmodeApp());
-            return;
+    if (runningApp == nullptr)
+        return false;
+
+    // TODO This is temp solution before supporting instanceId fully
+    if (runningApp->getInstanceId().empty()) {
+        runningApp->setInstanceId(Time::generateUid());
+        Logger::warning(getClassName(), __FUNCTION__, runningApp->getInstanceId(), "InstanceId is generated automatically");
+    }
+    if (m_map.find(runningApp->getInstanceId()) != m_map.end()) {
+        Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId(), "InstanceId is already exist");
+        return false;
+    }
+    onAdd(runningApp);
+    m_map[runningApp->getInstanceId()] = runningApp;
+    return true;
+}
+
+bool RunningAppList::removeByObject(RunningAppPtr runningApp)
+{
+    if (runningApp == nullptr)
+        return false;
+
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second == runningApp) {
+            RunningAppPtr runningApp = it->second;
+            m_map.erase(it);
+            onRemove(runningApp);
+            return true;
         }
     }
+    return false;
 }
 
-bool RunningAppList::isRunning(const string& appId)
+bool RunningAppList::removeByIds(const string& instanceId, const string& launchPointId, const string& appId)
 {
-    return (getByAppId(appId) != nullptr);
+    RunningAppPtr runningApp = nullptr;
+    if (!instanceId.empty())
+        runningApp = getByInstanceId(instanceId);
+    else if (!launchPointId.empty())
+        runningApp = getByLaunchPointId(launchPointId);
+    else if (!appId.empty())
+        runningApp = getByAppId(appId);
+
+    if (runningApp == nullptr)
+        return false;
+
+    if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
+        return false;
+    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
+        return false;
+    if (!appId.empty() && appId != runningApp->getAppId())
+        return false;
+    return removeByObject(runningApp);
+}
+
+bool RunningAppList::removeByInstanceId(const string& instanceId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getInstanceId() == instanceId) {
+            RunningAppPtr runningApp = it->second;
+            m_map.erase(it);
+            onRemove(runningApp);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RunningAppList::revmoeByLaunchPointId(const string& launchPointId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getLaunchPointId() == launchPointId) {
+            RunningAppPtr runningApp = it->second;
+            m_map.erase(it);
+            onRemove(runningApp);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RunningAppList::removeByAppId(const string& appId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getAppId() == appId) {
+            RunningAppPtr runningApp = it->second;
+            m_map.erase(it);
+            onRemove(runningApp);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RunningAppList::removeByLaunchPoint(LaunchPointPtr launchPoint)
+{
+    for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
+        if (it->second->getLaunchPoint() == launchPoint) {
+            RunningAppPtr runningApp = it->second;
+            it = m_map.erase(it);
+            onRemove(runningApp);
+        } else {
+            ++it;
+        }
+    }
+    return true;
+}
+
+bool RunningAppList::removeByPid(const string& processId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getProcessId() == processId) {
+            RunningAppPtr runningApp = it->second;
+            m_map.erase(it);
+            onRemove(runningApp);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool RunningAppList::isForeground(const string& appId)
@@ -135,18 +256,40 @@ bool RunningAppList::isForeground(const string& appId)
     return (runningApp->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND);
 }
 
+bool RunningAppList::isExist(const string& instanceId)
+{
+    if (m_map.count(instanceId) == 0)
+        return false;
+    return true;
+}
+
 void RunningAppList::toJson(JValue& array, bool devmodeOnly)
 {
     if (!array.isArray())
         return;
 
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if (devmodeOnly && AppLocation::AppLocation_Devmode != (*it)->getLaunchPoint()->getAppDesc()->getAppLocation()) {
-            continue;
-        }
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if (devmodeOnly && AppLocation::AppLocation_Devmode != it->second->getLaunchPoint()->getAppDesc()->getAppLocation()) {
+             continue;
+         }
 
-        pbnjson::JValue object = pbnjson::Object();
-        (*it)->toJson(object);
-        array.append(object);
+         pbnjson::JValue object = pbnjson::Object();
+         it->second->toJson(object, false);
+         array.append(object);
     }
+}
+
+void RunningAppList::onAdd(RunningAppPtr runningApp)
+{
+    Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId() + " is added");
+    // Comment : Following code is commented because of backward compatiblity
+    // SAM tries to send subscription when application become foreground.
+    // ApplicationManager::getInstance().postRunning(runningApp);
+}
+
+void RunningAppList::onRemove(RunningAppPtr runningApp)
+{
+    Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId() + " is removed");
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_STOP);
+    ApplicationManager::getInstance().postRunning(runningApp);
 }

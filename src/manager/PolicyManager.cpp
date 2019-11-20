@@ -29,9 +29,19 @@ PolicyManager::~PolicyManager()
 
 void PolicyManager::launch(LunaTaskPtr lunaTask)
 {
-    printf("Step = %s\n", lunaTask->getNextStep().c_str());
+    if (!lunaTask->getNextStep().empty())
+        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
     if (lunaTask->getAPICallback().empty()) {
         lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
+    }
+
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
+    if (runningApp == nullptr) {
+        runningApp = RunningAppList::getInstance().createByAppId(lunaTask->getAppId());
+        runningApp->setInstanceId(lunaTask->getUuid());
+        runningApp->loadRequestPayload(lunaTask->getRequestPayload());
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
+        RunningAppList::getInstance().add(runningApp);
     }
 
     if (lunaTask->getNextStep().empty()) {
@@ -39,28 +49,18 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         checkExecutionLock(lunaTask);
     } else if (lunaTask->getNextStep() == "Check Memory Status") {
         lunaTask->setNextStep("Launch App");
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId(), true);
-        // TODO
-        //LifecycleManager::getInstance().generateLifeCycleEvent(lunaTask->getAppId(), lunaTask->getInstanceId(), LifeEvent::SPLASH);
         MemoryManager::getInstance().requireMemory(lunaTask);
     } else if (lunaTask->getNextStep() == "Launch App") {
         lunaTask->setNextStep("Complete");
-
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
         runningApp->launch(lunaTask);
     } else {
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
     }
 }
 
-void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
-{
-
-}
-
 void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
 {
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(lunaTask->getAppId());
+    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(lunaTask->getAppId());
     if (appDesc == nullptr || appDesc->isLocked()) {
         Logger::error("PrelauncherStage", __FUNCTION__, lunaTask->getAppId(), "app is locked");
         lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
@@ -68,6 +68,5 @@ void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
         // TODO reply error
         // return false;
     }
-
     lunaTask->getAPICallback()(lunaTask);
 }

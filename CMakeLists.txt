@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2018 LG Electronics, Inc.
+# Copyright (c) 2012-2019 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,6 +50,10 @@ pkg_check_modules(LUNASERVICE2CPP REQUIRED luna-service2++)
 include_directories(${LUNASERVICE2CPP_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${LUNASERVICE2CPP_CFLAGS_OTHER})
 
+pkg_check_modules(PBNJSON_C REQUIRED pbnjson_c)
+include_directories(${PBNJSON_C_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${PBNJSON_C_CFLAGS_OTHER})
+
 pkg_check_modules(PBNJSON_CPP REQUIRED pbnjson_cpp)
 include_directories(${PBNJSON_CPP_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${PBNJSON_CPP_CFLAGS_OTHER})
@@ -91,6 +95,7 @@ add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 set(LIBS
     ${GLIB2_LDFLAGS}
     ${GIO2_LDFLAGS}
+    ${PBNJSON_C_LDFLAGS}
     ${PBNJSON_CPP_LDFLAGS}
     ${LUNASERVICE2_LDFLAGS}
     ${LUNASERVICE2CPP_LDFLAGS}

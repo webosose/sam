@@ -17,13 +17,14 @@
 #ifndef BUS_CLIENT_WAM_H_
 #define BUS_CLIENT_WAM_H_
 
+#include <luna-service2/lunaservice.hpp>
+#include <boost/signals2.hpp>
+#include <pbnjson.hpp>
+
 #include "AbsLunaClient.h"
 #include "base/LunaTask.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
-#include <luna-service2/lunaservice.hpp>
-#include <boost/signals2.hpp>
-#include <pbnjson.hpp>
 #include "util/Logger.h"
 
 using namespace LS;
@@ -36,8 +37,8 @@ public:
     virtual ~WAM();
 
     void discardCodeCache();
-    bool launchApp(LunaTaskPtr lunaTask);
-    bool killApp(LunaTaskPtr lunaTask);
+    bool launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
 
 protected:
     // AbsLunaClient
@@ -46,18 +47,19 @@ protected:
 
 private:
     static bool onListRunningApps(LSHandle* sh, LSMessage* message, void* context);
-
     static bool onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context);
     static bool onLaunchApp(LSHandle* sh, LSMessage* message, void* context);
-    static bool onKillApp(LSHandle* sh, LSMessage* message, void* context);
     static bool onPauseApp(LSHandle* sh, LSMessage* message, void* context);
+    static bool onKillApp(LSHandle* sh, LSMessage* message, void* context);
 
     WAM();
+
+    bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
 
     Call m_listRunningAppsCall;
     Call m_discardCodeCacheCall;
 
-    pbnjson::JValue m_prevRunning;
 };
 
 #endif /* BUS_CLIENT_WAM_H_ */

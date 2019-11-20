@@ -36,7 +36,7 @@ using namespace pbnjson;
 class LunaTask;
 class LunaTaskList;
 
-typedef std::shared_ptr<LunaTask> LunaTaskPtr;
+typedef shared_ptr<LunaTask> LunaTaskPtr;
 typedef boost::function<void(LunaTaskPtr)> LunaTaskCallback;
 
 class LunaTask {
@@ -51,30 +51,21 @@ public:
           m_params(pbnjson::Object()),
           m_errorCode(ErrCode_UNKNOWN),
           m_errorText(""),
-          m_pid(""),
           m_reason(""),
-          m_preload(""),
-          m_stopTime(0)
+          m_preload("")
     {
-        if (m_request.getApplicationID() != nullptr){
-            m_caller = m_request.getApplicationID();
-        }
-
-        if (m_caller.empty()) {
-            m_caller = m_request.getSenderServiceName();
-        }
-
-        size_t index = m_caller.find(" ");
-        if (std::string::npos != index) {
-            m_callerId = m_caller.substr(0, index);
-            m_callerPid = m_caller.substr(index + 1);
-        }
+        m_uuid = Time::generateUid();
         m_startTime = Time::getCurrentTime();
     }
 
     virtual ~LunaTask()
     {
 
+    }
+
+    const string& getUuid()
+    {
+        return m_uuid;
     }
 
     LSHandle* getHandle() const
@@ -116,91 +107,68 @@ public:
         return m_params;
     }
 
-    void setErrCodeAndText(int errorCode, std::string errorText)
+    void setErrCodeAndText(int errorCode, string errorText)
     {
         m_errorCode = errorCode;
         m_errorText = errorText;
         m_responsePayload.put("returnValue", false);
+        Logger::warning("LunaTask", __FUNCTION__, Logger::format("errorCode(%d) errorText(%s)", errorCode, errorText.c_str()));
     }
 
-    const std::string getInstanceId() const
+    const string getInstanceId() const
     {
         string instanceId = "";
         JValueUtil::getValue(m_requestPayload, "instanceId", instanceId);
         return instanceId;
     }
 
-    const std::string getLaunchPointId() const
+    const string getLaunchPointId() const
     {
         string launchPointId = "";
         JValueUtil::getValue(m_requestPayload, "launchPointId", launchPointId);
         return launchPointId;
     }
 
-    const std::string getAppId() const
+    const string getAppId() const
     {
         string appId = "";
         JValueUtil::getValue(m_requestPayload, "id", appId);
         return appId;
     }
 
-    const std::string& getPid() const
+    const string getCaller(bool removePostfix = false) const
     {
-        return m_pid;
-    }
-    void setPid(const std::string& pid)
-    {
-        m_pid = pid;
+        string url = "";
+        if (m_request.getApplicationID() != nullptr){
+            url = m_request.getApplicationID();
+        } else {
+            url = m_request.getSenderServiceName();
+        }
+
+        size_t index = url.find(" ");
+        if (string::npos != index) {
+            return url.substr(0, index);
+        }
+        index = url.find("-");
+        if (string::npos != index) {
+            return url.substr(0, index);
+        }
+        return url;
     }
 
-    const std::string getCaller() const
-    {
-        return m_caller;
-    }
-
-    const std::string& getCallerId() const
-    {
-        return m_callerId;
-    }
-
-    const std::string& getCallerPid() const
-    {
-        return m_callerPid;
-    }
-
-    const std::string& getReason() const
+    const string& getReason() const
     {
         return m_reason;
     }
-    void setReason(const std::string& reason)
+    void setReason(const string& reason)
     {
         m_reason = reason;
     }
 
-    const std::string& getPreload() const
+    double getTimeStampMS() const
     {
-        return m_preload;
-    }
-    void setPreload(const std::string& preload)
-    {
-        m_preload = preload;
-    }
-
-    bool isKeepAlive() const
-    {
-        bool keepAlive = false;
-        JValueUtil::getValue(m_requestPayload, "keepAlive", keepAlive);
-        return keepAlive;
-    }
-
-    double getTotalTime() const
-    {
-        return m_stopTime- m_startTime;
-    }
-
-    void stopTime()
-    {
-        m_stopTime = Time::getCurrentTime();
+        double now = Time::getCurrentTime();
+        return (now - m_startTime) / 10000000;
     }
 
     LunaTaskCallback getAPICallback()
@@ -212,11 +180,11 @@ public:
         m_APICallback = callback;
     }
 
-    const std::string& getNextStep() const
+    const string& getNextStep() const
     {
         return m_nextStep;
     }
-    void setNextStep(const std::string& next)
+    void setNextStep(const string& next)
     {
         m_nextStep = next;
     }
@@ -248,6 +216,7 @@ private:
         m_request.respond(m_responsePayload.stringify().c_str());
     }
 
+    string m_uuid;
     LSHandle* m_handle;
     LS::Message m_request;
     LSMessageToken m_token;
@@ -259,16 +228,10 @@ private:
     int m_errorCode;
     string m_errorText;
 
-    string m_pid;
-
-    string m_caller;
-    string m_callerId;
-    string m_callerPid;
     string m_reason;
     string m_preload;
 
     double m_startTime;
-    double m_stopTime;
 
     LunaTaskCallback m_APICallback;
     string m_nextStep;

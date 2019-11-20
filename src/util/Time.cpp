@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <util/Time.h>
+#include "Time.h"
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -40,8 +40,8 @@ double Time::getCurrentTime()
     return (double) current_time.tv_sec * NANO_SECOND + (double) current_time.tv_nsec;
 }
 
-std::string Time::generateUid()
+string Time::generateUid()
 {
     boost::uuids::uuid uid = boost::uuids::random_generator()();
-    return std::string(boost::lexical_cast<std::string>(uid));
+    return string(boost::lexical_cast<string>(uid));
 }

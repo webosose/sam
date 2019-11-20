@@ -30,6 +30,14 @@ void Logger::logAPIRequest(const string& className, const string& functionName, 
         getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), requestPayload.stringify("    "));
 }
 
+void Logger::logAPIResponse(const string& className, const string& functionName, Message& request, JValue& responsePayload)
+{
+    if (request.getSenderServiceName())
+        getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), responsePayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), responsePayload.stringify("    "));
+}
+
 void Logger::logCallRequest(const string& className, const string& functionName, const string& method, JValue& requestPayload)
 {
     getInstance().write(LogLevel_INFO, className, functionName, "CallRequest", method.c_str(), requestPayload.stringify("    "));
@@ -124,7 +132,7 @@ const string& Logger::toString(const enum LogLevel& level)
 }
 
 Logger::Logger()
-    : m_level(LogLevel_DEBUG),
+    : m_level(LogLevel_INFO),
       m_type(LogType_CONSOLE)
 {
 }

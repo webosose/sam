@@ -19,21 +19,19 @@
 
 #include <sstream>
 #include <fstream>
-
 #include <gio/gio.h>
-#include <MainDaemon.h>
+
+#include "MainDaemon.h"
 #include "util/Logger.h"
 #include "util/File.h"
 
-MainDaemon service;
-
-static const char* LOG_NAME = "Main";
+static const char* CLASS_NAME = "Main";
 
 void signal_handler(int signal, siginfo_t *siginfo, void *context)
 {
-    std::string buf;
-    std::stringstream stream;
-    std::string sender_pid, sender_cmdline;
+    string buf;
+    stringstream stream;
+    string sender_pid, sender_cmdline;
     int si_code;
 
     // abstract sender_pid from struct
@@ -42,29 +40,29 @@ void signal_handler(int signal, siginfo_t *siginfo, void *context)
     sender_cmdline = "/proc/" + sender_pid + "/cmdline";
     si_code = siginfo->si_code;
 
-    Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender_pid(%s) sender_cmdline(%s)", signal, si_code, sender_pid.c_str(), sender_cmdline.c_str()));
+    Logger::warning(CLASS_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender_pid(%s) sender_cmdline(%s)", signal, si_code, sender_pid.c_str(), sender_cmdline.c_str()));
     buf = File::readFile(sender_cmdline.c_str());
     if (buf.empty()) {
-        Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) si_pid(%d), si_uid(%d)", signal, si_code, siginfo->si_pid, siginfo->si_uid));
+        Logger::warning(CLASS_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) si_pid(%d), si_uid(%d)", signal, si_code, siginfo->si_pid, siginfo->si_uid));
         goto Done;
     }
 
-    Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender(%s) si_pid(%d), si_uid(%d)", signal, si_code, buf.c_str(), siginfo->si_pid, siginfo->si_uid));
+    Logger::warning(CLASS_NAME, __FUNCTION__, Logger::format("signal(%d) si_code(%d) sender(%s) si_pid(%d), si_uid(%d)", signal, si_code, buf.c_str(), siginfo->si_pid, siginfo->si_uid));
 
 Done:
     if (signal == SIGHUP || signal == SIGINT || signal == SIGPIPE) {
-        Logger::warning(LOG_NAME, __FUNCTION__, "Ignore received signal");
+        Logger::warning(CLASS_NAME, __FUNCTION__, "Ignore received signal");
         return;
     } else {
-        Logger::warning(LOG_NAME, __FUNCTION__, "Try to terminate SAM process");
+        Logger::warning(CLASS_NAME, __FUNCTION__, "Try to terminate SAM process");
     }
 
-    service.stop();
+    MainDaemon::getInstance().stop();
 }
 
 int main(int argc, char **argv)
 {
-    Logger::info(LOG_NAME, __FUNCTION__, "Start SAM process");
+    Logger::info(CLASS_NAME, __FUNCTION__, "Start SAM process");
 
     // tracking sender if we get some signal
     struct sigaction act;
@@ -83,7 +81,7 @@ int main(int argc, char **argv)
     sigaction(SIGABRT, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
 
-    service.start();
+    MainDaemon::getInstance().start();
 
     return EXIT_SUCCESS;
 }

@@ -18,6 +18,7 @@
 
 #include "bus/client/WAM.h"
 #include "bus/client/Booster.h"
+#include "bus/client/NativeContainer.h"
 #include "util/LinuxProcess.h"
 
 const string RunningApp::CLASS_NAME = "RunningApp";
@@ -33,6 +34,9 @@ const char* RunningApp::toString(LifeStatus status)
 
     case LifeStatus::LifeStatus_PRELOADING:
         return "preloading";
+
+    case LifeStatus::LifeStatus_SPLASHING:
+        return "splashing";
 
     case LifeStatus::LifeStatus_LAUNCHING:
         return "launching";
@@ -60,14 +64,19 @@ const char* RunningApp::toString(LifeStatus status)
 
 RunningApp::RunningApp(LaunchPointPtr launchPoint)
     : m_launchPoint(launchPoint),
-      m_isPreloadMode(false),
+      m_instanceId(""),
+      m_processId(""),
+      m_webprocid(""),
+      m_displayId(-1),
       m_interfaceVersion(1),
       m_isRegistered(false),
       m_killingTimer(0),
       m_lastLaunchTime(0),
-      m_lifeStatus(LifeStatus::LifeStatus_STOP)
+      m_lifeStatus(LifeStatus::LifeStatus_STOP),
+      m_keepAlive(false),
+      m_noSplash(true),
+      m_spinner(true)
 {
-    m_requestPayload = pbnjson::Object();
 }
 
 RunningApp::~RunningApp()
@@ -75,147 +84,107 @@ RunningApp::~RunningApp()
     stopKillingTimer();
 }
 
-bool RunningApp::launch(LunaTaskPtr lunaTask)
+void RunningApp::launch(LunaTaskPtr lunaTask)
 {
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getHandlerType();
+    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
 
-    if (LifeStatus::LifeStatus_LAUNCHING == getLifeStatus()) {
-        // TODO this is already launching
-        return false;
+    if (LifeStatus::LifeStatus_LAUNCHING == m_lifeStatus) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already launching");
+        lunaTask->getResponsePayload().put("returnValue", true);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
     }
 
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
+        NativeContainer::getInstance().launch(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().launchApp(lunaTask);
+        setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
+        WAM::getInstance().launchApp(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Booster:
+        Booster::getInstance().launch(*this, lunaTask);
         break;
 
     default:
         break;
     }
-    return true;
 }
 
-bool RunningApp::close(LunaTaskPtr lunaTask)
+void RunningApp::close(LunaTaskPtr lunaTask)
 {
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getHandlerType();
-
-//    if (RuntimeStatus::RuntimeStatus_CLOSING == getRuntimeStatus()) {
-//        // TODO this is already closing status
-//        return false;
-//    }
-
-    if (getLifeStatus() == LifeStatus::LifeStatus_CLOSING) {
-        // TODO this is already closing status
-        return false;
+    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
+    if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
+        lunaTask->getResponsePayload().put("returnValue", true);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
     }
 
-//    SAM::getInstance().EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::CLOSING);
-//    SAM::getInstance().startTimerToKillApp(client->getAppId(), client->getPid(), allPids, TIMEOUT_1_SECOND);
-    pbnjson::JValue payload = pbnjson::Object();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
-        if (!m_isRegistered) {
-            if (!LinuxProcess::sendSigKill(m_pid)) {
-                lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
-                LunaTaskList::getInstance().removeAfterReply(lunaTask);
-                return false;
-            }
-            break;
-        }
-
-        payload.put("event", "close");
-        payload.put("reason", lunaTask->getReason());
-        payload.put("returnValue", true);
-        sendEvent(payload);
-
-        if (!LinuxProcess::sendSigTerm(m_pid)) {
-            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
-            return false;
-        }
-
-        if (lunaTask->getReason() == "memoryReclaim") {
-            startKillingTimer(1000);
-        } else {
-            startKillingTimer(10000);
-        }
+        setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+        NativeContainer::getInstance().close(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().killApp(lunaTask);
+        WAM::getInstance().close(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Booster:
+        setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+        Booster::getInstance().close(*this, lunaTask);
         break;
 
     default:
         break;
     }
-    return true;
+    return;
 }
 
-bool RunningApp::registerApp(LunaTaskPtr lunaTask)
+void RunningApp::registerApp(LunaTaskPtr lunaTask)
 {
-    if (isRegistered()) {
+    if (m_isRegistered) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The app is already registered");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return false;
+        return;
     }
 
-//    NativeAppLifeHandler::getInstance().registerApp(appId, message, errorText);
-//
-//
-//    clientInfo->Register(message);
-//
-//    pbnjson::JValue payload = pbnjson::Object();
-//    payload.put("returnValue", true);
-//
-//    if (clientInfo->getInterfaceVersion() == 2)
-//        payload.put("event", "registered");
-//    else
-//        payload.put("message", "registered");
-//
-//    if (clientInfo->sendEvent(payload) == false) {
-//        Logger::warning(getClassName(), __FUNCTION__, appId, "failed_to_send_registered_event");
-//    }
-//
-//    Logger::info(getClassName(), __FUNCTION__, appId, "connected");
-//
-//    // update life status
-//    EventAppLifeStatusChanged(appId, "", RuntimeStatus::REGISTERED);
-//
-//    handlePendingQOnRegistered(appId);
+    m_client = lunaTask->getRequest();
+    m_isRegistered = true;
 
-    return true;
+    JValue payload = pbnjson::Object();
+    if (m_interfaceVersion == 1) {
+        payload.put("message", "registered");
+    } else if (m_interfaceVersion == 2) {
+        payload.put("event", "registered");
+    }
+
+    if (!sendEvent(payload)) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "Failed to register application");
+        m_isRegistered = false;
+        return;
+    }
+    Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Application is registered");
 }
 
-bool RunningApp::sendEvent(pbnjson::JValue& payload)
+bool RunningApp::sendEvent(pbnjson::JValue& responsePayload)
 {
     if (!m_isRegistered) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "app_is_not_registered");
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "RunningApp is not registered");
         return false;
     }
 
-    if (payload.isObject() && payload.hasKey("returnValue") == false) {
-        payload.put("returnValue", true);
-    }
-
-    LSErrorSafe lserror;
-//    if (!LSMessageRespond(m_request, payload.stringify().c_str(), &lserror)) {
-//        Logger::error(CLASS_NAME, __FUNCTION__, m_instanceId, "respond");
-//        return false;
-//    }
-
+    responsePayload.put("returnValue", true);
+    Logger::logAPIResponse(CLASS_NAME, __FUNCTION__, m_client, responsePayload);
+    m_client.respond(responsePayload.stringify().c_str());
     return true;
 }
 
-string RunningApp::getLaunchParams(LunaTaskPtr item)
+string RunningApp::getLaunchParams(LunaTaskPtr lunaTask)
 {
     JValue params = pbnjson::Object();
     AppType type = this->getLaunchPoint()->getAppDesc()->getAppType();
@@ -223,26 +192,25 @@ string RunningApp::getLaunchParams(LunaTaskPtr item)
     if (AppType::AppType_Native_Qml == type) {
         params.put("main", this->getLaunchPoint()->getAppDesc()->getAbsMain());
     }
-    if (!item->getPreload().empty()) {
-        params.put("preload", item->getPreload());
+    if (!m_preload.empty()) {
+        params.put("preload", m_preload);
     }
-
     if (m_interfaceVersion == 1) {
         if (AppType::AppType_Native_Qml == type) {
             params.put("appId", this->getLaunchPoint()->getAppDesc()->getAppId());
-            params.put("params", item->getParams());
+            params.put("params", lunaTask->getParams());
         } else {
-            params = item->getParams().duplicate();
-            params.put("nid", item->getAppId());
+            params = lunaTask->getParams().duplicate();
+            params.put("nid", lunaTask->getAppId());
             params.put("@system_native_app", true);
         }
     } else {
         params.put("event", "launch");
-        params.put("reason", item->getReason());
-        params.put("appId", item->getAppId());
+        params.put("reason", lunaTask->getReason());
+        params.put("appId", lunaTask->getAppId());
         params.put("interfaceVersion", 2);
         params.put("interfaceMethod", "registerApp");
-        params.put("parameters", item->getParams());
+        params.put("parameters", lunaTask->getParams());
         params.put("@system_native_app", true);
     }
     return params.stringify();
@@ -251,42 +219,48 @@ string RunningApp::getLaunchParams(LunaTaskPtr item)
 JValue RunningApp::getRelaunchParams(LunaTaskPtr lunaTask)
 {
     JValue params = pbnjson::Object();
-    params.put("event", "relaunch");
-    params.put("parameters", lunaTask->getParams());
     params.put("returnValue", true);
 
-    if (m_interfaceVersion == 2) {
+    if (m_interfaceVersion == 1) {
+        params.put("message", "relaunch");
+        params.put("parameters", lunaTask->getParams());
+    } else if (m_interfaceVersion == 2) {
+        params.put("event", "relaunch");
+        params.put("parameters", lunaTask->getParams());
         params.put("reason", lunaTask->getReason());
         params.put("appId", lunaTask->getAppId());
     }
     return params;
 }
 
-void RunningApp::setLifeStatus(const LifeStatus& lifeStatus)
+void RunningApp::setLifeStatus(LifeStatus lifeStatus)
 {
-    switch (lifeStatus) {
-    case LifeStatus::LifeStatus_LAUNCHING:
-    case LifeStatus::LifeStatus_RELAUNCHING:
-        setPreloadMode(false);
-        break;
-
-    case LifeStatus::LifeStatus_PRELOADING:
-        setPreloadMode(true);
-        break;
-
-    case LifeStatus::LifeStatus_STOP:
-    case LifeStatus::LifeStatus_FOREGROUND:
-        setPreloadMode(false);
-        break;
-
-    case LifeStatus::LifeStatus_PAUSING:
-        break;
-
-    default:
-        break;
+    if (m_lifeStatus == lifeStatus) {
+        Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, Logger::format("Same lifeStatus(%s)", toString(lifeStatus)));
+        return;
     }
+    if (lifeStatus == LifeStatus::LifeStatus_STOP) {
+        if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING)
+            Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by SAM");
+        else
+            Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by itself");
+    }
+
+    if(m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND && lifeStatus == LifeStatus::LifeStatus_LAUNCHING) {
+        // This is fake relaunching status. Currently, application doesn't change its status
+        Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
+                     Logger::format("%s ==> %s", toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
+        m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
+        ApplicationManager::getInstance().postGetAppLifeStatus(*this);
+        lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
+    } else if (isRunning() && lifeStatus == LifeStatus::LifeStatus_LAUNCHING) {
+        lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
+    }
+    Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
+                 Logger::format("%s ==> %s", toString(m_lifeStatus), toString(lifeStatus)));
     m_lifeStatus = lifeStatus;
     ApplicationManager::getInstance().postGetAppLifeStatus(*this);
+    ApplicationManager::getInstance().postGetAppLifeEvents(*this);
 }
 
 gboolean RunningApp::onKillingTimer(gpointer context)
@@ -296,7 +270,7 @@ gboolean RunningApp::onKillingTimer(gpointer context)
         return FALSE;
     }
 
-    LinuxProcess::sendSigKill(runningApp->m_pid);
+    LinuxProcess::sendSigKill(runningApp->m_processId);
     return FALSE;
 }
 

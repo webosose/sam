@@ -19,7 +19,7 @@
 #include "util/Logger.h"
 #include "util/JValueUtil.h"
 
-const std::string Notification::NAME = "com.webos.notification";
+const string Notification::NAME = "com.webos.notification";
 
 Notification::Notification()
     : AbsLunaClient(NAME)
@@ -64,7 +64,7 @@ bool Notification::onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void*
 
 Call Notification::createPincodePrompt(LSFilterFunc func)
 {
-    static string method = std::string("luna://") + getName() + std::string("/createPincodePrompt");
+    static string method = string("luna://") + getName() + string("/createPincodePrompt");
 
     JValue requestPayload = pbnjson::Object();
     requestPayload.put("promptType", "parental");

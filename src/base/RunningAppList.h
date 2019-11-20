@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <memory>
-#include <list>
+#include <map>
 
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
@@ -33,79 +33,39 @@ friend class ISingleton<RunningAppList>;
 public:
     virtual ~RunningAppList();
 
-    RunningAppPtr create(LaunchPointPtr launchPoint);
-    RunningAppPtr add(RunningAppPtr runningApp);
+    RunningAppPtr createByAppId(const string& appId);
+    RunningAppPtr createByLaunchPoint(LaunchPointPtr launchPoint);
+    RunningAppPtr createByLaunchPointId(const string& launchPointId);
 
-    RunningAppPtr getByAppId(const string& appId, bool createIfNotExist = false);
-    RunningAppPtr getByLaunchPointId(const string& launchPointId);
-    RunningAppPtr getByPid(const string& pid);
+    RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
+    RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId);
     RunningAppPtr getByInstanceId(const string& instanceId);
-    RunningAppPtr getForeground();
+    RunningAppPtr getByLaunchPointId(const string& launchPointId);
+    RunningAppPtr getByAppId(const string& appId);
+    RunningAppPtr getByPid(const string& pid);
 
-    void remove(RunningAppPtr runningApp);
-    void removeByAppId(const string& appId);
+    bool add(RunningAppPtr runningApp);
 
-    bool isRunning(const string& appId);
+    bool removeByObject(RunningAppPtr runningApp);
+    bool removeByIds(const string& instanceId, const string& launchPointId, const string& appId);
+    bool removeByInstanceId(const string& instanceId);
+    bool revmoeByLaunchPointId(const string& launchPointId);
+    bool removeByAppId(const string& appId);
+    bool removeByLaunchPoint(LaunchPointPtr launchPoint);
+    bool removeByPid(const string& processId);
+
+    bool isAllRunning();
     bool isForeground(const string& appId);
-
+    bool isExist(const string& instanceId);
     void toJson(JValue& array, bool devmodeOnly = false);
 
-
-    // TODO following methods should be deleted
-
-
-    void setForegroundApp(const std::string& appId)
-    {
-        m_foregroundAppId = appId;
-    }
-    const std::string& getForegroundAppId() const
-    {
-        return m_foregroundAppId;
-    }
-
-    void setForegroundAppIds(const std::vector<std::string>& apps)
-    {
-        m_foregroundAppIds = apps;
-    }
-    const std::vector<std::string>& getForegroundAppIds() const
-    {
-        return m_foregroundAppIds;
-    }
-
-    void setForegroundInfo(const pbnjson::JValue& info)
-    {
-        m_foregroundInfo = info.duplicate();
-    }
-    const pbnjson::JValue& getForegroundInfo() const
-    {
-        return m_foregroundInfo;
-    }
-    void getForegroundInfoById(const std::string& appId, pbnjson::JValue& info)
-    {
-        if (!m_foregroundInfo.isArray() || m_foregroundInfo.arraySize() < 1)
-            return;
-
-        for (auto item : m_foregroundInfo.items()) {
-            if (!item.hasKey("appId") || !item["appId"].isString())
-                continue;
-
-            if (item["appId"].asString() == appId) {
-                info = item.duplicate();
-                return;
-            }
-        }
-    }
-
 private:
+    void onAdd(RunningAppPtr runningApp);
+    void onRemove(RunningAppPtr runningApp);
+
     RunningAppList();
 
-    list<RunningAppPtr> m_list;
-
-
-    // TODO: following should be deleted
-    std::string m_foregroundAppId;
-    std::vector<std::string> m_foregroundAppIds;
-    pbnjson::JValue m_foregroundInfo;
+    map<string, RunningAppPtr> m_map;
 };
 
 #endif /* BASE_RUNNINGAPPLIST_H_ */

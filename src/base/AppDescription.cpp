@@ -28,19 +28,19 @@
 #include "util/JValueUtil.h"
 #include "util/File.h"
 
-const std::vector<std::string> AppDescription::PROPS_PROHIBITED = {
+const vector<string> AppDescription::PROPS_PROHIBITED = {
     "id", "type", "trustLevel"
 };
-const std::vector<std::string> AppDescription::ASSETS_SUPPORTED = {
+const vector<string> AppDescription::ASSETS_SUPPORTED = {
     "icon", "largeIcon", "bgImage", "splashBackground"
 };
-const std::vector<std::string> AppDescription::PROPS_IMAGES = {
+const vector<string> AppDescription::PROPS_IMAGES = {
     "icon", "largeIcon", "bgImage", "splashBackground", "miniicon", "mediumIcon", "splashicon", "imageForRecents"
 };
 
 const string AppDescription::CLASS_NAME = "AppDescription";
 
-std::string AppDescription::toString(const AppStatusEvent& event)
+string AppDescription::toString(const AppStatusEvent& event)
 {
     switch (event) {
     case AppStatusEvent::AppStatusEvent_Nothing:
@@ -65,9 +65,9 @@ std::string AppDescription::toString(const AppStatusEvent& event)
     }
 }
 
-std::string AppDescription::toString(AppType type)
+string AppDescription::toString(AppType type)
 {
-    std::string str;
+    string str;
     switch (type) {
     case AppType::AppType_Web:
         str = "web";
@@ -131,35 +131,27 @@ AppType AppDescription::toAppType(const string& type)
     return AppType::AppType_None;
 }
 
-std::string AppDescription::toString(AppLocation location)
+const char* AppDescription::toString(AppLocation location)
 {
-    std::string str;
     switch (location) {
     case AppLocation::AppLocation_Devmode:
-        str = "web";
-        break;
+        return "web";
 
     case AppLocation::AppLocation_AppStore_Internal:
-        str = "store_internal";
-        break;
+        return "store_internal";
 
     case AppLocation::AppLocation_AppStore_External:
-        str = "store_external";
-        break;
+        return "store_external";
 
     case AppLocation::AppLocation_System_ReadWrite:
-        str = "system_updatable";
-        break;
+        return "system_updatable";
 
     case AppLocation::AppLocation_System_ReadOnly:
-        str = "system_builtin";
-        break;
+        return "system_builtin";
 
     default:
-        str = "unknown";
-        break;
+        return "unknown";
     }
-    return str;
 }
 
 AppLocation AppDescription::toAppLocation(const string& type)
@@ -179,7 +171,7 @@ AppLocation AppDescription::toAppLocation(const string& type)
     }
 }
 
-AppDescription::AppDescription(const std::string& appId)
+AppDescription::AppDescription(const string& appId)
     : m_appLocation(AppLocation::AppLocation_None),
       m_folderPath(""),
       m_appType(AppType::AppType_None),
@@ -197,8 +189,40 @@ AppDescription::~AppDescription()
 {
 }
 
-void AppDescription::scan()
+bool AppDescription::rescan()
 {
+    JValue applicationPaths = SAMConf::getInstance().getApplicationPaths();
+    for (int i = applicationPaths.arraySize() - 1; i >= 0; i--) {
+        string path = "";
+        string typeByDir = "";
+        string folderPath = "";
+        AppLocation appLocation;
+
+        JValueUtil::getValue(applicationPaths[i], "path", path);
+        JValueUtil::getValue(applicationPaths[i], "typeByDir", typeByDir);
+        appLocation = AppDescription::toAppLocation(typeByDir);
+
+        if (path.empty() || typeByDir.empty() || appLocation == AppLocation::AppLocation_None) {
+            continue;
+        }
+
+        folderPath = File::join(path, m_appId);
+        if (!File::isDirectory(folderPath)) {
+            Logger::info(CLASS_NAME, __FUNCTION__,
+                         Logger::format("Directory is not exist: path(%s) typeByDir(%s)", folderPath.c_str(), typeByDir.c_str()));
+            continue;
+        }
+
+        if (appLocation == AppLocation::AppLocation_Devmode && !SAMConf::getInstance().isDevmodeEnabled()) {
+            Logger::info(CLASS_NAME, __FUNCTION__,
+                         Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", folderPath.c_str(), typeByDir.c_str()));
+            continue;
+        }
+        if (scan(folderPath, appLocation) == true)
+            return true;
+    }
+    return false;
+
 //    // rescan file system
 //    AppDescriptionPtr newAppDesc = AppDescriptionList::getInstance().create(appId);
 //    if (!newAppDesc) {
@@ -230,9 +254,6 @@ void AppDescription::scan()
 //        break;
 //    }
 //
-//
-//
-//
 //    oldAppDesc->lock();
 //    newAppDesc = AppDescriptionList::getInstance().create(appId);
 //    if (!newAppDesc) {
@@ -253,7 +274,15 @@ void AppDescription::scan()
 //    }
 }
 
-void AppDescription::applyFolderPath(std::string& path)
+bool AppDescription::scan(const string& folderPath, const AppLocation& appLocation)
+{
+    Logger::debug(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("folderPath(%s) appLocation(%s)", folderPath.c_str(), toString(appLocation)));
+    m_folderPath = folderPath;
+    m_appLocation = appLocation;
+    return loadAppinfo();
+}
+
+void AppDescription::applyFolderPath(string& path)
 {
     if (path.compare(0, 7, "file://") == 0)
         path.erase(0, 7);
@@ -269,8 +298,10 @@ void AppDescription::applyFolderPath(std::string& path)
 
 bool AppDescription::loadAppinfo()
 {
-    if (!File::isDirectory(m_folderPath))
+    if (!File::isDirectory(m_folderPath)) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "FolderPath is not exist");
         return false;
+    }
 
     // Specify application description depending on available locale string.
     // This string is in BCP-47 format which can contain a language, language-region,
@@ -283,16 +314,20 @@ bool AppDescription::loadAppinfo()
     const string appinfoPath = File::join(m_folderPath, "/appinfo.json");
     m_appinfo = JDomParser::fromFile(appinfoPath.c_str(), JValueUtil::getSchema("ApplicationDescription"));
     if (m_appinfo.isNull()) {
-        Logger::info(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("Failed to parse appinfo.json(%s)", appinfoPath.c_str()));
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("Failed to parse appinfo.json(%s)", appinfoPath.c_str()));
         m_appinfo = pbnjson::JValue();
+        return false;
+    }
+    if (!m_appinfo.hasKey("id") || m_appinfo["id"].asString() != m_appId) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "Invalid 'id' in appinfo.json");
         return false;
     }
 
     /// Add folderPath to JSON
     m_appinfo.put("folderPath", m_folderPath);
 
-    std::vector<std::string> localizationDirs;
-    std::string resourcePath = m_folderPath + "/resources/" + SAMConf::getInstance().getLanguage() + "/";
+    vector<string> localizationDirs;
+    string resourcePath = m_folderPath + "/resources/" + SAMConf::getInstance().getLanguage() + "/";
     localizationDirs.push_back(resourcePath);
 
     resourcePath += SAMConf::getInstance().getScript() + "/";
@@ -303,8 +338,8 @@ bool AppDescription::loadAppinfo()
 
     // apply localization (overwrite from low to high)
     for (const auto& localizationDir : localizationDirs) {
-        std::string AbsoluteLocaleAppinfoPath = localizationDir + "appinfo.json";
-        std::string RelativeLocaleAppinfoPath = localizationDir.substr(m_folderPath.length());
+        string AbsoluteLocaleAppinfoPath = localizationDir + "appinfo.json";
+        string RelativeLocaleAppinfoPath = localizationDir.substr(m_folderPath.length());
 
         if (!File::isFile(AbsoluteLocaleAppinfoPath)) {
             continue;
@@ -317,7 +352,7 @@ bool AppDescription::loadAppinfo()
         }
 
         for (auto item : localeAppinfo.children()) {
-            std::string key = item.first.asString();
+            string key = item.first.asString();
 
             if (!m_appinfo.hasKey(key) || m_appinfo[key].getType() != localeAppinfo[key].getType()) {
                 Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, AbsoluteLocaleAppinfoPath, "localization is unmatchted with root");
@@ -328,15 +363,15 @@ bool AppDescription::loadAppinfo()
                 continue;
             }
 
-            if (std::find(PROPS_PROHIBITED.begin(), PROPS_PROHIBITED.end(), key) != PROPS_PROHIBITED.end()) {
+            if (find(PROPS_PROHIBITED.begin(), PROPS_PROHIBITED.end(), key) != PROPS_PROHIBITED.end()) {
                 Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, AbsoluteLocaleAppinfoPath, "localization is prohibited_props");
                 continue;
             }
 
-            if (std::find(ASSETS_SUPPORTED.begin(), ASSETS_SUPPORTED.end(), key) != ASSETS_SUPPORTED.end()) {
+            if (find(ASSETS_SUPPORTED.begin(), ASSETS_SUPPORTED.end(), key) != ASSETS_SUPPORTED.end()) {
                 // check asset variation rule with root value
-                std::string baseAssetValue = m_appinfo[key].asString();
-                std::string localeAssetValue = localeAppinfo[key].asString();
+                string baseAssetValue = m_appinfo[key].asString();
+                string localeAssetValue = localeAppinfo[key].asString();
 
                 // if assets variation rule is specified, dont support localization
                 if (baseAssetValue.length() > 0 && baseAssetValue[0] == '$')
@@ -345,7 +380,7 @@ bool AppDescription::loadAppinfo()
                     continue;
             }
 
-            auto it = std::find(PROPS_IMAGES.begin(), PROPS_IMAGES.end(), key);
+            auto it = find(PROPS_IMAGES.begin(), PROPS_IMAGES.end(), key);
             if (it != PROPS_IMAGES.end()) {
                 m_appinfo.put(key, RelativeLocaleAppinfoPath + localeAppinfo[key].asString());
             } else {
@@ -372,7 +407,7 @@ pbnjson::JValue AppDescription::getJson(JValue& properties)
 
     // get selected props from appinfo
     for (int i = 0; i < properties.arraySize(); ++i) {
-        std::string property = "";
+        string property = "";
         if (!properties[i].isString() || properties[i].asString(property) != CONV_OK)
             continue;
         if (m_appinfo.hasKey(property))
@@ -414,20 +449,20 @@ bool AppDescription::readAppinfo()
     // entry_point
     JValueUtil::getValue(m_appinfo, "main", m_absMain);
     if (!strstr(m_absMain.c_str(), "://"))
-        m_absMain = std::string("file://") + m_folderPath + std::string("/") + m_absMain;
+        m_absMain = string("file://") + m_folderPath + string("/") + m_absMain;
 
     // splash_background
     JValueUtil::getValue(m_appinfo, "splashBackground", m_absSplashBackground);
     if (!strstr(m_absSplashBackground.c_str(), "://"))
-        m_absSplashBackground = std::string("file://") + m_folderPath + std::string("/") + m_absSplashBackground;
+        m_absSplashBackground = string("file://") + m_folderPath + string("/") + m_absSplashBackground;
 
     // version
     m_version = m_appinfo["version"].asString();
-    std::vector<std::string> versionInfo;
+    vector<string> versionInfo;
     boost::split(versionInfo, m_version, boost::is_any_of("."));
-    uint16_t major_ver = versionInfo.size() > 0 ? (uint16_t) std::stoi(versionInfo[0]) : 0;
-    uint16_t minor_ver = versionInfo.size() > 1 ? (uint16_t) std::stoi(versionInfo[1]) : 0;
-    uint16_t micro_ver = versionInfo.size() > 2 ? (uint16_t) std::stoi(versionInfo[2]) : 0;
+    uint16_t major_ver = versionInfo.size() > 0 ? (uint16_t) stoi(versionInfo[0]) : 0;
+    uint16_t minor_ver = versionInfo.size() > 1 ? (uint16_t) stoi(versionInfo[1]) : 0;
+    uint16_t micro_ver = versionInfo.size() > 2 ? (uint16_t) stoi(versionInfo[2]) : 0;
     m_intVersion = { major_ver, minor_ver, micro_ver };
 
     // app_type
@@ -482,13 +517,13 @@ bool AppDescription::readAppinfo()
 
 void AppDescription::readAsset()
 {
-    std::string sysAssetsBasePath = "sys-assets";
+    string sysAssetsBasePath = "sys-assets";
 
     JValueUtil::getValue(m_appinfo, "sysAssetsBasePath", sysAssetsBasePath);
 
     for (const auto& key : ASSETS_SUPPORTED) {
-        std::string value;
-        std::string variant_path;
+        string value;
+        string variant_path;
 
         if (!JValueUtil::getValue(m_appinfo, key, value) || value.empty()) {
             continue;
@@ -499,16 +534,16 @@ void AppDescription::readAsset()
             continue;
         }
 
-        std::string filename = value.substr(1);
+        string filename = value.substr(1);
         bool foundAsset = false;
 
         JValue fallbacks = SAMConf::getInstance().getSysAssetFallbackPrecedence();
         for (int i = 0; i < fallbacks.arraySize(); i++) {
-            std::string assetPath = File::join(File::join(sysAssetsBasePath, fallbacks[i].asString()), filename);
-            std::string pathToCheck = "";
+            string assetPath = File::join(File::join(sysAssetsBasePath, fallbacks[i].asString()), filename);
+            string pathToCheck = "";
 
             // set asset without variant
-            pathToCheck = m_folderPath + std::string("/") + assetPath;
+            pathToCheck = m_folderPath + string("/") + assetPath;
             Logger::debug(CLASS_NAME, __FUNCTION__, Logger::format("patch_to_check: %s\n", pathToCheck.c_str()));
 
             if (0 == access(pathToCheck.c_str(), F_OK)) {

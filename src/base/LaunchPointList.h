@@ -21,11 +21,13 @@
 #include <list>
 
 #include "interface/ISingleton.h"
+#include "interface/IClassName.h"
 #include "LaunchPoint.h"
 
 using namespace std;
 
-class LaunchPointList : public ISingleton<LaunchPointList> {
+class LaunchPointList : public ISingleton<LaunchPointList>,
+                        public IClassName {
 friend class ISingleton<LaunchPointList>;
 public:
     virtual ~LaunchPointList();
@@ -36,21 +38,25 @@ public:
     LaunchPointPtr createBootmark(AppDescriptionPtr appDesc, const JValue& database);
     LaunchPointPtr createDefault(AppDescriptionPtr appDesc);
 
-    LaunchPointPtr add(LaunchPointPtr launchPoint);
-
     LaunchPointPtr getByAppId(const string& appId);
     LaunchPointPtr getByLaunchPointId(const string& launchPointId);
 
-    void remove(AppDescriptionPtr appDesc);
-    void remove(LaunchPointPtr launchPoint);
-    void removeByAppId(const string& appId);
-    void removeByLaunchPointId(const string& launchPointId);
+    bool add(LaunchPointPtr launchPoint);
+    bool remove(LaunchPointPtr launchPoint);
+    bool removeByAppDesc(AppDescriptionPtr appDesc);
+    bool removeByAppId(const string& appId);
+    bool removeByLaunchPointId(const string& launchPointId);
 
+    bool isExist(const string& launchPointId);
     void toJson(JValue& json);
-    string generateLaunchPointId(LaunchPointType type, const string& appId);
 
 private:
+    string generateLaunchPointId(LaunchPointType type, const string& appId);
+
     LaunchPointList();
+
+    void onAdd(LaunchPointPtr launchPoint);
+    void onRemove(LaunchPointPtr launchPoint);
 
     list<LaunchPointPtr> m_list;
 };

@@ -25,6 +25,7 @@
 #include "base/LaunchPoint.h"
 #include "base/LunaTask.h"
 #include "base/LunaTaskList.h"
+#include "conf/SAMConf.h"
 #include "util/Logger.h"
 #include "util/Time.h"
 
@@ -32,6 +33,7 @@ enum class LifeStatus : int8_t {
     LifeStatus_INVALID = -1,
     LifeStatus_STOP = 0,
     LifeStatus_PRELOADING,
+    LifeStatus_SPLASHING,
     LifeStatus_LAUNCHING,
     LifeStatus_RELAUNCHING,
     LifeStatus_FOREGROUND,
@@ -50,9 +52,9 @@ public:
     virtual ~RunningApp();
 
     // APIs
-    bool launch(LunaTaskPtr lunaTask);
-    bool close(LunaTaskPtr lunaTask);
-    bool registerApp(LunaTaskPtr lunaTask);
+    void launch(LunaTaskPtr lunaTask);
+    void close(LunaTaskPtr lunaTask);
+    void registerApp(LunaTaskPtr lunaTask);
 
     bool sendEvent(pbnjson::JValue& payload);
     string getLaunchParams(LunaTaskPtr item);
@@ -68,11 +70,11 @@ public:
         return m_launchPoint->getLaunchPointId();
     }
 
-    const std::string& getInstanceId() const
+    const string& getInstanceId() const
     {
         return m_instanceId;
     }
-    void setInstanceId(const std::string& instanceId)
+    void setInstanceId(const string& instanceId)
     {
         m_instanceId = instanceId;
     }
@@ -82,42 +84,42 @@ public:
         return m_launchPoint;
     }
 
-    const std::string& getDisplayId() const
+    const string& getWindowId() const
+    {
+        return m_windowId;
+    }
+    void setWindowId(const string& windowId)
+    {
+        m_windowId = windowId;
+    }
+
+    const int getDisplayId() const
     {
         return m_displayId;
     }
-    void setDisplayId(const std::string& displayId)
+    bool setDisplayId(const int displayId)
     {
+        if (displayId == m_displayId)
+            return false;
         m_displayId = displayId;
+        return true;
     }
 
-    const std::string& getPid() const
+    const string& getProcessId() const
     {
-        return m_pid;
+        return m_processId;
     }
-    void setPid(const std::string& pid)
+    bool setProcessId(const string& pid)
     {
-        m_pid = pid;
+        if (m_processId == pid)
+            return false;
+        m_processId = pid;
+        return true;
     }
 
-    const std::string& getWebprocid() const
+    void setWebprocid(const string& webprocid)
     {
-        return m_webprocid;
-    }
-    void setWebprocid(const std::string& webprocid)
-    {
-        if (webprocid == "-1" || webprocid == "0")
-            return;
         m_webprocid = webprocid;
-    }
-
-    const std::string& getReason() const
-    {
-        return m_reason;
-    }
-    void setReason(const std::string& reason)
-    {
-        m_reason = reason;
     }
 
     int getInterfaceVersion()
@@ -128,22 +130,6 @@ public:
     bool isRegistered()
     {
         return m_isRegistered;
-    }
-
-    bool getPreloadMode() const
-    {
-        return m_isPreloadMode;
-    }
-    void setPreloadMode(bool mode)
-    {
-        m_isPreloadMode = mode;
-    }
-
-    string getPreload() const
-    {
-        string preload = "";
-        JValueUtil::getValue(m_requestPayload, "preload", preload);
-        return preload;
     }
 
     double getLastLaunchTime() const
@@ -159,33 +145,86 @@ public:
     {
         return m_lifeStatus;
     }
-    void setLifeStatus(const LifeStatus& lifeStatus);
+    void setLifeStatus(LifeStatus lifeStatus);
+
+    void loadRequestPayload(const JValue requestPayload)
+    {
+        if (!JValueUtil::getValue(requestPayload, "noSplash", m_noSplash)) {
+            m_noSplash = this->getLaunchPoint()->getAppDesc()->isNoSplashOnLaunch();
+        }
+        if (!JValueUtil::getValue(requestPayload, "spinner", m_spinner)) {
+            m_spinner = this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
+        }
+        JValueUtil::getValue(requestPayload, "preload", m_preload);
+
+        JValueUtil::getValue(requestPayload, "keepAlive", m_keepAlive);
+        if (!m_keepAlive && SAMConf::getInstance().isKeepAliveApp(this->getAppId())) {
+            m_keepAlive = true;
+        }
+    }
+
+    string getPreload() const
+    {
+        // full, semi-full, partial, minimal
+        return m_preload;
+    }
+
+    bool isKeepAlive() const
+    {
+        return m_keepAlive;
+    }
 
     bool isShowSplash()
     {
-        bool noSplash = true;
-        if (JValueUtil::getValue(m_requestPayload, "noSplash", noSplash))
-            return noSplash;
-        return this->getLaunchPoint()->getAppDesc()->isNoSplashOnLaunch();
+        return !m_noSplash;
     }
 
     bool isShowSpinner() const
     {
-        bool spinner = true;
-        if (JValueUtil::getValue(m_requestPayload, "spinner", spinner))
-            return spinner;
-        return this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
+        return m_spinner;
     }
 
-    void toJson(JValue& object)
+    bool isRunning() const
+    {
+        if (m_lifeStatus == LifeStatus::LifeStatus_RELAUNCHING ||
+            m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND ||
+            m_lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
+            m_lifeStatus == LifeStatus::LifeStatus_PAUSING ||
+            m_lifeStatus == LifeStatus::LifeStatus_RUNNING)
+            return true;
+        return false;
+    }
+
+    const string& getReason() const
+    {
+        return m_reason;
+    }
+    void setReason(const string& reason)
+    {
+        m_reason = reason;
+    }
+
+    void toJson(JValue& object, bool status)
     {
         object.put("instanceId", m_instanceId);
-        object.put("id", m_launchPoint->getAppDesc()->getAppId());
+        object.put("launchPointid", m_launchPoint->getLaunchPointId());
+        object.put("id", m_launchPoint->getAppId());
+
         object.put("displayId", m_displayId);
-        object.put("processid", m_pid);
+        object.put("processId", m_processId);
         object.put("webprocessid", m_webprocid);
-        object.put("defaultWindowType", m_launchPoint->getAppDesc()->getDefaultWindowType());
-        object.put("appType", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
+
+        if (status) {
+            // getAppLifeStatus
+            object.put("status", toString(m_lifeStatus));
+            object.put("reason", m_reason);
+            object.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
+
+        } else {
+            // runningList
+            object.put("defaultWindowType", m_launchPoint->getAppDesc()->getDefaultWindowType());
+            object.put("appType", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
+        }
     }
 
 private:
@@ -199,26 +238,32 @@ private:
     void stopKillingTimer();
 
     LaunchPointPtr m_launchPoint;
-    JValue m_requestPayload;
 
     string m_instanceId;
-    string m_displayId;
-    string m_pid;
+    string m_processId;
     string m_webprocid;
-    string m_reason;
+    string m_windowId;
+    int m_displayId;
 
     // for native app
     int m_interfaceVersion;
     bool m_isRegistered;
+    LS::Message m_client;
     guint m_killingTimer;
 
-    bool m_isPreloadMode;
     double m_lastLaunchTime;
 
     LifeStatus m_lifeStatus;
 
+    string m_preload;
+    bool m_keepAlive;
+    bool m_noSplash;
+    bool m_spinner;
+
+    string m_reason;
+
 };
 
-typedef std::shared_ptr<RunningApp> RunningAppPtr;
+typedef shared_ptr<RunningApp> RunningAppPtr;
 
 #endif

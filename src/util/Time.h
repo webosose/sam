@@ -24,7 +24,7 @@ using namespace std;
 class Time {
 public:
     static double getCurrentTime();
-    static std::string generateUid();
+    static string generateUid();
 
     Time();
     virtual ~Time();

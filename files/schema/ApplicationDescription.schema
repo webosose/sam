@@ -168,6 +168,7 @@
         "defaultWindowType": {
             "type": "string",
             "enum": [
+                "system_ui",
                 "card",
                 "favoriteshows",
                 "floating",

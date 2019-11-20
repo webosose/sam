@@ -17,21 +17,22 @@
 #include <iostream>
 #include <vector>
 #include <fcntl.h>
+
 #include "util/Logger.h"
 
 using namespace std;
 
-typedef std::vector<pid_t> PidVector;
+typedef vector<pid_t> PidVector;
 
 class LinuxProcess {
 public:
-    static bool sendSigTerm(const std::string& pid);
-    static bool sendSigKill(const std::string& pid);
+    static bool sendSigTerm(const string& pid);
+    static bool sendSigKill(const string& pid);
 
     static string convertPidsToString(const PidVector& pids);
     static bool killProcesses(const PidVector& pids, int sig);
     static pid_t forkProcess(const char **argv, const char **envp);
-    static PidVector findChildPids(const std::string& pid);
+    static PidVector findChildPids(const string& pid);
 
 private:
     static const string CLASS_NAME;

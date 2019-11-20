@@ -17,11 +17,12 @@
 #ifndef BUS_CLIENT_CONFIGD_H_
 #define BUS_CLIENT_CONFIGD_H_
 
-#include "AbsLunaClient.h"
-#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+
+#include "AbsLunaClient.h"
+#include "interface/ISingleton.h"
 #include "util/Logger.h"
 
 using namespace std;
@@ -34,7 +35,7 @@ friend class ISingleton<Configd>;
 public:
     virtual ~Configd();
 
-    void addRequiredKey(const std::string& key)
+    void addRequiredKey(const string& key)
     {
         m_configNames.push_back(key);
     }

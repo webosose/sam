@@ -18,20 +18,20 @@
 #include "bus/client/DB8.h"
 #include "util/JValueUtil.h"
 
-std::string LaunchPoint::toString(const LaunchPointType type)
+string LaunchPoint::toString(const LaunchPointType type)
 {
     switch (type) {
     case LaunchPointType::LaunchPoint_DEFAULT:
-        return std::string("default");
+        return string("default");
 
     case LaunchPointType::LaunchPoint_BOOKMARK:
-        return std::string("bookmark");
+        return string("bookmark");
 
     default:
         break;
     }
 
-    return std::string("");
+    return string("");
 }
 
 LaunchPointType LaunchPoint::toEnum(const string& type)
@@ -43,7 +43,7 @@ LaunchPointType LaunchPoint::toEnum(const string& type)
     return LaunchPointType::LaunchPoint_UNKNOWN;
 }
 
-LaunchPoint::LaunchPoint(AppDescriptionPtr appDesc, const std::string& launchPointId)
+LaunchPoint::LaunchPoint(AppDescriptionPtr appDesc, const string& launchPointId)
     : m_type(LaunchPointType::LaunchPoint_UNKNOWN),
       m_appDesc(appDesc),
       m_launchPointId(launchPointId),

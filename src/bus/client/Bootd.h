@@ -17,11 +17,13 @@
 #ifndef BUS_CLIENT_BOOTD_H_
 #define BUS_CLIENT_BOOTD_H_
 
-#include "AbsLunaClient.h"
-#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+
+#include "AbsLunaClient.h"
+#include "interface/ISingleton.h"
+#include "util/JValueUtil.h"
 #include "util/Logger.h"
 
 using namespace LS;

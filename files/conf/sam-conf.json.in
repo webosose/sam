@@ -76,6 +76,10 @@
         "com.webos.app.ism"
     ],
 
+    "keepAliveApps":[
+        "com.webos.app.home"
+    ],
+
     "HostAppsForAlias":[
         "com.webos.app.webapphost"
     ],
@@ -87,7 +91,7 @@
     },
 
     "LaunchPointDBKind": {
-        "id":"com.webos.applicationManager.launchpoints:1",
+        "id":"com.webos.applicationManager.launchpoints:2",
         "owner":"com.webos.applicationManager",
         "schema":{
             "properties":{
@@ -120,18 +124,18 @@
     },
 
     "LaunchPointDBPermissions": {
-	"permissions": [
-        {
-            "type"      : "db.kind",
-            "object"    : "com.webos.applicationManager.launchpoints:1",
-            "caller"    : "com.webos.applicationManager",
-            "operations":
+        "permissions": [
             {
-                "create"    : "allow",
-                "read"      : "allow",
-                "update"    : "allow",
-                "delete"    : "allow"
+                "type"      : "db.kind",
+                "object"    : "com.webos.applicationManager.launchpoints:2",
+                "caller"    : "com.webos.applicationManager",
+                "operations": {
+                    "create"    : "allow",
+                    "read"      : "allow",
+                    "update"    : "allow",
+                    "delete"    : "allow"
+                }
             }
-        }
-    ]}
+        ]
+    }
 }

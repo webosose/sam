@@ -24,7 +24,7 @@
 #include "bus/service/ApplicationManager.h"
 #include "util/Logger.h"
 
-const std::string Booster::NAME = "com.webos.booster";
+const string Booster::NAME = "com.webos.booster";
 
 Booster::Booster()
     : AbsLunaClient(NAME)
@@ -56,13 +56,11 @@ bool Booster::onProcessFinished(LSHandle* sh, LSMessage* message, void* context)
         return true;
 
     int pid = -1;
-    JValueUtil::getValue(subscriptionPayload, "pid", pid);
-    if (pid < 0) {
-        Logger::info(getInstance().getClassName(), __FUNCTION__, "No valid pid");
+    if (!JValueUtil::getValue(subscriptionPayload, "pid", pid) || pid < 0) {
         return true;
     }
 
-    std::string pidstr = boost::lexical_cast<std::string>(subscriptionPayload["pid"].asNumber<int>());
+    string pidstr = boost::lexical_cast<string>(subscriptionPayload["pid"].asNumber<int>());
     RunningAppPtr runningApp = RunningAppList::getInstance().getByPid(pidstr);
     if (runningApp == nullptr) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find running app");
@@ -121,8 +119,8 @@ bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
         return true;
     }
 
-    std::string appId = responsePayload.hasKey("appId") && responsePayload["appId"].isString() ? responsePayload["appId"].asString() : "";
-    std::string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>()) : "";
+    string appId = responsePayload.hasKey("appId") && responsePayload["appId"].isString() ? responsePayload["appId"].asString() : "";
+    string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<string>(responsePayload["pid"].asNumber<int>()) : "";
 
     if (appId.empty()) {
         Logger::warning(getInstance().getClassName(), __FUNCTION__, lunaTask->getAppId(), "now restore appId from sam info");
@@ -141,7 +139,6 @@ bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
     }
 
     Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "booster_launched_app");
-    lunaTask->setPid(pid);
 
 //    QmlAppLifeHandler::getInstance().EventRunningAppAdded(appId, pid, "");
 //    QmlAppLifeHandler::getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::RUNNING);
@@ -151,9 +148,9 @@ bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
     return true;
 }
 
-bool Booster::launch(LunaTaskPtr lunaTask)//LSFilterFunc func, const string& appId, const string& main, const JValue& params)
+bool Booster::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
-    static string method = std::string("luna://") + getName() + std::string("/launch");
+    static string method = string("luna://") + getName() + string("/launch");
     JValue requestPayload = pbnjson::Object();
 
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(lunaTask->getAppId());
@@ -200,21 +197,21 @@ bool Booster::onClose(LSHandle* sh, LSMessage* message, void* context)
         return true;
 
     if (responsePayload["returnValue"].asBool()) {
-        std::string appId = responsePayload.hasKey("appId") && responsePayload["appId"].isString() ? responsePayload["appId"].asString() : "";
-        std::string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<std::string>(responsePayload["pid"].asNumber<int>()) : "";
+        string appId = responsePayload.hasKey("appId") && responsePayload["appId"].isString() ? responsePayload["appId"].asString() : "";
+        string pid = responsePayload.hasKey("pid") && responsePayload["pid"].isNumber() ? boost::lexical_cast<string>(responsePayload["pid"].asNumber<int>()) : "";
 
         Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "received_close_return_from_booster");
     } else {
-        std::string errorText = responsePayload["errorText"].asString();
+        string errorText = responsePayload["errorText"].asString();
         Logger::error(getInstance().getClassName(), __FUNCTION__, errorText);
     }
 
     return true;
 }
 
-bool Booster::close(LunaTaskPtr lunaTask)
+bool Booster::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
-    static string method = std::string("luna://") + getName() + std::string("/close");
+    static string method = string("luna://") + getName() + string("/close");
     JValue requestPayload = pbnjson::Object();
     LSMessageToken token = 0;
 
@@ -248,7 +245,7 @@ bool Booster::close(LunaTaskPtr lunaTask)
     return true;
 }
 
-bool Booster::pause(LunaTaskPtr lunaTask)
+bool Booster::pause(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     lunaTask->setErrCodeAndText(ErrCode_GENERAL, "no interface defined for qml booster");
     LunaTaskList::getInstance().removeAfterReply(lunaTask);

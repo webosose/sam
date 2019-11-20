@@ -27,12 +27,6 @@ LunaTaskList::~LunaTaskList()
     m_list.clear();
 }
 
-LunaTaskPtr LunaTaskList::add(LunaTaskPtr lunaTask)
-{
-    m_list.push_back(lunaTask);
-    return lunaTask;
-}
-
 LunaTaskPtr LunaTaskList::getByKindAndId(const char* kind, const string& appId)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
@@ -69,29 +63,38 @@ LunaTaskPtr LunaTaskList::getByToken(const LSMessageToken& token)
     return nullptr;
 }
 
-void LunaTaskList::removeAboutWAM()
+bool LunaTaskList::add(LunaTaskPtr lunaTask)
+{
+    m_list.push_back(lunaTask);
+    return true;
+}
+
+bool LunaTaskList::removeAboutWAM()
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         // launch 이면서 webapp인 케이스를 찾아서 제거.
     }
+    return true;
 }
 
-void LunaTaskList::removeAboutLSM()
+bool LunaTaskList::removeAboutLSM()
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         // launch인 케이스를 모두 제거
     }
+    return true;
 }
 
-void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
+bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
             (*it)->reply();
             m_list.erase(it);
-            return;
+            return true;
         }
     }
+    return false; // Cannot find
 }
 
 void LunaTaskList::toJson(JValue& array)

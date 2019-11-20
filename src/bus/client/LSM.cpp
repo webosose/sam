@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/LSM.h>
-#include <pbnjson.hpp>
+#include "LSM.h"
+
 #include "base/AppDescription.h"
 #include "base/LaunchPointList.h"
 #include "base/LaunchPoint.h"
@@ -24,14 +24,29 @@
 #include "bus/service/ApplicationManager.h"
 #include "util/JValueUtil.h"
 
-const string LSM::NAME = "com.webos.surfacemanager";
-const string LSM::NAME_GET_FOREGROUND_APP_INFO = "getForegroundAppInfo";
-const string LSM::NAME_GET_RECENTS_APP_LIST = "getRecentsAppList";
+bool LSM::isFullscreenWindowType(const pbnjson::JValue& foregroundInfo)
+{
+    bool windowGroup = false;
+    bool windowGroupOwner = false;
+    string windowType = "";
+
+    JValueUtil::getValue(foregroundInfo, "windowGroup", windowGroup);
+    JValueUtil::getValue(foregroundInfo, "windowGroupOwner", windowGroupOwner);
+    JValueUtil::getValue(foregroundInfo, "windowType", windowType);
+
+    if (!windowGroup)
+        windowGroupOwner = true;
+    if (!windowGroupOwner)
+        return false;
+
+    return SAMConf::getInstance().isFullscreenWindowTypes(windowType);
+}
 
 LSM::LSM()
-    : AbsLunaClient(NAME)
+    : AbsLunaClient("com.webos.surfacemanager")
 {
     setClassName("LSM");
+    m_foregroundInfo = pbnjson::Array();
 }
 
 LSM::~LSM()
@@ -81,10 +96,10 @@ bool LSM::onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* conte
 
     int arraySize = subscriptionPayload["/"].arraySize();
     for (int i = 0; i < arraySize; ++i) {
-        std::string method = subscriptionPayload["/"][i].asString();
-        if (method.compare(NAME_GET_FOREGROUND_APP_INFO) == 0) {
+        string method = subscriptionPayload["/"][i].asString();
+        if (method.compare("getForegroundAppInfo") == 0) {
             LSM::getInstance().subscribeGetForegroundAppInfo();
-        } else if (method.compare(NAME_GET_RECENTS_APP_LIST) == 0) {
+        } else if (method.compare("getRecentsAppList") == 0) {
             LSM::getInstance().subscribeGetRecentsAppList();
         }
     }
@@ -93,7 +108,7 @@ bool LSM::onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* conte
 
 void LSM::subscribeGetForegroundAppInfo()
 {
-    static std::string method = std::string("luna://") + getName() + std::string("/getForegroundAppInfo");
+    static string method = string("luna://") + getName() + string("/getForegroundAppInfo");
 
     if (m_getForegroundAppInfoCall.isActive())
         return;
@@ -106,18 +121,6 @@ void LSM::subscribeGetForegroundAppInfo()
     );
 }
 
-bool LSM::isFullscreenWindowType(const pbnjson::JValue& foregroundInfo)
-{
-    bool windowGroup = foregroundInfo["windowGroup"].asBool();
-    bool windowGroupOwner = (windowGroup == false ? true : foregroundInfo["windowGroupOwner"].asBool());
-    std::string windowType = foregroundInfo["windowType"].asString();
-
-    if (!windowGroupOwner)
-        return false;
-
-    return SAMConf::getInstance().isFullscreenWindowTypes(windowType);
-}
-
 bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
@@ -127,48 +130,57 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
     if (subscriptionPayload.isNull())
         return true;
 
-    pbnjson::JValue rawForegroundAppInfo;
-    if (!JValueUtil::getValue(subscriptionPayload, "foregroundAppInfo", rawForegroundAppInfo)) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "invalid message from LSM");
+    pbnjson::JValue orgForegroundAppInfo;
+    if (!JValueUtil::getValue(subscriptionPayload, "foregroundAppInfo", orgForegroundAppInfo)) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get 'foregroundAppInfo'");
         return true;
     }
-    Logger::info(getInstance().getClassName(), __FUNCTION__, "ForegroundApps", "", rawForegroundAppInfo.stringify());
 
-    std::string oldForegroundAppId = RunningAppList::getInstance().getForegroundAppId();
-    std::string newForegroundAppId = "";
-    std::vector<std::string> oldForegroundApps = RunningAppList::getInstance().getForegroundAppIds();
-    std::vector<std::string> newForegroundApps;
-    pbnjson::JValue oldForegroundInfo = RunningAppList::getInstance().getForegroundInfo();
-    pbnjson::JValue newForegroundInfo = pbnjson::Array();
+    string newFullWindowAppId = "";
+    vector<string> newForegroundAppIds;
+    pbnjson::JValue newForegroundAppInfo = pbnjson::Array();
 
-    for (int i = 0; i < rawForegroundAppInfo.arraySize(); ++i) {
-        std::string appId;
-        if (!JValueUtil::getValue(rawForegroundAppInfo[i], "appId", appId) || appId.empty()) {
-            continue;
+    for (int i = 0; i < orgForegroundAppInfo.arraySize(); ++i) {
+        string appId;
+        string launchPointId;
+        string instanceId;
+        string processId;
+        int displayId;
+
+        JValueUtil::getValue(orgForegroundAppInfo[i], "instanceId", instanceId);
+        JValueUtil::getValue(orgForegroundAppInfo[i], "launchPointId", launchPointId);
+        JValueUtil::getValue(orgForegroundAppInfo[i], "appId", appId);
+
+        JValueUtil::getValue(orgForegroundAppInfo[i], "processId", processId);
+        JValueUtil::getValue(orgForegroundAppInfo[i], "displayId", displayId);
+
+        // TODO This is ambiguous multi display env. We need to find better way
+        if (isFullscreenWindowType(orgForegroundAppInfo[i])) {
+            newFullWindowAppId = appId;
         }
 
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId, true);
-
-        newForegroundInfo.append(rawForegroundAppInfo[i].duplicate());
-        newForegroundApps.push_back(appId);
-
-        if (getInstance().isFullscreenWindowType(rawForegroundAppInfo[i])) {
-            newForegroundAppId = appId;
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        if (runningApp == nullptr) {
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by LSM");
+            runningApp = RunningAppList::getInstance().createByAppId(appId);
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
+            RunningAppList::getInstance().add(runningApp);
+        } else {
+            if (runningApp->setProcessId(processId) || runningApp->setDisplayId(displayId)) {
+                // TO avoid multiple subscription
+                ApplicationManager::getInstance().postRunning(runningApp);
+            }
         }
+
+        newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
+        newForegroundAppIds.push_back(appId);
     }
 
-    // update foreground info into app info manager
-    RunningAppList::getInstance().setForegroundApp(newForegroundAppId);
-    RunningAppList::getInstance().setForegroundAppIds(newForegroundApps);
-    RunningAppList::getInstance().setForegroundInfo(newForegroundInfo);
-
-    Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("newForegroundAppId(%s) oldForegroundAppId(%s)", newForegroundAppId.c_str(), oldForegroundAppId.c_str()));
-
     // set background
-    for (auto& oldAppId : oldForegroundApps) {
+    for (auto& oldAppId : getInstance().m_foregroundAppIds) {
         bool found = false;
-        for (auto& newAppId : newForegroundApps) {
-            if ((oldAppId) == (newAppId)) {
+        for (auto& newAppId : newForegroundAppIds) {
+            if (oldAppId == newAppId) {
                 found = true;
                 break;
             }
@@ -176,50 +188,36 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
         if (found == false) {
             RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(oldAppId);
-            switch (runningApp->getLifeStatus()) {
-            case LifeStatus::LifeStatus_FOREGROUND:
-            case LifeStatus::LifeStatus_PAUSING:
+            if (runningApp) {
                 runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
-                break;
-
-            default:
-                break;
             }
         }
     }
 
     // set foreground
-    for (auto& newAppId : newForegroundApps) {
+    for (auto& newAppId : newForegroundAppIds) {
         RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(newAppId);
-        runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
-
-        if (!RunningAppList::getInstance().isRunning(newAppId)) {
-            Logger::info(getInstance().getClassName(), __FUNCTION__, newAppId, "no running info, but received foreground info");
+        if (runningApp) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
         }
     }
 
-    // this is TV specific scenario related to TV POWER (instant booting)
-    // improve this tv dependent structure later
-    if (subscriptionPayload.hasKey("reason") && subscriptionPayload["reason"].asString() == "forceMinimize") {
-        Logger::info(getInstance().getClassName(), __FUNCTION__, "no trigger last input handler");
+    bool extraInfoOnly = false;
+    if (getInstance().m_fullWindowAppId == newFullWindowAppId) {
+        extraInfoOnly = true;
     }
 
-    // signal foreground app changed
-    if (oldForegroundAppId != newForegroundAppId) {
-        ApplicationManager::getInstance().postGetForegroundAppIfo(newForegroundAppId);
-    }
+    getInstance().m_fullWindowAppId = newFullWindowAppId;
+    getInstance().m_foregroundAppIds = newForegroundAppIds;
+    getInstance().m_foregroundInfo = newForegroundAppInfo;
 
-    // reply subscription foreground with extraInfo
-    if (oldForegroundInfo != newForegroundInfo) {
-        ApplicationManager::getInstance().postGetForegroundAppIfoExtra(newForegroundInfo);
-    }
-
+    ApplicationManager::getInstance().postGetForegroundAppInfo(extraInfoOnly);
     return true;
 }
 
 void LSM::subscribeGetRecentsAppList()
 {
-    static std::string method = std::string("luna://") + getName() + std::string("/getRecentsAppList");
+    static string method = string("luna://") + getName() + string("/getRecentsAppList");
 
     if (m_getRecentsAppListCall.isActive())
         return;

@@ -14,14 +14,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef LSM_SUBSCRIBER_H_
-#define LSM_SUBSCRIBER_H_
+#ifndef BUS_CLIENT_LSM_H_
+#define BUS_CLIENT_LSM_H_
 
-#include "AbsLunaClient.h"
-#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+
+#include "AbsLunaClient.h"
+#include "interface/ISingleton.h"
 #include "util/Logger.h"
 
 using namespace LS;
@@ -35,15 +36,39 @@ public:
 
     boost::signals2::signal<void(const pbnjson::JValue&)> EventRecentsAppListChanged;
 
+    void getForegroundInfoById(const string& appId, pbnjson::JValue& info)
+    {
+        if (!m_foregroundInfo.isArray() || m_foregroundInfo.arraySize() < 1)
+            return;
+
+        for (auto item : m_foregroundInfo.items()) {
+            if (!item.hasKey("appId") || !item["appId"].isString())
+                continue;
+
+            if (item["appId"].asString() == appId) {
+                info = item.duplicate();
+                return;
+            }
+        }
+    }
+
+    const string& getFullWindowAppId()
+    {
+        return m_fullWindowAppId;
+    }
+
+    const pbnjson::JValue& getForegroundInfo() const
+    {
+        return m_foregroundInfo;
+    }
+
 protected:
     // AbsLunaClient
     virtual void onInitialze();
     virtual void onServerStatusChanged(bool isConnected);
 
 private:
-    static const string NAME;
-    static const string NAME_GET_FOREGROUND_APP_INFO;
-    static const string NAME_GET_RECENTS_APP_LIST;
+    static bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
 
     static bool onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context);
     static bool onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context);
@@ -51,13 +76,16 @@ private:
 
     LSM();
 
-    bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
     void subscribeGetForegroundAppInfo();
     void subscribeGetRecentsAppList();
 
     Call m_registerServiceCategoryCall;
     Call m_getRecentsAppListCall;
     Call m_getForegroundAppInfoCall;
+
+    string m_fullWindowAppId;
+    vector<string> m_foregroundAppIds;
+    pbnjson::JValue m_foregroundInfo;
 
 };
 

@@ -33,7 +33,7 @@ using namespace pbnjson;
 class LaunchPoint;
 class LaunchPointList;
 
-typedef std::shared_ptr<LaunchPoint> LaunchPointPtr;
+typedef shared_ptr<LaunchPoint> LaunchPointPtr;
 
 enum class LaunchPointType : int8_t {
     LaunchPoint_UNKNOWN = 0,
@@ -44,7 +44,7 @@ enum class LaunchPointType : int8_t {
 class LaunchPoint {
 friend class LaunchPointList;
 public:
-    static std::string toString(const LaunchPointType type);
+    static string toString(const LaunchPointType type);
     static LaunchPointType toEnum(const string& type);
 
     static bool compareTitle(LaunchPointPtr a, LaunchPointPtr b)
@@ -52,7 +52,7 @@ public:
         return a->getTitle() < b->getTitle();
     }
 
-    LaunchPoint(AppDescriptionPtr appDesc, const std::string& launchPointId);
+    LaunchPoint(AppDescriptionPtr appDesc, const string& launchPointId);
     virtual ~LaunchPoint();
 
     LaunchPointType getType() const
@@ -69,7 +69,12 @@ public:
         return m_appDesc;
     }
 
-    const std::string& getLaunchPointId() const
+    const string getAppId() const
+    {
+        return m_appDesc->getAppId();
+    }
+
+    const string& getLaunchPointId() const
     {
         return m_launchPointId;
     }
@@ -78,7 +83,7 @@ public:
     void setDatabase(const JValue& database);
     void updateDatabase(const JValue& json);
 
-    const std::string getAppDescription() const
+    const string getAppDescription() const
     {
         string appDescription = "";
         if (JValueUtil::getValue(m_database, "appDescription", appDescription)) {
@@ -87,7 +92,7 @@ public:
         return m_appDesc->getAppDescription();
     }
 
-    const std::string getBgColor() const
+    const string getBgColor() const
     {
         string bgColor = "";
         if (JValueUtil::getValue(m_database, "bgColor", bgColor)) {
@@ -96,7 +101,7 @@ public:
         return m_appDesc->getBgColor();
     }
 
-    const std::string getBgImage() const
+    const string getBgImage() const
     {
         string bgImage = "";
         if (!JValueUtil::getValue(m_database, "bgImage", bgImage))
@@ -110,7 +115,7 @@ public:
         return m_database["bgImages"];
     }
 
-    const std::string getFavicon() const
+    const string getFavicon() const
     {
         string favicon = "";
         if (JValueUtil::getValue(m_database, "favicon", favicon))
@@ -118,7 +123,7 @@ public:
         return favicon;
     }
 
-    const std::string getIcon() const
+    const string getIcon() const
     {
         string icon = "";
         if (!JValueUtil::getValue(m_database, "icon", icon))
@@ -127,7 +132,7 @@ public:
         return icon;
     }
 
-    const std::string getImageForRecents() const
+    const string getImageForRecents() const
     {
         return m_database["imageForRecents"].asString();
 
@@ -137,7 +142,7 @@ public:
         return imageForRecents;
     }
 
-    const std::string getLargeIcon() const
+    const string getLargeIcon() const
     {
         string largeIcon = "";
         if (!JValueUtil::getValue(m_database, "largeIcon", largeIcon))
@@ -155,7 +160,7 @@ public:
         return pbnjson::Object();
     }
 
-    const std::string getTitle() const
+    const string getTitle() const
     {
         string title = "";
         if (JValueUtil::getValue(m_database, "title", title)) {
@@ -202,7 +207,7 @@ private:
 
     LaunchPointType m_type;
     AppDescriptionPtr m_appDesc;
-    std::string m_launchPointId;
+    string m_launchPointId;
 
     bool m_isDirty;
     JValue m_database;

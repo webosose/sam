@@ -20,11 +20,13 @@
 #include "base/LunaTaskList.h"
 #include "base/RunningAppList.h"
 
-const std::string INVALID_PROCESS_ID = "-1";
-const std::string PROCESS_ID_ZERO = "0";
+const string INVALID_PROCESS_ID = "-1";
+const string PROCESS_ID_ZERO = "0";
 
 bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
 {
+    static const string STATUS = "status";
+
     Message response(message);
     pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
@@ -32,65 +34,80 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     if (subscriptionPayload.isNull())
         return true;
 
-    pbnjson::JValue curRunning = pbnjson::Array();
-    JValueUtil::getValue(subscriptionPayload, "running", curRunning);
+    static pbnjson::JValue prevRunning = pbnjson::Array();
+    pbnjson::JValue currRunning = pbnjson::Array();
+    JValueUtil::getValue(subscriptionPayload, "running", currRunning);
 
-    int prevLenth = getInstance().m_prevRunning.arraySize();
-    for (int i = 0; i < prevLenth; i++) {
-        getInstance().m_prevRunning[i].put("lifeStatue", "stop");
+    int prevSize = prevRunning.arraySize();
+    for (int i = 0; i < prevSize; i++) {
+        prevRunning[i].put(STATUS, "stop");
     }
 
-    int curLenth = curRunning.arraySize();
-    for (int i = 0; i < curLenth; i++) {
-        for (int j = 0; j < prevLenth; j++) {
-            if (curRunning[i]["id"].asString() == getInstance().m_prevRunning[j]["id"].asString()) {
-                if (curRunning[i]["webprocessid"].asString() == getInstance().m_prevRunning[j]["webprocessid"].asString()) {
-                    getInstance().m_prevRunning[j].put("lifeStatue", "running");
-                    curRunning[i].put("lifeStatue", "running");
-                } else {
-                    getInstance().m_prevRunning[j].put("lifeStatue", "restart");
-                    curRunning[i].put("lifeStatue", "restart");
-                }
+    int curSize = currRunning.arraySize();
+    for (int i = 0; i < curSize; i++) {
+        for (int j = 0; j < prevSize; j++) {
+            if (currRunning[i]["id"].asString() == prevRunning[j]["id"].asString()) {
+                prevRunning[j].put(STATUS, "running");
+                currRunning[i].put(STATUS, "running");
             }
         }
-        if (!curRunning[i].hasKey("lifeStatue")) {
-            curRunning[i].put("lifeStatue", "start");
+        if (!currRunning[i].hasKey(STATUS)) {
+            currRunning[i].put(STATUS, "start");
         }
     }
 
-    string lifeStatue;
+    string status;
+    string instanceId;
+    string launchPointId;
     string appId;
     string webprocessid;
-    for (int i = 0; i < prevLenth; i++) {
-        JValueUtil::getValue(getInstance().m_prevRunning[i], "lifeStatue", lifeStatue);
-        JValueUtil::getValue(getInstance().m_prevRunning[i], "id", appId);
-        JValueUtil::getValue(getInstance().m_prevRunning[i], "webprocessid", webprocessid);
-        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("lifeStatue(%s) webprocessid(%s)", lifeStatue.c_str(), webprocessid.c_str()));
 
-        if (lifeStatue == "stop") {
-            // EventAppLifeStatusChanged(oldAppId, "", RuntimeStatus::STOP);
-        } else if (lifeStatue == "restart") {
-            // if ((oldWebprocessId != INVALID_PROCESS_ID) && (oldWebprocessId != PROCESS_ID_ZERO))
-            // EventRunningAppRemoved(oldAppId);
+    for (int i = 0; i < prevSize; i++) {
+        JValueUtil::getValue(prevRunning[i], "instanceId", instanceId);
+        JValueUtil::getValue(prevRunning[i], "launchPointId", launchPointId);
+        JValueUtil::getValue(prevRunning[i], "id", appId);
+
+        JValueUtil::getValue(prevRunning[i], STATUS, status);
+        JValueUtil::getValue(prevRunning[i], "webprocessid", webprocessid);
+
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        if (runningApp == nullptr) {
+            Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "Cannot find RunningApp");
+            continue;
+        }
+        Logger::debug(getInstance().getClassName(), __FUNCTION__, appId,
+                      Logger::format("Previous: %s(%s) webprocessid(%s)", STATUS.c_str(), status.c_str(), webprocessid.c_str()));
+        if (status == "running") {
+            runningApp->setWebprocid(webprocessid);
+        } else {
+            RunningAppList::getInstance().removeByObject(runningApp);
         }
     }
 
-    for (int i = 0; i < curLenth; i++) {
-        JValueUtil::getValue(curRunning[i], "lifeStatue", lifeStatue);
-        JValueUtil::getValue(curRunning[i], "id", appId);
-        JValueUtil::getValue(curRunning[i], "webprocessid", webprocessid);
-        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("lifeStatue(%s) webprocessid(%s)", lifeStatue.c_str(), webprocessid.c_str()));
+    for (int i = 0; i < curSize; i++) {
+        JValueUtil::getValue(currRunning[i], "instanceId", instanceId);
+        JValueUtil::getValue(currRunning[i], "launchPointId", launchPointId);
+        JValueUtil::getValue(currRunning[i], "id", appId);
 
-        if (lifeStatue == "start") {
-            RunningAppPtr running = RunningAppList::getInstance().getByAppId(appId, true);
-            // EventRunningAppAdded(newAppId, newWebprocessId, newWebprocessId);
-            // removeLoadingApp(newAppId);
-        } else if (lifeStatue == "restart") {
-            // EventAppLifeStatusChanged(newAppId, "", RuntimeStatus::RUNNING);
+        JValueUtil::getValue(currRunning[i], STATUS, status);
+        JValueUtil::getValue(currRunning[i], "webprocessid", webprocessid);
+
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        Logger::debug(getInstance().getClassName(), __FUNCTION__, appId,
+                      Logger::format("Current: %s(%s) webprocessid(%s)", STATUS.c_str(), status.c_str(), webprocessid.c_str()));
+        if (status == "start") {
+            // SAM might be restarted (respwaned)
+            if (runningApp == nullptr) {
+                Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by WAM");
+                runningApp = RunningAppList::getInstance().createByAppId(appId);
+                runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+                RunningAppList::getInstance().add(runningApp);
+            }
         }
+        runningApp->setWebprocid(webprocessid);
     }
 
-    getInstance().m_prevRunning = curRunning;
+    prevRunning = currRunning.duplicate();
     return true;
 }
 
@@ -98,7 +115,6 @@ WAM::WAM()
     : AbsLunaClient("com.palm.webappmanager")
 {
     setClassName("WAM");
-    m_prevRunning = pbnjson::Array();
 }
 
 WAM::~WAM()
@@ -112,7 +128,7 @@ void WAM::onInitialze()
 
 void WAM::onServerStatusChanged(bool isConnected)
 {
-    static string method = std::string("luna://") + getName() + std::string("/listRunningApps");
+    static string method = string("luna://") + getName() + string("/listRunningApps");
     if (isConnected) {
         JValue requestPayload = pbnjson::Object();
         requestPayload.put("includeSysApps", true);
@@ -147,7 +163,7 @@ bool WAM::onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context)
 
 void WAM::discardCodeCache()
 {
-    static string method = std::string("luna://") + getName() + std::string("/discardCodeCache");
+    static string method = string("luna://") + getName() + string("/discardCodeCache");
 
     if (m_discardCodeCacheCall.isActive())
         return;
@@ -168,79 +184,180 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
 
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
-
     if (lunaTask == nullptr) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "null_launching_item");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask");
         return false;
     }
 
-    string appId = lunaTask->getAppId();
+    string instanceId = "";
+    string launchPointId = "";
+    string appId = "";
     string procId = "";
     bool returnValue = true;
 
+    JValueUtil::getValue(responsePayload, "instanceId", instanceId);
+    JValueUtil::getValue(responsePayload, "launchPointId", launchPointId);
     JValueUtil::getValue(responsePayload, "appId", appId);
     JValueUtil::getValue(responsePayload, "procId", procId);
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "Failed to launch webapp");
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "WebAppMgr's launchApp is failed");
+        RunningAppList::getInstance().removeByIds(instanceId, launchPointId, appId);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch webapp in WAM");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        // WebAppLifeHandler::getInstance().EventAppLifeStatusChanged(appId, "", RuntimeStatus::STOP);
         return true;
     }
 
-    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "received_launch_return_from_wam");
-    lunaTask->setPid(procId);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+    if (runningApp == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find RunningApp");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
+    }
+    runningApp->setProcessId(procId);
+
+    lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("Launched TotalTime(%f)", lunaTask->getTimeStampMS()));
     return true;
 }
 
-bool WAM::launchApp(LunaTaskPtr lunaTask)
+bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
-    static string method = std::string("luna://") + getName() + std::string("/launchApp");
+    static string method = string("luna://") + getName() + string("/launchApp");
     JValue requestPayload = pbnjson::Object();
     LSMessageToken token = 0;
 
     if (!isConnected()) {
-        Logger::warning(getClassName(), __FUNCTION__, "WAM is not running");
-        return false;
+        Logger::info(getClassName(), __FUNCTION__, "WAM is not running. Push LSCall to queue...");
     }
 
-    JValue appinfo = pbnjson::Object();
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(lunaTask->getAppId());
-    launchPoint->toJson(appinfo);
+    JValue appDesc = pbnjson::Object();
+    runningApp.getLaunchPoint()->toJson(appDesc);
 
-    requestPayload.put("appDesc", appinfo);
+    requestPayload.put("appDesc", appDesc);
     requestPayload.put("reason", lunaTask->getReason());
     requestPayload.put("parameters", lunaTask->getParams());
-    requestPayload.put("launchingAppId", lunaTask->getCallerId());
-    requestPayload.put("launchingProcId", lunaTask->getCallerPid());
-    requestPayload.put("keepAlive", lunaTask->isKeepAlive());
+    requestPayload.put("launchingAppId", lunaTask->getCaller(true));
+    requestPayload.put("launchingProcId", "");
 
-    if (!lunaTask->getPreload().empty())
-        requestPayload.put("preload", lunaTask->getPreload());
+    if (runningApp.isKeepAlive()) {
+        requestPayload.put("keepAlive", true);
+    }
+    if (!runningApp.getPreload().empty()) {
+        requestPayload.put("preload", runningApp.getPreload());
+    }
 
+    LSErrorSafe error;
+    bool result = true;
     Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
-    if (!LSCallOneReply(
+    result = LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
         onLaunchApp,
         nullptr,
         &token,
-        nullptr)
-    ) {
+        &error
+    );
+    if (!result) {
+        lunaTask->setErrCodeAndText(error.error_code, error.message);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return false;
     }
     lunaTask->setToken(token);
-//    if (lunaTask->getPreload().empty())
-//        EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::LAUNCHING);
-//    else
-//        EventAppLifeStatusChanged(lunaTask->getAppId(), lunaTask->getInstanceId(), RuntimeStatus::PRELOADING);
-//
-//    lunaTask->stopTime();
-//    Logger::info(getClassName(), __FUNCTION__, lunaTask->getAppId(), Logger::format("elapsed_time(%f)", lunaTask->getTotalTime()));
+    return true;
+}
+
+bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
+{
+    string sender = lunaTask->getCaller(true);
+    if (sender != "com.webos.service.memorymanager" &&
+        sender != "com.webos.lunasend" &&
+        runningApp.isKeepAlive()) {
+        return pauseApp(runningApp, lunaTask);
+    } else {
+        return killApp(runningApp, lunaTask);
+    }
+}
+
+bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
+{
+    Message response(message);
+    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    LSMessageToken token = LSMessageGetResponseToken(message);
+    LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
+    if (lunaTask == nullptr) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get lunaTask");
+        return false;
+    }
+
+    string instanceId = "";
+    string launchPointId = "";
+    string appId = "";
+    bool returnValue = true;
+
+    JValueUtil::getValue(responsePayload, "instanceId", instanceId);
+    JValueUtil::getValue(responsePayload, "launchPointId", launchPointId);
+    JValueUtil::getValue(responsePayload, "appId", appId);
+    JValueUtil::getValue(responsePayload, "returnValue", returnValue);
+
+    if (!returnValue) {
+        RunningAppList::getInstance().removeByIds(instanceId, launchPointId, appId);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to pause webapp in WAM");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
+    }
+
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+    if (runningApp == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find RunningApp");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
+    }
+
+    lunaTask->getResponsePayload().put("returnValue", true);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    return true;
+}
+
+bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
+{
+    static string method = string("luna://") + getName() + string("/pauseApp");
+
+    if (!isConnected()) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "WAM is not running. The app is not exist");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
+    }
+
+    runningApp.setLifeStatus(LifeStatus::LifeStatus_PAUSING);
+    JValue requestPayload = pbnjson::Object();
+    requestPayload.put("appId", runningApp.getAppId());
+    requestPayload.put("reason", "pause");
+    requestPayload.put("parameters", lunaTask->getParams());
+
+    LSErrorSafe error;
+    bool result = true;
+    LSMessageToken token = 0;
+    Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
+    result = LSCallOneReply(
+        ApplicationManager::getInstance().get(),
+        method.c_str(),
+        requestPayload.stringify().c_str(),
+        onPauseApp,
+        nullptr,
+        &token,
+        &error
+    );
+    if (!result) {
+        lunaTask->setErrCodeAndText(error.error_code, error.message);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return false;
+    }
+    lunaTask->setToken(token);
     return true;
 }
 
@@ -254,45 +371,50 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
 
     if (lunaTask == nullptr) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "null_launching_item");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get lunaTask");
         return false;
     }
 
-    string appId = lunaTask->getAppId();
     string procId = "";
     bool returnValue = true;
 
-    JValueUtil::getValue(responsePayload, "appId", appId);
     JValueUtil::getValue(responsePayload, "processId", procId);
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        string errorText = "Unknown Error";
-        JValueUtil::getValue(responsePayload, "errorText", errorText);
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, errorText);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
-    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "received_close_return_from_wam");
     // How could we get the previous status? We should restore it.
-    // WebAppLifeHandler::getInstance().signal_app_life_status_changed(appId(), "", RuntimeStatus::STOP);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp == nullptr) {
+        Logger::info(getInstance().getClassName(), __FUNCTION__, "The RunningApp is already removed in 'listRunning'");
+    } else {
+        RunningAppList::getInstance().removeByObject(runningApp);
+    }
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
 }
 
-bool WAM::killApp(LunaTaskPtr lunaTask)
+bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
-    static string method = std::string("luna://") + getName() + std::string("/killApp");
+    static string method = string("luna://") + getName() + string("/killApp");
     JValue requestPayload = pbnjson::Object();
     LSMessageToken token = 0;
 
     if (!isConnected()) {
-        Logger::warning(getClassName(), __FUNCTION__, "WAM is not running");
-        return false;
+        Logger::warning(getClassName(), __FUNCTION__, "WAM is not running. The app is not exist");
+        lunaTask->getResponsePayload().put("returnValue", true);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return true;
     }
 
-    requestPayload.put("appId", lunaTask->getAppId());
+    runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+    requestPayload.put("instanceId", runningApp.getInstanceId());
+    requestPayload.put("launchPointId", runningApp.getLaunchPointId());
+    requestPayload.put("appId", runningApp.getAppId());
     requestPayload.put("reason", lunaTask->getReason());
 
     LSErrorSafe error;
@@ -313,6 +435,5 @@ bool WAM::killApp(LunaTaskPtr lunaTask)
         return false;
     }
     lunaTask->setToken(token);
-    //EventAppLifeStatusChanged(lunaTask->getAppId(), "", RuntimeStatus::CLOSING);
     return true;
 }

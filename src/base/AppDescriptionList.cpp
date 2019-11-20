@@ -16,8 +16,8 @@
 
 #include "base/AppDescriptionList.h"
 #include "base/LaunchPointList.h"
+#include "bus/service/ApplicationManager.h"
 #include "conf/SAMConf.h"
-
 #include "util/File.h"
 
 bool AppDescriptionList::compare(AppDescriptionPtr me, AppDescriptionPtr another)
@@ -42,17 +42,17 @@ bool AppDescriptionList::compareVersion(AppDescriptionPtr me, AppDescriptionPtr 
     const AppIntVersion& new_ver = another->getIntVersion();
 
     // compare version
-    if (std::get<0>(me_ver) < std::get<0>(new_ver))
+    if (get<0>(me_ver) < get<0>(new_ver))
         return true;
-    else if (std::get<0>(me_ver) > std::get<0>(new_ver))
+    else if (get<0>(me_ver) > get<0>(new_ver))
         return false;
-    if (std::get<1>(me_ver) < std::get<1>(new_ver))
+    if (get<1>(me_ver) < get<1>(new_ver))
         return true;
-    else if (std::get<1>(me_ver) > std::get<1>(new_ver))
+    else if (get<1>(me_ver) > get<1>(new_ver))
         return false;
-    if (std::get<2>(me_ver) < std::get<2>(new_ver))
+    if (get<2>(me_ver) < get<2>(new_ver))
         return true;
-    else if (std::get<2>(me_ver) > std::get<2>(new_ver))
+    else if (get<2>(me_ver) > get<2>(new_ver))
         return false;
 
     // if same version, check type_by_dir priority
@@ -78,91 +78,6 @@ void AppDescriptionList::changeLocale()
     }
 }
 
-AppDescriptionPtr AppDescriptionList::create(const std::string& appId)
-{
-    if (appId.empty()) {
-        Logger::warning(getClassName(), __FUNCTION__, "AppId is empty");
-        return nullptr;
-    }
-
-    AppDescriptionPtr appDesc = std::make_shared<AppDescription>(appId);
-    return appDesc;
-}
-
-AppDescriptionPtr AppDescriptionList::add(AppDescriptionPtr appDesc)
-{
-    if (appDesc == nullptr)
-        return nullptr;
-
-    if (!appDesc->isAllowedAppId()) {
-        Logger::error(getClassName(), __FUNCTION__, appDesc->getAppId() + " is not allowed appId");
-        return nullptr;
-    }
-
-    if (AppLocation::AppLocation_Devmode == appDesc->getAppLocation() && appDesc->isPrivilegedAppId()) {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId() + " is privileged appId");
-        return nullptr;
-    }
-
-    if (appDesc->m_appinfo.isNull() || !appDesc->m_appinfo.isValid()) {
-        Logger::error(getClassName(), __FUNCTION__, appDesc->getAppId() + " doesn't have valid appinfo.json");
-        return nullptr;
-    }
-
-    if (m_map.find(appDesc->getAppId()) == m_map.end() || compareVersion(m_map[appDesc->getAppId()], appDesc)) {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId() + " is added");
-        m_map[appDesc->getAppId()] = appDesc;
-        LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(appDesc);
-        LaunchPointList::getInstance().add(launchPoint);
-    } else {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId() + " is ignored");
-        return nullptr;
-    }
-    return m_map[appDesc->getAppId()];
-}
-
-AppDescriptionPtr AppDescriptionList::getById(const std::string& appId)
-{
-    if (m_map.count(appId) == 0)
-        return NULL;
-    return m_map[appId];
-}
-
-void AppDescriptionList::remove(AppDescriptionPtr appDesc)
-{
-    // 실제로 앱이 없어지더라도 하위 레이어에 있을수도 있다.
-    // 상위 레이어의 앱이 사라지더라도 하위 레이어를 스캐닝해야 한다. 이때는 remove가 아닌 update가 발생해야 한다.
-    // 아래 명령으로 appinfo를 찾아서 있으면 다시 로드하는 형태로 처리하자.
-    // findAppDir(const string& appId);
-    if (appDesc->isSystemApp()) {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "remove system-app in read-write area");
-        SAMConf::getInstance().appendDeletedSystemApp(appDesc->getAppId());
-    }
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second == appDesc) {
-            m_map.erase(it);
-            return;
-        }
-    }
-}
-
-void AppDescriptionList::toJson(JValue& json, JValue& properties, bool devmode)
-{
-    if (!json.isArray())
-        return;
-
-    for (auto appDesc : m_map) {
-        if (devmode && appDesc.second->getAppLocation() != AppLocation::AppLocation_Devmode) continue;
-
-        JValue item;
-        if (properties.isArray() && properties.arraySize() > 0)
-            item = appDesc.second->getJson(properties);
-        else
-            item = appDesc.second->getJson();
-        json.append(item);
-    }
-}
-
 void AppDescriptionList::scanFull()
 {
     JValue applicationPaths = SAMConf::getInstance().getApplicationPaths();
@@ -181,13 +96,13 @@ void AppDescriptionList::scanFull()
             continue;
         }
         if (!File::isDirectory(path)) {
-            Logger::info(getClassName(), __FUNCTION__,
-                         Logger::format("Directory is not exist: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+            Logger::warning(getClassName(), __FUNCTION__,
+                            Logger::format("Directory is not exist: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
             continue;
         }
         if (appLocation == AppLocation::AppLocation_Devmode && !SAMConf::getInstance().isDevmodeEnabled()) {
-            Logger::info(getClassName(), __FUNCTION__,
-                         Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+            Logger::debug(getClassName(), __FUNCTION__,
+                          Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
             continue;
         }
         scanDir(path, appLocation);
@@ -241,8 +156,105 @@ void AppDescriptionList::scanApp(const string& appId, const string& folderPath, 
         Logger::warning(getClassName(), __FUNCTION__, appId, "Cannot create application description");
         return;
     }
-    appDesc->setAppLocation(appLocation);
-    appDesc->setFolderPath(folderPath);
-    appDesc->loadAppinfo();
+    if (!appDesc->scan(folderPath, appLocation)) {
+        Logger::warning(getClassName(), __FUNCTION__, appId, "Cannot scan AppDescription");
+        return;
+    }
     AppDescriptionList::getInstance().add(appDesc);
+}
+
+AppDescriptionPtr AppDescriptionList::create(const string& appId)
+{
+    if (appId.empty()) {
+        Logger::warning(getClassName(), __FUNCTION__, "AppId is empty");
+        return nullptr;
+    }
+
+    AppDescriptionPtr appDesc = make_shared<AppDescription>(appId);
+    return appDesc;
+}
+
+AppDescriptionPtr AppDescriptionList::getByAppId(const string& appId)
+{
+    if (m_map.count(appId) == 0)
+        return NULL;
+    return m_map[appId];
+}
+
+bool AppDescriptionList::add(AppDescriptionPtr appDesc)
+{
+    if (appDesc == nullptr) {
+        Logger::error(getClassName(), __FUNCTION__, "Invalid AppDescription");
+        return false;
+    }
+
+    if (!appDesc->isAllowedAppId()) {
+        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Appid is not allowed");
+        return false;
+    }
+
+    if (AppLocation::AppLocation_Devmode == appDesc->getAppLocation() && appDesc->isPrivilegedAppId()) {
+        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Reserved AppId is not allowed for 3rd party app");
+        return false;
+    }
+
+    if (appDesc->m_appinfo.isNull() || !appDesc->m_appinfo.isValid()) {
+        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: No valid appinfo.json");
+        return false;
+    }
+
+    if (m_map.find(appDesc->getAppId()) == m_map.end() || compareVersion(m_map[appDesc->getAppId()], appDesc)) {
+        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
+        m_map[appDesc->getAppId()] = appDesc;
+        LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(appDesc);
+        LaunchPointList::getInstance().add(launchPoint);
+    } else {
+        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Version is low");
+        return false;
+    }
+
+    ApplicationManager::getInstance().postListApps(appDesc, "added", "");
+    return true;
+}
+
+bool AppDescriptionList::remove(AppDescriptionPtr appDesc)
+{
+    if (appDesc->isSystemApp()) {
+        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "remove system-app in read-write area");
+        SAMConf::getInstance().appendDeletedSystemApp(appDesc->getAppId());
+    }
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second == appDesc) {
+            LaunchPointList::getInstance().removeByAppDesc(appDesc);
+            m_map.erase(it);
+            Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
+            ApplicationManager::getInstance().postListApps(appDesc, "removed", "");
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AppDescriptionList::isExist(const string& appId)
+{
+    if (m_map.count(appId) == 0)
+        return false;
+    return true;
+}
+
+void AppDescriptionList::toJson(JValue& json, JValue& properties, bool devmode)
+{
+    if (!json.isArray())
+        return;
+
+    for (auto appDesc : m_map) {
+        if (devmode && appDesc.second->getAppLocation() != AppLocation::AppLocation_Devmode) continue;
+
+        JValue item;
+        if (properties.isArray() && properties.arraySize() > 0)
+            item = appDesc.second->getJson(properties);
+        else
+            item = appDesc.second->getJson();
+        json.append(item);
+    }
 }

@@ -17,11 +17,12 @@
 #ifndef BUS_CLIENT_SETTINGSERVICE_H_
 #define BUS_CLIENT_SETTINGSERVICE_H_
 
-#include "AbsLunaClient.h"
-#include "interface/ISingleton.h"
 #include <luna-service2/lunaservice.hpp>
 #include <boost/signals2.hpp>
 #include <pbnjson.hpp>
+
+#include "AbsLunaClient.h"
+#include "interface/ISingleton.h"
 #include "util/Logger.h"
 
 using namespace LS;
@@ -37,7 +38,7 @@ public:
     static bool onCheckParentalLock(LSHandle* sh, LSMessage* message, void* context);
     Call checkParentalLock(LSFilterFunc func, const string& appId);
 
-    const std::string& localeInfo() const
+    const string& localeInfo() const
     {
         return m_localeInfo;
     }
@@ -54,7 +55,7 @@ private:
 
     void updateLocaleInfo(const pbnjson::JValue& localeInfo);
 
-    std::string m_localeInfo;
+    string m_localeInfo;
 
     Call m_getSystemSettingsCall;
 

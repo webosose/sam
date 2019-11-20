@@ -37,15 +37,17 @@ public:
     virtual ~AppDescriptionList();
 
     void changeLocale();
-
     void scanFull();
     void scanDir(const string& path, const AppLocation& appLocation);
     void scanApp(const string& appId, const string& folderPath, const AppLocation& appLocation);
 
-    AppDescriptionPtr create(const std::string& appId);
-    AppDescriptionPtr add(AppDescriptionPtr appDesc);
-    AppDescriptionPtr getById(const std::string& appId);
-    void remove(AppDescriptionPtr appDesc);
+    AppDescriptionPtr create(const string& appId);
+    AppDescriptionPtr getByAppId(const string& appId);
+
+    bool add(AppDescriptionPtr appDesc);
+    bool remove(AppDescriptionPtr appDesc);
+
+    bool isExist(const string& appId);
     void toJson(JValue& json, JValue& properties, bool devmode = false);
 
 private:

@@ -67,27 +67,33 @@ enum class LifeHandlerType : int8_t {
 
 class AppDescription;
 
-typedef std::shared_ptr<AppDescription> AppDescriptionPtr;
-typedef std::tuple<uint16_t, uint16_t, uint16_t> AppIntVersion;
+typedef shared_ptr<AppDescription> AppDescriptionPtr;
+typedef tuple<uint16_t, uint16_t, uint16_t> AppIntVersion;
 
 class AppDescription {
 friend class AppDescriptionList;
 public:
     static string toString(const AppStatusEvent& event);
 
-    static std::string toString(AppType type);
+    static string toString(AppType type);
     static AppType toAppType(const string& type);
 
-    static std::string toString(AppLocation location);
+    static const char* toString(AppLocation location);
     static AppLocation toAppLocation(const string& type);
 
-    AppDescription(const std::string& appId);
+    AppDescription(const string& appId);
     virtual ~AppDescription();
 
-    void scan();
-    void applyFolderPath(std::string& path);
+    bool scan(const string& folderPath, const AppLocation& appLocation);
+    bool rescan();
+
+    void applyFolderPath(string& path);
     bool loadAppinfo();
 
+    bool isLocked() const
+    {
+        return m_isLocked;
+    }
     void lock()
     {
         m_isLocked = true;
@@ -95,10 +101,6 @@ public:
     void unlock()
     {
         m_isLocked = false;
-    }
-    bool isLocked() const
-    {
-        return m_isLocked;
     }
 
     pbnjson::JValue getJson(JValue& properties);
@@ -113,7 +115,7 @@ public:
         json = m_appinfo.duplicate();
     }
 
-    const std::string& getFolderPath() const
+    const string& getFolderPath() const
     {
         return m_folderPath;
     }
@@ -131,26 +133,25 @@ public:
         m_appLocation = location;
     }
 
-
-    LifeHandlerType getHandlerType() const
+    LifeHandlerType getLifeHandlerType() const
     {
         return m_handlerType;
     }
 
     // Just getter
-    const std::string getAppDescription() const
+    const string getAppDescription() const
     {
         string appDescription = "";
         JValueUtil::getValue(m_appinfo, "appDescription", appDescription);
         return appDescription;
     }
 
-    const std::string& getAppId() const
+    const string& getAppId() const
     {
         return m_appId;
     }
 
-    const std::string& getAbsMain() const
+    const string& getAbsMain() const
     {
         return m_absMain;
     }
@@ -160,28 +161,28 @@ public:
         return m_appType;
     }
 
-    const std::string getBgColor() const
+    const string getBgColor() const
     {
         string bgColor = "";
         JValueUtil::getValue(m_appinfo, "bgColor", bgColor);
         return bgColor;
     }
 
-    const std::string getBgImage() const
+    const string getBgImage() const
     {
         string bgImage = "";
         JValueUtil::getValue(m_appinfo, "bgImage", bgImage);
         return bgImage;
     }
 
-    const std::string getDefaultWindowType() const
+    const string getDefaultWindowType() const
     {
         string defaultWindowType = "";
         JValueUtil::getValue(m_appinfo, "defaultWindowType", defaultWindowType);
         return defaultWindowType;
     }
 
-    const std::string getIcon() const
+    const string getIcon() const
     {
         string icon = "";
         JValueUtil::getValue(m_appinfo, "icon", icon);
@@ -193,7 +194,7 @@ public:
         return m_intVersion;
     }
 
-    const std::string getLargeIcon() const
+    const string getLargeIcon() const
     {
         string largeIcon = "";
         JValueUtil::getValue(m_appinfo, "largeIcon", largeIcon);
@@ -214,12 +215,12 @@ public:
         return requiredMemory;
     }
 
-    const std::string& getSplashBackground() const
+    const string& getSplashBackground() const
     {
         return m_absSplashBackground;
     }
 
-    const std::string getTitle() const
+    const string getTitle() const
     {
         string title = "";
         JValueUtil::getValue(m_appinfo, "title", title);
@@ -230,7 +231,7 @@ public:
     {
         if (m_folderPath.length() <= m_appId.length() ||
             strcmp(m_folderPath.c_str() + m_folderPath.length() - m_appId.length(), m_appId.c_str()) != 0) {
-            Logger::error(CLASS_NAME, __FUNCTION__, m_appId, "App path does not match app id");
+            //Logger::error(CLASS_NAME, __FUNCTION__, m_appId, "App path does not match app id");
             return false;
         }
         return true;
@@ -306,9 +307,9 @@ public:
     }
 
 private:
-    static const std::vector<std::string> PROPS_PROHIBITED;
-    static const std::vector<std::string> PROPS_IMAGES;
-    static const std::vector<std::string> ASSETS_SUPPORTED;
+    static const vector<string> PROPS_PROHIBITED;
+    static const vector<string> PROPS_IMAGES;
+    static const vector<string> ASSETS_SUPPORTED;
     static const string CLASS_NAME;
 
     AppDescription& operator=(const AppDescription& appDesc) = delete;

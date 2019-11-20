@@ -28,10 +28,10 @@ using namespace std;
 
 class File {
 public:
-    static void set_slash_to_base_path(std::string& path);
-    static std::string readFile(const std::string& file_name);
-    static bool writeFile(const std::string& filePath, const std::string& buffer);
-    static bool concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr);
+    static void set_slash_to_base_path(string& path);
+    static string readFile(const string& file_name);
+    static bool writeFile(const string& filePath, const string& buffer);
+    static bool concatToFilename(const string originPath, string& returnPath, const string addingStr);
 
     static bool isDirectory(const string& path);
     static bool isFile(const string& path);
@@ -39,10 +39,10 @@ public:
 
     static string join(const string& a, const string& b);
 
-    static void trimPath(std::string &path)
+    static void trimPath(string &path)
     {
         if (path.back() == '/')
-            path.erase(std::prev(path.end()));
+            path.erase(prev(path.end()));
     }
 
     File();

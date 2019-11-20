@@ -40,7 +40,6 @@ public:
     virtual ~PolicyManager();
 
     void launch(LunaTaskPtr lunaTask);
-    void removeLaunchPoint(LunaTaskPtr lunaTask);
 
 private:
     void checkExecutionLock(LunaTaskPtr item);

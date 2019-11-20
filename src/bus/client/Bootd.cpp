@@ -14,9 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/Bootd.h>
-#include <pbnjson.hpp>
-#include "util/JValueUtil.h"
+#include "Bootd.h"
 
 Bootd::Bootd()
     : AbsLunaClient("com.webos.bootManager")
@@ -35,7 +33,7 @@ void Bootd::onInitialze()
 
 void Bootd::onServerStatusChanged(bool isConnected)
 {
-    static std::string method = std::string("luna://") + getName() + std::string("/getBootStatus");
+    static string method = string("luna://") + getName() + string("/getBootStatus");
 
     if (isConnected) {
         if (m_getBootStatusCall.isActive())

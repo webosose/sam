@@ -19,8 +19,13 @@
 #include <sys/time.h>
 #include <boost/lexical_cast.hpp>
 
+#include "RunningAppList.h"
+#include "bus/client/DB8.h"
+#include "bus/service/ApplicationManager.h"
+
 LaunchPointList::LaunchPointList()
 {
+    setClassName("LaunchPointList");
 }
 
 LaunchPointList::~LaunchPointList()
@@ -41,7 +46,7 @@ void LaunchPointList::sort()
 LaunchPointPtr LaunchPointList::createBootmark(AppDescriptionPtr appDesc, const JValue& database)
 {
     string launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_BOOKMARK, appDesc->getAppId());
-    LaunchPointPtr launchPoint = std::make_shared<LaunchPoint>(appDesc, launchPointId);
+    LaunchPointPtr launchPoint = make_shared<LaunchPoint>(appDesc, launchPointId);
     launchPoint->setType(LaunchPointType::LaunchPoint_BOOKMARK);
     launchPoint->updateDatabase(database);
     return launchPoint;
@@ -50,17 +55,8 @@ LaunchPointPtr LaunchPointList::createBootmark(AppDescriptionPtr appDesc, const 
 LaunchPointPtr LaunchPointList::createDefault(AppDescriptionPtr appDesc)
 {
     string launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_DEFAULT, appDesc->getAppId());
-    LaunchPointPtr launchPoint = std::make_shared<LaunchPoint>(appDesc, launchPointId);
+    LaunchPointPtr launchPoint = make_shared<LaunchPoint>(appDesc, launchPointId);
     launchPoint->setType(LaunchPointType::LaunchPoint_DEFAULT);
-    return launchPoint;
-}
-
-LaunchPointPtr LaunchPointList::add(LaunchPointPtr launchPoint)
-{
-    if (launchPoint == nullptr)
-        return nullptr;
-    launchPoint->syncDatabase();
-    m_list.push_back(launchPoint);
     return launchPoint;
 }
 
@@ -86,48 +82,84 @@ LaunchPointPtr LaunchPointList::getByLaunchPointId(const string& launchPointId)
     return nullptr;
 }
 
-void LaunchPointList::remove(AppDescriptionPtr appDesc)
+bool LaunchPointList::add(LaunchPointPtr launchPoint)
 {
-    for (auto it = m_list.begin(); it != m_list.end();) {
-        if ((*it)->getAppDesc() == appDesc) {
-            it = m_list.erase(it);
-        } else {
-            ++it;
-        }
+    if (launchPoint == nullptr || launchPoint->getLaunchPointId().empty()) {
+        Logger::error(getClassName(), __FUNCTION__, "Invalid launchPoint");
+        return false;
     }
+    if (isExist(launchPoint->getLaunchPointId())) {
+        Logger::error(getClassName(), __FUNCTION__, "The launchPoint is already registered");
+        return false;
+    }
+
+    onAdd(launchPoint);
+    return true;
 }
 
-void LaunchPointList::remove(LaunchPointPtr launchPoint)
+bool LaunchPointList::remove(LaunchPointPtr launchPoint)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == launchPoint) {
             m_list.erase(it);
-            return;
+            onRemove(launchPoint);
+            return true;
         }
     }
+    return true;
 }
 
-void LaunchPointList::removeByAppId(const string& appId)
+bool LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
 {
     for (auto it = m_list.begin(); it != m_list.end();) {
-        if ((*it)->getAppDesc()->getAppId() == appId) {
-            // notifyLaunchPointChanged(*it);
-            // DB8::getInstance().deleteLaunchPoint((*it)->getLaunchPointId());
+        if ((*it)->getAppDesc() == appDesc) {
+            LaunchPointPtr launchPoint = *it;
             it = m_list.erase(it);
+            onRemove(launchPoint);
         } else {
             ++it;
         }
     }
+    return true;
 }
 
-void LaunchPointList::removeByLaunchPointId(const string& launchPointId)
+bool LaunchPointList::removeByAppId(const string& appId)
+{
+    for (auto it = m_list.begin(); it != m_list.end();) {
+        if ((*it)->getAppDesc()->getAppId() == appId) {
+            LaunchPointPtr launchPoint = *it;
+            it = m_list.erase(it);
+            onRemove(launchPoint);
+        } else {
+            ++it;
+        }
+    }
+    return true;
+}
+
+bool LaunchPointList::removeByLaunchPointId(const string& launchPointId)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it)->getLaunchPointId() == launchPointId) {
-            m_list.erase(it);
-            return;
+            LaunchPointPtr launchPoint = *it;
+            it = m_list.erase(it);
+            onRemove(launchPoint);
+            return true;
         }
     }
+    return false;
+}
+
+bool LaunchPointList::isExist(const string& launchPointId)
+{
+    if (launchPointId.empty())
+        return false;
+
+    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+        if ((*it)->getLaunchPointId() == launchPointId)
+            return true;
+    }
+    return false;
 }
 
 void LaunchPointList::toJson(JValue& json)
@@ -145,7 +177,7 @@ void LaunchPointList::toJson(JValue& json)
     }
 }
 
-std::string LaunchPointList::generateLaunchPointId(LaunchPointType type, const string& appId)
+string LaunchPointList::generateLaunchPointId(LaunchPointType type, const string& appId)
 {
     if (type == LaunchPointType::LaunchPoint_DEFAULT) {
         return appId + "_default";
@@ -156,10 +188,26 @@ std::string LaunchPointList::generateLaunchPointId(LaunchPointType type, const s
         gettimeofday(&tv, NULL);
         double verifier = tv.tv_usec;
 
-        std::string launchPointId = appId + "_" + boost::lexical_cast<std::string>(verifier);
+        string launchPointId = appId + "_" + boost::lexical_cast<string>(verifier);
         if (LaunchPointList::getInstance().getByLaunchPointId(launchPointId) == nullptr)
             return launchPointId;
     }
 
-    return std::string("");
+    return string("");
+}
+
+void LaunchPointList::onAdd(LaunchPointPtr launchPoint)
+{
+    Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is added");
+    launchPoint->syncDatabase();
+    m_list.push_back(launchPoint);
+    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "added");
+}
+
+void LaunchPointList::onRemove(LaunchPointPtr launchPoint)
+{
+    Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is removed");
+    RunningAppList::getInstance().removeByLaunchPoint(launchPoint);
+    DB8::getInstance().deleteLaunchPoint(launchPoint->getLaunchPointId());
+    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "removed");
 }

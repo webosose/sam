@@ -34,9 +34,9 @@ friend class ISingleton<Booster>;
 public:
     virtual ~Booster();
 
-    bool launch(LunaTaskPtr lunaTask);
-    bool close(LunaTaskPtr lunaTask);
-    bool pause(LunaTaskPtr lunaTask);
+    bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask);
 
 protected:
     // AbsLunaClient
@@ -44,7 +44,7 @@ protected:
     virtual void onServerStatusChanged(bool isConnected);
 
 private:
-    static const std::string NAME;
+    static const string NAME;
 
     static bool onLaunch(LSHandle* sh, LSMessage* message, void* context);
     static bool onClose(LSHandle* sh, LSMessage* message, void* context);

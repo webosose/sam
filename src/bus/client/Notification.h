@@ -43,7 +43,7 @@ protected:
     virtual void onServerStatusChanged(bool isConnected);
 
 private:
-    static const std::string NAME;
+    static const string NAME;
 
     Notification();
 };

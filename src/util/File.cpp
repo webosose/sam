@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-void File::set_slash_to_base_path(std::string& path)
+void File::set_slash_to_base_path(string& path)
 {
     if (!path.empty() && path[path.length() - 1] == '/')
         return;
@@ -28,10 +28,10 @@ void File::set_slash_to_base_path(std::string& path)
     path.append("/");
 }
 
-std::string File::readFile(const std::string& file_name)
+string File::readFile(const string& file_name)
 {
-    std::ifstream file(file_name.c_str(), std::ifstream::in);
-    std::string file_contents;
+    ifstream file(file_name.c_str(), ifstream::in);
+    string file_contents;
 
     if (file.is_open() && file.good()) {
         stringstream buf;
@@ -42,9 +42,9 @@ std::string File::readFile(const std::string& file_name)
     return file_contents;
 }
 
-bool File::writeFile(const std::string &path, const std::string& buffer)
+bool File::writeFile(const string &path, const string& buffer)
 {
-    std::ofstream file(path.c_str());
+    ofstream file(path.c_str());
     if (file.is_open()) {
         file << buffer;
         file.close();
@@ -54,17 +54,17 @@ bool File::writeFile(const std::string &path, const std::string& buffer)
     return true;
 }
 
-bool File::concatToFilename(const std::string originPath, std::string& returnPath, const std::string addingStr)
+bool File::concatToFilename(const string originPath, string& returnPath, const string addingStr)
 {
     if (originPath.empty() || addingStr.empty())
         return false;
 
     returnPath = "";
 
-    std::string dir_path, filename, name_only, ext;
+    string dir_path, filename, name_only, ext;
     size_t pos_dir = originPath.find_last_of("/");
 
-    if (std::string::npos == pos_dir) {
+    if (string::npos == pos_dir) {
         filename = originPath;
     } else {
         pos_dir = pos_dir + 1;
@@ -74,7 +74,7 @@ bool File::concatToFilename(const std::string originPath, std::string& returnPat
 
     size_t pos_ext = filename.find_last_of(".");
 
-    if (std::string::npos == pos_ext)
+    if (string::npos == pos_ext)
         return false;
 
     name_only = filename.substr(0, pos_ext);

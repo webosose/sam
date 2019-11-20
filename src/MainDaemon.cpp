@@ -49,7 +49,6 @@ MainDaemon::MainDaemon()
     setClassName("MainDaemon");
 
     m_mainLoop = g_main_loop_new(NULL, FALSE);
-
     SAMConf::getInstance().initialize();
 
     // Load managers (lifecycle, package, launchpoint)
@@ -124,21 +123,24 @@ void MainDaemon::onGetConfigs(const JValue& responsePayload)
 
 void MainDaemon::checkPreconditions()
 {
+    static bool isFired = false;
+    if (isFired)
+        return;
+
     if (!m_isConfigsReceived) {
-        Logger::info(getClassName(), __FUNCTION__, "Cannot receive 'getConfigs' response");
+        Logger::info(getClassName(), __FUNCTION__, "Wait for receiving 'getConfigs' response");
         return;
     }
     if (!m_isCBDGenerated) {
-        Logger::info(getClassName(), __FUNCTION__, "Cannot receive 'getBootStatus' response");
+        Logger::info(getClassName(), __FUNCTION__, "Wait for receiving 'getBootStatus' response");
         return;
     }
     Logger::info(getClassName(), __FUNCTION__, "All initial components are ready");
+    isFired = true;
 
-    // ApplicationManager::getInstance().postListApps("", "initialized", "");
-    // TODO : listLaunchPoint에 대한 subscription을 보내야 하는데
-    // DB에서 읽어올 때까지 딜레이를 시켜야 하나? 아래는 관련코드
-    // ApplicationManager::getInstance().postListLaunchPoints(nullptr);
-
-    // TODO : 아래는 자동으로 LP가 생성이 되어야지 명시적으로 생성하도록 하면 안좋다.
-    // LaunchPointManager::getInstance().updateApps(apps);
+    ApplicationManager::getInstance().enablePosting();
+    ApplicationManager::getInstance().postGetForegroundAppInfo(false);
+    ApplicationManager::getInstance().postListApps(nullptr, "", "");
+    ApplicationManager::getInstance().postListLaunchPoints(nullptr, "");
 }
+

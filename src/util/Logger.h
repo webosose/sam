@@ -53,11 +53,11 @@ enum LogType {
 class Logger {
 public:
     template<typename ... Args>
-    static const string format(const std::string& format, Args ... args)
+    static const string format(const string& format, Args ... args)
     {
         static char buffer[1024];
         snprintf(buffer, 1024, format.c_str(), args ... );
-        return std::string(buffer);
+        return string(buffer);
     }
 
     static const char* toString(bool BOOL)
@@ -72,7 +72,7 @@ public:
     }
 
     static void logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload);
-    static void logAPIResponse(const string& className, const string& functionName, const string& what);
+    static void logAPIResponse(const string& className, const string& functionName, Message& request, JValue& responsePayload);
 
     static void logCallRequest(const string& className, const string& functionName, const string& method, JValue& requestPayload);
     static void logCallResponse(const string& className, const string& functionName, Message& response, JValue& responsePayload);

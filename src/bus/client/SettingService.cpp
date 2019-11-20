@@ -14,13 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "SettingService.h"
+
 #include <stdlib.h>
 #include <unicode/locid.h>
 
-#include <pbnjson.hpp>
-
 #include "base/AppDescriptionList.h"
-#include "bus/client/SettingService.h"
 #include "bus/service/ApplicationManager.h"
 #include "conf/SAMConf.h"
 #include "util/JValueUtil.h"
@@ -45,7 +44,7 @@ void SettingService::onInitialze()
 
 void SettingService::onServerStatusChanged(bool isConnected)
 {
-    static std::string method = std::string("luna://") + getName() + std::string("/getSystemSettings");
+    static string method = string("luna://") + getName() + string("/getSystemSettings");
 
     if (isConnected) {
         JValue requestPayload = pbnjson::Object();
@@ -121,7 +120,7 @@ Done:
 
 Call SettingService::checkParentalLock(LSFilterFunc func, const string& appId)
 {
-    static string method = std::string("luna://") + getName() + std::string("/batch");
+    static string method = string("luna://") + getName() + string("/batch");
     JValue requestPayload = pbnjson::Object();
     JValue operations = pbnjson::Array();
 
@@ -171,7 +170,7 @@ bool SettingService::onLocaleChanged(LSHandle* sh, LSMessage* message, void* con
 
 void SettingService::updateLocaleInfo(const pbnjson::JValue& settings)
 {
-    std::string localeInfo;
+    string localeInfo;
 
     if (settings.isNull() || !settings.isObject()) {
         return;
@@ -186,9 +185,9 @@ void SettingService::updateLocaleInfo(const pbnjson::JValue& settings)
     }
 
     m_localeInfo = localeInfo;
-    std::string language;
-    std::string script;
-    std::string region;
+    string language;
+    string script;
+    string region;
 
     if (m_localeInfo.empty()) {
         language = "";

@@ -16,7 +16,7 @@
 
 map<string, JSchema> JValueUtil::s_schemas;
 
-void JValueUtil::addUniqueItemToArray(pbnjson::JValue& array, std::string& item)
+void JValueUtil::addUniqueItemToArray(pbnjson::JValue& array, string& item)
 {
     if (array.isNull() || !array.isArray() || item.empty())
         return;
@@ -157,12 +157,12 @@ JSchema JValueUtil::getSchema(string name)
     if (it != s_schemas.end())
         return it->second;
 
-    std::string path = PATH_SAM_SCHEMAS + name + ".schema";
+    string path = PATH_SAM_SCHEMAS + name + ".schema";
     pbnjson::JSchema schema = JSchema::fromFile(path.c_str());
     if (!schema.isInitialized())
         return JSchema::AllSchema();
 
-    s_schemas.insert(std::pair<std::string, pbnjson::JSchema>(name, schema));
+    s_schemas.insert(pair<string, pbnjson::JSchema>(name, schema));
     return schema;
 }
 

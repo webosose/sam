@@ -14,7 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/service/SchemaChecker.h>
+#include "SchemaChecker.h"
+
 #include "ApplicationManager.h"
 #include "Environment.h"
 
@@ -22,6 +23,7 @@ SchemaChecker::SchemaChecker()
 {
     m_APISchemaFiles[ApplicationManager::METHOD_LAUNCH] = "applicationManager.launch";
     m_APISchemaFiles[ApplicationManager::METHOD_PAUSE] = "";
+    m_APISchemaFiles[ApplicationManager::METHOD_CLOSE] = "";
     m_APISchemaFiles[ApplicationManager::METHOD_CLOSE_BY_APPID] = "applicationManager.closeByAppId";
     m_APISchemaFiles[ApplicationManager::METHOD_RUNNING] = "applicationManager.running";
     m_APISchemaFiles[ApplicationManager::METHOD_GET_APP_LIFE_EVENTS] = "";

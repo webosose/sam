@@ -14,15 +14,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <conf/SAMConf.h>
-#include "bus/client/DB8.h"
+#include "DB8.h"
 
 #include "base/LaunchPointList.h"
 #include "bus/service/ApplicationManager.h"
+#include "conf/SAMConf.h"
 #include "util/JValueUtil.h"
 #include "util/Logger.h"
 
-const char* DB8::KIND_NAME = "com.webos.applicationManager.launchpoints:1";
+const char* DB8::KIND_NAME = "com.webos.applicationManager.launchpoints:2";
 
 bool DB8::onResponse(LSHandle* sh, LSMessage* message, void* context)
 {
@@ -48,7 +48,7 @@ DB8::~DB8()
 
 bool DB8::insertLaunchPoint(pbnjson::JValue& json)
 {
-    static string method = std::string("luna://") + getName() + std::string("/put");
+    static string method = string("luna://") + getName() + string("/put");
 
     if (json.isNull())
         return false;
@@ -74,7 +74,7 @@ bool DB8::insertLaunchPoint(pbnjson::JValue& json)
 
 bool DB8::updateLaunchPoint(const pbnjson::JValue& props)
 {
-    static string method = std::string("luna://") + getName() + std::string("/merge");
+    static string method = string("luna://") + getName() + string("/merge");
     JValue requestPayload = pbnjson::Object();
     JValue where = pbnjson::Array();
     JValue query = pbnjson::Object();
@@ -107,7 +107,7 @@ bool DB8::updateLaunchPoint(const pbnjson::JValue& props)
 
 void DB8::deleteLaunchPoint(const string& launchPointId)
 {
-    static string method = std::string("luna://") + getName() + std::string("/del");
+    static string method = string("luna://") + getName() + string("/del");
     JValue requestPayload = pbnjson::Object();
     JValue where = pbnjson::Object();
 
@@ -191,7 +191,7 @@ bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
             continue;
         }
 
-        appDesc = AppDescriptionList::getInstance().getById(appId);
+        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
         if (appDesc == nullptr) {
             Logger::warning(getInstance().getClassName(), __FUNCTION__, "The app is already uninstalled");
             DB8::getInstance().deleteLaunchPoint(launchPointId);
@@ -216,7 +216,7 @@ bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
 
 void DB8::find()
 {
-    static string method = std::string("luna://") + getName() + std::string("/find");
+    static string method = string("luna://") + getName() + string("/find");
 
     JValue requestPayload = pbnjson::Object();
     requestPayload.put("query", pbnjson::Object());
@@ -261,7 +261,7 @@ bool DB8::onPutKind(LSHandle* sh, LSMessage* message, void* context)
 
 void DB8::putKind()
 {
-    static string method = std::string("luna://") + getName() + std::string("/putKind");
+    static string method = string("luna://") + getName() + string("/putKind");
 
     JValue requestPayload = SAMConf::getInstance().getDBSchema();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
@@ -299,7 +299,7 @@ bool DB8::onPutPermissions(LSHandle* sh, LSMessage* message, void* context)
 
 void DB8::putPermissions()
 {
-    static string method = std::string("luna://") + getName() + std::string("/putPermissions");
+    static string method = string("luna://") + getName() + string("/putPermissions");
 
     JValue requestPayload = SAMConf::getInstance().getDBPermission();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);

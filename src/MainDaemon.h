@@ -20,17 +20,21 @@
 #include <luna-service2/lunaservice.h>
 
 #include "base/LunaTask.h"
+#include "interface/ISingleton.h"
 #include "interface/IClassName.h"
 
-class MainDaemon : public IClassName {
+class MainDaemon : public ISingleton<MainDaemon>,
+                   public IClassName {
+friend class ISingleton<MainDaemon>;
 public:
-    MainDaemon();
     virtual ~MainDaemon();
 
     void start();
     void stop();
 
 private:
+    MainDaemon();
+
     void onGetBootStatus(const JValue& subscriptionPayload);
     void onGetConfigs(const JValue& subscriptionPayload);
 

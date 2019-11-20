@@ -39,7 +39,7 @@ public:
 private:
     SchemaChecker();
 
-    std::map<std::string, std::string> m_APISchemaFiles;
+    map<string, string> m_APISchemaFiles;
 };
 
 #endif /* BUS_SERVICE_SCHEMACHECKER_H_ */

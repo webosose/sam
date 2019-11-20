@@ -20,7 +20,7 @@
 
 const string LinuxProcess::CLASS_NAME = "LinuxProcess";
 
-bool LinuxProcess::sendSigTerm(const std::string& pid)
+bool LinuxProcess::sendSigTerm(const string& pid)
 {
     if (pid.empty()) {
         Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
@@ -40,7 +40,7 @@ bool LinuxProcess::sendSigTerm(const std::string& pid)
     return true;
 }
 
-bool LinuxProcess::sendSigKill(const std::string& pid)
+bool LinuxProcess::sendSigKill(const string& pid)
 {
     if (pid.empty()) {
         Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
@@ -66,7 +66,7 @@ string LinuxProcess::convertPidsToString(const PidVector& pids)
     string delim;
     for (pid_t pid : pids) {
         result += delim;
-        result += std::to_string(pid);
+        result += to_string(pid);
         delim = " ";
     }
     return result;
@@ -93,6 +93,16 @@ pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
     GError* gerr = NULL;
     GSpawnFlags flags = (GSpawnFlags) (G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_DO_NOT_REAP_CHILD);
 
+    if (true) {
+        string cmd = "";
+        // This is debug purpose
+        for (int i = 0; i < 10; i++) {
+            if (argv[i] == NULL) break;
+            cmd += string(argv[i]) + " ";
+        }
+        Logger::error(CLASS_NAME, __FUNCTION__, cmd);
+    }
+
     gboolean result = g_spawn_async_with_pipes(
         NULL,
         const_cast<char**>(argv),  // cmd arguments
@@ -107,24 +117,23 @@ pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
         &gerr
     );
     if (gerr) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "Failed to folk", Logger::format("returned_pid: %d, errorText: %s", pid, gerr->message));
+        Logger::error(CLASS_NAME, __FUNCTION__, Logger::format("Failed to folk: pid(%d) errorText(%s)", pid, gerr->message));
         g_error_free(gerr);
         gerr = NULL;
         return -1;
     }
-
     if (!result) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "return_false_from_gspawn", Logger::format("returned_pid: %d", pid));
+        Logger::error(CLASS_NAME, __FUNCTION__, Logger::format("Failed to folk: pid: %d", pid));
         return -1;
     }
 
     return pid;
 }
 
-PidVector LinuxProcess::findChildPids(const std::string& pid)
+PidVector LinuxProcess::findChildPids(const string& pid)
 {
     PidVector pids;
-    pids.push_back((pid_t) std::atol(pid.c_str()));
+    pids.push_back((pid_t) atol(pid.c_str()));
 
     proc_t **proctab = readproctab(PROC_FILLSTAT);
     if (!proctab) {

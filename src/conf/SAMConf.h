@@ -44,9 +44,9 @@ public:
         return ApplicationPaths;
     }
 
-    string getAppShellRunnerPath()
+    const string& getAppShellRunnerPath()
     {
-        string AppShellRunnerPath = "/usr/bin/app-shell/run_appshell";
+        static string AppShellRunnerPath = "/usr/bin/app-shell/run_app_shell";
         JValueUtil::getValue(m_readOnlyDatabase, "AppShellRunnerPath", AppShellRunnerPath);
         return AppShellRunnerPath;
     }
@@ -58,44 +58,44 @@ public:
         return LaunchPointDBPermissions;
     }
 
-    JValue getDBSchema() const
+    const JValue& getDBSchema() const
     {
-        JValue LaunchPointDBKind = pbnjson::Object();
+        static JValue LaunchPointDBKind = pbnjson::Object();
         JValueUtil::getValue(m_readOnlyDatabase, "LaunchPointDBKind", LaunchPointDBKind);
         return LaunchPointDBKind;
     }
 
-    string getDevModePath()
+    const string& getDevModePath()
     {
-        string DevModePath = "/var/luna/preferences/devmode_enabled";
+        static string DevModePath = "/var/luna/preferences/devmode_enabled";
         JValueUtil::getValue(m_readOnlyDatabase, "DevModePath", DevModePath);
         return DevModePath;
     }
 
-    string getJailerPath()
+    const string& getJailerPath()
     {
-        string JailerPath = "/usr/bin/jailer";
+        static string JailerPath = "/usr/bin/jailer";
         JValueUtil::getValue(m_readOnlyDatabase, "JailerPath", JailerPath);
         return JailerPath;
     }
 
-    string getJailModePath()
+    const string& getJailModePath()
     {
-        string JailModePath = "/var/luna/preferences/jailer_disabled";
+        static string JailModePath = "/var/luna/preferences/jailer_disabled";
         JValueUtil::getValue(m_readOnlyDatabase, "JailModePath", JailModePath);
         return JailModePath;
     }
 
-    string getQmlRunnerPath()
+    const string& getQmlRunnerPath()
     {
-        string QmlRunnerPath = "/usr/bin/qml-runner";
+        static string QmlRunnerPath = "/usr/bin/qml-runner";
         JValueUtil::getValue(m_readOnlyDatabase, "QmlRunnerPath", QmlRunnerPath);
         return QmlRunnerPath;
     }
 
-    string getRespawnedPath()
+    const string& getRespawnedPath()
     {
-        string RespawnedPath = "/tmp/sam-respawned";
+        static string RespawnedPath = "/tmp/sam-respawned";
         JValueUtil::getValue(m_readOnlyDatabase, "RespawnedPath", RespawnedPath);
         return RespawnedPath;
     }
@@ -115,7 +115,7 @@ public:
         return false;
     }
 
-    bool isNoJailApp(const std::string& appId) const
+    bool isNoJailApp(const string& appId) const
     {
         JValue NoJailApps;
         if (!JValueUtil::getValue(m_readOnlyDatabase, "NoJailApps", NoJailApps) || !NoJailApps.isArray()) {
@@ -133,19 +133,28 @@ public:
 
     /** READ WRIETE CONFIGS **/
 
-    bool isKeepAliveApp(const std::string& appId) const
+    bool isKeepAliveApp(const string& appId) const
     {
         JValue keepAliveApps;
-        if (!JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) || !keepAliveApps.isArray()) {
-            return false;
-        }
 
-        int size = keepAliveApps.arraySize();
-        for (int i = 0; i < size; ++i) {
-            if (keepAliveApps[i].asString() == appId) {
-                return true;
+        if (JValueUtil::getValue(m_readOnlyDatabase, "keepAliveApps", keepAliveApps) && keepAliveApps.isArray()) {
+            int size = keepAliveApps.arraySize();
+            for (int i = 0; i < size; ++i) {
+                if (keepAliveApps[i].asString() == appId) {
+                    return true;
+                }
             }
         }
+
+        if (!JValueUtil::getValue(m_readWriteDatabase, "keepAliveApps", keepAliveApps) && keepAliveApps.isArray()) {
+            int size = keepAliveApps.arraySize();
+            for (int i = 0; i < size; ++i) {
+                if (keepAliveApps[i].asString() == appId) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -182,7 +191,7 @@ public:
         saveReadWriteConf();
     }
 
-    bool isDeletedSystemApp(const std::string& appId) const
+    bool isDeletedSystemApp(const string& appId) const
     {
         JValue deletedSystemApps;
         if (!JValueUtil::getValue(m_readWriteDatabase, "deletedSystemApps", deletedSystemApps) || !deletedSystemApps.isArray()) {
@@ -198,7 +207,7 @@ public:
         return false;
     }
 
-    void appendDeletedSystemApp(const std::string& appId)
+    void appendDeletedSystemApp(const string& appId)
     {
         if (isDeletedSystemApp(appId)) {
             return;
@@ -228,23 +237,23 @@ public:
         saveReadWriteConf();
     }
 
-    const std::string getLanguage() const
+    const string& getLanguage() const
     {
-        string language = "";
+        static string language = "";
         JValueUtil::getValue(m_readWriteDatabase, "language", language);
         return language;
     }
 
-    const std::string getScript() const
+    const string& getScript() const
     {
-        string script = "";
+        static string script = "";
         JValueUtil::getValue(m_readWriteDatabase, "script", script);
         return script;
     }
 
-    const std::string getRegion() const
+    const string& getRegion() const
     {
-        string region = "";
+        static string region = "";
         JValueUtil::getValue(m_readWriteDatabase, "region", region);
         return region;
     }

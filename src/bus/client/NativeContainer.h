@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef NATIVEAPP_LIFE_HANDLER_H_
-#define NATIVEAPP_LIFE_HANDLER_H_
+#ifndef BUS_CLIENT_NATIVECONTAINER_H_
+#define BUS_CLIENT_NATIVECONTAINER_H_
 
 #include <list>
 #include <memory>
@@ -29,19 +29,16 @@
 #include "interface/IClassName.h"
 #include "util/LinuxProcess.h"
 
-class SAM : public ISingleton<SAM>,
+class NativeContainer : public ISingleton<NativeContainer>,
             public IClassName {
-friend class AbsInterface;
-friend class InterfaceVer1;
-friend class InterfaceVer2;
-friend class ISingleton<SAM>;
+friend class ISingleton<NativeContainer>;
 public:
-    virtual ~SAM();
+    virtual ~NativeContainer();
 
-    virtual void launch(LunaTaskPtr item);
-    virtual void close(LunaTaskPtr item);
+    virtual void launch(RunningApp& runningApp, LunaTaskPtr item);
+    virtual void close(RunningApp& runningApp, LunaTaskPtr item);
 
-    boost::signals2::signal<void(const std::string& appId, const std::string& pid, const std::string& webprocid)> EventRunningAppAdded;
+    boost::signals2::signal<void(const string& appId, const string& pid, const string& webprocid)> EventRunningAppAdded;
 
 private:
     static const int TIMEOUT_1_SECOND = 1000;
@@ -49,12 +46,10 @@ private:
 
     static void onKillChildProcess(GPid pid, gint status, gpointer data);
 
-    SAM();
+    NativeContainer();
 
-    virtual void launchFromStop(LunaTaskPtr item);
-    virtual void launchFromRegistered(LunaTaskPtr item);
-    virtual void launchFromClosing(LunaTaskPtr item);
-    virtual void launchFromRunning(LunaTaskPtr item);
+    virtual void launchFromStop(RunningApp& runningApp, LunaTaskPtr item);
+    virtual void launchFromRegistered(RunningApp& runningApp, LunaTaskPtr item);
 
 };
 

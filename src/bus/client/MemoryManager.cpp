@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/MemoryManager.h>
+#include "MemoryManager.h"
 
 MemoryManager::MemoryManager()
     : AbsLunaClient("com.webos.service.memorymanager")

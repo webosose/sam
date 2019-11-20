@@ -19,8 +19,6 @@
 #include "base/RunningAppList.h"
 #include "bus/client/AppInstallService.h"
 #include "bus/service/ApplicationManager.h"
-#include <pbnjson.hpp>
-#include <util/JValueUtil.h>
 
 bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context)
 {
@@ -31,33 +29,45 @@ bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context
     if (subscriptionPayload.isNull())
         return true;
 
-    if (!subscriptionPayload["details"].isObject())
-        return false;
-
-    string packageId = "";
+    int statusValue;
     string id = "";
-    string type = "";
+    string packageId = "";
 
     JValueUtil::getValue(subscriptionPayload, "id", id);
     JValueUtil::getValue(subscriptionPayload, "details", "packageId", packageId);
-    JValueUtil::getValue(subscriptionPayload, "details", "type", type);
+    JValueUtil::getValue(subscriptionPayload, "statusValue", statusValue);
 
     if ((packageId.empty() && id.empty())) {
         return true;
     }
-    std::string appId = packageId.empty() ? id : packageId;
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getById(appId);
-
-    int statusValue;
-    if (!JValueUtil::getValue(subscriptionPayload, "statusValue", statusValue)) {
-        return true;
-    }
-
-    AppDescriptionPtr oldAppDesc, newAppDesc;
+    string appId = packageId.empty() ? id : packageId;
+    AppDescriptionPtr appDesc = nullptr;
 
     switch (statusValue) {
-    case 30: // installed
-//        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "Installed");
+    case 22: // Install operation is cancelled
+    case 23: // Install operation is complete with error during download
+    case 24: // Install operation is complete with error during installing ipk
+    case 25: // Remove operation is complete with error
+        // appDesc->scan();
+        break;
+
+    case 30: // All install operations are complete successfully
+        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
+        if (appDesc == nullptr) {
+            appDesc = AppDescriptionList::getInstance().create(appId);
+            if (appDesc == nullptr) {
+                Logger::warning(getInstance().getClassName(), __FUNCTION__, appId, "Failed to create new AppDescription");
+                return true;
+            }
+        }
+        appDesc->rescan();
+        appDesc->unlock();
+
+        if (!AppDescriptionList::getInstance().isExist(appId)) {
+            AppDescriptionList::getInstance().add(appDesc);
+        }
+        break;
+
 //        AppDescriptionManager::getInstance().onAppInstalled(appId);
 //
 //        AppDescriptionPtr oldAppDesc = AppDescriptionList::getInstance().getById(appId);
@@ -66,11 +76,6 @@ bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context
 //
 //        AppDescriptionPtr newAppDesc = AppDescriptionList::getInstance().create(appId);
 //        if (!newAppDesc) {
-//            break;
-//        }
-//
-//        // skip if stub type, (stub apps will be loaded on next full scan)
-//        if (AppType::AppType_Stub == newAppDesc->getAppType()) {
 //            break;
 //        }
 //
@@ -102,30 +107,32 @@ bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context
 //        }
         break;
 
-    case 22: // install cancelled
-    case 23: // download err
-    case 24: // install err
-        appDesc->scan();
-        break;
-
     case 31: // uninstalled
-        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "Uninstalled");
-        appDesc->scan();
+        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
+        if (appDesc == nullptr) {
+            Logger::warning(getInstance().getClassName(), __FUNCTION__, appId, "Cannot find AppDescription for uninstall");
+            break;
+        }
+        if (appDesc->rescan() == false) {
+            AppDescriptionList::getInstance().remove(appDesc);
+        }
         break;
 
-    case 25: // uninstall fail
-        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "Failed to uninstallation");
-        appDesc->scan();
+    case 32: // Need to close app
+        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
+        if (appDesc) {
+            appDesc->lock();
+            // 실행되고 있는 앱들도 모두 죽여야 한다.
+        }
         break;
 
-    case 41: // about to uninstall
+    case 41: // Prepare to remove app
         Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "AboutToUninstall");
         // TODO 아래가 정말로 호출이 되어야 하나? abouot to uninstall이 뭔지 확인이 필요해 보인다.
         // LaunchPointList::getInstance().removeByAppId(appId);
         break;
 
     default:
-        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "Unknown");
         return true;
     }
     return true;
@@ -148,7 +155,7 @@ void AppInstallService::onInitialze()
 
 void AppInstallService::onServerStatusChanged(bool isConnected)
 {
-    static string method = std::string("luna://") + getName() + std::string("/status");
+    static string method = string("luna://") + getName() + string("/status");
     if (isConnected) {
         m_statusCall = ApplicationManager::getInstance().callMultiReply(
             method.c_str(),
@@ -176,7 +183,7 @@ bool AppInstallService::onRemove(LSHandle* sh, LSMessage *message, void* context
 
 Call AppInstallService::remove(const string& appId)
 {
-    static string method = std::string("luna://") + getName() + std::string("/remove");
+    static string method = string("luna://") + getName() + string("/remove");
 
     JValue requestPayload = pbnjson::Object();
     requestPayload.put("id", appId);

@@ -14,8 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <bus/client/Configd.h>
-#include <pbnjson.hpp>
+#include "Configd.h"
 
 Configd::Configd()
     : AbsLunaClient("com.webos.service.config")
@@ -40,7 +39,7 @@ void Configd::onInitialze()
 
 void Configd::onServerStatusChanged(bool isConnected)
 {
-    static std::string method = std::string("luna://") + getName() + std::string("/getConfigs");
+    static string method = string("luna://") + getName() + string("/getConfigs");
 
     if (isConnected) {
         if (m_getConfigsCall.isActive())
