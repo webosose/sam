@@ -23,14 +23,6 @@
         {
             "typeByDir": "dev",
             "path": "@WEBOS_INSTALL_MEDIADIR@/developer/apps/usr/palm/applications"
-        },
-        {
-            "typeByDir": "alias",
-            "path": "@WEBOS_INSTALL_MEDIADIR@/alias/apps/usr/palm/applications"
-        },
-        {
-            "typeByDir": "tmp_alias",
-            "path": "@WEBOS_INSTALL_ROOT@/tmp/alias/apps/usr/palm/applications"
         }
     ],
 
@@ -84,13 +76,13 @@
         "com.webos.app.ism"
     ],
 
+    "keepAliveApps":[
+        "com.webos.app.home"
+    ],
+
     "HostAppsForAlias":[
         "com.webos.app.webapphost"
     ],
-
-    "BootTimeApps": [],
-
-    "StoreApp": "com.webos.app.discovery",
 
     "ReservedResource": {
         "mime": [
@@ -99,13 +91,13 @@
     },
 
     "LaunchPointDBKind": {
-        "id":"com.webos.applicationManager.launchpoints:1",
+        "id":"com.webos.applicationManager.launchpoints:2",
         "owner":"com.webos.applicationManager",
         "schema":{
             "properties":{
                 "id":{"type":"string", "description":"unique id of app", "optional":false},
-                "lptype":{"type":"number", "description":"type of launchpoint", "optional":false},
-                "lpid":{"type":"string", "description":"unique id of launchpoint", "optional":false},
+                "type":{"type":"string", "description":"type of launchpoint", "optional":false},
+                "launchPointId":{"type":"string", "description":"unique id of launchpoint", "optional":false},
                 "title":{"type":"string", "description":"title of app", "optional":true},
                 "icon":{"type":"string", "description":"path of icon", "optional":true},
                 "bgImage":{"type":"string", "description":"path of backgroundImage", "optional":true},
@@ -125,24 +117,25 @@
 
         "indexes":[
             {"name":"id", "props":[{"name":"id"}]},
-            {"name":"lptype", "props":[{"name":"lptype"}]},
-            {"name":"lpid", "props":[{"name":"lpid"}]},
-            {"name":"id_lpid", "props":[{"name":"id"}, {"name":"lpid"}]}
+            {"name":"type", "props":[{"name":"type"}]},
+            {"name":"launchPointId", "props":[{"name":"launchPointId"}]},
+	    {"name":"revision", "props":[{"name":"_rev"}]}
         ]
     },
 
-    "LaunchPointDBPermissions": [
-        {
-            "type"      : "db.kind",
-            "object"    : "com.webos.applicationManager.launchpoints:1",
-            "caller"    : "com.webos.applicationManager",
-            "operations":
+    "LaunchPointDBPermissions": {
+        "permissions": [
             {
-                "create"    : "allow",
-                "read"      : "allow",
-                "update"    : "allow",
-                "delete"    : "allow"
+                "type"      : "db.kind",
+                "object"    : "com.webos.applicationManager.launchpoints:2",
+                "caller"    : "com.webos.applicationManager",
+                "operations": {
+                    "create"    : "allow",
+                    "read"      : "allow",
+                    "update"    : "allow",
+                    "delete"    : "allow"
+                }
             }
-        }
-    ]
+        ]
+    }
 }

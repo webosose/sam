@@ -98,10 +98,7 @@
             "description": "DBKind of LaunchPoint"
         },
         "LaunchPointDBPermissions" : {
-            "type": "array",
-            "items": {
-                "type": "object"
-            },
+            "type": "object",
             "description": "DBPermissions of LaunchPoint"
         }
     },

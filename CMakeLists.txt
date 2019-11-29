@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2018 LG Electronics, Inc.
+# Copyright (c) 2012-2019 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,31 +23,14 @@ cmake_minimum_required(VERSION 2.8.7)
 project(sam C CXX)
 
 include(webOS/webOS)
+
 webos_modules_init(1 0 0 QUALIFIER RC4)
 webos_component(2 0 0)
 webos_distro_dep()
-
 webos_add_compiler_flags(ALL -Wall -std=gnu++0x)
 webos_add_compiler_flags(ALL -DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 
 add_definitions(-DLOGGER_ENABLED)
-
-#Couldn't use check_cxx_compiler_flag()
-#looks like this is bug when using gcc-4.8
-
-if(USE_ADDRESS_SANITIZER)
-    set(GCC_MIN_VERSION_FOR_ADDRESS_SANITIZER 4.8.0)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                    OUTPUT_VARIABLE GCC_VERSION)
-
-    if(NOT GCC_VERSION VERSION_LESS GCC_MIN_VERSION_FOR_ADDRESS_SANITIZER)
-        message(STATUS "Enabling address-sanitizer")
-        webos_add_compiler_flags(ALL -fsanitize=address)
-    endif()
-
-endif()
-
-#Address Sanitizer End
 
 include(FindPkgConfig)
 
@@ -63,6 +46,14 @@ pkg_check_modules(LUNASERVICE2 REQUIRED luna-service2)
 include_directories(${LUNASERVICE2_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${LUNASERVICE2_CFLAGS_OTHER})
 
+pkg_check_modules(LUNASERVICE2CPP REQUIRED luna-service2++)
+include_directories(${LUNASERVICE2CPP_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${LUNASERVICE2CPP_CFLAGS_OTHER})
+
+pkg_check_modules(PBNJSON_C REQUIRED pbnjson_c)
+include_directories(${PBNJSON_C_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${PBNJSON_C_CFLAGS_OTHER})
+
 pkg_check_modules(PBNJSON_CPP REQUIRED pbnjson_cpp)
 include_directories(${PBNJSON_CPP_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${PBNJSON_CPP_CFLAGS_OTHER})
@@ -74,10 +65,6 @@ webos_add_compiler_flags(ALL ${PMLOG_CFLAGS_OTHER})
 find_package(Boost REQUIRED COMPONENTS signals regex system filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${Boost_CFLAGS_OTHER})
-
-pkg_check_modules(WEBOSI18N REQUIRED webosi18n)
-include_directories(WEBOSI18N_INCLUDE_DIRS)
-webos_add_compiler_flags(ALL ${WEBOSI18N_CFLAGS})
 
 pkg_check_modules(PROCPS REQUIRED libprocps)
 include_directories(PROCPS_INCLUDE_DIRS)
@@ -97,43 +84,36 @@ endif()
 webos_add_linker_options(ALL --no-undefined)
 
 # Build the sam executable
-include_directories(src/fake/criu)
-file(GLOB_RECURSE common_src src/core/*.cpp)
-file(GLOB_RECURSE extension_src src/extensions/webos_base/*.cpp)
-set(SOURCES ${common_src} ${extension_src})
+file(GLOB_RECURSE SOURCES src/*.cpp)
 
-webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/core/setting/settings_conf.h)
-webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/extensions/webos_base/base_settings_conf.h)
+webos_configure_source_files(cfg ${PROJECT_SOURCE_DIR}/src/Environment.h)
 
 include_directories(src)
 include_directories(${PROJECT_BINARY_DIR}/Configured/src)
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 
-set(LIBS ${GLIB2_LDFLAGS}
-         ${GIO2_LDFLAGS}
-         ${PBNJSON_CPP_LDFLAGS}
-         ${PMLOG_LDFLAGS}
-         ${Boost_LIBRARIES}
-         ${CRIU_LDFLAGS}
-         ${ICU}
-         ${RT}
-         ${WEBOSI18N_LDFLAGS}
-         ${PROCPS_LDFLAGS})
-
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS}
-                          ${LUNASERVICE2_LDFLAGS})
+set(LIBS
+    ${GLIB2_LDFLAGS}
+    ${GIO2_LDFLAGS}
+    ${PBNJSON_C_LDFLAGS}
+    ${PBNJSON_CPP_LDFLAGS}
+    ${LUNASERVICE2_LDFLAGS}
+    ${LUNASERVICE2CPP_LDFLAGS}
+    ${PMLOG_LDFLAGS}
+    ${Boost_LIBRARIES}
+    ${ICU}
+    ${RT}
+    ${PROCPS_LDFLAGS})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})
 
 webos_build_daemon(RESTRICTED_PERMISSIONS)
 webos_build_system_bus_files()
-
-webos_build_configured_file(files/launch/sam.conf SYSCONFDIR init)
 
 file(GLOB_RECURSE SCHEMAS files/schema/*.schema)
 install(FILES ${SCHEMAS} DESTINATION ${WEBOS_INSTALL_WEBOS_SYSCONFDIR}/schemas/sam)
 
 # sam conf files
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files/conf/sam-conf.json.in ${CMAKE_CURRENT_BINARY_DIR}/files/conf/sam-conf.json)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files/conf/sam-conf-base.json.in ${CMAKE_CURRENT_BINARY_DIR}/files/conf/sam-conf-base.json)
 
 file(GLOB_RECURSE SAM_CONF_FILES ${CMAKE_CURRENT_BINARY_DIR}/files/conf/*)
 install(FILES ${SAM_CONF_FILES} DESTINATION ${WEBOS_INSTALL_WEBOS_SYSCONFDIR})

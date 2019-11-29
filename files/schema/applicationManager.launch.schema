@@ -6,21 +6,21 @@
             "type": "string",
             "description": "ID of application to be launched."
         },
-        "checkUpdateOnLaunch": {"type": "boolean"},
-        "params"     : {"type"     : "object"},
-        "target"     : {"type"     : "string"},
-        "noSplash"   : {"type"     : "boolean"},
-        "spinner"    : {"type"     : "boolean"},
-        "launchHidden"   : {"type"     : "boolean"},
+        "checkUpdateOnLaunch": {"type"  : "boolean"},
+        "params"             : {"type"  : "object"},
+        "target"             : {"type"  : "string"},
+        "noSplash"           : {"type"  : "boolean"},
+        "spinner"            : {"type"  : "boolean"},
+        "launchHidden"       : {"type"  : "boolean"},
+        "keepAlive"          : {"type"  : "boolean"},
+        "autoInstallation"   : {"type"  : "boolean"},
+        "containerBasedApp " : {"type"  : "boolean"},
+        "launchFirstApp"     : {"type"  : "boolean"},
         "preload": {
             "type": "string",
             "enum": ["full", "semi-full", "partial", "minimal"],
             "description": "App will be launched in background if preload is filled in"
-        },
-        "containerBasedApp"      : {"type"     : "boolean"},
-        "keepAlive"         : {"type"   : "boolean"},
-        "autoInstallation"  : {"type"   : "boolean"},
-        "launchFirstApp"    : {"type"   : "boolean"}
+        }
     },
     "required": [
         "id"

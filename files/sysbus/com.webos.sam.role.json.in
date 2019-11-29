@@ -13,7 +13,6 @@
             "outbound":[
                 "*",
                 "com.webos.appInstallService",
-                "com.webos.appUpdateService",
                 "com.webos.booster",
                 "com.webos.bootManager",
                 "com.webos.memorymanager",
