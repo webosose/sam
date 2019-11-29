@@ -174,8 +174,7 @@
                 "minimal",
                 "overlay",
                 "popup",
-                "screenSaver",
-                "system_ui"
+                "screenSaver"
             ],
             "default": "card",
             "description": "Used by WebAppMgr to launch a window with a special window type setting."
