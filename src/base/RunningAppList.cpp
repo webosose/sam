@@ -59,6 +59,8 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
 
 RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
 {
+    if (lunaTask == nullptr)
+        return nullptr;
     string appId = lunaTask->getAppId();
     string launchPointId = lunaTask->getLaunchPointId();
     string instanceId = lunaTask->getInstanceId();
@@ -128,20 +130,18 @@ RunningAppPtr RunningAppList::getByPid(const string& pid)
 
 bool RunningAppList::add(RunningAppPtr runningApp)
 {
-    if (runningApp == nullptr)
+    if (runningApp == nullptr) {
         return false;
-
-    // TODO This is temp solution before supporting instanceId fully
+    }
     if (runningApp->getInstanceId().empty()) {
-        runningApp->setInstanceId(Time::generateUid());
-        Logger::warning(getClassName(), __FUNCTION__, runningApp->getInstanceId(), "InstanceId is generated automatically");
+        return false;
     }
     if (m_map.find(runningApp->getInstanceId()) != m_map.end()) {
         Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId(), "InstanceId is already exist");
         return false;
     }
-    onAdd(runningApp);
     m_map[runningApp->getInstanceId()] = runningApp;
+    onAdd(runningApp);
     return true;
 }
 
@@ -281,10 +281,9 @@ void RunningAppList::toJson(JValue& array, bool devmodeOnly)
 
 void RunningAppList::onAdd(RunningAppPtr runningApp)
 {
+    // Status should be defined before calling this method
     Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId() + " is added");
-    // Comment : Following code is commented because of backward compatiblity
-    // SAM tries to send subscription when application become foreground.
-    // ApplicationManager::getInstance().postRunning(runningApp);
+    ApplicationManager::getInstance().postRunning(runningApp);
 }
 
 void RunningAppList::onRemove(RunningAppPtr runningApp)

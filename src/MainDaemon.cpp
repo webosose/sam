@@ -47,12 +47,21 @@ MainDaemon::MainDaemon()
       m_isConfigsReceived(false)
 {
     setClassName("MainDaemon");
-
     m_mainLoop = g_main_loop_new(NULL, FALSE);
-    SAMConf::getInstance().initialize();
+}
 
-    // Load managers (lifecycle, package, launchpoint)
+MainDaemon::~MainDaemon()
+{
+    if (m_mainLoop) {
+        g_main_loop_unref(m_mainLoop);
+    }
+}
+
+void MainDaemon::initialize()
+{
+    SAMConf::getInstance().initialize();
     AppDescriptionList::getInstance().scanFull();
+
     ApplicationManager::getInstance().attach(m_mainLoop);
 
     AppInstallService::getInstance().initialize();
@@ -70,13 +79,20 @@ MainDaemon::MainDaemon()
     Configd::getInstance().EventGetConfigs.connect(boost::bind(&MainDaemon::onGetConfigs, this, _1));
 }
 
-MainDaemon::~MainDaemon()
+void MainDaemon::finalize()
 {
-    ApplicationManager::getInstance().detach();
+    AppInstallService::getInstance().finalize();
+    Booster::getInstance().finalize();
+    Bootd::getInstance().finalize();
+    Configd::getInstance().finalize();
+    DB8::getInstance().finalize();
+    LSM::getInstance().finalize();
+    MemoryManager::getInstance().finalize();
+    Notification::getInstance().finalize();
+    SettingService::getInstance().finalize();
+    WAM::getInstance().finalize();
 
-    if (m_mainLoop) {
-        g_main_loop_unref(m_mainLoop);
-    }
+    ApplicationManager::getInstance().detach();
 }
 
 void MainDaemon::start()

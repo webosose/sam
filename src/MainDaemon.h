@@ -29,6 +29,9 @@ friend class ISingleton<MainDaemon>;
 public:
     virtual ~MainDaemon();
 
+    void initialize();
+    void finalize();
+
     void start();
     void stop();
 

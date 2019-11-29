@@ -84,5 +84,11 @@ void AbsLunaClient::initialize()
         this
     );
 
-    onInitialze();
+    onInitialzed();
+}
+
+void AbsLunaClient::finalize()
+{
+    m_statusCall.cancel();
+    onFinalized();
 }

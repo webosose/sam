@@ -40,8 +40,9 @@ public:
 
 protected:
     // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
+    virtual void onInitialzed() override;
+    virtual void onFinalized() override;
+    virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
     static const string NAME;
@@ -53,7 +54,7 @@ private:
 
     Booster();
 
-    Call m_call;
+    Call m_addMatchCall;
 };
 
 #endif /* BUS_CLIENT_BOOSTER_H_ */

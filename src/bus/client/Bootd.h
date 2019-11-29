@@ -39,7 +39,8 @@ public:
 
 protected:
     // AbsLunaClient
-    virtual void onInitialze() override;
+    virtual void onInitialzed() override;
+    virtual void onFinalized() override;
     virtual void onServerStatusChanged(bool isConnected) override;
 
 private:

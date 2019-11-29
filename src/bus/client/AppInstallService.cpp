@@ -148,9 +148,14 @@ AppInstallService::~AppInstallService()
 {
 }
 
-void AppInstallService::onInitialze()
+void AppInstallService::onInitialzed()
 {
 
+}
+
+void AppInstallService::onFinalized()
+{
+    m_statusCall.cancel();
 }
 
 void AppInstallService::onServerStatusChanged(bool isConnected)

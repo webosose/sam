@@ -20,6 +20,7 @@
 #include <iostream>
 #include <list>
 
+#include "base/LunaTask.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
 #include "LaunchPoint.h"
@@ -38,6 +39,8 @@ public:
     LaunchPointPtr createBootmark(AppDescriptionPtr appDesc, const JValue& database);
     LaunchPointPtr createDefault(AppDescriptionPtr appDesc);
 
+    LaunchPointPtr getByLunaTask(LunaTaskPtr lunaTask);
+    LaunchPointPtr getByIds(const string& launchPointId, const string& appId);
     LaunchPointPtr getByAppId(const string& appId);
     LaunchPointPtr getByLaunchPointId(const string& launchPointId);
 

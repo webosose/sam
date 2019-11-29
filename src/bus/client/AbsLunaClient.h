@@ -52,6 +52,7 @@ public:
     virtual ~AbsLunaClient();
 
     virtual void initialize() final;
+    virtual void finalize() final;
 
     const string& getName()
     {
@@ -66,7 +67,8 @@ public:
     boost::signals2::signal<void(bool)> EventServiceStatusChanged;
 
 protected:
-    virtual void onInitialze() = 0;
+    virtual void onInitialzed() = 0;
+    virtual void onFinalized() = 0;
     virtual void onServerStatusChanged(bool isConnected) = 0;
 
 private:

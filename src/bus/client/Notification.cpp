@@ -19,10 +19,8 @@
 #include "util/Logger.h"
 #include "util/JValueUtil.h"
 
-const string Notification::NAME = "com.webos.notification";
-
 Notification::Notification()
-    : AbsLunaClient(NAME)
+    : AbsLunaClient("com.webos.notification")
 {
     setClassName("Notification");
 }
@@ -31,7 +29,12 @@ Notification::~Notification()
 {
 }
 
-void Notification::onInitialze()
+void Notification::onInitialzed()
+{
+
+}
+
+void Notification::onFinalized()
 {
 
 }

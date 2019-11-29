@@ -29,24 +29,38 @@
 #include "util/Logger.h"
 #include "util/Time.h"
 
+//                  < RunningApp LIFECYCLES >
+//
+//   |--------------(PRELOADING)------------->PRELOADED
+//   |                                            |
+//   |                                      (RELAUNCHING)
+//   |                                            |
+// STOP--(SPLASHING)-->SPLASHED--(LAUNCHING)-->FORGROUND--(PAUSING)-->PAUSED
+//   |                                            |
+//   |                                      (RELAUNCHING)
+//   |                                            |
+//   |-----------(LAUNCHING:Hidden)---------->BACKGROUND
+
 enum class LifeStatus : int8_t {
-    LifeStatus_INVALID = -1,
     LifeStatus_STOP = 0,
-    LifeStatus_PRELOADING,
-    LifeStatus_SPLASHING,
-    LifeStatus_LAUNCHING,
-    LifeStatus_RELAUNCHING,
-    LifeStatus_FOREGROUND,
-    LifeStatus_BACKGROUND,
-    LifeStatus_CLOSING,
-    LifeStatus_PAUSING,
-    LifeStatus_RUNNING, // internal event
+    LifeStatus_PRELOADING, // ==> PRELOADED
+    LifeStatus_PRELOADED, // ==> RELAUNCHING
+    LifeStatus_SPLASHING, // ==> LAUNCHING
+    LifeStatus_SPLASHED, // ==> LAUNCHING
+    LifeStatus_LAUNCHING, // ==> FOREGROUND
+    LifeStatus_RELAUNCHING, // ==> FOREGROUND
+    LifeStatus_FOREGROUND, // ==> BACKGROUND
+    LifeStatus_BACKGROUND, // ==> PAUSING
+    LifeStatus_PAUSING, // ==> PAUSED
+    LifeStatus_PAUSED, // ==> CLOSING
+    LifeStatus_CLOSING, // ==> STOP
 };
 
 class RunningApp {
 friend class RunningAppList;
 public:
     static const char* toString(LifeStatus status);
+    static bool isTransition(LifeStatus status);
 
     RunningApp(LaunchPointPtr launchPoint);
     virtual ~RunningApp();
@@ -76,6 +90,9 @@ public:
     }
     void setInstanceId(const string& instanceId)
     {
+        if (!m_instanceId.empty()) {
+            return;
+        }
         m_instanceId = instanceId;
     }
 
@@ -97,24 +114,18 @@ public:
     {
         return m_displayId;
     }
-    bool setDisplayId(const int displayId)
+    void setDisplayId(const int displayId)
     {
-        if (displayId == m_displayId)
-            return false;
         m_displayId = displayId;
-        return true;
     }
 
     const string& getProcessId() const
     {
         return m_processId;
     }
-    bool setProcessId(const string& pid)
+    void setProcessId(const string& pid)
     {
-        if (m_processId == pid)
-            return false;
         m_processId = pid;
-        return true;
     }
 
     void setWebprocid(const string& webprocid)
@@ -132,20 +143,11 @@ public:
         return m_isRegistered;
     }
 
-    double getLastLaunchTime() const
-    {
-        return m_lastLaunchTime;
-    }
-    void saveLastLaunchTime()
-    {
-        m_lastLaunchTime = Time::getCurrentTime();
-    }
-
     LifeStatus getLifeStatus() const
     {
         return m_lifeStatus;
     }
-    void setLifeStatus(LifeStatus lifeStatus);
+    bool setLifeStatus(LifeStatus lifeStatus);
 
     void loadRequestPayload(const JValue requestPayload)
     {
@@ -156,6 +158,7 @@ public:
             m_spinner = this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
         }
         JValueUtil::getValue(requestPayload, "preload", m_preload);
+        JValueUtil::getValue(requestPayload, "params", "launchedHidden", m_isLaunchedHidden);
 
         JValueUtil::getValue(requestPayload, "keepAlive", m_keepAlive);
         if (!m_keepAlive && SAMConf::getInstance().isKeepAliveApp(this->getAppId())) {
@@ -184,15 +187,18 @@ public:
         return m_spinner;
     }
 
-    bool isRunning() const
+    bool isLaunchedHidden() const
     {
-        if (m_lifeStatus == LifeStatus::LifeStatus_RELAUNCHING ||
-            m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND ||
-            m_lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
-            m_lifeStatus == LifeStatus::LifeStatus_PAUSING ||
-            m_lifeStatus == LifeStatus::LifeStatus_RUNNING)
-            return true;
-        return false;
+        return m_isLaunchedHidden;
+    }
+
+    bool isFirstLaunch()
+    {
+        return m_isFirstLaunch;
+    }
+    void setFirstLaunch(bool isFirstLaunch)
+    {
+        m_isFirstLaunch = isFirstLaunch;
     }
 
     const string& getReason() const
@@ -210,7 +216,8 @@ public:
         object.put("launchPointid", m_launchPoint->getLaunchPointId());
         object.put("id", m_launchPoint->getAppId());
 
-        object.put("displayId", m_displayId);
+        if (m_displayId != -1)
+            object.put("displayId", m_displayId);
         object.put("processId", m_processId);
         object.put("webprocessid", m_webprocid);
 
@@ -229,6 +236,7 @@ public:
 
 private:
     static const string CLASS_NAME;
+    static const int TIMEOUT_TRANSITION = 10000; // 10 seconds
 
     RunningApp(const RunningApp&);
     RunningApp& operator=(const RunningApp&) const;
@@ -248,17 +256,18 @@ private:
     // for native app
     int m_interfaceVersion;
     bool m_isRegistered;
-    LS::Message m_client;
-    guint m_killingTimer;
-
-    double m_lastLaunchTime;
+    LS::Message m_registeredApp;
 
     LifeStatus m_lifeStatus;
+    guint m_killingTimer;
 
+    // initial parameter
     string m_preload;
     bool m_keepAlive;
     bool m_noSplash;
     bool m_spinner;
+    bool m_isLaunchedHidden;
+    bool m_isFirstLaunch;
 
     string m_reason;
 

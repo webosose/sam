@@ -81,7 +81,9 @@ int main(int argc, char **argv)
     sigaction(SIGABRT, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
 
+    MainDaemon::getInstance().initialize();
     MainDaemon::getInstance().start();
+    MainDaemon::getInstance().finalize();
 
     return EXIT_SUCCESS;
 }

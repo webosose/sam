@@ -101,6 +101,7 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
                 Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by WAM");
                 runningApp = RunningAppList::getInstance().createByAppId(appId);
                 runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+                runningApp->setInstanceId(Time::generateUid());
                 RunningAppList::getInstance().add(runningApp);
             }
         }
@@ -121,9 +122,15 @@ WAM::~WAM()
 {
 }
 
-void WAM::onInitialze()
+void WAM::onInitialzed()
 {
 
+}
+
+void WAM::onFinalized()
+{
+    m_listRunningAppsCall.cancel();
+    m_discardCodeCacheCall.cancel();
 }
 
 void WAM::onServerStatusChanged(bool isConnected)
@@ -215,10 +222,18 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
         return true;
     }
     runningApp->setProcessId(procId);
+    if (runningApp->isFirstLaunch()) {
+        if (!runningApp->getPreload().empty()) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADED);
+        } else if (runningApp->isLaunchedHidden()) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+        }
+    }
+    runningApp->setFirstLaunch(false);
 
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
-    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("Launched TotalTime(%f)", lunaTask->getTimeStampMS()));
+    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
     return true;
 }
 
@@ -237,20 +252,28 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
     requestPayload.put("appDesc", appDesc);
     requestPayload.put("reason", lunaTask->getReason());
-    requestPayload.put("parameters", lunaTask->getParams());
     requestPayload.put("launchingAppId", lunaTask->getCaller(true));
     requestPayload.put("launchingProcId", "");
+
+    if (lunaTask->getParams().objectSize() != 0) {
+        requestPayload.put("parameters", lunaTask->getParams());
+    } else {
+        requestPayload.put("parameters", runningApp.getLaunchPoint()->getParams());
+    }
 
     if (runningApp.isKeepAlive()) {
         requestPayload.put("keepAlive", true);
     }
-    if (!runningApp.getPreload().empty()) {
+    if (runningApp.isFirstLaunch() && !runningApp.getPreload().empty()) {
+        runningApp.setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
         requestPayload.put("preload", runningApp.getPreload());
+    } else {
+        runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     }
 
     LSErrorSafe error;
     bool result = true;
-    Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
     result = LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
@@ -272,9 +295,7 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     string sender = lunaTask->getCaller(true);
-    if (sender != "com.webos.service.memorymanager" &&
-        sender != "com.webos.lunasend" &&
-        runningApp.isKeepAlive()) {
+    if (sender != "com.webos.service.memorymanager" && runningApp.isKeepAlive()) {
         return pauseApp(runningApp, lunaTask);
     } else {
         return killApp(runningApp, lunaTask);
@@ -317,7 +338,7 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
-
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
@@ -342,7 +363,7 @@ bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     LSErrorSafe error;
     bool result = true;
     LSMessageToken token = 0;
-    Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
     result = LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
@@ -370,11 +391,6 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
 
-    if (lunaTask == nullptr) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get lunaTask");
-        return false;
-    }
-
     string procId = "";
     bool returnValue = true;
 
@@ -382,8 +398,10 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        if (lunaTask) {
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
+            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        }
         return true;
     }
 
@@ -406,8 +424,11 @@ bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
     if (!isConnected()) {
         Logger::warning(getClassName(), __FUNCTION__, "WAM is not running. The app is not exist");
-        lunaTask->getResponsePayload().put("returnValue", true);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+
+        if (lunaTask) {
+            lunaTask->getResponsePayload().put("returnValue", true);
+            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        }
         return true;
     }
 
@@ -415,11 +436,13 @@ bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     requestPayload.put("instanceId", runningApp.getInstanceId());
     requestPayload.put("launchPointId", runningApp.getLaunchPointId());
     requestPayload.put("appId", runningApp.getAppId());
-    requestPayload.put("reason", lunaTask->getReason());
+    if (lunaTask && !lunaTask->getReason().empty()) {
+        requestPayload.put("reason", lunaTask->getReason());
+    }
 
     LSErrorSafe error;
     bool result = true;
-    Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
+    Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
     result = LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
@@ -429,6 +452,9 @@ bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
         &token,
         &error
     );
+    if (!lunaTask)
+        return true;
+
     if (!result) {
         lunaTask->setErrCodeAndText(error.error_code, error.message);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

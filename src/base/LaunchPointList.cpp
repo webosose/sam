@@ -60,6 +60,34 @@ LaunchPointPtr LaunchPointList::createDefault(AppDescriptionPtr appDesc)
     return launchPoint;
 }
 
+LaunchPointPtr LaunchPointList::getByLunaTask(LunaTaskPtr lunaTask)
+{
+    if (lunaTask == nullptr)
+        return nullptr;
+    string appId = lunaTask->getAppId();
+    string launchPointId = lunaTask->getLaunchPointId();
+
+    return getByIds(launchPointId, appId);
+}
+
+LaunchPointPtr LaunchPointList::getByIds(const string& launchPointId, const string& appId)
+{
+    LaunchPointPtr launchPoint = nullptr;
+    if (!launchPointId.empty())
+        launchPoint = getByLaunchPointId(launchPointId);
+    else if (!appId.empty())
+        launchPoint = getByAppId(appId);
+
+    if (launchPoint == nullptr)
+        return nullptr;
+
+    if (!launchPointId.empty() && launchPointId != launchPoint->getLaunchPointId())
+        return nullptr;
+    if (!appId.empty() && appId != launchPoint->getAppId())
+        return nullptr;
+    return launchPoint;
+}
+
 LaunchPointPtr LaunchPointList::getByAppId(const string& appId)
 {
     if (appId.empty())

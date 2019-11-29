@@ -39,11 +39,13 @@ public:
     void discardCodeCache();
     bool launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
     bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask = nullptr);
 
 protected:
     // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
+    virtual void onInitialzed() override;
+    virtual void onFinalized() override;
+    virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
     static bool onListRunningApps(LSHandle* sh, LSMessage* message, void* context);
@@ -55,7 +57,6 @@ private:
     WAM();
 
     bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
-    bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
 
     Call m_listRunningAppsCall;
     Call m_discardCodeCacheCall;

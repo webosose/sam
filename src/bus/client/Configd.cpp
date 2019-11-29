@@ -32,9 +32,14 @@ Configd::~Configd()
 {
 }
 
-void Configd::onInitialze()
+void Configd::onInitialzed()
 {
 
+}
+
+void Configd::onFinalized()
+{
+    m_getConfigsCall.cancel();
 }
 
 void Configd::onServerStatusChanged(bool isConnected)

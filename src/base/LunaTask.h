@@ -48,7 +48,6 @@ public:
           m_token(0),
           m_requestPayload(requestPayload),
           m_responsePayload(pbnjson::Object()),
-          m_params(pbnjson::Object()),
           m_errorCode(ErrCode_UNKNOWN),
           m_errorText(""),
           m_reason(""),
@@ -102,9 +101,12 @@ public:
         return m_responsePayload;
     }
 
-    pbnjson::JValue& getParams()
+    pbnjson::JValue getParams()
     {
-        return m_params;
+        if (m_requestPayload.hasKey("params"))
+            return m_requestPayload["params"];
+        else
+            return pbnjson::Object();
     }
 
     void setErrCodeAndText(int errorCode, string errorText)
@@ -165,10 +167,10 @@ public:
         m_reason = reason;
     }
 
-    double getTimeStampMS() const
+    double getTimeStamp() const
     {
         double now = Time::getCurrentTime();
-        return (now - m_startTime) / 10000000;
+        return (now - m_startTime);
     }
 
     LunaTaskCallback getAPICallback()
@@ -223,7 +225,6 @@ private:
 
     pbnjson::JValue m_requestPayload;
     pbnjson::JValue m_responsePayload;
-    pbnjson::JValue m_params;
 
     int m_errorCode;
     string m_errorText;

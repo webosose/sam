@@ -203,17 +203,16 @@ bool AppDescriptionList::add(AppDescriptionPtr appDesc)
         return false;
     }
 
-    if (m_map.find(appDesc->getAppId()) == m_map.end() || compareVersion(m_map[appDesc->getAppId()], appDesc)) {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
-        m_map[appDesc->getAppId()] = appDesc;
-        LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(appDesc);
-        LaunchPointList::getInstance().add(launchPoint);
-    } else {
+    if (m_map.find(appDesc->getAppId()) != m_map.end() && !compareVersion(m_map[appDesc->getAppId()], appDesc)) {
         Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Version is low");
         return false;
     }
 
+    Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
+    m_map[appDesc->getAppId()] = appDesc;
     ApplicationManager::getInstance().postListApps(appDesc, "added", "");
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(appDesc);
+    LaunchPointList::getInstance().add(launchPoint);
     return true;
 }
 

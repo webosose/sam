@@ -64,8 +64,9 @@ public:
 
 protected:
     // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
+    virtual void onInitialzed() override;
+    virtual void onFinalized() override;
+    virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
     static bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);

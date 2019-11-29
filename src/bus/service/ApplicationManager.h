@@ -38,16 +38,6 @@
 #include "util/Logger.h"
 #include "util/File.h"
 
-#define SUBSKEY_FOREGROUND_INFO       "foregroundAppInfo"
-#define SUBSKEY_FOREGROUND_INFO_EX    "foregroundAppInfoEx"
-#define SUBSKEY_GET_APP_LIFE_EVENTS   "getAppLifeEvents"
-#define SUBSKEY_GET_APP_LIFE_STATUS   "getAppLifeStatus"
-#define SUBSKEY_ON_LAUNCH             "onLaunch"
-#define SUBSKEY_LIST_APPS             "listApps"
-#define SUBSKEY_LIST_APPS_COMPACT     "listAppsCompact"
-#define SUBSKEY_DEV_LIST_APPS         "listDevApps"
-#define SUBSKEY_DEV_LIST_APPS_COMPACT "listDevAppsCompact"
-
 using namespace LS;
 
 typedef boost::function<void(LunaTaskPtr)> LunaApiHandler;
@@ -125,6 +115,10 @@ public:
     void postListLaunchPoints(LaunchPointPtr launchPoint, string change);
     void postRunning(RunningAppPtr runningApp);
 
+    // make
+    void makeGetForegroundAppInfo(JValue& payload, bool extraInfo);
+    void makeRunning(JValue& payload, bool isDevmode);
+
     void enablePosting()
     {
         m_enablePosting = true;
@@ -151,17 +145,17 @@ private:
 
     map<string, LunaApiHandler> m_APIHandlers;
 
-    LS::SubscriptionPoint m_getAppLifeEvents;
-    LS::SubscriptionPoint m_getAppLifeStatus;
-    LS::SubscriptionPoint m_getForgroundAppInfo;
-    LS::SubscriptionPoint m_getForgroundAppInfoExtraInfo;
-    LS::SubscriptionPoint m_listLaunchPointsPoint;
-    LS::SubscriptionPoint m_listAppsPoint;
-    LS::SubscriptionPoint m_listAppsCompactPoint;
-    LS::SubscriptionPoint m_listDevAppsPoint;
-    LS::SubscriptionPoint m_listDevAppsCompactPoint;
-    LS::SubscriptionPoint m_running;
-    LS::SubscriptionPoint m_runningDev;
+    LS::SubscriptionPoint* m_getAppLifeEvents;
+    LS::SubscriptionPoint* m_getAppLifeStatus;
+    LS::SubscriptionPoint* m_getForgroundAppInfo;
+    LS::SubscriptionPoint* m_getForgroundAppInfoExtraInfo;
+    LS::SubscriptionPoint* m_listLaunchPointsPoint;
+    LS::SubscriptionPoint* m_listAppsPoint;
+    LS::SubscriptionPoint* m_listAppsCompactPoint;
+    LS::SubscriptionPoint* m_listDevAppsPoint;
+    LS::SubscriptionPoint* m_listDevAppsCompactPoint;
+    LS::SubscriptionPoint* m_running;
+    LS::SubscriptionPoint* m_runningDev;
 
     bool m_enablePosting;
 

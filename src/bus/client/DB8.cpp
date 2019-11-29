@@ -132,9 +132,14 @@ void DB8::deleteLaunchPoint(const string& launchPointId)
     );
 }
 
-void DB8::onInitialze()
+void DB8::onInitialzed()
 {
     // nothing
+}
+
+void DB8::onFinalized()
+{
+
 }
 
 void DB8::onServerStatusChanged(bool isConnected)

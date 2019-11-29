@@ -26,17 +26,20 @@ const string RunningApp::CLASS_NAME = "RunningApp";
 const char* RunningApp::toString(LifeStatus status)
 {
     switch (status) {
-    case LifeStatus::LifeStatus_INVALID:
-        return "invalid";
-
     case LifeStatus::LifeStatus_STOP:
         return "stop";
 
     case LifeStatus::LifeStatus_PRELOADING:
         return "preloading";
 
+    case LifeStatus::LifeStatus_PRELOADED:
+        return "preloaded";
+
     case LifeStatus::LifeStatus_SPLASHING:
         return "splashing";
+
+    case LifeStatus::LifeStatus_SPLASHED:
+        return "splashed";
 
     case LifeStatus::LifeStatus_LAUNCHING:
         return "launching";
@@ -50,16 +53,58 @@ const char* RunningApp::toString(LifeStatus status)
     case LifeStatus::LifeStatus_BACKGROUND:
         return "background";
 
-    case LifeStatus::LifeStatus_CLOSING:
-        return "closing";
-
     case LifeStatus::LifeStatus_PAUSING:
         return "pausing";
 
-    case LifeStatus::LifeStatus_RUNNING:
-        return "running";
+    case LifeStatus::LifeStatus_PAUSED:
+        return "paused";
+
+    case LifeStatus::LifeStatus_CLOSING:
+        return "closing";
     }
     return "unknown";
+}
+
+bool RunningApp::isTransition(LifeStatus status)
+{
+    switch (status) {
+    case LifeStatus::LifeStatus_STOP:
+        return false;
+
+    case LifeStatus::LifeStatus_PRELOADING:
+        return true;
+
+    case LifeStatus::LifeStatus_PRELOADED:
+        return false;
+
+    case LifeStatus::LifeStatus_SPLASHING:
+        return true;
+
+    case LifeStatus::LifeStatus_SPLASHED:
+        return false;
+
+    case LifeStatus::LifeStatus_LAUNCHING:
+        return true;
+
+    case LifeStatus::LifeStatus_RELAUNCHING:
+        return true;
+
+    case LifeStatus::LifeStatus_FOREGROUND:
+        return false;
+
+    case LifeStatus::LifeStatus_BACKGROUND:
+        return false;
+
+    case LifeStatus::LifeStatus_PAUSING:
+        return true;
+
+    case LifeStatus::LifeStatus_PAUSED:
+        return false;
+
+    case LifeStatus::LifeStatus_CLOSING:
+        return true;
+    }
+    return false;
 }
 
 RunningApp::RunningApp(LaunchPointPtr launchPoint)
@@ -70,12 +115,13 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_displayId(-1),
       m_interfaceVersion(1),
       m_isRegistered(false),
-      m_killingTimer(0),
-      m_lastLaunchTime(0),
       m_lifeStatus(LifeStatus::LifeStatus_STOP),
+      m_killingTimer(0),
       m_keepAlive(false),
       m_noSplash(true),
-      m_spinner(true)
+      m_spinner(true),
+      m_isLaunchedHidden(false),
+      m_isFirstLaunch(true)
 {
 }
 
@@ -86,8 +132,6 @@ RunningApp::~RunningApp()
 
 void RunningApp::launch(LunaTaskPtr lunaTask)
 {
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
-
     if (LifeStatus::LifeStatus_LAUNCHING == m_lifeStatus) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already launching");
         lunaTask->getResponsePayload().put("returnValue", true);
@@ -95,13 +139,13 @@ void RunningApp::launch(LunaTaskPtr lunaTask)
         return;
     }
 
+    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
         NativeContainer::getInstance().launch(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
-        setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
         WAM::getInstance().launchApp(*this, lunaTask);
         break;
 
@@ -114,9 +158,35 @@ void RunningApp::launch(LunaTaskPtr lunaTask)
     }
 }
 
+gboolean RunningApp::onKillingTimer(gpointer context)
+{
+    RunningApp* runningApp = static_cast<RunningApp*>(context);
+    if (runningApp == nullptr) {
+        return FALSE;
+    }
+    Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
+    runningApp->m_killingTimer = 0;
+
+    LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
+    switch(type) {
+    case LifeHandlerType::LifeHandlerType_Native:
+        break;
+
+    case LifeHandlerType::LifeHandlerType_Web:
+        WAM::getInstance().killApp(*runningApp);
+        break;
+
+    case LifeHandlerType::LifeHandlerType_Booster:
+        break;
+
+    default:
+        break;
+    }
+    return FALSE;
+}
+
 void RunningApp::close(LunaTaskPtr lunaTask)
 {
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
         lunaTask->getResponsePayload().put("returnValue", true);
@@ -124,6 +194,7 @@ void RunningApp::close(LunaTaskPtr lunaTask)
         return;
     }
 
+    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
         setLifeStatus(LifeStatus::LifeStatus_CLOSING);
@@ -153,7 +224,7 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
         return;
     }
 
-    m_client = lunaTask->getRequest();
+    m_registeredApp = lunaTask->getRequest();
     m_isRegistered = true;
 
     JValue payload = pbnjson::Object();
@@ -179,8 +250,8 @@ bool RunningApp::sendEvent(pbnjson::JValue& responsePayload)
     }
 
     responsePayload.put("returnValue", true);
-    Logger::logAPIResponse(CLASS_NAME, __FUNCTION__, m_client, responsePayload);
-    m_client.respond(responsePayload.stringify().c_str());
+    Logger::logAPIResponse(CLASS_NAME, __FUNCTION__, m_registeredApp, responsePayload);
+    m_registeredApp.respond(responsePayload.stringify().c_str());
     return true;
 }
 
@@ -233,45 +304,61 @@ JValue RunningApp::getRelaunchParams(LunaTaskPtr lunaTask)
     return params;
 }
 
-void RunningApp::setLifeStatus(LifeStatus lifeStatus)
+bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 {
     if (m_lifeStatus == lifeStatus) {
-        Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, Logger::format("Same lifeStatus(%s)", toString(lifeStatus)));
-        return;
+        Logger::debug(CLASS_NAME, __FUNCTION__, m_instanceId,
+                      Logger::format("Ignored: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
+        return true;
     }
-    if (lifeStatus == LifeStatus::LifeStatus_STOP) {
+
+    // CLOSING is special transition. It should be allowed all cases
+    if (lifeStatus != LifeStatus::LifeStatus_CLOSING && isTransition(m_lifeStatus) && isTransition(lifeStatus)) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId,
+                        Logger::format("Warning: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
+        return false;
+    }
+
+    switch (lifeStatus) {
+    case LifeStatus::LifeStatus_STOP:
         if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING)
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by SAM");
         else
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by itself");
+        break;
+
+    case LifeStatus::LifeStatus_LAUNCHING:
+        if (m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND) {
+            Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
+                         Logger::format("Changed: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
+            m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
+            ApplicationManager::getInstance().postGetAppLifeStatus(*this);
+            lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
+        } else if (m_lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
+                   m_lifeStatus == LifeStatus::LifeStatus_PAUSED ||
+                   m_lifeStatus == LifeStatus::LifeStatus_PRELOADED) {
+            lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
+        }
+        break;
+
+    default:
+        break;
     }
 
-    if(m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND && lifeStatus == LifeStatus::LifeStatus_LAUNCHING) {
-        // This is fake relaunching status. Currently, application doesn't change its status
-        Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
-                     Logger::format("%s ==> %s", toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
-        m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
-        ApplicationManager::getInstance().postGetAppLifeStatus(*this);
-        lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
-    } else if (isRunning() && lifeStatus == LifeStatus::LifeStatus_LAUNCHING) {
-        lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
-    }
     Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
-                 Logger::format("%s ==> %s", toString(m_lifeStatus), toString(lifeStatus)));
+                 Logger::format("Changed: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
     m_lifeStatus = lifeStatus;
+
+    if (isTransition(m_lifeStatus)) {
+        // Transition should be done under 5 seconds
+        startKillingTimer(TIMEOUT_TRANSITION);
+    } else {
+        stopKillingTimer();
+    }
+
     ApplicationManager::getInstance().postGetAppLifeStatus(*this);
     ApplicationManager::getInstance().postGetAppLifeEvents(*this);
-}
-
-gboolean RunningApp::onKillingTimer(gpointer context)
-{
-    RunningApp* runningApp = static_cast<RunningApp*>(context);
-    if (runningApp == nullptr) {
-        return FALSE;
-    }
-
-    LinuxProcess::sendSigKill(runningApp->m_processId);
-    return FALSE;
+    return true;
 }
 
 void RunningApp::startKillingTimer(guint timeout)

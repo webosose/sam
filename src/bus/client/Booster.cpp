@@ -37,9 +37,14 @@ Booster::~Booster()
 
 }
 
-void Booster::onInitialze()
+void Booster::onInitialzed()
 {
     processFinished();
+}
+
+void Booster::onFinalized()
+{
+    m_addMatchCall.cancel();
 }
 
 void Booster::onServerStatusChanged(bool isConnected)
@@ -80,7 +85,7 @@ void Booster::processFinished()
     requestPayload.put("category", "/booster");
     requestPayload.put("method", "processFinished");
 
-    m_call = ApplicationManager::getInstance().callMultiReply(
+    m_addMatchCall = ApplicationManager::getInstance().callMultiReply(
         "luna://com.webos.service.bus/signal/addmatch",
         requestPayload.stringify().c_str(),
         onProcessFinished,

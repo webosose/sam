@@ -54,9 +54,16 @@ LSM::~LSM()
 
 }
 
-void LSM::onInitialze()
+void LSM::onInitialzed()
 {
 
+}
+
+void LSM::onFinalized()
+{
+    m_registerServiceCategoryCall.cancel();
+    m_getRecentsAppListCall.cancel();
+    m_getForegroundAppInfoCall.cancel();
 }
 
 void LSM::onServerStatusChanged(bool isConnected)
@@ -164,14 +171,14 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
             Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by LSM");
             runningApp = RunningAppList::getInstance().createByAppId(appId);
             runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
+            runningApp->setInstanceId(Time::generateUid());
             RunningAppList::getInstance().add(runningApp);
         } else {
-            if (runningApp->setProcessId(processId) || runningApp->setDisplayId(displayId)) {
-                // TO avoid multiple subscription
-                ApplicationManager::getInstance().postRunning(runningApp);
-            }
+            runningApp->setProcessId(processId);
+            runningApp->setDisplayId(displayId);
         }
 
+        ApplicationManager::getInstance().postRunning(nullptr);
         newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
         newForegroundAppIds.push_back(appId);
     }
@@ -188,7 +195,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
         if (found == false) {
             RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(oldAppId);
-            if (runningApp) {
+            if (runningApp && runningApp->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND) {
                 runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
             }
         }

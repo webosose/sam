@@ -21,8 +21,6 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/lexical_cast.hpp>
 
-const double NANO_SECOND = 1000000000;
-
 Time::Time()
 {
 }
@@ -31,13 +29,12 @@ Time::~Time()
 {
 }
 
-
 double Time::getCurrentTime()
 {
-    timespec current_time;
-    if (clock_gettime(CLOCK_MONOTONIC, &current_time) == -1)
+    timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
         return -1;
-    return (double) current_time.tv_sec * NANO_SECOND + (double) current_time.tv_nsec;
+    return (double)now.tv_sec + (double)now.tv_nsec / 1000000000.0;
 }
 
 string Time::generateUid()

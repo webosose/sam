@@ -31,6 +31,8 @@ void JValueUtil::addUniqueItemToArray(pbnjson::JValue& array, string& item)
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(firstKey))
         return false;
     if (!json[firstKey].isObject())
@@ -40,6 +42,8 @@ bool JValueUtil::getValue(const JValue& json, const string& firstKey, const stri
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(firstKey))
         return false;
     if (!json[firstKey].isObject())
@@ -49,6 +53,8 @@ bool JValueUtil::getValue(const JValue& json, const string& firstKey, const stri
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, int& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(firstKey))
         return false;
     if (!json[firstKey].isObject())
@@ -58,6 +64,8 @@ bool JValueUtil::getValue(const JValue& json, const string& firstKey, const stri
 
 bool JValueUtil::getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, bool& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(firstKey))
         return false;
     if (!json[firstKey].isObject())
@@ -67,6 +75,8 @@ bool JValueUtil::getValue(const JValue& json, const string& firstKey, const stri
 
 bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, JValue& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(mainKey))
         return false;
     if (!json[mainKey].isObject())
@@ -76,6 +86,8 @@ bool JValueUtil::getValue(const JValue& json, const string& mainKey, const strin
 
 bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, string& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(mainKey))
         return false;
     if (!json[mainKey].isObject())
@@ -85,6 +97,8 @@ bool JValueUtil::getValue(const JValue& json, const string& mainKey, const strin
 
 bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, int& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(mainKey))
         return false;
     if (!json[mainKey].isObject())
@@ -94,6 +108,8 @@ bool JValueUtil::getValue(const JValue& json, const string& mainKey, const strin
 
 bool JValueUtil::getValue(const JValue& json, const string& mainKey, const string& subKey, bool& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(mainKey))
         return false;
     if (!json[mainKey].isObject())
@@ -103,6 +119,8 @@ bool JValueUtil::getValue(const JValue& json, const string& mainKey, const strin
 
 bool JValueUtil::getValue(const JValue& json, const string& key, JValue& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(key))
         return false;
     value = json[key];
@@ -111,6 +129,8 @@ bool JValueUtil::getValue(const JValue& json, const string& key, JValue& value)
 
 bool JValueUtil::getValue(const JValue& json, const string& key, string& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(key))
         return false;
     if (!json[key].isString())
@@ -124,6 +144,8 @@ bool JValueUtil::getValue(const JValue& json, const string& key, string& value)
 
 bool JValueUtil::getValue(const JValue& json, const string& key, int& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(key))
         return false;
     if (!json[key].isNumber())
@@ -137,6 +159,8 @@ bool JValueUtil::getValue(const JValue& json, const string& key, int& value)
 
 bool JValueUtil::getValue(const JValue& json, const string& key, bool& value)
 {
+    if (!json)
+        return false;
     if (!json.hasKey(key))
         return false;
     if (!json[key].isBoolean())

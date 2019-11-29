@@ -26,9 +26,14 @@ Bootd::~Bootd()
 {
 }
 
-void Bootd::onInitialze()
+void Bootd::onInitialzed()
 {
 
+}
+
+void Bootd::onFinalized()
+{
+    m_getBootStatusCall.cancel();
 }
 
 void Bootd::onServerStatusChanged(bool isConnected)

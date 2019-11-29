@@ -132,7 +132,7 @@ const string& Logger::toString(const enum LogLevel& level)
 }
 
 Logger::Logger()
-    : m_level(LogLevel_INFO),
+    : m_level(LogLevel_DEBUG),
       m_type(LogType_CONSOLE)
 {
 }

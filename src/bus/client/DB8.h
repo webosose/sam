@@ -39,8 +39,9 @@ public:
 
 protected:
     // AbsLunaClient
-    virtual void onInitialze();
-    virtual void onServerStatusChanged(bool isConnected);
+    virtual void onInitialzed() override;
+    virtual void onFinalized() override;
+    virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
     static const char* KIND_NAME;

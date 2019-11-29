@@ -58,12 +58,12 @@ NativeContainer::~NativeContainer()
 void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     switch (runningApp.getLifeStatus()) {
-    case LifeStatus::LifeStatus_SPLASHING:
+    case LifeStatus::LifeStatus_SPLASHED:
     case LifeStatus::LifeStatus_STOP:
         launchFromStop(runningApp, lunaTask);
         break;
 
-    case LifeStatus::LifeStatus_RUNNING:
+    case LifeStatus::LifeStatus_PRELOADED:
     case LifeStatus::LifeStatus_FOREGROUND:
     case LifeStatus::LifeStatus_BACKGROUND:
         if (!runningApp.isRegistered()) {
@@ -115,12 +115,6 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
-//    if (lunaTask->getReason() == "memoryReclaim") {
-//        runningApp.startKillingTimer(1000);
-//    } else {
-//        runningApp.startKillingTimer(10000);
-//    }
 }
 
 void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTask)
@@ -134,7 +128,7 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
     const char* jailerType = "";
     bool isNojailApp = SAMConf::getInstance().isNoJailApp(runningApp.getAppId());
 
-    string appId = runningApp.getAppId().c_str();
+    string appId = runningApp.getAppId();
     AppType appType = runningApp.getLaunchPoint()->getAppDesc()->getAppType();
     AppLocation appLocation = runningApp.getLaunchPoint()->getAppDesc()->getAppLocation();
     string strParams = runningApp.getLaunchParams(lunaTask);
@@ -201,10 +195,8 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with root");
     }
 
-    if (runningApp.getPreload().empty())
-        runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
-    else
-        runningApp.setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
+    // TODO Native App Preloading is not supported yet
+    runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
 
     int pid = LinuxProcess::forkProcess(forkParams, NULL);
     if (pid <= 0) {
@@ -217,14 +209,11 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
 
     // set watcher for the child's
     g_child_watch_add(pid, (GChildWatchFunc) NativeContainer::onKillChildProcess, NULL);
-
-    Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), Logger::format("pid(%d) collapse(%f)", pid, lunaTask->getTimeStampMS()));
+    Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
 
     string pidStr = boost::lexical_cast<string>(pid);
     runningApp.setProcessId(pidStr);
     runningApp.setWebprocid("");
-    runningApp.saveLastLaunchTime();
-    runningApp.setLifeStatus(LifeStatus::LifeStatus_RUNNING);
 
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);

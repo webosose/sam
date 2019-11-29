@@ -199,17 +199,17 @@ bool ApplicationManager::attach(GMainLoop* gml)
             m_compat2.registerCategory(CATEGORY_DEV, METHODS_DEV, nullptr, nullptr);
         }
 
-        m_getAppLifeEvents.setServiceHandle(this);
-        m_getAppLifeStatus.setServiceHandle(this);
-        m_getForgroundAppInfo.setServiceHandle(this);
-        m_getForgroundAppInfoExtraInfo.setServiceHandle(this);
-        m_listLaunchPointsPoint.setServiceHandle(this);
-        m_listAppsPoint.setServiceHandle(this);
-        m_listAppsCompactPoint.setServiceHandle(this);
-        m_listDevAppsPoint.setServiceHandle(this);
-        m_listDevAppsCompactPoint.setServiceHandle(this);
-        m_running.setServiceHandle(this);
-        m_runningDev.setServiceHandle(this);
+        m_getAppLifeEvents = new LS::SubscriptionPoint();               m_getAppLifeEvents->setServiceHandle(this);
+        m_getAppLifeStatus = new LS::SubscriptionPoint();               m_getAppLifeStatus->setServiceHandle(this);
+        m_getForgroundAppInfo = new LS::SubscriptionPoint();            m_getForgroundAppInfo->setServiceHandle(this);
+        m_getForgroundAppInfoExtraInfo = new LS::SubscriptionPoint();   m_getForgroundAppInfoExtraInfo->setServiceHandle(this);
+        m_listLaunchPointsPoint = new LS::SubscriptionPoint();          m_listLaunchPointsPoint->setServiceHandle(this);
+        m_listAppsPoint = new LS::SubscriptionPoint();                  m_listAppsPoint->setServiceHandle(this);
+        m_listAppsCompactPoint = new LS::SubscriptionPoint();           m_listAppsCompactPoint->setServiceHandle(this);
+        m_listDevAppsPoint = new LS::SubscriptionPoint();               m_listDevAppsPoint->setServiceHandle(this);
+        m_listDevAppsCompactPoint = new LS::SubscriptionPoint();        m_listDevAppsCompactPoint->setServiceHandle(this);
+        m_running = new LS::SubscriptionPoint();                        m_running->setServiceHandle(this);
+        m_runningDev = new LS::SubscriptionPoint();                     m_runningDev->setServiceHandle(this);
 
         this->attachToLoop(gml);
         m_compat1.attachToLoop(gml);
@@ -223,33 +223,33 @@ void ApplicationManager::detach()
 {
     m_APIHandlers.clear();
 
-    this->detach();
+    delete m_getAppLifeEvents;
+    delete m_getAppLifeStatus;
+    delete m_getForgroundAppInfo;
+    delete m_getForgroundAppInfoExtraInfo;
+    delete m_listLaunchPointsPoint;
+    delete m_listAppsPoint;
+    delete m_listAppsCompactPoint;
+    delete m_listDevAppsPoint;
+    delete m_listDevAppsCompactPoint;
+    delete m_running;
+    delete m_runningDev;
+
+    Handle::detach();
     m_compat1.detach();
     m_compat2.detach();
 }
 
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
-    string appId = lunaTask->getAppId();
-    string launchPointId = lunaTask->getLaunchPointId();
-    string instanceId = lunaTask->getInstanceId();
+    if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
+    }
+
     string reason = "";
-    pbnjson::JValue params;
-
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "params", params);
     JValueUtil::getValue(lunaTask->getRequestPayload(), "params", "reason", reason);
-
-    if (!AppDescriptionList::getInstance().isExist(appId)) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not exist");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
     if (reason.empty()) {
         reason = "normal";
     }
@@ -259,15 +259,9 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
-    string appId = lunaTask->getAppId();
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getAppId() + " is not running");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
@@ -295,7 +289,6 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
     string reason = "";
 
     JValueUtil::getValue(lunaTask->getRequestPayload(), "preloadOnly", preloadOnly);
-
     if (preloadOnly) {
         Logger::warning(getClassName(), __FUNCTION__, lunaTask->getAppId(), "app is being launched by user");
         return;
@@ -351,42 +344,37 @@ void ApplicationManager::closeByAppId(LunaTaskPtr lunaTask)
 void ApplicationManager::running(LunaTaskPtr lunaTask)
 {
     bool isDevmode = (strcmp(lunaTask->getRequest().getCategory(), "/dev") == 0);
-    pbnjson::JValue running = pbnjson::Array();
+    bool subscribed = false;
 
-    if (isDevmode) {
-        RunningAppList::getInstance().toJson(running, true);
-    } else {
-        RunningAppList::getInstance().toJson(running, false);
-    }
+    makeRunning(lunaTask->getResponsePayload(), isDevmode);
     lunaTask->getResponsePayload().put("returnValue", true);
-    lunaTask->getResponsePayload().put("running", running);
 
     if (lunaTask->getRequest().isSubscription()) {
-        bool subscribed = false;
         if (isDevmode) {
-            subscribed = m_runningDev.subscribe(lunaTask->getRequest());
+            subscribed = m_runningDev->subscribe(lunaTask->getRequest());
         } else {
-            subscribed = m_running.subscribe(lunaTask->getRequest());
+            subscribed = m_running->subscribe(lunaTask->getRequest());
         }
-        lunaTask->getResponsePayload().put("subscribed", subscribed);
     }
+    lunaTask->getResponsePayload().put("subscribed", subscribed);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void ApplicationManager::getAppLifeEvents(LunaTaskPtr lunaTask)
 {
-    if (LSMessageIsSubscription(lunaTask->getMessage())) {
-        if (!LSSubscriptionAdd(lunaTask->getHandle(), SUBSKEY_GET_APP_LIFE_EVENTS, lunaTask->getMessage(), NULL)) {
-            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Subscription failed");
-            lunaTask->getResponsePayload().put("subscribed", false);
-        } else {
-            lunaTask->getResponsePayload().put("subscribed", true);
-        }
-    } else {
+    if (!lunaTask->getRequest().isSubscription()) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "subscription is required");
         lunaTask->getResponsePayload().put("subscribed", false);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
     }
 
+    if (!m_getAppLifeEvents->subscribe(lunaTask->getRequest())) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Subscription failed");
+        lunaTask->getResponsePayload().put("subscribed", false);
+    } else {
+        lunaTask->getResponsePayload().put("subscribed", true);
+    }
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
@@ -399,7 +387,7 @@ void ApplicationManager::getAppLifeStatus(LunaTaskPtr lunaTask)
         return;
     }
 
-    if (!m_getAppLifeStatus.subscribe(lunaTask->getRequest())) {
+    if (!m_getAppLifeStatus->subscribe(lunaTask->getRequest())) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Subscription failed");
         lunaTask->getResponsePayload().put("subscribed", false);
     } else {
@@ -414,26 +402,15 @@ void ApplicationManager::getForegroundAppInfo(LunaTaskPtr lunaTask)
     bool subscribed = false;
 
     JValueUtil::getValue(lunaTask->getRequestPayload(), "extraInfo", extraInfo);
+    makeGetForegroundAppInfo(lunaTask->getResponsePayload(), extraInfo);
 
-    if (extraInfo) {
-        lunaTask->getResponsePayload().put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
-
-        if (lunaTask->getRequest().isSubscription())
-            subscribed = m_getForgroundAppInfoExtraInfo.subscribe(lunaTask->getRequest());
-    } else {
-        string appId = LSM::getInstance().getFullWindowAppId();
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
-        if (runningApp == nullptr) {
-            lunaTask->getResponsePayload().put("appId", "");
+    if (lunaTask->getRequest().isSubscription()) {
+        if (extraInfo) {
+            subscribed = m_getForgroundAppInfoExtraInfo->subscribe(lunaTask->getRequest());
         } else {
-            lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
-            lunaTask->getResponsePayload().put("windowId", runningApp->getWindowId());
-            lunaTask->getResponsePayload().put("processId", runningApp->getProcessId());
+            subscribed = m_getForgroundAppInfo->subscribe(lunaTask->getRequest());
         }
-        if (lunaTask->getRequest().isSubscription())
-            subscribed = m_getForgroundAppInfo.subscribe(lunaTask->getRequest());
     }
-
     lunaTask->getResponsePayload().put("subscribed", subscribed);
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
@@ -443,7 +420,6 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 {
     string appId;
     bool lock;
-    string errorText;
 
     JValueUtil::getValue(lunaTask->getRequestPayload(), "id", appId);
     JValueUtil::getValue(lunaTask->getRequestPayload(), "lock", lock);
@@ -530,7 +506,7 @@ void ApplicationManager::listApps(LunaTaskPtr lunaTask)
     lunaTask->getResponsePayload().put("apps", apps);
 
     if (lunaTask->getRequest().isSubscription()) {
-        lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(lunaTask->getHandle(), METHOD_LIST_APPS, lunaTask->getMessage(), nullptr));
+        lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(this->get(), METHOD_LIST_APPS, lunaTask->getMessage(), nullptr));
     } else {
         lunaTask->getResponsePayload().put("subscribed", false);
     }
@@ -551,7 +527,7 @@ void ApplicationManager::getAppStatus(LunaTaskPtr lunaTask)
     }
     if (lunaTask->getRequest().isSubscription()) {
         string subscriptionKey = "getappstatus#" + appId + "#" + (appInfo ? "Y" : "N");
-        if (LSSubscriptionAdd(lunaTask->getHandle(), subscriptionKey.c_str(), lunaTask->getMessage(), NULL)) {
+        if (LSSubscriptionAdd(this->get(), subscriptionKey.c_str(), lunaTask->getMessage(), NULL)) {
             lunaTask->getResponsePayload().put("subscribed", true);
         } else {
             lunaTask->getResponsePayload().put("subscribed", false);
@@ -791,7 +767,7 @@ void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
     LaunchPointList::getInstance().toJson(launchPoints);
 
     if (lunaTask->getRequest().isSubscription())
-        ApplicationManager::getInstance().m_listLaunchPointsPoint.subscribe(lunaTask->getRequest());
+        ApplicationManager::getInstance().m_listLaunchPointsPoint->subscribe(lunaTask->getRequest());
 
     lunaTask->getResponsePayload().put("subscribed", subscribed);
     lunaTask->getResponsePayload().put("launchPoints", launchPoints);
@@ -836,11 +812,7 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
     subscriptionPayload.put("subscribed", true);
 
     switch (runningApp.getLifeStatus()) {
-    case LifeStatus::LifeStatus_INVALID:
-    case LifeStatus::LifeStatus_RUNNING:
-        return;
-
-    case LifeStatus::LifeStatus_PRELOADING:
+    case LifeStatus::LifeStatus_PRELOADED:
         subscriptionPayload.put("event", "preload");
         subscriptionPayload.put("preload", runningApp.getPreload());
         break;
@@ -871,14 +843,12 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
 
     case LifeStatus::LifeStatus_FOREGROUND:
         subscriptionPayload.put("event", "foreground");
+        subscriptionPayload.put("reason", runningApp.getReason());
         LSM::getInstance().getForegroundInfoById(runningApp.getAppId(), info);
         if (!info.isNull() && info.isObject()) {
             for (auto it : info.children()) {
                 const string key = it.first.asString();
-                if ("windowType" == key ||
-                    "windowGroup" == key ||
-                    "windowGroupOwner" == key ||
-                    "windowGroupOwnerId" == key) {
+                if ("windowType" == key || "windowGroup" == key || "windowGroupOwner" == key || "windowGroupOwnerId" == key || "displayId" == key) {
                     subscriptionPayload.put(key, info[key]);
                 }
             }
@@ -894,13 +864,16 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
         }
         break;
 
-    case LifeStatus::LifeStatus_PAUSING:
+    case LifeStatus::LifeStatus_PAUSED:
         subscriptionPayload.put("event", "pause");
         break;
+
+    default:
+        return;
     };
 
-    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
-    m_getAppLifeEvents.post(subscriptionPayload.stringify().c_str());
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getAppLifeEvents, subscriptionPayload);
+    m_getAppLifeEvents->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
@@ -924,10 +897,7 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
         if (!foregroundInfo.isNull() && foregroundInfo.isObject()) {
             for (auto it : foregroundInfo.children()) {
                 const string key = it.first.asString();
-                if ("windowType" == key ||
-                    "windowGroup" == key ||
-                    "windowGroupOwner" == key ||
-                    "windowGroupOwnerId" == key) {
+                if ("windowType" == key || "windowGroup" == key || "windowGroupOwner" == key || "windowGroupOwnerId" == key || "displayId" == key) {
                     subscriptionPayload.put(key, foregroundInfo[key]);
                 }
             }
@@ -941,8 +911,8 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
             subscriptionPayload.put("backgroundStatus", "normal");
         break;
 
-    case LifeStatus::LifeStatus_STOP:
     case LifeStatus::LifeStatus_CLOSING:
+    case LifeStatus::LifeStatus_STOP:
         subscriptionPayload.put("reason", runningApp.getReason());
         break;
 
@@ -950,8 +920,8 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
         return;
     }
 
-    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getAppLifeEvents, subscriptionPayload);
-    m_getAppLifeStatus.post(subscriptionPayload.stringify().c_str());
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getAppLifeStatus, subscriptionPayload);
+    m_getAppLifeStatus->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEvent event)
@@ -1010,33 +980,24 @@ void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
 {
     if (!m_enablePosting) return;
 
-    pbnjson::JValue subscriptionPayload = pbnjson::Object();
+    pbnjson::JValue subscriptionPayload;
+    if (!extraInfoOnly) {
+        subscriptionPayload = pbnjson::Object();
+        makeGetForegroundAppInfo(subscriptionPayload, false);
+        subscriptionPayload.put("returnValue", true);
+        subscriptionPayload.put("subscribed", true);
+
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfo, subscriptionPayload);
+        m_getForgroundAppInfo->post(subscriptionPayload.stringify().c_str());
+    }
+
+    subscriptionPayload = pbnjson::Object();
+    makeGetForegroundAppInfo(subscriptionPayload, true);
     subscriptionPayload.put("returnValue", true);
     subscriptionPayload.put("subscribed", true);
 
-    if (!extraInfoOnly) {
-        const string& fullWindowAppId = LSM::getInstance().getFullWindowAppId();
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(fullWindowAppId);
-        if (runningApp == nullptr) {
-            subscriptionPayload.put("appId", "");
-        } else {
-            subscriptionPayload.put("appId", runningApp->getAppId());
-            subscriptionPayload.put("windowId", runningApp->getWindowId());
-            subscriptionPayload.put("processId", runningApp->getProcessId());
-        }
-
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getForgroundAppInfo, subscriptionPayload);
-        m_getForgroundAppInfo.post(subscriptionPayload.stringify().c_str());
-    }
-
-    // For backward compatibility
-    subscriptionPayload.remove("appId");
-    subscriptionPayload.remove("windowId");
-    subscriptionPayload.remove("processId");
-
-    subscriptionPayload.put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
-    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_getForgroundAppInfoExtraInfo, subscriptionPayload);
-    m_getForgroundAppInfoExtraInfo.post(subscriptionPayload.stringify().c_str());
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfoExtraInfo, subscriptionPayload);
+    m_getForgroundAppInfoExtraInfo->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& change, const string& changeReason)
@@ -1052,21 +1013,23 @@ void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& c
     if (!changeReason.empty())
         subscriptionPayload.put("changeReason", changeReason);
 
+    Logger::info(getClassName(), __FUNCTION__, "SubscriptionPost", change);
     LSSubscriptionIter *iter = NULL;
     if (!LSSubscriptionAcquire(ApplicationManager::getInstance().get(), METHOD_LIST_APPS, &iter, NULL))
         return;
-
     while (LSSubscriptionHasNext(iter)) {
         LSMessage* message = LSSubscriptionNext(iter);
         Message request(message);
         bool isDevmode = (strcmp(request.getKind(), "/dev/listApps") == 0);
 
         if (isDevmode && !SAMConf::getInstance().isDevmodeEnabled()) {
+            Logger::debug(getClassName(), __FUNCTION__, "Devmode is disabled");
             continue;
         }
 
         pbnjson::JValue requestPayload = JDomParser::fromString(request.getPayload(), JValueUtil::getSchema("applicationManager.listApps"));
         if (requestPayload.isNull()) {
+            Logger::warning(getClassName(), __FUNCTION__, "Failed to parse requestPayload");
             continue;
         }
 
@@ -1080,11 +1043,14 @@ void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& c
             AppDescriptionList::getInstance().toJson(apps, properties, isDevmode);
             subscriptionPayload.put("apps", apps);
         } else {
-            if (appDesc->isDevmodeApp() != isDevmode)
+            if (appDesc->isDevmodeApp() != isDevmode) {
+                Logger::debug(getClassName(), __FUNCTION__, "Devmode != DevmodeApp");
                 continue;
+            }
             pbnjson::JValue app = appDesc->getJson(properties);
             subscriptionPayload.put("app", app);
         }
+        Logger::debug(getClassName(), __FUNCTION__, request.getSenderServiceName());
         request.respond(subscriptionPayload.stringify().c_str());
     }
     LSSubscriptionRelease(iter);
@@ -1114,40 +1080,66 @@ void ApplicationManager::postListLaunchPoints(LaunchPointPtr launchPoint, string
     if (!change.empty())
         subscriptionPayload.put("change", change);
 
-    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_listLaunchPointsPoint, subscriptionPayload);
-    m_listLaunchPointsPoint.post(subscriptionPayload.stringify().c_str());
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_listLaunchPointsPoint, subscriptionPayload);
+    m_listLaunchPointsPoint->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postRunning(RunningAppPtr runningApp)
 {
-    static JValue prevRunning;
-    static JValue prevDevRunning;
+    static JValue prevSubscriptionPayloadAll;
+    static JValue prevSubscriptionPayloadDev;
 
     if (!m_enablePosting) return;
 
-    bool isDevmode = runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp();
-    pbnjson::JValue subscriptionPayload = pbnjson::Object();
-    JValue running = pbnjson::Array();
+    pbnjson::JValue subscriptionPayload;
+    if (runningApp == nullptr || runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
+        subscriptionPayload = pbnjson::Object();
+        makeRunning(subscriptionPayload, true);
+        subscriptionPayload.put("subscribed", true);
+        subscriptionPayload.put("returnValue", true);
 
-    if (isDevmode) {
-        RunningAppList::getInstance().toJson(running, true);
-
-        if (running == prevDevRunning) return;
-        prevDevRunning = running.duplicate();
-    } else {
-        RunningAppList::getInstance().toJson(running, false);
-
-        if (running == prevRunning) return;
-        prevRunning = running.duplicate();
+        if (subscriptionPayload != prevSubscriptionPayloadDev) {
+            prevSubscriptionPayloadDev = subscriptionPayload.duplicate();
+            Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_runningDev, subscriptionPayload);
+            m_runningDev->post(subscriptionPayload.stringify().c_str());
+        }
     }
-    subscriptionPayload.put("running", running);
+    subscriptionPayload = pbnjson::Object();
+    makeRunning(subscriptionPayload, false);
+    subscriptionPayload.put("subscribed", true);
     subscriptionPayload.put("returnValue", true);
 
-    if (isDevmode) {
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_runningDev, subscriptionPayload);
-        m_runningDev.post(subscriptionPayload.stringify().c_str());
+    if (subscriptionPayload == prevSubscriptionPayloadAll) return;
+    prevSubscriptionPayloadAll = subscriptionPayload.duplicate();
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_running, subscriptionPayload);
+    m_running->post(subscriptionPayload.stringify().c_str());
+}
+
+void ApplicationManager::makeGetForegroundAppInfo(JValue& payload, bool extraInfo)
+{
+    if (extraInfo) {
+        payload.put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
     } else {
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, m_running, subscriptionPayload);
-        m_running.post(subscriptionPayload.stringify().c_str());
+        string appId = LSM::getInstance().getFullWindowAppId();
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
+        if (runningApp == nullptr) {
+            payload.put("appId", "");
+            payload.put("instanceId", "");
+            payload.put("launchPointId", "");
+        } else {
+            payload.put("appId", runningApp->getAppId());
+            payload.put("instanceId", runningApp->getInstanceId());
+            payload.put("launchPointId", runningApp->getLaunchPointId());
+
+            payload.put("windowId", runningApp->getWindowId());
+            payload.put("processId", runningApp->getProcessId());
+        }
     }
+}
+
+void ApplicationManager::makeRunning(JValue& payload, bool isDevmode)
+{
+    pbnjson::JValue running = pbnjson::Array();
+    RunningAppList::getInstance().toJson(running, isDevmode);
+    payload.put("running", running);
 }

@@ -37,9 +37,14 @@ SettingService::~SettingService()
 {
 }
 
-void SettingService::onInitialze()
+void SettingService::onInitialzed()
 {
 
+}
+
+void SettingService::onFinalized()
+{
+    m_getSystemSettingsCall.cancel();
 }
 
 void SettingService::onServerStatusChanged(bool isConnected)

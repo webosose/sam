@@ -35,7 +35,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
     }
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
         runningApp = RunningAppList::getInstance().createByAppId(lunaTask->getAppId());
         runningApp->setInstanceId(lunaTask->getUuid());
@@ -52,6 +52,8 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         MemoryManager::getInstance().requireMemory(lunaTask);
     } else if (lunaTask->getNextStep() == "Launch App") {
         lunaTask->setNextStep("Complete");
+        if (runningApp->getLifeStatus() == LifeStatus::LifeStatus_SPLASHING)
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHED);
         runningApp->launch(lunaTask);
     } else {
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

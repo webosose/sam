@@ -27,7 +27,12 @@ MemoryManager::~MemoryManager()
     // TODO Auto-generated destructor stub
 }
 
-void MemoryManager::onInitialze()
+void MemoryManager::onInitialzed()
+{
+
+}
+
+void MemoryManager::onFinalized()
 {
 
 }
