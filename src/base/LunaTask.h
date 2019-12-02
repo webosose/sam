@@ -53,7 +53,7 @@ public:
           m_reason(""),
           m_preload("")
     {
-        m_uuid = Time::generateUid();
+        m_requestId = Time::generateUid();
         m_startTime = Time::getCurrentTime();
     }
 
@@ -62,9 +62,9 @@ public:
 
     }
 
-    const string& getUuid()
+    const string& getRequestId()
     {
-        return m_uuid;
+        return m_requestId;
     }
 
     LSHandle* getHandle() const
@@ -136,6 +136,13 @@ public:
         string appId = "";
         JValueUtil::getValue(m_requestPayload, "id", appId);
         return appId;
+    }
+
+    const int getDisplayAffinity() const
+    {
+        int displayAffinity = 0;
+        JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayAffinity);
+        return displayAffinity;
     }
 
     const string getCaller(bool removePostfix = false) const
@@ -218,7 +225,7 @@ private:
         m_request.respond(m_responsePayload.stringify().c_str());
     }
 
-    string m_uuid;
+    string m_requestId;
     LSHandle* m_handle;
     LS::Message m_request;
     LSMessageToken m_token;

@@ -69,22 +69,6 @@ bool LunaTaskList::add(LunaTaskPtr lunaTask)
     return true;
 }
 
-bool LunaTaskList::removeAboutWAM()
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        // launch 이면서 webapp인 케이스를 찾아서 제거.
-    }
-    return true;
-}
-
-bool LunaTaskList::removeAboutLSM()
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        // launch인 케이스를 모두 제거
-    }
-    return true;
-}
-
 bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {

@@ -84,7 +84,6 @@ public:
     void launch(LunaTaskPtr lunaTask);
     void pause(LunaTaskPtr lunaTask);
     void close(LunaTaskPtr lunaTask);
-    void closeByAppId(LunaTaskPtr lunaTask);
     void running(LunaTaskPtr lunaTask);
     void getAppLifeEvents(LunaTaskPtr lunaTask);
     void getAppLifeStatus(LunaTaskPtr lunaTask);

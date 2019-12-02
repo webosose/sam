@@ -38,8 +38,6 @@ public:
     LunaTaskPtr getByToken(const LSMessageToken& token);
 
     bool add(LunaTaskPtr lunaTask);
-    bool removeAboutWAM();
-    bool removeAboutLSM();
     bool removeAfterReply(LunaTaskPtr lunaTask);
 
     void toJson(JValue& array);

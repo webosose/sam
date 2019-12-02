@@ -27,18 +27,37 @@ PolicyManager::~PolicyManager()
 {
 }
 
-void PolicyManager::launch(LunaTaskPtr lunaTask)
+void PolicyManager::relaunch(LunaTaskPtr lunaTask)
 {
-    if (!lunaTask->getNextStep().empty())
+    if (!lunaTask->getNextStep().empty()) {
         Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
+    }
     if (lunaTask->getAPICallback().empty()) {
-        lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
+        lunaTask->setAPICallback(boost::bind(&PolicyManager::relaunch, this, _1));
     }
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "The app is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
+    }
+    runningApp->launch(lunaTask);
+}
+
+void PolicyManager::launch(LunaTaskPtr lunaTask)
+{
+    if (!lunaTask->getNextStep().empty()) {
+        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
+    }
+    if (lunaTask->getAPICallback().empty()) {
+        lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
+    }
+
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getRequestId());
+    if (runningApp == nullptr) {
         runningApp = RunningAppList::getInstance().createByAppId(lunaTask->getAppId());
-        runningApp->setInstanceId(lunaTask->getUuid());
+        runningApp->setInstanceId(lunaTask->getRequestId());
         runningApp->loadRequestPayload(lunaTask->getRequestPayload());
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
         RunningAppList::getInstance().add(runningApp);

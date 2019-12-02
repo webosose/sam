@@ -154,7 +154,7 @@ ApplicationManager::ApplicationManager()
     registerApiHandler(CATEGORY_ROOT, METHOD_LAUNCH, boost::bind(&ApplicationManager::launch, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_PAUSE, boost::bind(&ApplicationManager::pause, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_CLOSE, boost::bind(&ApplicationManager::close, this, _1));
-    registerApiHandler(CATEGORY_ROOT, METHOD_CLOSE_BY_APPID, boost::bind(&ApplicationManager::closeByAppId, this, _1));
+    registerApiHandler(CATEGORY_ROOT, METHOD_CLOSE_BY_APPID, boost::bind(&ApplicationManager::close, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_RUNNING, boost::bind(&ApplicationManager::running, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_GET_APP_LIFE_EVENTS, boost::bind(&ApplicationManager::getAppLifeEvents, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_GET_APP_LIFE_STATUS, boost::bind(&ApplicationManager::getAppLifeStatus, this, _1));
@@ -176,7 +176,7 @@ ApplicationManager::ApplicationManager()
     registerApiHandler(CATEGORY_ROOT, METHOD_LIST_LAUNCHPOINTS, boost::bind(&ApplicationManager::listLaunchPoints, this, _1));
 
     registerApiHandler(CATEGORY_DEV, METHOD_CLOSE, boost::bind(&ApplicationManager::close, this, _1));
-    registerApiHandler(CATEGORY_DEV, METHOD_CLOSE_BY_APPID, boost::bind(&ApplicationManager::closeByAppId, this, _1));
+    registerApiHandler(CATEGORY_DEV, METHOD_CLOSE_BY_APPID, boost::bind(&ApplicationManager::close, this, _1));
     registerApiHandler(CATEGORY_DEV, METHOD_LIST_APPS, boost::bind(&ApplicationManager::listApps, this, _1));
     registerApiHandler(CATEGORY_DEV, METHOD_RUNNING, boost::bind(&ApplicationManager::running, this, _1));
     registerApiHandler(CATEGORY_DEV, METHOD_MANAGER_INFO, boost::bind(&ApplicationManager::managerInfo, this, _1));
@@ -254,7 +254,16 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
         reason = "normal";
     }
     lunaTask->setReason(reason);
-    PolicyManager::getInstance().launch(lunaTask);
+
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp == nullptr)
+        PolicyManager::getInstance().launch(lunaTask);
+    else if (runningApp->getDisplayId() == lunaTask->getDisplayAffinity())
+        PolicyManager::getInstance().relaunch(lunaTask);
+    else if (lunaTask->getInstanceId().empty())
+        PolicyManager::getInstance().launch(lunaTask);
+    else
+        PolicyManager::getInstance().relaunch(lunaTask);
 }
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
@@ -286,9 +295,13 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
     }
 
     bool preloadOnly = false;
+    bool letAppHandle = false;
     string reason = "";
 
     JValueUtil::getValue(lunaTask->getRequestPayload(), "preloadOnly", preloadOnly);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "reason", reason);
+    JValueUtil::getValue(lunaTask->getRequestPayload(), "letAppHandle", letAppHandle);
+
     if (preloadOnly) {
         Logger::warning(getClassName(), __FUNCTION__, lunaTask->getAppId(), "app is being launched by user");
         return;
@@ -300,45 +313,6 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
     runningApp->setReason(reason);
     runningApp->close(lunaTask);
 
-}
-
-void ApplicationManager::closeByAppId(LunaTaskPtr lunaTask)
-{
-    string appId = lunaTask->getAppId();
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "App ID is not specified");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
-    if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-    if (strcmp(lunaTask->getRequest().getCategory(), "/dev") == 0 && !runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
-        Logger::warning(getClassName(), __FUNCTION__, appId, "Only Dev app should be closed using /dev category_API");
-        return;
-    }
-
-    bool preloadOnly = false;
-    bool letAppHandle = false;
-    string reason = "";
-
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "preloadOnly", preloadOnly);
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "reason", reason);
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "letAppHandle", letAppHandle);
-
-    if (preloadOnly) {
-        Logger::warning(getClassName(), __FUNCTION__, appId, "app is being launched by user");
-        return;
-    }
-
-    if (reason.empty()) {
-        reason = lunaTask->getCaller();
-    }
-    runningApp->setReason(reason);
-    runningApp->close(lunaTask);
 }
 
 void ApplicationManager::running(LunaTaskPtr lunaTask)

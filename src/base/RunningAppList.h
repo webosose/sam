@@ -53,6 +53,7 @@ public:
     bool removeByAppId(const string& appId);
     bool removeByLaunchPoint(LaunchPointPtr launchPoint);
     bool removeByPid(const string& processId);
+    bool removeAboutWAM();
 
     bool isAllRunning();
     bool isForeground(const string& appId);

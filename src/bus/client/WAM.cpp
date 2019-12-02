@@ -72,7 +72,7 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
 
         RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
         if (runningApp == nullptr) {
-            Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "Cannot find RunningApp");
+            Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "The RunningApp is already removed");
             continue;
         }
         Logger::debug(getInstance().getClassName(), __FUNCTION__, appId,
@@ -151,7 +151,7 @@ void WAM::onServerStatusChanged(bool isConnected)
         if (m_listRunningAppsCall.isActive())
             m_listRunningAppsCall.cancel();
 
-        LunaTaskList::getInstance().removeAboutWAM();
+        RunningAppList::getInstance().removeAboutWAM();
     }
 }
 
@@ -249,6 +249,10 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
     JValue appDesc = pbnjson::Object();
     runningApp.getLaunchPoint()->toJson(appDesc);
+
+    requestPayload.put("instanceId", runningApp.getInstanceId());
+    requestPayload.put("launchPointId", runningApp.getLaunchPointId());
+    requestPayload.put("appId", runningApp.getAppId());
 
     requestPayload.put("appDesc", appDesc);
     requestPayload.put("reason", lunaTask->getReason());
@@ -357,6 +361,7 @@ bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     runningApp.setLifeStatus(LifeStatus::LifeStatus_PAUSING);
     JValue requestPayload = pbnjson::Object();
     requestPayload.put("appId", runningApp.getAppId());
+    requestPayload.put("instanceId", runningApp.getInstanceId());
     requestPayload.put("reason", "pause");
     requestPayload.put("parameters", lunaTask->getParams());
 
@@ -408,7 +413,7 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     // How could we get the previous status? We should restore it.
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        Logger::info(getInstance().getClassName(), __FUNCTION__, "The RunningApp is already removed in 'listRunning'");
+        Logger::info(getInstance().getClassName(), __FUNCTION__, "The RunningApp is already removed");
     } else {
         RunningAppList::getInstance().removeByObject(runningApp);
     }

@@ -94,7 +94,6 @@ LaunchPointPtr LaunchPointList::getByAppId(const string& appId)
         return nullptr;
 
     string launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_DEFAULT, appId);
-
     return getByLaunchPointId(launchPointId);
 }
 

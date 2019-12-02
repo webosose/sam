@@ -39,6 +39,7 @@ friend class ISingleton<PolicyManager> ;
 public:
     virtual ~PolicyManager();
 
+    void relaunch(LunaTaskPtr lunaTask);
     void launch(LunaTaskPtr lunaTask);
 
 private:

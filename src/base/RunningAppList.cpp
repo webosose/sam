@@ -249,6 +249,20 @@ bool RunningAppList::removeByPid(const string& processId)
     return false;
 }
 
+bool RunningAppList::removeAboutWAM()
+{
+    for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
+            RunningAppPtr runningApp = it->second;
+            it = m_map.erase(it);
+            onRemove(runningApp);
+        } else {
+            ++it;
+        }
+    }
+    return true;
+}
+
 bool RunningAppList::isForeground(const string& appId)
 {
     RunningAppPtr runningApp = getByAppId(appId);
