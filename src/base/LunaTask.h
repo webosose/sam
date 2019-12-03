@@ -138,31 +138,26 @@ public:
         return appId;
     }
 
-    const int getDisplayAffinity() const
+    const int getDisplayAffinity() const;
+
+    const string getCaller() const
     {
-        int displayAffinity = 0;
-        JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayAffinity);
-        return displayAffinity;
+        if (m_request.getApplicationID() != nullptr) {
+            return m_request.getApplicationID();
+        } else {
+            return m_request.getSenderServiceName();
+        }
     }
 
-    const string getCaller(bool removePostfix = false) const
+    const string getWebprocessId() const
     {
-        string url = "";
-        if (m_request.getApplicationID() != nullptr){
-            url = m_request.getApplicationID();
-        } else {
-            url = m_request.getSenderServiceName();
+        // This API only valid when sender is application
+        string webprocessid = m_request.getSenderServiceName();
+        size_t index = webprocessid.find("-");
+        if (string::npos == index) {
+            return "";
         }
-
-        size_t index = url.find(" ");
-        if (string::npos != index) {
-            return url.substr(0, index);
-        }
-        index = url.find("-");
-        if (string::npos != index) {
-            return url.substr(0, index);
-        }
-        return url;
+        return webprocessid.substr(index + 1);
     }
 
     const string& getReason() const

@@ -42,8 +42,10 @@ public:
     RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId);
     RunningAppPtr getByInstanceId(const string& instanceId);
     RunningAppPtr getByLaunchPointId(const string& launchPointId);
+    RunningAppPtr getByAppIdAndDisplayId(const string& appId, const int displayId);
     RunningAppPtr getByAppId(const string& appId);
     RunningAppPtr getByPid(const string& pid);
+    RunningAppPtr getByWebprocessid(const string& webprocessid);
 
     bool add(RunningAppPtr runningApp);
 

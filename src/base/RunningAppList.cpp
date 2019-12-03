@@ -127,6 +127,16 @@ RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId)
     return nullptr;
 }
 
+RunningAppPtr RunningAppList::getByAppIdAndDisplayId(const string& appId, const int displayId)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getAppId() == appId && (*it).second->getDisplayId() == displayId) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
 RunningAppPtr RunningAppList::getByAppId(const string& appId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -141,6 +151,16 @@ RunningAppPtr RunningAppList::getByPid(const string& pid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getProcessId() == pid) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
+RunningAppPtr RunningAppList::getByWebprocessid(const string& webprocessid)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getWebprocessid() == webprocessid) {
             return it->second;
         }
     }

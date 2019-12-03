@@ -243,11 +243,8 @@ void ApplicationManager::detach()
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
     if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
-        cout << "1111" << endl;
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
-        cout << "2222" << endl;
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        cout << "4444" << endl;
         return;
     }
 
@@ -258,12 +255,8 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
     }
     lunaTask->setReason(reason);
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
     if (runningApp == nullptr)
-        PolicyManager::getInstance().launch(lunaTask);
-    else if (runningApp->getDisplayId() == lunaTask->getDisplayAffinity())
-        PolicyManager::getInstance().relaunch(lunaTask);
-    else if (lunaTask->getInstanceId().empty())
         PolicyManager::getInstance().launch(lunaTask);
     else
         PolicyManager::getInstance().relaunch(lunaTask);

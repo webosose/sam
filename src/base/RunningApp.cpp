@@ -111,7 +111,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
     : m_launchPoint(launchPoint),
       m_instanceId(""),
       m_processId(""),
-      m_webprocid(""),
+      m_webprocessid(""),
       m_displayId(-1),
       m_interfaceVersion(1),
       m_isRegistered(false),

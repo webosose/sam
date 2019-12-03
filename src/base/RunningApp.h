@@ -125,9 +125,13 @@ public:
         m_processId = pid;
     }
 
+    const string& getWebprocessid() const
+    {
+        return m_webprocessid;
+    }
     void setWebprocid(const string& webprocid)
     {
-        m_webprocid = webprocid;
+        m_webprocessid = webprocid;
     }
 
     int getInterfaceVersion()
@@ -216,7 +220,7 @@ public:
         if (m_displayId != -1)
             object.put("displayId", m_displayId);
         object.put("processId", m_processId);
-        object.put("webprocessid", m_webprocid);
+        object.put("webprocessid", m_webprocessid);
 
         if (status) {
             // getAppLifeStatus
@@ -246,7 +250,7 @@ private:
 
     string m_instanceId;
     string m_processId;
-    string m_webprocid;
+    string m_webprocessid;
     string m_windowId;
     int m_displayId;
 

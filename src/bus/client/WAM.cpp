@@ -20,13 +20,13 @@
 #include "base/LunaTaskList.h"
 #include "base/RunningAppList.h"
 
-const string INVALID_PROCESS_ID = "-1";
-const string PROCESS_ID_ZERO = "0";
+const string WAM::KEY_STATUS = "status";
+const string WAM::KEY_APP_ID = "id";
+const string WAM::KEY_INSTANCE_ID = "instanceid";
+const string WAM::KEY_WEBPROCESS_ID = "webprocessid";
 
 bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
 {
-    static const string STATUS = "status";
-
     Message response(message);
     pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
@@ -40,43 +40,40 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
 
     int prevSize = prevRunning.arraySize();
     for (int i = 0; i < prevSize; i++) {
-        prevRunning[i].put(STATUS, "stop");
+        prevRunning[i].put(KEY_STATUS, "stop");
     }
 
     int curSize = currRunning.arraySize();
     for (int i = 0; i < curSize; i++) {
         for (int j = 0; j < prevSize; j++) {
-            if (currRunning[i]["id"].asString() == prevRunning[j]["id"].asString()) {
-                prevRunning[j].put(STATUS, "running");
-                currRunning[i].put(STATUS, "running");
+            if (currRunning[i][KEY_APP_ID].asString() == prevRunning[j][KEY_APP_ID].asString()) {
+                prevRunning[j].put(KEY_STATUS, "running");
+                currRunning[i].put(KEY_STATUS, "running");
             }
         }
-        if (!currRunning[i].hasKey(STATUS)) {
-            currRunning[i].put(STATUS, "start");
+        if (!currRunning[i].hasKey(KEY_STATUS)) {
+            currRunning[i].put(KEY_STATUS, "start");
         }
     }
 
     string status;
     string instanceId;
-    string launchPointId;
     string appId;
     string webprocessid;
 
     for (int i = 0; i < prevSize; i++) {
-        JValueUtil::getValue(prevRunning[i], "instanceId", instanceId);
-        JValueUtil::getValue(prevRunning[i], "launchPointId", launchPointId);
-        JValueUtil::getValue(prevRunning[i], "id", appId);
+        JValueUtil::getValue(prevRunning[i], KEY_APP_ID, appId);
+        JValueUtil::getValue(prevRunning[i], KEY_INSTANCE_ID, instanceId);
+        JValueUtil::getValue(prevRunning[i], KEY_WEBPROCESS_ID, webprocessid);
+        JValueUtil::getValue(prevRunning[i], KEY_STATUS, status);
 
-        JValueUtil::getValue(prevRunning[i], STATUS, status);
-        JValueUtil::getValue(prevRunning[i], "webprocessid", webprocessid);
-
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(instanceId);
         if (runningApp == nullptr) {
             Logger::error(getInstance().getClassName(), __FUNCTION__, appId, "The RunningApp is already removed");
             continue;
         }
         Logger::debug(getInstance().getClassName(), __FUNCTION__, appId,
-                      Logger::format("Previous: %s(%s) webprocessid(%s)", STATUS.c_str(), status.c_str(), webprocessid.c_str()));
+                      Logger::format("Previous: %s(%s) webprocessid(%s)", KEY_STATUS.c_str(), status.c_str(), webprocessid.c_str()));
         if (status == "running") {
             runningApp->setWebprocid(webprocessid);
         } else {
@@ -85,20 +82,19 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     }
 
     for (int i = 0; i < curSize; i++) {
-        JValueUtil::getValue(currRunning[i], "instanceId", instanceId);
-        JValueUtil::getValue(currRunning[i], "launchPointId", launchPointId);
-        JValueUtil::getValue(currRunning[i], "id", appId);
+        JValueUtil::getValue(currRunning[i], KEY_APP_ID, appId);
+        JValueUtil::getValue(currRunning[i], KEY_INSTANCE_ID, instanceId);
+        JValueUtil::getValue(currRunning[i], KEY_WEBPROCESS_ID, webprocessid);
+        JValueUtil::getValue(currRunning[i], KEY_STATUS, status);
 
-        JValueUtil::getValue(currRunning[i], STATUS, status);
-        JValueUtil::getValue(currRunning[i], "webprocessid", webprocessid);
-
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(instanceId);
         Logger::debug(getInstance().getClassName(), __FUNCTION__, appId,
-                      Logger::format("Current: %s(%s) webprocessid(%s)", STATUS.c_str(), status.c_str(), webprocessid.c_str()));
+                      Logger::format("Current: %s(%s) webprocessid(%s)", KEY_STATUS.c_str(), status.c_str(), webprocessid.c_str()));
         if (status == "start") {
             // SAM might be restarted (respwaned)
             if (runningApp == nullptr) {
-                Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by WAM");
+                Logger::warning(getInstance().getClassName(), __FUNCTION__,
+                                Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%d)", appId.c_str(), instanceId.c_str()));
                 runningApp = RunningAppList::getInstance().createByAppId(appId);
                 runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
                 runningApp->setInstanceId(Time::generateUid());
@@ -256,14 +252,20 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
     requestPayload.put("appDesc", appDesc);
     requestPayload.put("reason", lunaTask->getReason());
-    requestPayload.put("launchingAppId", lunaTask->getCaller(true));
+    requestPayload.put("launchingAppId", lunaTask->getCaller());
     requestPayload.put("launchingProcId", "");
 
-    if (lunaTask->getCaller(true) != "com.webos.app.home" && // TODO temp solution
-        lunaTask->getParams().objectSize() != 0) {
+    if (lunaTask->getParams().objectSize() != 0) {
         requestPayload.put("parameters", lunaTask->getParams());
     } else {
         requestPayload.put("parameters", runningApp.getLaunchPoint()->getParams());
+    }
+
+    // TODO This is temp solution about displayId
+    // When home app support peropery. Please detete following code block
+    if (lunaTask->getCaller() == "com.webos.app.home") {
+        runningApp.setDisplayId(lunaTask->getDisplayAffinity());
+        requestPayload["parameters"].put("displayAffinity", runningApp.getDisplayId());
     }
 
     if (runningApp.isKeepAlive()) {
@@ -299,7 +301,7 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
 bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
-    string sender = lunaTask->getCaller(true);
+    string sender = lunaTask->getCaller();
     if (sender != "com.webos.service.memorymanager" && runningApp.isKeepAlive()) {
         return pauseApp(runningApp, lunaTask);
     } else {

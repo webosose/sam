@@ -117,7 +117,6 @@ LaunchPointPtr LaunchPointList::getByLaunchPointId(const string& launchPointId)
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it)->getLaunchPointId() == launchPointId) {
-            Logger::error(getClassName(), __FUNCTION__, "Found LaunchPoint");
             return *it;
         }
     }

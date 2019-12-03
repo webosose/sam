@@ -149,36 +149,30 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
     for (int i = 0; i < orgForegroundAppInfo.arraySize(); ++i) {
         string appId;
-        string launchPointId;
-        string instanceId;
-        string processId;
         int displayId;
+        string processId;
 
-        JValueUtil::getValue(orgForegroundAppInfo[i], "instanceId", instanceId);
-        JValueUtil::getValue(orgForegroundAppInfo[i], "launchPointId", launchPointId);
         JValueUtil::getValue(orgForegroundAppInfo[i], "appId", appId);
-
-        JValueUtil::getValue(orgForegroundAppInfo[i], "processId", processId);
         JValueUtil::getValue(orgForegroundAppInfo[i], "displayId", displayId);
+        JValueUtil::getValue(orgForegroundAppInfo[i], "processId", processId);
 
         // TODO This is ambiguous multi display env. We need to find better way
         if (isFullscreenWindowType(orgForegroundAppInfo[i])) {
             newFullWindowAppId = appId;
         }
 
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, launchPointId, appId);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(appId, displayId);
         if (runningApp == nullptr) {
-            Logger::warning(getInstance().getClassName(), __FUNCTION__, "SAM might be restarted. RunningApp is created by LSM");
+            Logger::warning(getInstance().getClassName(), __FUNCTION__,
+                            Logger::format("SAM might be restarted. RunningApp is created by LSM: appId(%s) displayId(%d)", appId.c_str(), displayId));
             runningApp = RunningAppList::getInstance().createByAppId(appId);
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
             runningApp->setInstanceId(Time::generateUid());
             RunningAppList::getInstance().add(runningApp);
-        } else {
-            runningApp->setProcessId(processId);
-            runningApp->setDisplayId(displayId);
         }
 
-        ApplicationManager::getInstance().postRunning(nullptr);
+        runningApp->setProcessId(processId);
+        runningApp->setDisplayId(displayId);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
         newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
         newForegroundAppIds.push_back(appId);
     }
@@ -201,14 +195,6 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         }
     }
 
-    // set foreground
-    for (auto& newAppId : newForegroundAppIds) {
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(newAppId);
-        if (runningApp) {
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
-        }
-    }
-
     bool extraInfoOnly = false;
     if (getInstance().m_fullWindowAppId == newFullWindowAppId) {
         extraInfoOnly = true;
@@ -218,6 +204,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
     getInstance().m_foregroundAppIds = newForegroundAppIds;
     getInstance().m_foregroundInfo = newForegroundAppInfo;
 
+    ApplicationManager::getInstance().postRunning(nullptr);
     ApplicationManager::getInstance().postGetForegroundAppInfo(extraInfoOnly);
     return true;
 }
