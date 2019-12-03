@@ -22,6 +22,7 @@
 #include "RunningAppList.h"
 #include "bus/client/DB8.h"
 #include "bus/service/ApplicationManager.h"
+#include "util/JValueUtil.h"
 
 LaunchPointList::LaunchPointList()
 {
@@ -43,12 +44,25 @@ void LaunchPointList::sort()
     m_list.sort(LaunchPoint::compareTitle);
 }
 
-LaunchPointPtr LaunchPointList::createBootmark(AppDescriptionPtr appDesc, const JValue& database)
+LaunchPointPtr LaunchPointList::createBootmarkByAPI(AppDescriptionPtr appDesc, const JValue& database)
 {
     string launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_BOOKMARK, appDesc->getAppId());
     LaunchPointPtr launchPoint = make_shared<LaunchPoint>(appDesc, launchPointId);
     launchPoint->setType(LaunchPointType::LaunchPoint_BOOKMARK);
     launchPoint->updateDatabase(database);
+    return launchPoint;
+}
+
+LaunchPointPtr LaunchPointList::createBootmarkByDB(AppDescriptionPtr appDesc, const JValue& database)
+{
+    string launchPointId = "";
+
+    if (!JValueUtil::getValue(database, "launchPointId", launchPointId))
+        return nullptr;
+
+    LaunchPointPtr launchPoint = make_shared<LaunchPoint>(appDesc, launchPointId);
+    launchPoint->setType(LaunchPointType::LaunchPoint_BOOKMARK);
+    launchPoint->setDatabase(database);
     return launchPoint;
 }
 
@@ -64,10 +78,8 @@ LaunchPointPtr LaunchPointList::getByLunaTask(LunaTaskPtr lunaTask)
 {
     if (lunaTask == nullptr)
         return nullptr;
-    string appId = lunaTask->getAppId();
-    string launchPointId = lunaTask->getLaunchPointId();
 
-    return getByIds(launchPointId, appId);
+    return getByIds(lunaTask->getLaunchPointId(), lunaTask->getAppId());
 }
 
 LaunchPointPtr LaunchPointList::getByIds(const string& launchPointId, const string& appId)
@@ -85,6 +97,7 @@ LaunchPointPtr LaunchPointList::getByIds(const string& launchPointId, const stri
         return nullptr;
     if (!appId.empty() && appId != launchPoint->getAppId())
         return nullptr;
+
     return launchPoint;
 }
 
@@ -103,8 +116,10 @@ LaunchPointPtr LaunchPointList::getByLaunchPointId(const string& launchPointId)
         return nullptr;
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getLaunchPointId() == launchPointId)
+        if ((*it)->getLaunchPointId() == launchPointId) {
+            Logger::error(getClassName(), __FUNCTION__, "Found LaunchPoint");
             return *it;
+        }
     }
     return nullptr;
 }

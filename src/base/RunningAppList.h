@@ -33,9 +33,10 @@ friend class ISingleton<RunningAppList>;
 public:
     virtual ~RunningAppList();
 
+    RunningAppPtr createByLunaTask(LunaTaskPtr lunaTask);
     RunningAppPtr createByAppId(const string& appId);
-    RunningAppPtr createByLaunchPoint(LaunchPointPtr launchPoint);
     RunningAppPtr createByLaunchPointId(const string& launchPointId);
+    RunningAppPtr createByLaunchPoint(LaunchPointPtr launchPoint);
 
     RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
     RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId);

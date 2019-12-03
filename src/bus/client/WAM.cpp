@@ -259,7 +259,8 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     requestPayload.put("launchingAppId", lunaTask->getCaller(true));
     requestPayload.put("launchingProcId", "");
 
-    if (lunaTask->getParams().objectSize() != 0) {
+    if (lunaTask->getCaller(true) != "com.webos.app.home" && // TODO temp solution
+        lunaTask->getParams().objectSize() != 0) {
         requestPayload.put("parameters", lunaTask->getParams());
     } else {
         requestPayload.put("parameters", runningApp.getLaunchPoint()->getParams());

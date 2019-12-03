@@ -56,7 +56,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getRequestId());
     if (runningApp == nullptr) {
-        runningApp = RunningAppList::getInstance().createByAppId(lunaTask->getAppId());
+        runningApp = RunningAppList::getInstance().createByLunaTask(lunaTask);
         runningApp->setInstanceId(lunaTask->getRequestId());
         runningApp->loadRequestPayload(lunaTask->getRequestPayload());
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
@@ -81,13 +81,16 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
 
 void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
 {
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(lunaTask->getAppId());
-    if (appDesc == nullptr || appDesc->isLocked()) {
-        Logger::error("PrelauncherStage", __FUNCTION__, lunaTask->getAppId(), "app is locked");
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getRequestId());
+    if (runningApp == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find proper runningApp");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        return;
+    }
+    if (runningApp->getLaunchPoint()->getAppDesc()->isLocked()) {
         lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        // TODO reply error
-        // return false;
+        return;
     }
     lunaTask->getAPICallback()(lunaTask);
 }

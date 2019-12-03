@@ -243,8 +243,11 @@ void ApplicationManager::detach()
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
     if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
+        cout << "1111" << endl;
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
+        cout << "2222" << endl;
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        cout << "4444" << endl;
         return;
     }
 
@@ -594,26 +597,20 @@ void ApplicationManager::addLaunchPoint(LunaTaskPtr lunaTask)
 {
     const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
 
-    string appId;
-    if (!JValueUtil::getValue(requestPayload, "id", appId)) {
+    if (lunaTask->getAppId().empty()) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "missing required 'id' parameter");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
 
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(appId);
+    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(lunaTask->getAppId());
     if (!appDesc) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + lunaTask->getAppId());
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().createBootmark(appDesc, requestPayload);
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().createBootmarkByAPI(appDesc, requestPayload);
     if (!launchPoint) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot create bookmark");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
@@ -650,22 +647,14 @@ void ApplicationManager::updateLaunchPoint(LunaTaskPtr lunaTask)
 
 void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue requestPayload = lunaTask->getRequestPayload().duplicate();
-
-    string launchPointId = "";
-    if (!JValueUtil::getValue(requestPayload, "launchPointId", launchPointId)) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "launchPointId is empty");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
     if (launchPoint == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find launch point");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (!launchPoint->isRemovable()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "this launch point cannot be removable");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "This launchPoint cannot be removable");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }

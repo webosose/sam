@@ -208,7 +208,7 @@ bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
             launchPoint->setDatabase(results[i]);
         } else if (type == "bookmark") {
             if (launchPoint == nullptr) {
-                launchPoint = LaunchPointList::getInstance().createBootmark(appDesc, results[i]);
+                launchPoint = LaunchPointList::getInstance().createBootmarkByDB(appDesc, results[i]);
                 LaunchPointList::getInstance().add(launchPoint);
             }
         }

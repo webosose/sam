@@ -90,9 +90,6 @@ public:
     }
     void setInstanceId(const string& instanceId)
     {
-        if (!m_instanceId.empty()) {
-            return;
-        }
         m_instanceId = instanceId;
     }
 

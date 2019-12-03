@@ -36,7 +36,8 @@ public:
     void clear();
     void sort();
 
-    LaunchPointPtr createBootmark(AppDescriptionPtr appDesc, const JValue& database);
+    LaunchPointPtr createBootmarkByAPI(AppDescriptionPtr appDesc, const JValue& database);
+    LaunchPointPtr createBootmarkByDB(AppDescriptionPtr appDesc, const JValue& database);
     LaunchPointPtr createDefault(AppDescriptionPtr appDesc);
 
     LaunchPointPtr getByLunaTask(LunaTaskPtr lunaTask);

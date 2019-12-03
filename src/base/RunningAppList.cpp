@@ -27,6 +27,22 @@ RunningAppList::~RunningAppList()
 {
 }
 
+RunningAppPtr RunningAppList::createByLunaTask(LunaTaskPtr lunaTask)
+{
+    if (lunaTask == nullptr)
+        return nullptr;
+    string appId = lunaTask->getAppId();
+    string launchPointId = lunaTask->getLaunchPointId();
+
+    if (!lunaTask->getLaunchPointId().empty()) {
+        return createByLaunchPointId(lunaTask->getLaunchPointId());
+    } else if (!lunaTask->getAppId().empty()) {
+        return createByAppId(lunaTask->getAppId());
+    } else {
+        return nullptr;
+    }
+}
+
 RunningAppPtr RunningAppList::createByAppId(const string& appId)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(appId);
@@ -37,16 +53,6 @@ RunningAppPtr RunningAppList::createByAppId(const string& appId)
     return createByLaunchPoint(launchPoint);
 }
 
-RunningAppPtr RunningAppList::createByLaunchPoint(LaunchPointPtr launchPoint)
-{
-    RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
-    if (runningApp == nullptr) {
-        Logger::error(getClassName(), __FUNCTION__, "Failed to create new RunningApp");
-        return nullptr;
-    }
-    return runningApp;
-}
-
 RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
@@ -55,6 +61,19 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
         return nullptr;
     }
     return createByLaunchPoint(launchPoint);
+}
+
+RunningAppPtr RunningAppList::createByLaunchPoint(LaunchPointPtr launchPoint)
+{
+    if (launchPoint == nullptr)
+        return nullptr;
+
+    RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
+    if (runningApp == nullptr) {
+        Logger::error(getClassName(), __FUNCTION__, "Failed to create new RunningApp");
+        return nullptr;
+    }
+    return runningApp;
 }
 
 RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)

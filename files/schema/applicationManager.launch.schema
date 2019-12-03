@@ -4,7 +4,15 @@
     "properties": {
         "id": {
             "type": "string",
-            "description": "ID of application to be launched."
+            "description": "Application ID to be launched."
+        },
+        "launchPointId": {
+            "type": "string",
+            "description": "LaunchPoint ID to be launched."
+        },
+        "instanceId": {
+            "type": "string",
+            "description": "Instance ID to be relaunched."
         },
         "checkUpdateOnLaunch": {"type"  : "boolean"},
         "params"             : {"type"  : "object"},
@@ -21,8 +29,5 @@
             "enum": ["full", "semi-full", "partial", "minimal"],
             "description": "App will be launched in background if preload is filled in"
         }
-    },
-    "required": [
-        "id"
-    ]
+    }
 }
