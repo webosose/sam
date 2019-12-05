@@ -40,7 +40,7 @@ public:
         m_configNames.push_back(key);
     }
 
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventGetConfigs;
+    boost::signals2::signal<void(const JValue&)> EventGetConfigs;
 
 protected:
     // AbsLunaClient

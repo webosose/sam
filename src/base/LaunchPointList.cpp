@@ -248,7 +248,7 @@ void LaunchPointList::onAdd(LaunchPointPtr launchPoint)
 void LaunchPointList::onRemove(LaunchPointPtr launchPoint)
 {
     Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is removed");
-    RunningAppList::getInstance().removeByLaunchPoint(launchPoint);
+    RunningAppList::getInstance().removeAllByLaunchPoint(launchPoint);
     DB8::getInstance().deleteLaunchPoint(launchPoint->getLaunchPointId());
     ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "removed");
 }

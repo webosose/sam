@@ -50,7 +50,7 @@ void Configd::onServerStatusChanged(bool isConnected)
         if (m_getConfigsCall.isActive())
             return;
 
-        pbnjson::JValue requestPayload = pbnjson::Object();
+        JValue requestPayload = pbnjson::Object();
         requestPayload.put("subscribe", true);
         requestPayload.put("configNames", configNames);
 
@@ -68,7 +68,7 @@ void Configd::onServerStatusChanged(bool isConnected)
 bool Configd::onGetConfigs(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())

@@ -103,9 +103,9 @@ public:
         m_isLocked = false;
     }
 
-    pbnjson::JValue getJson(JValue& properties);
+    JValue getJson(JValue& properties);
 
-    pbnjson::JValue& getJson()
+    JValue& getJson()
     {
         return m_appinfo;
     }
@@ -334,7 +334,7 @@ private:
     string m_absSplashBackground;
 
     bool m_isLocked;
-    pbnjson::JValue m_appinfo;
+    JValue m_appinfo;
 
 };
 

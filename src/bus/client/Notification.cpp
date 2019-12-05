@@ -46,7 +46,7 @@ void Notification::onServerStatusChanged(bool isConnected)
 
 bool Notification::onCreatePincodePrompt(LSHandle* sh, LSMessage* message, void* context)
 {
-    pbnjson::JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
+    JValue responsePayload = pbnjson::JDomParser::fromString(LSMessageGetPayload(message));
     bool returnValue = false;
     bool matched = false;
 

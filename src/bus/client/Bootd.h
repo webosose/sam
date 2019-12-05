@@ -35,7 +35,7 @@ friend class ISingleton<Bootd>;
 public:
     virtual ~Bootd();
 
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventGetBootStatus;
+    boost::signals2::signal<void(const JValue&)> EventGetBootStatus;
 
 protected:
     // AbsLunaClient

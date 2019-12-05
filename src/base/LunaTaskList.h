@@ -33,7 +33,6 @@ public:
     LunaTaskPtr create();
 
     LunaTaskPtr getByKindAndId(const char* kind, const string& appId);
-    LunaTaskPtr getByAppId(const string& appId);
     LunaTaskPtr getByInstanceId(const string& instanceId);
     LunaTaskPtr getByToken(const LSMessageToken& token);
 

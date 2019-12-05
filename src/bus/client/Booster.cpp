@@ -54,7 +54,7 @@ void Booster::onServerStatusChanged(bool isConnected)
 bool Booster::onProcessFinished(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())
@@ -96,7 +96,7 @@ void Booster::processFinished()
 bool Booster::onLaunch(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(response.getResponseToken());
@@ -195,7 +195,7 @@ bool Booster::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 bool Booster::onClose(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     if (responsePayload.isNull())

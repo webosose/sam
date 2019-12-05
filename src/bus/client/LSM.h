@@ -34,9 +34,9 @@ friend class ISingleton<LSM>;
 public:
     virtual ~LSM();
 
-    boost::signals2::signal<void(const pbnjson::JValue&)> EventRecentsAppListChanged;
+    boost::signals2::signal<void(const JValue&)> EventRecentsAppListChanged;
 
-    void getForegroundInfoById(const string& appId, pbnjson::JValue& info)
+    void getForegroundInfoById(const string& appId, JValue& info)
     {
         if (!m_foregroundInfo.isArray() || m_foregroundInfo.arraySize() < 1)
             return;
@@ -57,7 +57,7 @@ public:
         return m_fullWindowAppId;
     }
 
-    const pbnjson::JValue& getForegroundInfo() const
+    const JValue& getForegroundInfo() const
     {
         return m_foregroundInfo;
     }
@@ -69,7 +69,7 @@ protected:
     virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
-    static bool isFullscreenWindowType(const pbnjson::JValue& foreground_info);
+    static bool isFullscreenWindowType(const JValue& foreground_info);
 
     static bool onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context);
     static bool onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context);
@@ -86,7 +86,7 @@ private:
 
     string m_fullWindowAppId;
     vector<string> m_foregroundAppIds;
-    pbnjson::JValue m_foregroundInfo;
+    JValue m_foregroundInfo;
 
 };
 

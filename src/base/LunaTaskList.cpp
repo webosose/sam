@@ -36,15 +36,6 @@ LunaTaskPtr LunaTaskList::getByKindAndId(const char* kind, const string& appId)
     return nullptr;
 }
 
-LunaTaskPtr LunaTaskList::getByAppId(const string& appId)
-{
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it)->getAppId() == appId)
-            return *it;
-    }
-    return nullptr;
-}
-
 LunaTaskPtr LunaTaskList::getByInstanceId(const string& instanceId)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
@@ -87,7 +78,7 @@ void LunaTaskList::toJson(JValue& array)
         return;
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        pbnjson::JValue object = pbnjson::Object();
+        JValue object = pbnjson::Object();
         (*it)->toJson(object);
         array.append(object);
     }

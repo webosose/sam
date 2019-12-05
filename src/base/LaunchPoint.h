@@ -110,7 +110,7 @@ public:
         return bgImage;
     }
 
-    const pbnjson::JValue getBgImages() const
+    const JValue getBgImages() const
     {
         return m_database["bgImages"];
     }
@@ -151,7 +151,7 @@ public:
         return largeIcon;
     }
 
-    const pbnjson::JValue getParams() const
+    const JValue getParams() const
     {
         JValue params;
         if (JValueUtil::getValue(m_database, "params", params)) {

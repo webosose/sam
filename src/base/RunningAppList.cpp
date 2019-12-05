@@ -117,6 +117,16 @@ RunningAppPtr RunningAppList::getByInstanceId(const string& launchPointId)
     return m_map[launchPointId];
 }
 
+RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getToken() == token) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
 RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -235,46 +245,6 @@ bool RunningAppList::removeByInstanceId(const string& instanceId)
     return false;
 }
 
-bool RunningAppList::revmoeByLaunchPointId(const string& launchPointId)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getLaunchPointId() == launchPointId) {
-            RunningAppPtr runningApp = it->second;
-            m_map.erase(it);
-            onRemove(runningApp);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool RunningAppList::removeByAppId(const string& appId)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getAppId() == appId) {
-            RunningAppPtr runningApp = it->second;
-            m_map.erase(it);
-            onRemove(runningApp);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool RunningAppList::removeByLaunchPoint(LaunchPointPtr launchPoint)
-{
-    for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
-        if (it->second->getLaunchPoint() == launchPoint) {
-            RunningAppPtr runningApp = it->second;
-            it = m_map.erase(it);
-            onRemove(runningApp);
-        } else {
-            ++it;
-        }
-    }
-    return true;
-}
-
 bool RunningAppList::removeByPid(const string& processId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -288,10 +258,10 @@ bool RunningAppList::removeByPid(const string& processId)
     return false;
 }
 
-bool RunningAppList::removeAboutWAM()
+bool RunningAppList::removeAllByType(AppType type)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
-        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type) {
             RunningAppPtr runningApp = it->second;
             it = m_map.erase(it);
             onRemove(runningApp);
@@ -302,17 +272,41 @@ bool RunningAppList::removeAboutWAM()
     return true;
 }
 
-bool RunningAppList::isForeground(const string& appId)
+bool RunningAppList::removeAllByConext(AppType type, const int context)
 {
-    RunningAppPtr runningApp = getByAppId(appId);
-    if (runningApp == nullptr) return false;
-    return (runningApp->getLifeStatus() == LifeStatus::LifeStatus_FOREGROUND);
+    for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type && it->second->getContext() == context) {
+            RunningAppPtr runningApp = it->second;
+            it = m_map.erase(it);
+            onRemove(runningApp);
+        } else {
+            ++it;
+        }
+    }
+    return true;
 }
 
-bool RunningAppList::isExist(const string& instanceId)
+bool RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
 {
-    if (m_map.count(instanceId) == 0)
-        return false;
+    for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
+        if (it->second->getLaunchPoint() == launchPoint) {
+            RunningAppPtr runningApp = it->second;
+            it = m_map.erase(it);
+            onRemove(runningApp);
+        } else {
+            ++it;
+        }
+    }
+    return true;
+}
+
+bool RunningAppList::setConext(AppType type, const int context)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type) {
+            it->second->setContext(context);
+        }
+    }
     return true;
 }
 

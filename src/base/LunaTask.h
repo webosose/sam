@@ -67,6 +67,13 @@ public:
         return m_requestId;
     }
 
+    const string getInstanceId() const
+    {
+        string instanceId = "";
+        JValueUtil::getValue(m_requestPayload, "instanceId", instanceId);
+        return instanceId;
+    }
+
     LSHandle* getHandle() const
     {
         return m_handle;
@@ -91,17 +98,17 @@ public:
         m_token = token;
     }
 
-    const pbnjson::JValue& getRequestPayload() const
+    const JValue& getRequestPayload() const
     {
         return m_requestPayload;
     }
 
-    pbnjson::JValue& getResponsePayload()
+    JValue& getResponsePayload()
     {
         return m_responsePayload;
     }
 
-    pbnjson::JValue getParams()
+    JValue getParams()
     {
         if (m_requestPayload.hasKey("params"))
             return m_requestPayload["params"];
@@ -115,13 +122,6 @@ public:
         m_errorText = errorText;
         m_responsePayload.put("returnValue", false);
         Logger::warning("LunaTask", __FUNCTION__, Logger::format("errorCode(%d) errorText(%s)", errorCode, errorText.c_str()));
-    }
-
-    const string getInstanceId() const
-    {
-        string instanceId = "";
-        JValueUtil::getValue(m_requestPayload, "instanceId", instanceId);
-        return instanceId;
     }
 
     const string getLaunchPointId() const
@@ -225,8 +225,8 @@ private:
     LS::Message m_request;
     LSMessageToken m_token;
 
-    pbnjson::JValue m_requestPayload;
-    pbnjson::JValue m_responsePayload;
+    JValue m_requestPayload;
+    JValue m_responsePayload;
 
     int m_errorCode;
     string m_errorText;

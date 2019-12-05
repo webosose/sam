@@ -23,7 +23,7 @@
 bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())
@@ -177,7 +177,7 @@ void AppInstallService::onServerStatusChanged(bool isConnected)
 bool AppInstallService::onRemove(LSHandle* sh, LSMessage *message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     if (responsePayload.isNull())

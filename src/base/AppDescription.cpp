@@ -345,7 +345,7 @@ bool AppDescription::loadAppinfo()
             continue;
         }
 
-        pbnjson::JValue localeAppinfo = JDomParser::fromFile(AbsoluteLocaleAppinfoPath.c_str());
+        JValue localeAppinfo = JDomParser::fromFile(AbsoluteLocaleAppinfoPath.c_str());
         if (localeAppinfo.isNull()) {
             Logger::info(CLASS_NAME, __FUNCTION__, "IGNORRED", Logger::format("failed_to_load_localication: %s", localizationDir.c_str()));
             continue;
@@ -393,7 +393,7 @@ bool AppDescription::loadAppinfo()
     return true;
 }
 
-pbnjson::JValue AppDescription::getJson(JValue& properties)
+JValue AppDescription::getJson(JValue& properties)
 {
     if (properties.isNull() || !properties.isArray()) {
         return pbnjson::Object();
@@ -402,8 +402,8 @@ pbnjson::JValue AppDescription::getJson(JValue& properties)
     if (properties.arraySize() == 0)
         return m_appinfo;
 
-    pbnjson::JValue result = pbnjson::Object();
-    pbnjson::JValue notSpecified = pbnjson::Array();
+    JValue result = pbnjson::Object();
+    JValue notSpecified = pbnjson::Array();
 
     // get selected props from appinfo
     for (int i = 0; i < properties.arraySize(); ++i) {

@@ -54,7 +54,7 @@ private:
 
     SettingService();
 
-    void updateLocaleInfo(const pbnjson::JValue& localeInfo);
+    void updateLocaleInfo(const JValue& localeInfo);
 
     string m_localeInfo;
 

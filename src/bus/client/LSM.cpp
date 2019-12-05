@@ -24,7 +24,7 @@
 #include "bus/service/ApplicationManager.h"
 #include "util/JValueUtil.h"
 
-bool LSM::isFullscreenWindowType(const pbnjson::JValue& foregroundInfo)
+bool LSM::isFullscreenWindowType(const JValue& foregroundInfo)
 {
     bool windowGroup = false;
     bool windowGroupOwner = false;
@@ -69,7 +69,7 @@ void LSM::onFinalized()
 void LSM::onServerStatusChanged(bool isConnected)
 {
     if (isConnected) {
-        pbnjson::JValue requestPayload = pbnjson::Object();
+        JValue requestPayload = pbnjson::Object();
         requestPayload.put("serviceName", "com.webos.surfacemanager");
         requestPayload.put("category", "/");
         requestPayload.put("subscribe", true);
@@ -90,7 +90,7 @@ void LSM::onServerStatusChanged(bool isConnected)
 bool LSM::onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())
@@ -131,13 +131,13 @@ void LSM::subscribeGetForegroundAppInfo()
 bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())
         return true;
 
-    pbnjson::JValue orgForegroundAppInfo;
+    JValue orgForegroundAppInfo;
     if (!JValueUtil::getValue(subscriptionPayload, "foregroundAppInfo", orgForegroundAppInfo)) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to get 'foregroundAppInfo'");
         return true;
@@ -145,7 +145,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
     string newFullWindowAppId = "";
     vector<string> newForegroundAppIds;
-    pbnjson::JValue newForegroundAppInfo = pbnjson::Array();
+    JValue newForegroundAppInfo = pbnjson::Array();
 
     for (int i = 0; i < orgForegroundAppInfo.arraySize(); ++i) {
         string appId;
@@ -156,18 +156,16 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         JValueUtil::getValue(orgForegroundAppInfo[i], "displayId", displayId);
         JValueUtil::getValue(orgForegroundAppInfo[i], "processId", processId);
 
-        // TODO This is ambiguous multi display env. We need to find better way
-        if (isFullscreenWindowType(orgForegroundAppInfo[i])) {
-            newFullWindowAppId = appId;
-        }
-
         RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(appId, displayId);
         if (runningApp == nullptr) {
             Logger::warning(getInstance().getClassName(), __FUNCTION__,
                             Logger::format("SAM might be restarted. RunningApp is created by LSM: appId(%s) displayId(%d)", appId.c_str(), displayId));
-            runningApp = RunningAppList::getInstance().createByAppId(appId);
-            runningApp->setInstanceId(Time::generateUid());
-            RunningAppList::getInstance().add(runningApp);
+            continue;
+        }
+
+        // TODO This is ambiguous multi display env. We need to find better way
+        if (isFullscreenWindowType(orgForegroundAppInfo[i])) {
+            newFullWindowAppId = appId;
         }
 
         runningApp->setProcessId(processId);
@@ -227,7 +225,7 @@ void LSM::subscribeGetRecentsAppList()
 bool LSM::onGetRecentsAppList(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())

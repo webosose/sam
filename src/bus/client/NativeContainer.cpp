@@ -223,7 +223,7 @@ void NativeContainer::launchFromRegistered(RunningApp& runningApp, LunaTaskPtr l
 {
     runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     Logger::info(getClassName(), __FUNCTION__, runningApp.getInstanceId());
-    pbnjson::JValue payload = runningApp.getRelaunchParams(lunaTask);
+    JValue payload = runningApp.getRelaunchParams(lunaTask);
     if (!runningApp.sendEvent(payload)) {
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to send relaunch event");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

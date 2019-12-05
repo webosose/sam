@@ -158,7 +158,7 @@ public:
         return false;
     }
 
-    void setKeepAliveApps(const pbnjson::JValue& array)
+    void setKeepAliveApps(const JValue& array)
     {
         if (!array.isArray())
             return;
@@ -178,7 +178,7 @@ public:
         return sysAssetFallbackPrecedence;
     }
 
-    void setSysAssetFallbackPrecedence(const pbnjson::JValue& array)
+    void setSysAssetFallbackPrecedence(const JValue& array)
     {
         if (!array.isArray())
             return;

@@ -41,6 +41,7 @@ public:
     RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
     RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId);
     RunningAppPtr getByInstanceId(const string& instanceId);
+    RunningAppPtr getByToken(const LSMessageToken& token);
     RunningAppPtr getByLaunchPointId(const string& launchPointId);
     RunningAppPtr getByAppIdAndDisplayId(const string& appId, const int displayId);
     RunningAppPtr getByAppId(const string& appId);
@@ -52,15 +53,13 @@ public:
     bool removeByObject(RunningAppPtr runningApp);
     bool removeByIds(const string& instanceId, const string& launchPointId, const string& appId);
     bool removeByInstanceId(const string& instanceId);
-    bool revmoeByLaunchPointId(const string& launchPointId);
-    bool removeByAppId(const string& appId);
-    bool removeByLaunchPoint(LaunchPointPtr launchPoint);
     bool removeByPid(const string& processId);
-    bool removeAboutWAM();
+    bool removeAllByType(AppType type);
+    bool removeAllByConext(AppType type, const int context);
+    bool removeAllByLaunchPoint(LaunchPointPtr launchPoint);
 
-    bool isAllRunning();
-    bool isForeground(const string& appId);
-    bool isExist(const string& instanceId);
+    bool setConext(AppType type, const int context);
+
     void toJson(JValue& array, bool devmodeOnly = false);
 
 private:

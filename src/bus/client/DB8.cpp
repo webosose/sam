@@ -27,7 +27,7 @@ const char* DB8::KIND_NAME = "com.webos.applicationManager.launchpoints:2";
 bool DB8::onResponse(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     if (responsePayload.isNull())
@@ -46,7 +46,7 @@ DB8::~DB8()
 
 }
 
-bool DB8::insertLaunchPoint(pbnjson::JValue& json)
+bool DB8::insertLaunchPoint(JValue& json)
 {
     static string method = string("luna://") + getName() + string("/put");
 
@@ -72,7 +72,7 @@ bool DB8::insertLaunchPoint(pbnjson::JValue& json)
     return true;
 }
 
-bool DB8::updateLaunchPoint(const pbnjson::JValue& props)
+bool DB8::updateLaunchPoint(const JValue& props)
 {
     static string method = string("luna://") + getName() + string("/merge");
     JValue requestPayload = pbnjson::Object();
@@ -153,7 +153,7 @@ void DB8::onServerStatusChanged(bool isConnected)
 bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     if (responsePayload.isNull())
@@ -284,7 +284,7 @@ void DB8::putKind()
 bool DB8::onPutPermissions(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
+    JValue responsePayload = JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     bool returnValue = false;

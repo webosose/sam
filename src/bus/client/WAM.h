@@ -48,13 +48,8 @@ protected:
     virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
-    // Normally, we like to use string directly instead of using const variable.
-    // However, WAM uses its own policy. For example, "instanceId"(x) "instanceid"(0)
-    // In order to avoid minor mistake(But not easy to catch), let's use const here
-    static const string KEY_STATUS;
-    static const string KEY_APP_ID;
-    static const string KEY_INSTANCE_ID;
-    static const string KEY_WEBPROCESS_ID;
+    static const int CONTEXT_STOP = 0;
+    static const int CONTEXT_RUNNING = 1;
 
     static bool onListRunningApps(LSHandle* sh, LSMessage* message, void* context);
     static bool onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context);

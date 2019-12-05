@@ -33,8 +33,8 @@ friend class ISingleton<DB8>;
 public:
     virtual ~DB8();
 
-    bool insertLaunchPoint(pbnjson::JValue& json);
-    bool updateLaunchPoint(const pbnjson::JValue& json);
+    bool insertLaunchPoint(JValue& json);
+    bool updateLaunchPoint(const JValue& json);
     void deleteLaunchPoint(const string& launchPointId);
 
 protected:

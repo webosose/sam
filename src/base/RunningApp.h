@@ -42,7 +42,7 @@
 //   |-----------(LAUNCHING:Hidden)---------->BACKGROUND
 
 enum class LifeStatus : int8_t {
-    LifeStatus_STOP = 0,
+    LifeStatus_STOP,
     LifeStatus_PRELOADING, // ==> PRELOADED
     LifeStatus_PRELOADED, // ==> RELAUNCHING
     LifeStatus_SPLASHING, // ==> LAUNCHING
@@ -70,7 +70,7 @@ public:
     void close(LunaTaskPtr lunaTask);
     void registerApp(LunaTaskPtr lunaTask);
 
-    bool sendEvent(pbnjson::JValue& payload);
+    bool sendEvent(JValue& payload);
     string getLaunchParams(LunaTaskPtr item);
     JValue getRelaunchParams(LunaTaskPtr item);
 
@@ -90,7 +90,11 @@ public:
     }
     void setInstanceId(const string& instanceId)
     {
-        m_instanceId = instanceId;
+        if (instanceId.empty()) {
+            m_instanceId = Time::generateUid();
+        } else {
+            m_instanceId = instanceId;
+        }
     }
 
     LaunchPointPtr getLaunchPoint() const
@@ -114,6 +118,15 @@ public:
     void setDisplayId(const int displayId)
     {
         m_displayId = displayId;
+    }
+
+    const bool isFullWindow() const
+    {
+        return m_isFullWindow;
+    }
+    void setFullWindow(const bool fullWindow)
+    {
+        m_isFullWindow = fullWindow;
     }
 
     const string& getProcessId() const
@@ -211,15 +224,33 @@ public:
         m_reason = reason;
     }
 
+    LSMessageToken getToken() const
+    {
+        return m_token;
+    }
+    void setToken(LSMessageToken token)
+    {
+        m_token = token;
+    }
+
+    int getContext() const
+    {
+        return m_context;
+    }
+    void setContext(int context)
+    {
+        m_context = context;
+    }
+
     void toJson(JValue& object, bool status)
     {
         object.put("instanceId", m_instanceId);
-        object.put("launchPointid", m_launchPoint->getLaunchPointId());
+        object.put("launchPointId", m_launchPoint->getLaunchPointId());
         object.put("id", m_launchPoint->getAppId());
 
         if (m_displayId != -1)
             object.put("displayId", m_displayId);
-        object.put("processId", m_processId);
+        object.put("processid", m_processId);
         object.put("webprocessid", m_webprocessid);
 
         if (status) {
@@ -253,6 +284,7 @@ private:
     string m_webprocessid;
     string m_windowId;
     int m_displayId;
+    bool m_isFullWindow;
 
     // for native app
     int m_interfaceVersion;
@@ -271,6 +303,8 @@ private:
     bool m_isFirstLaunch;
 
     string m_reason;
+    LSMessageToken m_token;
+    int m_context;
 
 };
 

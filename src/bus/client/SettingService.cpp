@@ -29,7 +29,7 @@ SettingService::SettingService()
 {
     setClassName("SettingService");
 
-    pbnjson::JValue localeInfo = JDomParser::fromFile(PATH_LOCALE_INFO);
+    JValue localeInfo = JDomParser::fromFile(PATH_LOCALE_INFO);
     updateLocaleInfo(localeInfo);
 }
 
@@ -153,7 +153,7 @@ Call SettingService::checkParentalLock(LSFilterFunc func, const string& appId)
 bool SettingService::onLocaleChanged(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
-    pbnjson::JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
+    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
     if (subscriptionPayload.isNull())
@@ -173,7 +173,7 @@ bool SettingService::onLocaleChanged(LSHandle* sh, LSMessage* message, void* con
     return true;
 }
 
-void SettingService::updateLocaleInfo(const pbnjson::JValue& settings)
+void SettingService::updateLocaleInfo(const JValue& settings)
 {
     string localeInfo;
 

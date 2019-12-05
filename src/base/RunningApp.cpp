@@ -113,6 +113,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_processId(""),
       m_webprocessid(""),
       m_displayId(-1),
+      m_isFullWindow(true),
       m_interfaceVersion(1),
       m_isRegistered(false),
       m_lifeStatus(LifeStatus::LifeStatus_STOP),
@@ -121,7 +122,9 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_noSplash(true),
       m_spinner(true),
       m_isLaunchedHidden(false),
-      m_isFirstLaunch(true)
+      m_isFirstLaunch(true),
+      m_token(0),
+      m_context(0)
 {
 }
 
@@ -242,7 +245,7 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
     Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Application is registered");
 }
 
-bool RunningApp::sendEvent(pbnjson::JValue& responsePayload)
+bool RunningApp::sendEvent(JValue& responsePayload)
 {
     if (!m_isRegistered) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "RunningApp is not registered");
@@ -308,14 +311,14 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 {
     if (m_lifeStatus == lifeStatus) {
         Logger::debug(CLASS_NAME, __FUNCTION__, m_instanceId,
-                      Logger::format("Ignored: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
+                      Logger::format("Ignored: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
         return true;
     }
 
     // CLOSING is special transition. It should be allowed all cases
     if (lifeStatus != LifeStatus::LifeStatus_CLOSING && isTransition(m_lifeStatus) && isTransition(lifeStatus)) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId,
-                        Logger::format("Warning: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
+                        Logger::format("Warning: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
         return false;
     }
 
@@ -330,7 +333,7 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
     case LifeStatus::LifeStatus_LAUNCHING:
         if (m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND) {
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
-                         Logger::format("Changed: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
+                         Logger::format("Changed: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
             m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
             ApplicationManager::getInstance().postGetAppLifeStatus(*this);
             lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
@@ -346,11 +349,11 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
     }
 
     Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
-                 Logger::format("Changed: %s(%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
+                 Logger::format("Changed: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
     m_lifeStatus = lifeStatus;
 
     if (isTransition(m_lifeStatus)) {
-        // Transition should be done under 5 seconds
+        // Transition should be completed within timeout
         startKillingTimer(TIMEOUT_TRANSITION);
     } else {
         stopKillingTimer();
