@@ -412,13 +412,13 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 
 void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
 {
-    string appId = lunaTask->getRequest().getApplicationID();
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find caller id");
+    if (lunaTask->getRequest().getApplicationID() == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The API should be called by application.");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
+    string appId = lunaTask->getRequest().getApplicationID();
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
@@ -438,13 +438,13 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
 
 void ApplicationManager::registerNativeApp(LunaTaskPtr lunaTask)
 {
-    string appId = lunaTask->getRequest().getApplicationID();
-    if (appId.empty()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find caller id");
+    if (lunaTask->getRequest().getApplicationID() == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The API should be called by application.");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
+    string appId = lunaTask->getRequest().getApplicationID();
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");

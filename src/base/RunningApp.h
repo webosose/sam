@@ -246,21 +246,22 @@ public:
     {
         object.put("instanceId", m_instanceId);
         object.put("launchPointId", m_launchPoint->getLaunchPointId());
-        object.put("id", m_launchPoint->getAppId());
 
         if (m_displayId != -1)
             object.put("displayId", m_displayId);
-        object.put("processid", m_processId);
+        object.put("processId", m_processId);
         object.put("webprocessid", m_webprocessid);
 
         if (status) {
             // getAppLifeStatus
+            object.put("appId", m_launchPoint->getAppId());
             object.put("status", toString(m_lifeStatus));
             object.put("reason", m_reason);
             object.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
 
         } else {
             // runningList
+            object.put("id", m_launchPoint->getAppId());
             object.put("defaultWindowType", m_launchPoint->getAppDesc()->getDefaultWindowType());
             object.put("appType", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
         }
