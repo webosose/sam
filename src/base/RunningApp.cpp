@@ -192,6 +192,7 @@ void RunningApp::close(LunaTaskPtr lunaTask)
 {
     if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
+        lunaTask->getResponsePayload().put("appId", this->getAppId());
         lunaTask->getResponsePayload().put("returnValue", true);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;

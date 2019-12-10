@@ -845,7 +845,8 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
     switch(runningApp.getLifeStatus()) {
     case LifeStatus::LifeStatus_LAUNCHING:
     case LifeStatus::LifeStatus_RELAUNCHING:
-        subscriptionPayload.put("reason", runningApp.getReason());
+    case LifeStatus::LifeStatus_CLOSING:
+    case LifeStatus::LifeStatus_STOP:
         break;
 
     case LifeStatus::LifeStatus_FOREGROUND:
@@ -853,7 +854,11 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
         if (!foregroundInfo.isNull() && foregroundInfo.isObject()) {
             for (auto it : foregroundInfo.children()) {
                 const string key = it.first.asString();
-                if ("windowType" == key || "windowGroup" == key || "windowGroupOwner" == key || "windowGroupOwnerId" == key || "displayId" == key) {
+                if ("windowType" == key ||
+                    "windowGroup" == key ||
+                    "windowGroupOwner" == key ||
+                    "windowGroupOwnerId" == key ||
+                    "displayId" == key) {
                     subscriptionPayload.put(key, foregroundInfo[key]);
                 }
             }
@@ -865,11 +870,6 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
             subscriptionPayload.put("backgroundStatus", "preload");
         else
             subscriptionPayload.put("backgroundStatus", "normal");
-        break;
-
-    case LifeStatus::LifeStatus_CLOSING:
-    case LifeStatus::LifeStatus_STOP:
-        subscriptionPayload.put("reason", runningApp.getReason());
         break;
 
     default:

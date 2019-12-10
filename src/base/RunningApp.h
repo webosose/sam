@@ -249,7 +249,7 @@ public:
 
         if (m_displayId != -1)
             object.put("displayId", m_displayId);
-        object.put("processId", m_processId);
+        object.put("processid", m_processId);
         object.put("webprocessid", m_webprocessid);
 
         if (status) {

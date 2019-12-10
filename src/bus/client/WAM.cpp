@@ -206,6 +206,7 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     if (runningApp.isKeepAlive()) {
         requestPayload.put("keepAlive", true);
     }
+
     if (runningApp.isFirstLaunch()) {
         // TODO This is temp solution about displayId
         // When home app support peropery. Please detete following code block
@@ -217,6 +218,8 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
         if (!runningApp.getPreload().empty()) {
             runningApp.setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
             requestPayload.put("preload", runningApp.getPreload());
+        } else {
+            runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
         }
     } else {
         runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
@@ -248,11 +251,14 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     string sender = lunaTask->getCaller();
+    /* TODO This should be enabled after WAM supports 'keepAlive' feature
     if (sender != "com.webos.service.memorymanager" && runningApp.isKeepAlive()) {
         return pauseApp(runningApp, lunaTask);
     } else {
         return killApp(runningApp, lunaTask);
     }
+    */
+    return killApp(runningApp, lunaTask);
 }
 
 bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
@@ -365,6 +371,8 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     } else {
         RunningAppList::getInstance().removeByObject(runningApp);
     }
+
+    lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return true;
 }
