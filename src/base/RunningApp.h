@@ -61,6 +61,8 @@ friend class RunningAppList;
 public:
     static const char* toString(LifeStatus status);
     static bool isTransition(LifeStatus status);
+    static string generateInstanceId(int displayId);
+    static int getDisplayId(const string& instanceId);
 
     RunningApp(LaunchPointPtr launchPoint);
     virtual ~RunningApp();

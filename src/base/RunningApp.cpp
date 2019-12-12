@@ -107,6 +107,19 @@ bool RunningApp::isTransition(LifeStatus status)
     return false;
 }
 
+string RunningApp::generateInstanceId(int displayId)
+{
+    string instanceId = Time::generateUid();
+    instanceId += std::to_string(displayId);
+    return instanceId;
+}
+
+int RunningApp::getDisplayId(const string& instanceId)
+{
+    int displayId = instanceId.back() - '0';
+    return displayId;
+}
+
 RunningApp::RunningApp(LaunchPointPtr launchPoint)
     : m_launchPoint(launchPoint),
       m_instanceId(""),

@@ -42,18 +42,16 @@ typedef boost::function<void(LunaTaskPtr)> LunaTaskCallback;
 class LunaTask {
 friend class LunaTaskList;
 public:
-    LunaTask(LSHandle* sh, LS::Message& request, JValue& requestPayload, LSMessage* message)
-        : m_handle(sh),
+    LunaTask(LS::Message& request, JValue& requestPayload, LSMessage* message)
+        : m_instanceId(""),
           m_request(request),
           m_token(0),
           m_requestPayload(requestPayload),
           m_responsePayload(pbnjson::Object()),
           m_errorCode(ErrCode_UNKNOWN),
           m_errorText(""),
-          m_reason(""),
-          m_preload("")
+          m_reason("")
     {
-        m_requestId = Time::generateUid();
         m_startTime = Time::getCurrentTime();
     }
 
@@ -62,21 +60,17 @@ public:
 
     }
 
-    const string& getRequestId()
+    const string getInstanceId()
     {
-        return m_requestId;
-    }
+        if (!m_instanceId.empty())
+            return m_instanceId;
 
-    const string getInstanceId() const
-    {
-        string instanceId = "";
-        JValueUtil::getValue(m_requestPayload, "instanceId", instanceId);
-        return instanceId;
+        JValueUtil::getValue(m_requestPayload, "instanceId", m_instanceId);
+        return m_instanceId;
     }
-
-    LSHandle* getHandle() const
+    void setInstanceId(const string& instanceId)
     {
-        return m_handle;
+        m_instanceId = instanceId;
     }
 
     LS::Message& getRequest()
@@ -220,8 +214,7 @@ private:
         m_request.respond(m_responsePayload.stringify().c_str());
     }
 
-    string m_requestId;
-    LSHandle* m_handle;
+    string m_instanceId;
     LS::Message m_request;
     LSMessageToken m_token;
 
@@ -232,7 +225,6 @@ private:
     string m_errorText;
 
     string m_reason;
-    string m_preload;
 
     double m_startTime;
 

@@ -30,8 +30,9 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
         return true;
 
     JValue running = pbnjson::Array();
-    string instanceId = "";
     string appId = "";
+    string instanceId = "";
+    int displayId = 0;
     string webprocessid = "";
 
     RunningAppList::getInstance().setConext(AppType::AppType_Web, CONTEXT_STOP);
@@ -41,6 +42,10 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
         JValueUtil::getValue(running[i], "id", appId);
         JValueUtil::getValue(running[i], "instanceid", instanceId);
         JValueUtil::getValue(running[i], "webprocessid", webprocessid);
+
+        // This is special logic to get displayId from instanceId
+        // because there is no plan to provide 'displayId' in response of 'listRunningApps'
+        displayId = RunningApp::getDisplayId(instanceId);
 
         RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, "", appId);
         if (runningApp == nullptr) {
@@ -52,6 +57,8 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
             RunningAppList::getInstance().add(runningApp);
         }
         runningApp->setWebprocid(webprocessid);
+        // TODO this should be uncommented after WAM CCC
+        //runningApp->setDisplayId(displayId);
         runningApp->setContext(CONTEXT_RUNNING);
     }
     RunningAppList::getInstance().removeAllByConext(AppType::AppType_Web, CONTEXT_STOP);
@@ -366,14 +373,16 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
         }
         return true;
     }
-    if (runningApp == nullptr) {
-        Logger::info(getInstance().getClassName(), __FUNCTION__, "The RunningApp is already removed");
-    } else {
+    if (runningApp) {
         RunningAppList::getInstance().removeByObject(runningApp);
+        if (lunaTask)
+            lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
     }
-
-    lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    if (lunaTask) {
+        // TODO This should be uncommented with proper solution
+        //lunaTask->getResponsePayload().put("instanceId", lunaTask->getInstanceId());
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    }
     return true;
 }
 

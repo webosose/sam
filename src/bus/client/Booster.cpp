@@ -166,7 +166,7 @@ bool Booster::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
     LSErrorSafe error;
     bool result = true;
     result = LSCallOneReply(
-        lunaTask->getHandle(),
+        ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
         onLaunch,
@@ -231,7 +231,7 @@ bool Booster::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     bool result = true;
     Logger::logAPIRequest(getClassName(), __FUNCTION__, lunaTask->getRequest(), requestPayload);
     result = LSCallOneReply(
-        lunaTask->getHandle(),
+        ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
         onClose,

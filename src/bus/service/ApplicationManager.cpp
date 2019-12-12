@@ -113,7 +113,7 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
         goto Done;
     }
 
-    lunaTask = make_shared<LunaTask>(sh, request, requestPayload, message);
+    lunaTask = make_shared<LunaTask>(request, requestPayload, message);
     if (!lunaTask) {
         errorCode = ErrCode_GENERAL;
         errorText = "memory alloc fail";

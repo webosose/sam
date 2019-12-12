@@ -54,12 +54,16 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
     }
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getRequestId());
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
+        int displayId = lunaTask->getDisplayAffinity();
+        string instanceId = RunningApp::generateInstanceId(displayId);
+        lunaTask->setInstanceId(instanceId);
+
         runningApp = RunningAppList::getInstance().createByLunaTask(lunaTask);
         runningApp->loadRequestPayload(lunaTask->getRequestPayload());
-        runningApp->setInstanceId(lunaTask->getRequestId());
-        runningApp->setDisplayId(lunaTask->getDisplayAffinity());
+        runningApp->setInstanceId(instanceId);
+        runningApp->setDisplayId(displayId);
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
         RunningAppList::getInstance().add(runningApp);
     }
@@ -82,7 +86,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
 
 void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
 {
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getRequestId());
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find proper runningApp");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

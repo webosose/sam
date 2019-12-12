@@ -45,12 +45,8 @@ RunningAppPtr RunningAppList::createByLunaTask(LunaTaskPtr lunaTask)
 
 RunningAppPtr RunningAppList::createByAppId(const string& appId)
 {
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByAppId(appId);
-    if (launchPoint == nullptr) {
-        Logger::warning(getClassName(), __FUNCTION__, "Cannot find proper launchPoint");
-        return nullptr;
-    }
-    return createByLaunchPoint(launchPoint);
+    string launchPointId = appId + "_default";
+    return createByLaunchPointId(launchPointId);
 }
 
 RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
@@ -109,12 +105,14 @@ RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& l
     return runningApp;
 }
 
-RunningAppPtr RunningAppList::getByInstanceId(const string& launchPointId)
+RunningAppPtr RunningAppList::getByInstanceId(const string& instanceId)
 {
-    if (m_map.find(launchPointId) == m_map.end()) {
+    if (instanceId.empty())
+        return nullptr;
+    if (m_map.find(instanceId) == m_map.end()) {
         return nullptr;
     }
-    return m_map[launchPointId];
+    return m_map[instanceId];
 }
 
 RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
