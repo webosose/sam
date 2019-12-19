@@ -50,7 +50,7 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
         RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, "", appId);
         if (runningApp == nullptr) {
             Logger::warning(getInstance().getClassName(), __FUNCTION__,
-                            Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%d)", appId.c_str(), instanceId.c_str()));
+                            Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%s)", appId.c_str(), instanceId.c_str()));
             runningApp = RunningAppList::getInstance().createByAppId(appId);
             runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
             runningApp->setInstanceId(instanceId);

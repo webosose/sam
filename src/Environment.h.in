@@ -17,9 +17,15 @@
 #ifndef ENVIRONMENT_H_
 #define ENVIRONMENT_H_
 
-static const char* const PATH_RO_SAM_CONF           = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/sam-conf.json";
-static const char* const PATH_RW_SAM_CONF           = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
-static const char* const PATH_SAM_SCHEMAS           = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/schemas/sam/";
-static const char* const PATH_LOCALE_INFO           = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/localeInfo";
+static const char* const WEBOS_TARGET_DISTRO         = "@WEBOS_TARGET_DISTRO@";
+static const char* const WEBOS_TARGET_DISTRO_VARIANT = "@WEBOS_TARGET_DISTRO_VARIANT@";
+static const char* const WEBOS_TARGET_MACHINE        = "@WEBOS_TARGET_MACHINE@";
+static const char* const WEBOS_TARGET_MACHINE_IMPL   = "@WEBOS_TARGET_MACHINE_IMPL@";
+static const char* const WEBOS_TARGET_SOC_FAMILY     = "@WEBOS_TARGET_SOC_FAMILY@";
+
+static const char* const PATH_RO_SAM_CONF            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/sam-conf.json";
+static const char* const PATH_RW_SAM_CONF            = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
+static const char* const PATH_SAM_SCHEMAS            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/schemas/sam/";
+static const char* const PATH_LOCALE_INFO            = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/localeInfo";
 
 #endif  // ENVIRONMENT_H_

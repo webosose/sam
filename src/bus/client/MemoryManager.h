@@ -44,6 +44,8 @@ protected:
     virtual void onServerStatusChanged(bool isConnected) override;
 
 private:
+    static bool onRequireMemory(LSHandle* sh, LSMessage* message, void* context);
+
     MemoryManager();
 };
 
