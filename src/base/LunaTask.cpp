@@ -16,6 +16,7 @@
 
 #include "LunaTask.h"
 
+#include "AppDescriptionList.h"
 #include "RunningAppList.h"
 #include "util/JValueUtil.h"
 
@@ -23,12 +24,23 @@ const int LunaTask::getDisplayAffinity() const
 {
     // TODO This is temp solution about displayId
     // When home app support peropery. Please detete following code block
-    if (getCaller() == "com.webos.app.home") {
+    if (getAppId().find("home1") != string::npos) {
+       Logger::info("LunaTask", __FUNCTION__, "Reserved AppId. DispalyId is 1");
+       return 1;
+   } else if (getAppId().find("statusbar1") != string::npos) {
+       Logger::info("LunaTask", __FUNCTION__, "Reserved AppId. DispalyId is 1");
+       return 1;
+   } else if (getCaller() == "com.webos.app.home") {
         RunningAppPtr home = RunningAppList::getInstance().getByWebprocessid(getWebprocessId());
         if (home != nullptr) {
             return home->getDisplayId();
         }
     }
+
+    // TODO currently, only webapp supports multiple display
+    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(getAppId());
+    if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web)
+        return 0;
 
     int displayAffinity = 0;
     JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayAffinity);

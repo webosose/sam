@@ -168,8 +168,11 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
             newFullWindowAppId = appId;
         }
 
-        runningApp->setProcessId(processId);
-        runningApp->setDisplayId(displayId);
+        // SAM knows its child pid better than LSM.
+        // This code is needed specially in container environment.
+        if (runningApp->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
+            runningApp->setProcessId(processId);
+        }
         runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
         newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
         newForegroundAppIds.push_back(appId);

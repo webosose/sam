@@ -36,7 +36,12 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         lunaTask->setAPICallback(boost::bind(&PolicyManager::relaunch, this, _1));
     }
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
+    RunningAppPtr runningApp = nullptr;
+    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
+        runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
+    else
+        runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
+
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "The app is not running");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

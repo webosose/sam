@@ -117,6 +117,8 @@ string RunningApp::generateInstanceId(int displayId)
 int RunningApp::getDisplayId(const string& instanceId)
 {
     int displayId = instanceId.back() - '0';
+    if (displayId < 0 || displayId > 10)
+        displayId = 0;
     return displayId;
 }
 
@@ -330,7 +332,7 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
     }
 
     // CLOSING is special transition. It should be allowed all cases
-    if (lifeStatus != LifeStatus::LifeStatus_CLOSING && isTransition(m_lifeStatus) && isTransition(lifeStatus)) {
+    if (isTransition(m_lifeStatus) && lifeStatus != LifeStatus::LifeStatus_CLOSING && isTransition(lifeStatus)) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId,
                         Logger::format("Warning: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
         return false;

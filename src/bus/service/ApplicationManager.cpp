@@ -255,7 +255,14 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
     }
     lunaTask->setReason(reason);
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
+    // TODO Currently, only webOS auto supports multiple instances
+    // Following lines should be modified after WAM supports
+    RunningAppPtr runningApp = nullptr;
+    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
+        runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
+    else
+        runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
+
     if (runningApp == nullptr)
         PolicyManager::getInstance().launch(lunaTask);
     else

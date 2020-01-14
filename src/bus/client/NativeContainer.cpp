@@ -95,6 +95,10 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
         return;
     }
 
+    if (runningApp.getProcessId().empty()) {
+        Logger::error(getClassName(), __FUNCTION__, runningApp.getInstanceId(), "ProcessId is empty");
+        return;
+    }
     lunaTask->setToken(stoi(runningApp.getProcessId()));
     if (!runningApp.isRegistered()) {
         if (!LinuxProcess::sendSigKill(runningApp.getProcessId())) {

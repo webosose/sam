@@ -119,11 +119,6 @@ public:
     }
     void setDisplayId(const int displayId)
     {
-        // TODO currently, only webapp supports multiple display
-        if (getLaunchPoint()->getAppDesc()->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web) {
-            m_displayId = 0;
-            return;
-        }
         m_displayId = displayId;
     }
 

@@ -32,20 +32,18 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     JValue running = pbnjson::Array();
     string appId = "";
     string instanceId = "";
-    int displayId = 0;
     string webprocessid = "";
+    int displayId = -1;
 
     RunningAppList::getInstance().setConext(AppType::AppType_Web, CONTEXT_STOP);
     JValueUtil::getValue(subscriptionPayload, "running", running);
     int size = running.arraySize();
     for (int i = 0; i < size; i++) {
         JValueUtil::getValue(running[i], "id", appId);
-        JValueUtil::getValue(running[i], "instanceid", instanceId);
         JValueUtil::getValue(running[i], "webprocessid", webprocessid);
-
-        // This is special logic to get displayId from instanceId
-        // because there is no plan to provide 'displayId' in response of 'listRunningApps'
-        displayId = RunningApp::getDisplayId(instanceId);
+        if (JValueUtil::getValue(running[i], "instanceid", instanceId)) {
+            displayId = RunningApp::getDisplayId(instanceId);
+        }
 
         RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, "", appId);
         if (runningApp == nullptr) {
@@ -53,12 +51,17 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
                             Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%s)", appId.c_str(), instanceId.c_str()));
             runningApp = RunningAppList::getInstance().createByAppId(appId);
             runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+            runningApp->setWebprocid(webprocessid);
             runningApp->setInstanceId(instanceId);
+            runningApp->setDisplayId(displayId);
             RunningAppList::getInstance().add(runningApp);
+        } else {
+            if (runningApp->getWindowId() != webprocessid)
+                runningApp->setWebprocid(webprocessid);
+            if (displayId != -1)
+                runningApp->setDisplayId(displayId);
+            ApplicationManager::getInstance().postRunning(runningApp);
         }
-        runningApp->setWebprocid(webprocessid);
-        // TODO this should be uncommented after WAM CCC
-        //runningApp->setDisplayId(displayId);
         runningApp->setContext(CONTEXT_RUNNING);
     }
     RunningAppList::getInstance().removeAllByConext(AppType::AppType_Web, CONTEXT_STOP);
@@ -215,13 +218,6 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     }
 
     if (runningApp.isFirstLaunch()) {
-        // TODO This is temp solution about displayId
-        // When home app support peropery. Please detete following code block
-        if (lunaTask->getCaller() == "com.webos.app.home") {
-            runningApp.setDisplayId(lunaTask->getDisplayAffinity());
-            requestPayload["parameters"].put("displayAffinity", runningApp.getDisplayId());
-        }
-
         if (!runningApp.getPreload().empty()) {
             runningApp.setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
             requestPayload.put("preload", runningApp.getPreload());
@@ -258,14 +254,15 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
 bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     string sender = lunaTask->getCaller();
-    /* TODO This should be enabled after WAM supports 'keepAlive' feature
-    if (sender != "com.webos.service.memorymanager" && runningApp.isKeepAlive()) {
+    if (sender == "com.webos.service.memorymanager") {
+        return killApp(runningApp, lunaTask);
+    }
+
+    if (runningApp.isKeepAlive()) {
         return pauseApp(runningApp, lunaTask);
     } else {
         return killApp(runningApp, lunaTask);
     }
-    */
-    return killApp(runningApp, lunaTask);
 }
 
 bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)

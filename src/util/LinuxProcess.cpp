@@ -78,7 +78,8 @@ bool LinuxProcess::killProcesses(const PidVector& pids, int sig)
     if (it == pids.end())
         return true;
 
-    // first process is parent process, killing child processes later can fail if parent itself terminates them
+    // first process is parent process,
+    // killing child processes later can fail if parent itself terminates them
     bool success = kill(*it, sig) == 0;
     while (++it != pids.end()) {
         kill(*it, sig);
@@ -100,7 +101,7 @@ pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
             if (argv[i] == NULL) break;
             cmd += string(argv[i]) + " ";
         }
-        Logger::error(CLASS_NAME, __FUNCTION__, cmd);
+        Logger::info(CLASS_NAME, __FUNCTION__, cmd);
     }
 
     gboolean result = g_spawn_async_with_pipes(
