@@ -730,7 +730,7 @@ void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
     LaunchPointList::getInstance().toJson(launchPoints);
 
     if (lunaTask->getRequest().isSubscription())
-        ApplicationManager::getInstance().m_listLaunchPointsPoint->subscribe(lunaTask->getRequest());
+        subscribed = ApplicationManager::getInstance().m_listLaunchPointsPoint->subscribe(lunaTask->getRequest());
 
     lunaTask->getResponsePayload().put("subscribed", subscribed);
     lunaTask->getResponsePayload().put("launchPoints", launchPoints);
