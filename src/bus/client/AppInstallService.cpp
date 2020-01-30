@@ -169,8 +169,7 @@ void AppInstallService::onServerStatusChanged(bool isConnected)
             this
         );
     } else {
-        if (m_statusCall.isActive())
-            m_statusCall.cancel();
+        m_statusCall.cancel();
     }
 }
 

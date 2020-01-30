@@ -104,8 +104,7 @@ void WAM::onServerStatusChanged(bool isConnected)
             this
         );
     } else {
-        if (m_listRunningAppsCall.isActive())
-            m_listRunningAppsCall.cancel();
+        m_listRunningAppsCall.cancel();
 
         RunningAppList::getInstance().removeAllByType(AppType::AppType_Web);
     }

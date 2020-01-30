@@ -70,18 +70,10 @@ protected:
 
 private:
     static bool isFullscreenWindowType(const JValue& foreground_info);
-
-    static bool onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context);
     static bool onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context);
-    static bool onGetRecentsAppList(LSHandle* sh, LSMessage* message, void* context);
 
     LSM();
 
-    void subscribeGetForegroundAppInfo();
-    void subscribeGetRecentsAppList();
-
-    Call m_registerServiceCategoryCall;
-    Call m_getRecentsAppListCall;
     Call m_getForegroundAppInfoCall;
 
     string m_fullWindowAppId;

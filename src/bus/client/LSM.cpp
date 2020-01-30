@@ -61,71 +61,24 @@ void LSM::onInitialzed()
 
 void LSM::onFinalized()
 {
-    m_registerServiceCategoryCall.cancel();
-    m_getRecentsAppListCall.cancel();
     m_getForegroundAppInfoCall.cancel();
 }
 
 void LSM::onServerStatusChanged(bool isConnected)
 {
-    if (isConnected) {
-        JValue requestPayload = pbnjson::Object();
-        requestPayload.put("serviceName", "com.webos.surfacemanager");
-        requestPayload.put("category", "/");
-        requestPayload.put("subscribe", true);
-
-        m_registerServiceCategoryCall = ApplicationManager::getInstance().callMultiReply(
-            "luna://com.webos.service.bus/signal/registerServiceCategory",
-            requestPayload.stringify().c_str(),
-            onServiceCategoryChanged,
-            nullptr
-        );
-    } else {
-        m_registerServiceCategoryCall.cancel();
-        m_getRecentsAppListCall.cancel();
-        m_getForegroundAppInfoCall.cancel();
-    }
-}
-
-bool LSM::onServiceCategoryChanged(LSHandle* sh, LSMessage* message, void* context)
-{
-    Message response(message);
-    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
-    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
-
-    if (subscriptionPayload.isNull())
-        return true;
-
-    if (!subscriptionPayload.hasKey("/") ||
-        !subscriptionPayload["/"].isArray() ||
-        subscriptionPayload["/"].arraySize() < 1)
-        return true;
-
-    int arraySize = subscriptionPayload["/"].arraySize();
-    for (int i = 0; i < arraySize; ++i) {
-        string method = subscriptionPayload["/"][i].asString();
-        if (method.compare("getForegroundAppInfo") == 0) {
-            LSM::getInstance().subscribeGetForegroundAppInfo();
-        } else if (method.compare("getRecentsAppList") == 0) {
-            LSM::getInstance().subscribeGetRecentsAppList();
-        }
-    }
-    return true;
-}
-
-void LSM::subscribeGetForegroundAppInfo()
-{
     static string method = string("luna://") + getName() + string("/getForegroundAppInfo");
 
-    if (m_getForegroundAppInfoCall.isActive())
-        return;
-
-    m_getForegroundAppInfoCall = ApplicationManager::getInstance().callMultiReply(
-        method.c_str(),
-        AbsLunaClient::getSubscriptionPayload().stringify().c_str(),
-        onGetForegroundAppInfo,
-        nullptr
-    );
+    if (isConnected) {
+        m_getForegroundAppInfoCall = ApplicationManager::getInstance().callMultiReply(
+            method.c_str(),
+            AbsLunaClient::getSubscriptionPayload().stringify().c_str(),
+            onGetForegroundAppInfo,
+            nullptr
+        );
+        Logger::logSubscriptionRequest(getClassName(), __FUNCTION__, method, AbsLunaClient::getSubscriptionPayload());
+    } else {
+        m_getForegroundAppInfoCall.cancel();
+    }
 }
 
 bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context)
@@ -210,30 +163,3 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
     return true;
 }
 
-void LSM::subscribeGetRecentsAppList()
-{
-    static string method = string("luna://") + getName() + string("/getRecentsAppList");
-
-    if (m_getRecentsAppListCall.isActive())
-        return;
-
-    m_getRecentsAppListCall = ApplicationManager::getInstance().callMultiReply(
-        method.c_str(),
-        AbsLunaClient::getSubscriptionPayload().stringify().c_str(),
-        onGetRecentsAppList,
-        nullptr
-    );
-}
-
-bool LSM::onGetRecentsAppList(LSHandle* sh, LSMessage* message, void* context)
-{
-    Message response(message);
-    JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
-    Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
-
-    if (subscriptionPayload.isNull())
-        return true;
-
-    LSM::getInstance().EventRecentsAppListChanged(subscriptionPayload);
-    return true;
-}

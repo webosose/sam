@@ -41,9 +41,6 @@ void Bootd::onServerStatusChanged(bool isConnected)
     static string method = string("luna://") + getName() + string("/getBootStatus");
 
     if (isConnected) {
-        if (m_getBootStatusCall.isActive())
-            return;
-
         m_getBootStatusCall = ApplicationManager::getInstance().callMultiReply(
             method.c_str(),
             AbsLunaClient::getSubscriptionPayload().stringify().c_str(),

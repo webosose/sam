@@ -46,9 +46,6 @@ void Configd::onServerStatusChanged(bool isConnected)
     static string method = string("luna://") + getName() + string("/getConfigs");
 
     if (isConnected) {
-        if (m_getConfigsCall.isActive())
-            return;
-
         JValue requestPayload = pbnjson::Object();
         requestPayload.put("subscribe", true);
         requestPayload.put("configNames", configNames);
