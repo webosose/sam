@@ -27,7 +27,6 @@
 
 #include "base/AppDescriptionList.h"
 #include "bus/client/AppInstallService.h"
-#include "bus/client/Booster.h"
 #include "bus/client/Bootd.h"
 #include "bus/client/Configd.h"
 #include "bus/client/DB8.h"
@@ -65,7 +64,6 @@ void MainDaemon::initialize()
     ApplicationManager::getInstance().attach(m_mainLoop);
 
     AppInstallService::getInstance().initialize();
-    Booster::getInstance().initialize();
     Bootd::getInstance().initialize();
     Configd::getInstance().initialize();
     DB8::getInstance().initialize();
@@ -82,7 +80,6 @@ void MainDaemon::initialize()
 void MainDaemon::finalize()
 {
     AppInstallService::getInstance().finalize();
-    Booster::getInstance().finalize();
     Bootd::getInstance().finalize();
     Configd::getInstance().finalize();
     DB8::getInstance().finalize();
@@ -122,16 +119,12 @@ void MainDaemon::onGetConfigs(const JValue& responsePayload)
     JValue sysAssetFallbackPrecedence;
     JValue keepAliveApps;
     JValue lifeCycle;
-    bool supportQmlBooster;
 
     if (JValueUtil::getValue(responsePayload, "configs", "system.sysAssetFallbackPrecedence", sysAssetFallbackPrecedence) && sysAssetFallbackPrecedence.isArray()) {
         SAMConf::getInstance().setSysAssetFallbackPrecedence(sysAssetFallbackPrecedence);
     }
     if (JValueUtil::getValue(responsePayload, "configs", "com.webos.applicationManager.keepAliveApps", keepAliveApps) && keepAliveApps.isArray()) {
         SAMConf::getInstance().setKeepAliveApps(keepAliveApps);
-    }
-    if (JValueUtil::getValue(responsePayload, "configs", "com.webos.applicationManager.supportQmlBooster", supportQmlBooster)) {
-        SAMConf::getInstance().setSupportQMLBooster(supportQmlBooster);
     }
     m_isConfigsReceived = true;
     checkPreconditions();

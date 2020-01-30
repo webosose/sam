@@ -221,22 +221,6 @@ public:
         saveReadWriteConf();
     }
 
-    bool isSupportQmlBooster()
-    {
-        bool isSupportQmlBooster = false;
-        JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster);
-        return isSupportQmlBooster;
-    }
-
-    void setSupportQMLBooster(bool value)
-    {
-        bool isSupportQmlBooster = false;
-        if (JValueUtil::getValue(m_readWriteDatabase, "isSupportQmlBooster", isSupportQmlBooster) && isSupportQmlBooster == value)
-            return;
-        m_readWriteDatabase.put("isSupportQmlBooster", value);
-        saveReadWriteConf();
-    }
-
     const string& getLanguage() const
     {
         static string language = "";

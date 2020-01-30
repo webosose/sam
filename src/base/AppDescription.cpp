@@ -97,10 +97,6 @@ string AppDescription::toString(AppType type)
         str = "native_appshell";
         break;
 
-    case AppType::AppType_Booster:
-        str = "qml";
-        break;
-
     default:
         str = "unknown";
         break;
@@ -124,10 +120,7 @@ AppType AppDescription::toAppType(const string& type)
         return AppType::AppType_Native_Qml;
     } else if (type == "native_appshell") {
         return AppType::AppType_Native_AppShell;
-    } else if (type == "qml") {
-        return AppType::AppType_Booster;
     }
-
     return AppType::AppType_None;
 }
 
@@ -472,21 +465,10 @@ bool AppDescription::readAppinfo()
     if (m_appType == AppType::AppType_Native && privilegedJail)
         m_appType = AppType::AppType_Native_Mvpd;
 
-    if (m_appType == AppType::AppType_Booster) {
-        if (!SAMConf::getInstance().isSupportQmlBooster())
-            m_appType = AppType::AppType_Native_Qml;
-        else if (!isSystemApp() || !isSystemApp())
-            m_appType = AppType::AppType_Native_Qml;
-    }
-
     // handler_type
     switch (m_appType) {
     case AppType::AppType_Web:
         m_handlerType = LifeHandlerType::LifeHandlerType_Web;
-        break;
-
-    case AppType::AppType_Booster:
-        m_handlerType = LifeHandlerType::LifeHandlerType_Booster;
         break;
 
     case AppType::AppType_Native:

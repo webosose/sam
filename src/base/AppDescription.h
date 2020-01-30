@@ -45,8 +45,7 @@ enum class AppType : int8_t {
     AppType_Native_Builtin,  // Native app (more special than general native app: e.g. Isis2, Chrome,...)
     AppType_Native_Mvpd,     // Native app (more special than general native app: e.g. Netflix, vudu,...)
     AppType_Native_Qml,      // Native app (stand alone qml apps, forked with qml runner)
-    AppType_Native_AppShell, // for Native app (stand alone appshell apps, forked with appshell runner)
-    AppType_Booster,         // Qml app (launch via booster)
+    AppType_Native_AppShell // for Native app (stand alone appshell apps, forked with appshell runner)
 };
 
 enum class AppLocation : int8_t {
@@ -61,8 +60,7 @@ enum class AppLocation : int8_t {
 enum class LifeHandlerType : int8_t {
     LifeHandlerType_None = 0,
     LifeHandlerType_Native,
-    LifeHandlerType_Web,
-    LifeHandlerType_Booster,
+    LifeHandlerType_Web
 };
 
 class AppDescription;

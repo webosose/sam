@@ -17,7 +17,6 @@
 #include "RunningApp.h"
 
 #include "bus/client/WAM.h"
-#include "bus/client/Booster.h"
 #include "bus/client/NativeContainer.h"
 #include "util/LinuxProcess.h"
 
@@ -167,10 +166,6 @@ void RunningApp::launch(LunaTaskPtr lunaTask)
         WAM::getInstance().launchApp(*this, lunaTask);
         break;
 
-    case LifeHandlerType::LifeHandlerType_Booster:
-        Booster::getInstance().launch(*this, lunaTask);
-        break;
-
     default:
         break;
     }
@@ -192,9 +187,6 @@ gboolean RunningApp::onKillingTimer(gpointer context)
 
     case LifeHandlerType::LifeHandlerType_Web:
         WAM::getInstance().killApp(*runningApp);
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Booster:
         break;
 
     default:
@@ -222,11 +214,6 @@ void RunningApp::close(LunaTaskPtr lunaTask)
 
     case LifeHandlerType::LifeHandlerType_Web:
         WAM::getInstance().close(*this, lunaTask);
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Booster:
-        setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-        Booster::getInstance().close(*this, lunaTask);
         break;
 
     default:

@@ -24,7 +24,6 @@ Configd::Configd()
     configNames = pbnjson::Array();
     configNames.append("system.sysAssetFallbackPrecedence");
     configNames.append("com.webos.applicationManager.keepAliveApps");
-    configNames.append("com.webos.applicationManager.supportQmlBooster");
     configNames.append("com.webos.applicationManager.lifeCycle");
 }
 
