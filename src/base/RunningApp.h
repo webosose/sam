@@ -164,6 +164,10 @@ public:
         return m_lifeStatus;
     }
     bool setLifeStatus(LifeStatus lifeStatus);
+    bool isTransition()
+    {
+        return RunningApp::isTransition(m_lifeStatus);
+    }
 
     void loadRequestPayload(const JValue requestPayload)
     {

@@ -771,6 +771,7 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
     subscriptionPayload.put("instanceId", runningApp.getInstanceId());
     subscriptionPayload.put("launchPointId", runningApp.getLaunchPointId());
     subscriptionPayload.put("appId", runningApp.getAppId());
+    subscriptionPayload.put("displayId", runningApp.getDisplayId());
     subscriptionPayload.put("returnValue", true);
     subscriptionPayload.put("subscribed", true);
 
@@ -811,7 +812,11 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
         if (!info.isNull() && info.isObject()) {
             for (auto it : info.children()) {
                 const string key = it.first.asString();
-                if ("windowType" == key || "windowGroup" == key || "windowGroupOwner" == key || "windowGroupOwnerId" == key || "displayId" == key) {
+                if ("windowType" == key ||
+                    "windowGroup" == key ||
+                    "windowGroupOwner" == key ||
+                    "windowGroupOwnerId" == key ||
+                    "displayId" == key) {
                     subscriptionPayload.put(key, info[key]);
                 }
             }
@@ -841,7 +846,10 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
 
 void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
 {
-    if (!m_enablePosting) return;
+    if (!m_enablePosting)
+        return;
+    if (runningApp.isTransition()) // Only, status should be sent.
+        return;
 
     pbnjson::JValue subscriptionPayload = pbnjson::Object();
     subscriptionPayload.put("returnValue", true);
@@ -850,12 +858,6 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
     runningApp.toJson(subscriptionPayload, true);
     pbnjson::JValue foregroundInfo = pbnjson::JValue();
     switch(runningApp.getLifeStatus()) {
-    case LifeStatus::LifeStatus_LAUNCHING:
-    case LifeStatus::LifeStatus_RELAUNCHING:
-    case LifeStatus::LifeStatus_CLOSING:
-    case LifeStatus::LifeStatus_STOP:
-        break;
-
     case LifeStatus::LifeStatus_FOREGROUND:
         LSM::getInstance().getForegroundInfoById(runningApp.getAppId(), foregroundInfo);
         if (!foregroundInfo.isNull() && foregroundInfo.isObject()) {
@@ -873,10 +875,12 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
         break;
 
     case LifeStatus::LifeStatus_BACKGROUND:
-        if (runningApp.isKeepAlive())
-            subscriptionPayload.put("backgroundStatus", "preload");
-        else
-            subscriptionPayload.put("backgroundStatus", "normal");
+    case LifeStatus::LifeStatus_PRELOADED:
+        subscriptionPayload.put("backgroundStatus", "normal");
+        break;
+
+    case LifeStatus::LifeStatus_PAUSED:
+        subscriptionPayload.put("backgroundStatus", "preload");
         break;
 
     default:
