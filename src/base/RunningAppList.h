@@ -39,13 +39,11 @@ public:
     RunningAppPtr createByLaunchPoint(LaunchPointPtr launchPoint);
 
     RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
-    RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId);
+    RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId, const int displayId = -1);
     RunningAppPtr getByInstanceId(const string& instanceId);
     RunningAppPtr getByToken(const LSMessageToken& token);
-    RunningAppPtr getByLaunchPointId(const string& launchPointId);
-    RunningAppPtr getByAppIdAndDisplayId(const string& appId, const int displayId);
-    RunningAppPtr getByAppId(const string& appId);
-    RunningAppPtr getByPid(const string& pid);
+    RunningAppPtr getByLaunchPointId(const string& launchPointId, const int displayId = -1);
+    RunningAppPtr getByAppId(const string& appId, const int displayId = -1);
     RunningAppPtr getByWebprocessid(const string& webprocessid);
 
     bool add(RunningAppPtr runningApp);

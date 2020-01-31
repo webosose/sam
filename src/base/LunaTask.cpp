@@ -20,7 +20,7 @@
 #include "RunningAppList.h"
 #include "util/JValueUtil.h"
 
-const int LunaTask::getDisplayAffinity() const
+const int LunaTask::getDisplayId() const
 {
     // TODO This is temp solution about displayId
     // When home app support peropery. Please detete following code block
@@ -42,7 +42,8 @@ const int LunaTask::getDisplayAffinity() const
     if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web)
         return 0;
 
-    int displayAffinity = 0;
-    JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayAffinity);
-    return displayAffinity;
+    int displayId = 0;
+    if (!JValueUtil::getValue(m_requestPayload, "displayId", displayId))
+        JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayId);
+    return displayId;
 }

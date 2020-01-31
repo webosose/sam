@@ -242,31 +242,19 @@ void ApplicationManager::detach()
 
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp != nullptr) {
+        PolicyManager::getInstance().relaunch(lunaTask);
+        return;
+    }
+
     if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    string reason = "";
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "params", "reason", reason);
-    if (reason.empty()) {
-        reason = "normal";
-    }
-    lunaTask->setReason(reason);
-
-    // TODO Currently, only webOS auto supports multiple instances
-    // Following lines should be modified after WAM supports
-    RunningAppPtr runningApp = nullptr;
-    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
-        runningApp = RunningAppList::getInstance().getByAppId(lunaTask->getAppId());
-    else
-        runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(lunaTask->getAppId(), lunaTask->getDisplayAffinity());
-
-    if (runningApp == nullptr)
-        PolicyManager::getInstance().launch(lunaTask);
-    else
-        PolicyManager::getInstance().relaunch(lunaTask);
+    PolicyManager::getInstance().launch(lunaTask);
 }
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)

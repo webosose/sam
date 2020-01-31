@@ -102,14 +102,14 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
     for (int i = 0; i < orgForegroundAppInfo.arraySize(); ++i) {
         string appId;
-        int displayId;
+        int displayId = -1;
         string processId;
 
         JValueUtil::getValue(orgForegroundAppInfo[i], "appId", appId);
         JValueUtil::getValue(orgForegroundAppInfo[i], "displayId", displayId);
         JValueUtil::getValue(orgForegroundAppInfo[i], "processId", processId);
 
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppIdAndDisplayId(appId, displayId);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId, displayId);
         if (runningApp == nullptr) {
             Logger::warning(getInstance().getClassName(), __FUNCTION__,
                             Logger::format("Cannot find RunningApp. SAM might be restarted: appId(%s) displayId(%d)", appId.c_str(), displayId));

@@ -132,7 +132,7 @@ public:
         return appId;
     }
 
-    const int getDisplayAffinity() const;
+    const int getDisplayId() const;
 
     const string getCaller() const
     {
@@ -154,8 +154,15 @@ public:
         return webprocessid.substr(index + 1);
     }
 
-    const string& getReason() const
+    const string& getReason()
     {
+        if (!m_reason.empty())
+            return m_reason;
+
+        JValueUtil::getValue(m_requestPayload, "params", "reason", m_reason);
+        if (m_reason.empty()) {
+            m_reason = "normal";
+        }
         return m_reason;
     }
     void setReason(const string& reason)

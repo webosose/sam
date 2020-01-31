@@ -79,19 +79,24 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     string appId = lunaTask->getAppId();
     string launchPointId = lunaTask->getLaunchPointId();
     string instanceId = lunaTask->getInstanceId();
+    int displayId = lunaTask->getDisplayId();
 
-    return getByIds(instanceId, launchPointId, appId);
+    // TODO Currently, only webOS auto supports multiple instances (same appId at once on other displays)
+    // Following lines should be modified after WAM supports
+    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
+        displayId = -1;
+    return getByIds(instanceId, launchPointId, appId, displayId);
 }
 
-RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& launchPointId, const string& appId)
+RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& launchPointId, const string& appId, const int displayId)
 {
     RunningAppPtr runningApp = nullptr;
     if (!instanceId.empty())
         runningApp = getByInstanceId(instanceId);
     else if (!launchPointId.empty())
-        runningApp = getByLaunchPointId(launchPointId);
+        runningApp = getByLaunchPointId(launchPointId, displayId);
     else if (!appId.empty())
-        runningApp = getByAppId(appId);
+        runningApp = getByAppId(appId, displayId);
 
     if (runningApp == nullptr)
         return nullptr;
@@ -99,9 +104,11 @@ RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& l
     if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
         return nullptr;
     if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
-            return nullptr;
+        return nullptr;
     if (!appId.empty() && appId != runningApp->getAppId())
-            return nullptr;
+        return nullptr;
+    if (displayId != -1 && displayId != runningApp->getDisplayId())
+        return nullptr;
     return runningApp;
 }
 
@@ -125,41 +132,27 @@ RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
     return nullptr;
 }
 
-RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId)
+RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId, const int displayId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getLaunchPointId() == launchPointId) {
-            return it->second;
+            if (displayId == -1)
+                return it->second;
+            if ((*it).second->getDisplayId() == displayId)
+                return it->second;
         }
     }
     return nullptr;
 }
 
-RunningAppPtr RunningAppList::getByAppIdAndDisplayId(const string& appId, const int displayId)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getAppId() == appId && (*it).second->getDisplayId() == displayId) {
-            return it->second;
-        }
-    }
-    return nullptr;
-}
-
-RunningAppPtr RunningAppList::getByAppId(const string& appId)
+RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getAppId() == appId) {
-            return it->second;
-        }
-    }
-    return nullptr;
-}
-
-RunningAppPtr RunningAppList::getByPid(const string& pid)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getProcessId() == pid) {
-            return it->second;
+            if (displayId == -1)
+                return it->second;
+            if ((*it).second->getDisplayId() == displayId)
+                return it->second;
         }
     }
     return nullptr;
