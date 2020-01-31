@@ -125,6 +125,21 @@ public:
         return launchPointId;
     }
 
+    const string getId()
+    {
+        string appId = getAppId();
+        string launchPointId = getLaunchPointId();
+        string instanceId = getInstanceId();
+
+        if (!instanceId.empty())
+            return instanceId;
+        if (!launchPointId.empty())
+            return launchPointId;
+        if (!appId.empty())
+            return appId;
+        return "unknown";
+    }
+
     const string getAppId() const
     {
         string appId = "";

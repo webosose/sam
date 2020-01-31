@@ -93,7 +93,9 @@ public:
     void setInstanceId(const string& instanceId)
     {
         if (instanceId.empty()) {
-            m_instanceId = Time::generateUid();
+            // TODO WAM should support 'instanceId' for other platforms
+            // SAM just consider 0 as displayId for default.
+            m_instanceId = generateInstanceId(0);
         } else {
             m_instanceId = instanceId;
         }
@@ -119,7 +121,11 @@ public:
     }
     void setDisplayId(const int displayId)
     {
-        m_displayId = displayId;
+        // TODO This is temp solution for support all platforms.
+        if (displayId < 0)
+            m_displayId = 0;
+        else
+            m_displayId = displayId;
     }
 
     const bool isFullWindow() const

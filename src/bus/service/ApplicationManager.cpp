@@ -261,7 +261,7 @@ void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getAppId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getId() + " is not running");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
@@ -275,7 +275,7 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
 {
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getAppId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getId() + " is not running");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
