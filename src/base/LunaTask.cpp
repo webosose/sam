@@ -20,7 +20,7 @@
 #include "RunningAppList.h"
 #include "util/JValueUtil.h"
 
-const int LunaTask::getDisplayId() const
+const int LunaTask::getDisplayId()
 {
     // TODO This is temp solution about displayId
     // When home app support peropery. Please detete following code block
@@ -39,8 +39,11 @@ const int LunaTask::getDisplayId() const
 
     // TODO currently, only webapp supports multiple display
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(getAppId());
-    if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web)
+    if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web) {
+        if (!m_requestPayload.hasKey("params")) m_requestPayload.put("params", pbnjson::Object());
+        m_requestPayload["params"].put("displayAffinity", 0);
         return 0;
+    }
 
     int displayId = 0;
     if (!JValueUtil::getValue(m_requestPayload, "displayId", displayId))

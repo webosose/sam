@@ -116,7 +116,7 @@ AppType AppDescription::toAppType(const string& type)
         return AppType::AppType_Native_Builtin;
     } else if (type == "native_mvpd") {
         return AppType::AppType_Native_Mvpd;
-    } else if (type == "native_qml") {
+    } else if (type == "native_qml" || type == "qml") {
         return AppType::AppType_Native_Qml;
     } else if (type == "native_appshell") {
         return AppType::AppType_Native_AppShell;

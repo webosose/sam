@@ -147,7 +147,7 @@ public:
         return appId;
     }
 
-    const int getDisplayId() const;
+    const int getDisplayId();
 
     const string getCaller() const
     {
