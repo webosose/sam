@@ -147,6 +147,7 @@ public:
     }
 
     const int getDisplayId();
+    void setDisplayId(const int displayId);
 
     const string getCaller() const
     {

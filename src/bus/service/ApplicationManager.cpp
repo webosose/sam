@@ -242,6 +242,9 @@ void ApplicationManager::detach()
 
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
+    if (lunaTask->getDisplayId() == -1) {
+        lunaTask->setDisplayId(0);
+    }
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
         PolicyManager::getInstance().relaunch(lunaTask);
