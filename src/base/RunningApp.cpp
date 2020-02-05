@@ -377,6 +377,7 @@ gboolean RunningApp::onKillingTimer(gpointer context)
     LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
+        // NativeContainer::getInstance().close(*runningApp);
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:

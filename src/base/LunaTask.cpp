@@ -45,7 +45,7 @@ const int LunaTask::getDisplayId()
         return 0;
     }
 
-    int displayId = 0;
+    int displayId = -1;
     if (!JValueUtil::getValue(m_requestPayload, "displayId", displayId))
         JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayId);
     return displayId;

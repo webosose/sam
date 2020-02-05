@@ -44,6 +44,8 @@ friend class LunaTaskList;
 public:
     LunaTask(LS::Message& request, JValue& requestPayload, LSMessage* message)
         : m_instanceId(""),
+          m_launchPointId(""),
+          m_appId(""),
           m_request(request),
           m_token(0),
           m_requestPayload(requestPayload),
@@ -53,6 +55,9 @@ public:
           m_reason("")
     {
         m_startTime = Time::getCurrentTime();
+        JValueUtil::getValue(m_requestPayload, "instanceId", m_instanceId);
+        JValueUtil::getValue(m_requestPayload, "launchPointId", m_launchPointId);
+        JValueUtil::getValue(m_requestPayload, "id", m_appId);
     }
 
     virtual ~LunaTask()
@@ -60,17 +65,40 @@ public:
 
     }
 
-    const string getInstanceId()
+    const string& getInstanceId()  const
     {
-        if (!m_instanceId.empty())
-            return m_instanceId;
-
-        JValueUtil::getValue(m_requestPayload, "instanceId", m_instanceId);
         return m_instanceId;
     }
     void setInstanceId(const string& instanceId)
     {
         m_instanceId = instanceId;
+    }
+
+    const string& getLaunchPointId()  const
+    {
+        return m_launchPointId;
+    }
+    void setLaunchPointId(const string& launchPointId)
+    {
+        m_launchPointId = launchPointId;
+    }
+
+    const string& getAppId() const
+    {
+        return m_appId;
+    }
+    void setAppId(const string& appId)
+    {
+        m_appId = appId;
+    }
+
+    const string& getId() const
+    {
+        if (!m_instanceId.empty())
+            return m_instanceId;
+        if (!m_launchPointId.empty())
+            return m_launchPointId;
+        return m_appId;
     }
 
     LS::Message& getRequest()
@@ -116,35 +144,6 @@ public:
         m_errorText = errorText;
         m_responsePayload.put("returnValue", false);
         Logger::warning("LunaTask", __FUNCTION__, Logger::format("errorCode(%d) errorText(%s)", errorCode, errorText.c_str()));
-    }
-
-    const string getLaunchPointId() const
-    {
-        string launchPointId = "";
-        JValueUtil::getValue(m_requestPayload, "launchPointId", launchPointId);
-        return launchPointId;
-    }
-
-    const string getId()
-    {
-        string appId = getAppId();
-        string launchPointId = getLaunchPointId();
-        string instanceId = getInstanceId();
-
-        if (!instanceId.empty())
-            return instanceId;
-        if (!launchPointId.empty())
-            return launchPointId;
-        if (!appId.empty())
-            return appId;
-        return "unknown";
-    }
-
-    const string getAppId() const
-    {
-        string appId = "";
-        JValueUtil::getValue(m_requestPayload, "id", appId);
-        return appId;
     }
 
     const int getDisplayId();
@@ -209,12 +208,20 @@ public:
         m_nextStep = next;
     }
 
-    void toJson(JValue& json)
+    void toJson(JValue& json, bool caller = true, bool ids = false)
     {
         if (json.isNull())
             json = pbnjson::Object();
-        json.put("caller", getCaller());
-        json.put("kind", this->getRequest().getKind());
+
+        if (caller) {
+            json.put("caller", getCaller());
+            json.put("kind", this->getRequest().getKind());
+        }
+        if (ids) {
+            json.put("instanceId", m_instanceId);
+            json.put("launchPointId", m_launchPointId);
+            json.put("appId", m_appId);
+        }
     }
 
 private:
@@ -237,6 +244,9 @@ private:
     }
 
     string m_instanceId;
+    string m_launchPointId;
+    string m_appId;
+
     LS::Message m_request;
     LSMessageToken m_token;
 

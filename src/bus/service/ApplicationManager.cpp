@@ -729,14 +729,14 @@ void ApplicationManager::managerInfo(LunaTaskPtr lunaTask)
 {
     lunaTask->getResponsePayload().put("returnValue", true);
 
-//    pbnjson::JValue apps = pbnjson::Array();
-//    pbnjson::JValue properties = pbnjson::Array();
-//    AppDescriptionList::getInstance().toJson(apps, properties);
-//    lunaTask->getResponsePayload().put("apps", apps);
-//
-//    pbnjson::JValue launchPoints = pbnjson::Array();
-//    LaunchPointList::getInstance().toJson(launchPoints);
-//    lunaTask->getResponsePayload().put("launchPoints", launchPoints);
+    pbnjson::JValue apps = pbnjson::Array();
+    pbnjson::JValue properties = pbnjson::Array();
+    AppDescriptionList::getInstance().toJson(apps, properties);
+    lunaTask->getResponsePayload().put("apps", apps);
+
+    pbnjson::JValue launchPoints = pbnjson::Array();
+    LaunchPointList::getInstance().toJson(launchPoints);
+    lunaTask->getResponsePayload().put("launchPoints", launchPoints);
 
     pbnjson::JValue running = pbnjson::Array();
     RunningAppList::getInstance().toJson(running);

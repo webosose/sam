@@ -181,8 +181,10 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     }
     runningApp->setFirstLaunch(false);
 
-    lunaTask->getResponsePayload().put("returnValue", true);
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    if (lunaTask) {
+        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    }
     Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
     return true;
 }
@@ -301,8 +303,10 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
         return true;
     }
     runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
-    lunaTask->getResponsePayload().put("returnValue", true);
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    if (lunaTask) {
+        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    }
     return true;
 }
 
@@ -370,14 +374,14 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
         return true;
     }
 
-    if (!runningApp) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "Untracked webapp was killed");
-        return true;
+    // RunningApp was already removed in onListRunningApp subscription
+    if (runningApp) {
+        RunningAppList::getInstance().removeByObject(runningApp);
     }
-    RunningAppList::getInstance().removeByObject(runningApp);
+
+    // Should not access RunningApp. It can be nullptr.
     if (lunaTask) {
-        lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
-        lunaTask->getResponsePayload().put("instanceId", lunaTask->getInstanceId());
+        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
     }
     return true;

@@ -65,6 +65,11 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         runningApp->setInstanceId(instanceId);
         runningApp->setDisplayId(displayId);
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
+
+        lunaTask->setInstanceId(runningApp->getInstanceId());
+        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
+        lunaTask->setAppId(runningApp->getAppId());
+
         RunningAppList::getInstance().add(runningApp);
     }
 

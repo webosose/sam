@@ -85,7 +85,16 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     // Following lines should be modified after WAM supports
     if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
         displayId = -1;
-    return getByIds(instanceId, launchPointId, appId, displayId);
+
+    // Normally, clients doesn't provide all information about running application
+    // However, SAM needs all information internally during managing application lifecycle.
+    RunningAppPtr runningApp = getByIds(instanceId, launchPointId, appId, displayId);
+    if (runningApp) {
+        lunaTask->setInstanceId(runningApp->getInstanceId());
+        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
+        lunaTask->setAppId(runningApp->getAppId());
+    }
+    return runningApp;
 }
 
 RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& launchPointId, const string& appId, const int displayId)
