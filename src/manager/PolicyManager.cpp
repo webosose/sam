@@ -66,6 +66,11 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         runningApp->setDisplayId(displayId);
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
 
+        if (!checkExecutionLock(runningApp)) {
+            lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
+            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        }
+
         lunaTask->setInstanceId(runningApp->getInstanceId());
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
         lunaTask->setAppId(runningApp->getAppId());
@@ -74,9 +79,6 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
     }
 
     if (lunaTask->getNextStep().empty()) {
-        lunaTask->setNextStep("Check Memory Status");
-        checkExecutionLock(lunaTask);
-    } else if (lunaTask->getNextStep() == "Check Memory Status") {
         lunaTask->setNextStep("Launch App");
         MemoryManager::getInstance().requireMemory(lunaTask);
     } else if (lunaTask->getNextStep() == "Launch App") {
@@ -89,18 +91,13 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
     }
 }
 
-void PolicyManager::checkExecutionLock(LunaTaskPtr lunaTask)
+bool PolicyManager::checkExecutionLock(RunningAppPtr runningApp)
 {
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find proper runningApp");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
+        return false;
     }
     if (runningApp->getLaunchPoint()->getAppDesc()->isLocked()) {
-        lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
+        return false;
     }
-    lunaTask->getAPICallback()(lunaTask);
+    return true;
 }

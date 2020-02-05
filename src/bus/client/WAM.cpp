@@ -147,7 +147,7 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
     if (lunaTask == nullptr) {
-        Logger::warning(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask about launch request");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask about launch request");
         return false;
     }
 
@@ -160,13 +160,13 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        RunningAppList::getInstance().removeByIds(instanceId, "", appId);
+        RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch webapp in WAM");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, "", appId);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find RunningApp");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
@@ -175,11 +175,10 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     if (runningApp->isFirstLaunch()) {
         if (!runningApp->getPreload().empty()) {
             runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADED);
-        } else if (runningApp->isLaunchedHidden()) {
+        } else if (runningApp->isHidden()) {
             runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
         }
     }
-    runningApp->setFirstLaunch(false);
 
     if (lunaTask) {
         lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
@@ -291,7 +290,7 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        RunningAppList::getInstance().removeByIds(instanceId, launchPointId, appId);
+        RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to pause webapp in WAM");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;

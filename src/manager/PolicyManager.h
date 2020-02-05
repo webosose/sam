@@ -43,7 +43,7 @@ public:
     void launch(LunaTaskPtr lunaTask);
 
 private:
-    void checkExecutionLock(LunaTaskPtr item);
+    bool checkExecutionLock(RunningAppPtr runningApp);
 
     PolicyManager();
 };

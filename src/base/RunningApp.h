@@ -171,6 +171,7 @@ public:
         return m_lifeStatus;
     }
     bool setLifeStatus(LifeStatus lifeStatus);
+
     bool isTransition()
     {
         return RunningApp::isTransition(m_lifeStatus);
@@ -214,18 +215,16 @@ public:
         return m_spinner;
     }
 
-    bool isLaunchedHidden() const
+    bool isHidden() const
     {
         return m_isLaunchedHidden;
     }
 
     bool isFirstLaunch()
     {
-        return m_isFirstLaunch;
-    }
-    void setFirstLaunch(bool isFirstLaunch)
-    {
-        m_isFirstLaunch = isFirstLaunch;
+        if (m_launchCount == 1)
+            return true;
+        return false;
     }
 
     const string& getReason() const
@@ -306,6 +305,7 @@ private:
     LS::Message m_registeredApp;
 
     LifeStatus m_lifeStatus;
+    int m_launchCount;
     guint m_killingTimer;
 
     // initial parameter
@@ -314,7 +314,6 @@ private:
     bool m_noSplash;
     bool m_spinner;
     bool m_isLaunchedHidden;
-    bool m_isFirstLaunch;
 
     string m_reason;
     LSMessageToken m_token;

@@ -131,12 +131,12 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_interfaceVersion(1),
       m_isRegistered(false),
       m_lifeStatus(LifeStatus::LifeStatus_STOP),
+      m_launchCount(0),
       m_killingTimer(0),
       m_keepAlive(false),
       m_noSplash(true),
       m_spinner(true),
       m_isLaunchedHidden(false),
-      m_isFirstLaunch(true),
       m_token(0),
       m_context(0)
 {
@@ -317,7 +317,7 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
     }
 
     // CLOSING is special transition. It should be allowed all cases
-    if (isTransition(m_lifeStatus) && lifeStatus != LifeStatus::LifeStatus_CLOSING && isTransition(lifeStatus)) {
+    if (isTransition(m_lifeStatus) && isTransition(lifeStatus) && lifeStatus != LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId,
                         Logger::format("Warning: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
         return false;
@@ -328,19 +328,22 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
         if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING)
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by SAM");
         else
-            Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by itself");
+            Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by Itself");
+        break;
+
+    case LifeStatus::LifeStatus_PRELOADING:
+        m_launchCount++;
         break;
 
     case LifeStatus::LifeStatus_LAUNCHING:
+        m_launchCount++;
         if (m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND) {
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
                          Logger::format("Changed: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
             m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
             ApplicationManager::getInstance().postGetAppLifeStatus(*this);
             lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
-        } else if (m_lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
-                   m_lifeStatus == LifeStatus::LifeStatus_PAUSED ||
-                   m_lifeStatus == LifeStatus::LifeStatus_PRELOADED) {
+        } else {
             lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
         }
         break;

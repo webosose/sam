@@ -49,7 +49,7 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
     if (lunaTask == nullptr) {
-        Logger::warning(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask about launch request");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask about launch request");
         return false;
     }
 
@@ -62,6 +62,7 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
+        RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
         lunaTask->setErrCodeAndText(errorCode, errorText);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;

@@ -210,28 +210,6 @@ bool RunningAppList::removeByObject(RunningAppPtr runningApp)
     return false;
 }
 
-bool RunningAppList::removeByIds(const string& instanceId, const string& launchPointId, const string& appId)
-{
-    RunningAppPtr runningApp = nullptr;
-    if (!instanceId.empty())
-        runningApp = getByInstanceId(instanceId);
-    else if (!launchPointId.empty())
-        runningApp = getByLaunchPointId(launchPointId);
-    else if (!appId.empty())
-        runningApp = getByAppId(appId);
-
-    if (runningApp == nullptr)
-        return false;
-
-    if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
-        return false;
-    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
-        return false;
-    if (!appId.empty() && appId != runningApp->getAppId())
-        return false;
-    return removeByObject(runningApp);
-}
-
 bool RunningAppList::removeByInstanceId(const string& instanceId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -308,6 +286,19 @@ bool RunningAppList::setConext(AppType type, const int context)
         }
     }
     return true;
+}
+
+bool RunningAppList::isTransition(bool devmodeOnly)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if (devmodeOnly) {
+            if ((*it).second->getLaunchPoint()->getAppDesc()->isDevmodeApp() &&
+                (*it).second->isTransition()) return true;
+        } else {
+            if ((*it).second->isTransition()) return true;
+        }
+    }
+    return false;
 }
 
 void RunningAppList::toJson(JValue& array, bool devmodeOnly)

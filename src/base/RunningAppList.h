@@ -49,7 +49,6 @@ public:
     bool add(RunningAppPtr runningApp);
 
     bool removeByObject(RunningAppPtr runningApp);
-    bool removeByIds(const string& instanceId, const string& launchPointId, const string& appId);
     bool removeByInstanceId(const string& instanceId);
     bool removeByPid(const string& processId);
     bool removeAllByType(AppType type);
@@ -57,7 +56,7 @@ public:
     bool removeAllByLaunchPoint(LaunchPointPtr launchPoint);
 
     bool setConext(AppType type, const int context);
-
+    bool isTransition(bool devmodeOnly);
     void toJson(JValue& array, bool devmodeOnly = false);
 
 private:

@@ -145,7 +145,7 @@ Done:
 
 ApplicationManager::ApplicationManager()
     : LS::Handle(LS::registerService("com.webos.applicationManager")),
-      m_enablePosting(false),
+      m_enableSubscription(false),
       m_compat1("com.webos.service.applicationmanager"),
       m_compat2("com.webos.service.applicationManager")
 {
@@ -754,7 +754,7 @@ void ApplicationManager::managerInfo(LunaTaskPtr lunaTask)
 
 void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
 {
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
 
     pbnjson::JValue info = pbnjson::JValue();
     pbnjson::JValue subscriptionPayload = pbnjson::Object();
@@ -836,7 +836,7 @@ void ApplicationManager::postGetAppLifeEvents(RunningApp& runningApp)
 
 void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
 {
-    if (!m_enablePosting)
+    if (!m_enableSubscription)
         return;
     if (runningApp.isTransition()) // Only, status should be sent.
         return;
@@ -883,7 +883,7 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
 
 void ApplicationManager::postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEvent event)
 {
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
     if (!appDesc) return;
 
     pbnjson::JValue subscriptionPayload = pbnjson::Object();
@@ -935,7 +935,7 @@ void ApplicationManager::postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEv
 
 void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
 {
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
 
     pbnjson::JValue subscriptionPayload;
     if (!extraInfoOnly) {
@@ -959,7 +959,7 @@ void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
 
 void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& change, const string& changeReason)
 {
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
 
     JValue subscriptionPayload = pbnjson::Object();
     subscriptionPayload.put("returnValue", true);
@@ -1016,7 +1016,7 @@ void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& c
 
 void ApplicationManager::postListLaunchPoints(LaunchPointPtr launchPoint, string change)
 {
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
 
     if (launchPoint != nullptr && !launchPoint->isVisible())
         return;
@@ -1046,10 +1046,12 @@ void ApplicationManager::postRunning(RunningAppPtr runningApp)
     static JValue prevSubscriptionPayloadAll;
     static JValue prevSubscriptionPayloadDev;
 
-    if (!m_enablePosting) return;
+    if (!m_enableSubscription) return;
 
     pbnjson::JValue subscriptionPayload;
-    if (runningApp == nullptr || runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
+    if (runningApp != nullptr && runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
+        if (RunningAppList::getInstance().isTransition(true))
+            return;
         subscriptionPayload = pbnjson::Object();
         makeRunning(subscriptionPayload, true);
         subscriptionPayload.put("subscribed", true);
@@ -1061,6 +1063,9 @@ void ApplicationManager::postRunning(RunningAppPtr runningApp)
             m_runningDev->post(subscriptionPayload.stringify().c_str());
         }
     }
+
+    if (RunningAppList::getInstance().isTransition(false))
+        return;
     subscriptionPayload = pbnjson::Object();
     makeRunning(subscriptionPayload, false);
     subscriptionPayload.put("subscribed", true);

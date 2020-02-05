@@ -120,12 +120,12 @@ public:
 
     void enablePosting()
     {
-        m_enablePosting = true;
+        m_enableSubscription = true;
     }
 
     void disablePosting()
     {
-        m_enablePosting = false;
+        m_enableSubscription = false;
     }
 
 private:
@@ -156,7 +156,7 @@ private:
     LS::SubscriptionPoint* m_running;
     LS::SubscriptionPoint* m_runningDev;
 
-    bool m_enablePosting;
+    bool m_enableSubscription;
 
     // TODO: Following should be deleted
     ApplicationManagerCompat m_compat1;
