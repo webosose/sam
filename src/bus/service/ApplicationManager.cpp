@@ -266,8 +266,7 @@ void ApplicationManager::pause(LunaTaskPtr lunaTask)
         return;
     }
 
-    lunaTask->setErrCodeAndText(ErrCode_GENERAL, "This API is not implemented");
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    runningApp->pause(lunaTask);
     return;
 }
 

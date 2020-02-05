@@ -171,28 +171,26 @@ void RunningApp::launch(LunaTaskPtr lunaTask)
     }
 }
 
-gboolean RunningApp::onKillingTimer(gpointer context)
+void RunningApp::pause(LunaTaskPtr lunaTask)
 {
-    RunningApp* runningApp = static_cast<RunningApp*>(context);
-    if (runningApp == nullptr) {
-        return FALSE;
-    }
-    Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
-    runningApp->m_killingTimer = 0;
-
-    LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
+    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
+        if (isRegistered()) {
+            // TODO Needs to send event to application
+            // How to verify this code block?
+        } else {
+            close(lunaTask);
+        }
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().killApp(*runningApp);
+        WAM::getInstance().pauseApp(*this, lunaTask);
         break;
 
     default:
         break;
     }
-    return FALSE;
 }
 
 void RunningApp::close(LunaTaskPtr lunaTask)
@@ -365,6 +363,30 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
     ApplicationManager::getInstance().postGetAppLifeStatus(*this);
     ApplicationManager::getInstance().postGetAppLifeEvents(*this);
     return true;
+}
+
+gboolean RunningApp::onKillingTimer(gpointer context)
+{
+    RunningApp* runningApp = static_cast<RunningApp*>(context);
+    if (runningApp == nullptr) {
+        return FALSE;
+    }
+    Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
+    runningApp->m_killingTimer = 0;
+
+    LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
+    switch(type) {
+    case LifeHandlerType::LifeHandlerType_Native:
+        break;
+
+    case LifeHandlerType::LifeHandlerType_Web:
+        WAM::getInstance().killApp(*runningApp);
+        break;
+
+    default:
+        break;
+    }
+    return FALSE;
 }
 
 void RunningApp::startKillingTimer(guint timeout)

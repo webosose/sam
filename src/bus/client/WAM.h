@@ -39,6 +39,7 @@ public:
     void discardCodeCache();
     bool launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
     bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
     bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask = nullptr);
 
 protected:
@@ -58,8 +59,6 @@ private:
     static bool onKillApp(LSHandle* sh, LSMessage* message, void* context);
 
     WAM();
-
-    bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
 
     Call m_listRunningAppsCall;
     Call m_discardCodeCacheCall;

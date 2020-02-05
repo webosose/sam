@@ -369,14 +369,15 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
         }
         return true;
     }
-    if (runningApp) {
-        RunningAppList::getInstance().removeByObject(runningApp);
-        if (lunaTask)
-            lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
+
+    if (!runningApp) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Untracked webapp was killed");
+        return true;
     }
+    RunningAppList::getInstance().removeByObject(runningApp);
     if (lunaTask) {
-        // TODO This should be uncommented with proper solution
-        //lunaTask->getResponsePayload().put("instanceId", lunaTask->getInstanceId());
+        lunaTask->getResponsePayload().put("appId", runningApp->getAppId());
+        lunaTask->getResponsePayload().put("instanceId", lunaTask->getInstanceId());
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
     }
     return true;
@@ -419,9 +420,9 @@ bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
         &error
     );
     runningApp.setToken(token);
+
     if (!lunaTask)
         return true;
-
     if (!result) {
         lunaTask->setErrCodeAndText(error.error_code, error.message);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);

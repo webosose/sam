@@ -116,9 +116,14 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
             continue;
         }
 
-        // TODO This is ambiguous multi display env. We need to find better way
+        // TODO This is ambiguous multiple display env. We need to find better way
         if (isFullscreenWindowType(orgForegroundAppInfo[i])) {
             newFullWindowAppId = appId;
+        }
+
+        // TODO following *instanceId* should be passed by LSM
+        if (!runningApp->getInstanceId().empty()) {
+            orgForegroundAppInfo[i].put("instanceId", runningApp->getInstanceId());
         }
 
         // SAM knows its child pid better than LSM.

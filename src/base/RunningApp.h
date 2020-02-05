@@ -69,6 +69,7 @@ public:
 
     // APIs
     void launch(LunaTaskPtr lunaTask);
+    void pause(LunaTaskPtr lunaTask);
     void close(LunaTaskPtr lunaTask);
     void registerApp(LunaTaskPtr lunaTask);
 
