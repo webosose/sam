@@ -30,7 +30,7 @@
 #include "util/LinuxProcess.h"
 
 class NativeContainer : public ISingleton<NativeContainer>,
-            public IClassName {
+                        public IClassName {
 friend class ISingleton<NativeContainer>;
 public:
     virtual ~NativeContainer();
@@ -43,6 +43,7 @@ public:
 private:
     static const int TIMEOUT_1_SECOND = 1000;
     static const int TIMEOUT_10_SECONDS = 10000;
+    static int s_instanceCounter;
 
     static void onKillChildProcess(GPid pid, gint status, gpointer data);
 
@@ -50,6 +51,8 @@ private:
 
     virtual void launchFromStop(RunningApp& runningApp, LunaTaskPtr item);
     virtual void launchFromRegistered(RunningApp& runningApp, LunaTaskPtr item);
+
+    map<string, string> m_environments;
 
 };
 

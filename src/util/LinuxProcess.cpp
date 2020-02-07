@@ -1,6 +1,6 @@
 /* @@@LICENSE
  *
- * Copyright (c) 2019 LG Electronics, Inc.
+ * Copyright (c) 2020 LG Electronics, Inc.
  *
  * Confidential computer software. Valid license from LG required for
  * possession, use or copying. Consistent with FAR 12.211 and 12.212,
@@ -11,153 +11,154 @@
  * LICENSE@@@
  */
 
-#include <signal.h>
-#include <glib.h>
-#include <proc/readproc.h>
-#include <stdlib.h>
+#include "LinuxProcess.h"
 
-#include "util/LinuxProcess.h"
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
-const string LinuxProcess::CLASS_NAME = "LinuxProcess";
+#include "util/Logger.h"
 
-bool LinuxProcess::sendSigTerm(const string& pid)
+const string LinuxProcess::CLASS_NAME = "NativeProcess2";
+
+void LinuxProcess::convertEnvToStr(map<string, string>& src, vector<string>& dest)
 {
-    if (pid.empty()) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
-        return false;
+    for (auto it = src.begin(); it != src.end(); ++it) {
+        dest.push_back(it->first + "=" + it->second);
     }
-
-    PidVector allPids = LinuxProcess::findChildPids(pid);
-    if (allPids.empty()) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "empty_pids");
-        return false;
-    }
-
-    if (!LinuxProcess::killProcesses(allPids, SIGTERM)) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "seding_signal_error");
-        return false;
-    }
-    return true;
 }
 
-bool LinuxProcess::sendSigKill(const string& pid)
+void LinuxProcess::prepareSpawn(gpointer user_data)
 {
-    if (pid.empty()) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "pid is empty");
-        return false;
+    // This function is called in child context.
+    // setpgid is needed to kill all processes which are created by application at once
+    int result = setpgid(getpid(), 0);
+    if (result == -1) {
+        Logger::error(CLASS_NAME, __FUNCTION__, strerror(errno));
     }
-
-    PidVector allPids = LinuxProcess::findChildPids(pid);
-    if (allPids.empty()) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "empty_pids");
-        return false;
-    }
-
-    if (!LinuxProcess::killProcesses(allPids, SIGKILL)) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "seding_signal_error");
-        return false;
-    }
-    return true;
 }
 
-string LinuxProcess::convertPidsToString(const PidVector& pids)
+LinuxProcess::LinuxProcess()
+    : m_workingDirectory("/"),
+      m_command(""),
+      m_pid(-1),
+      m_logfile(-1)
 {
-    string result;
-    string delim;
-    for (pid_t pid : pids) {
-        result += delim;
-        result += to_string(pid);
-        delim = " ";
-    }
-    return result;
+
 }
 
-bool LinuxProcess::killProcesses(const PidVector& pids, int sig)
+LinuxProcess::~LinuxProcess()
 {
-    auto it = pids.begin();
-    if (it == pids.end())
-        return true;
 
-    // first process is parent process,
-    // killing child processes later can fail if parent itself terminates them
-    bool success = kill(*it, sig) == 0;
-    while (++it != pids.end()) {
-        kill(*it, sig);
-    }
-    return success;
 }
 
-pid_t LinuxProcess::forkProcess(const char **argv, const char **envp)
+void LinuxProcess::addArgument(const string& argument)
 {
-    //TODO : Set child's working path
-    GPid pid = -1;
+    m_arguments.push_back(argument);
+}
+
+void LinuxProcess::addArgument(const string& option, const string& value)
+{
+    m_arguments.push_back(option);
+    m_arguments.push_back(value);
+}
+
+void LinuxProcess::addEnv(map<string, string>& environments)
+{
+    for (auto it = environments.begin(); it != environments.end(); ++it) {
+        m_environments[it->first] = it->second;
+    }
+}
+
+void LinuxProcess::addEnv(const string& variable, const string& value)
+{
+    m_environments[variable] = value;
+}
+
+void LinuxProcess::openLogfile(const string &logfile)
+{
+    closeLogfile();
+    cout << "logfile - " << logfile << endl;
+    m_logfile = ::open(logfile.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
+}
+
+void LinuxProcess::closeLogfile()
+{
+    if (m_logfile >= 0)
+        close(m_logfile);
+}
+
+bool LinuxProcess::run()
+{
+    const char* argv[MAX_ARGS] = { 0, };
+    const char* envp[MAX_ENVP] = { 0, };
+    int index = 0;
+
     GError* gerr = NULL;
-    GSpawnFlags flags = (GSpawnFlags) (G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_DO_NOT_REAP_CHILD);
-
-    if (true) {
-        string cmd = "";
-        // This is debug purpose
-        for (int i = 0; i < 10; i++) {
-            if (argv[i] == NULL) break;
-            cmd += string(argv[i]) + " ";
-        }
-        Logger::info(CLASS_NAME, __FUNCTION__, cmd);
+    argv[0] = m_command.c_str();
+    index = 1;
+    for (auto it = m_arguments.begin(); it != m_arguments.end(); ++it) {
+        argv[index++] = it->c_str();
     }
 
-    gboolean result = g_spawn_async_with_pipes(
-        NULL,
-        const_cast<char**>(argv),  // cmd arguments
-        const_cast<char**>(envp),  // environment variables
-        flags,
-        NULL,
-        NULL,
-        &pid,
-        NULL,
-        NULL,
-        NULL,
+    vector<string> finalEnvironments;
+    convertEnvToStr(m_environments, finalEnvironments);
+    index = 0;
+    for (auto it = finalEnvironments.begin(); it != finalEnvironments.end(); ++it) {
+        envp[index++] = (const char*)it->c_str();
+    }
+
+    gboolean result = g_spawn_async_with_fds(
+        m_workingDirectory.c_str(),
+        const_cast<char**>(argv),
+        const_cast<char**>(envp),
+        G_SPAWN_DO_NOT_REAP_CHILD,
+        prepareSpawn,
+        this,
+        &m_pid,
+        -1,
+        m_logfile,
+        m_logfile,
         &gerr
     );
     if (gerr) {
-        Logger::error(CLASS_NAME, __FUNCTION__, Logger::format("Failed to folk: pid(%d) errorText(%s)", pid, gerr->message));
+        Logger::error(CLASS_NAME, __FUNCTION__, gerr->message);
         g_error_free(gerr);
         gerr = NULL;
-        return -1;
+        return false;
     }
-    if (!result) {
-        Logger::error(CLASS_NAME, __FUNCTION__, Logger::format("Failed to folk: pid: %d", pid));
-        return -1;
+    if (!result || m_pid <= 0) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "Failed to folk child process");
+        return false;
     }
-
-    return pid;
+    return true;
 }
 
-PidVector LinuxProcess::findChildPids(const string& pid)
+bool LinuxProcess::term()
 {
-    PidVector pids;
-    pids.push_back((pid_t) atol(pid.c_str()));
-
-    proc_t **proctab = readproctab(PROC_FILLSTAT);
-    if (!proctab) {
-        Logger::error(CLASS_NAME, __FUNCTION__, "readproctab_error", "failed to read proctab");
-        return pids;
+    if (m_pid <= 0) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "Process is not running");
+        return false;
     }
-
-    size_t idx = 0;
-    while (idx != pids.size()) {
-        for (proc_t **proc = proctab; *proc; ++proc) {
-            pid_t tid = (*proc)->tid;
-            pid_t ppid = (*proc)->ppid;
-            if (ppid == pids[idx]) {
-                pids.push_back(tid);
-            }
-        }
-        ++idx;
+    int result = killpg(m_pid, SIGTERM);
+    if (result == -1) {
+        Logger::error(CLASS_NAME, __FUNCTION__, strerror(errno));
+        return false;
     }
+    return true;
+}
 
-    for (proc_t **proc = proctab; *proc; ++proc) {
-        free(*proc);
+bool LinuxProcess::kill()
+{
+    if (m_pid <= 0) {
+        Logger::error(CLASS_NAME, __FUNCTION__, "Process is not running");
+        return false;
     }
-
-    free(proctab);
-    return pids;
+    int result = killpg(m_pid, SIGKILL);
+    if (result == -1) {
+        Logger::error(CLASS_NAME, __FUNCTION__, strerror(errno));
+        return false;
+    }
+    return true;
 }

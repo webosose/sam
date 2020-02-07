@@ -28,6 +28,7 @@
 #include "conf/SAMConf.h"
 #include "util/Logger.h"
 #include "util/Time.h"
+#include "util/LinuxProcess.h"
 
 //                  < RunningApp LIFECYCLES >
 //
@@ -254,6 +255,11 @@ public:
         m_context = context;
     }
 
+    LinuxProcess& getLinuxProcess()
+    {
+        return m_linuxPocess;
+    }
+
     void toJson(JValue& object, bool status)
     {
         object.put("instanceId", m_instanceId);
@@ -318,6 +324,8 @@ private:
     string m_reason;
     LSMessageToken m_token;
     int m_context;
+
+    LinuxProcess m_linuxPocess;
 
 };
 

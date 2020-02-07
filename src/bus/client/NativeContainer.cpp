@@ -16,14 +16,13 @@
 
 #include "NativeContainer.h"
 
-#include <ext/stdio_filebuf.h>
-#include <boost/lexical_cast.hpp>
-
 #include "base/AppDescription.h"
 #include "base/LunaTaskList.h"
 #include "base/AppDescriptionList.h"
 #include "base/RunningAppList.h"
 #include "conf/SAMConf.h"
+
+int NativeContainer::s_instanceCounter = 1;
 
 void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
 {
@@ -31,7 +30,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     g_spawn_close_pid(pid);
 
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(pid);
-    string pidStr = boost::lexical_cast<string>(pid);
+    string pidStr = std::to_string(pid);
 
     if (RunningAppList::getInstance().removeByPid(pidStr)) {
         if (lunaTask) {
@@ -49,6 +48,16 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
 NativeContainer::NativeContainer()
 {
     setClassName("NativeContainer");
+
+    gchar **variables = g_listenv();
+    gsize size = variables ? g_strv_length(variables) : 0;
+    for (uint i = 0; i < size; i++) {
+    const gchar *value = g_getenv(variables[i]);
+        if (value != NULL) {
+            m_environments[variables[i]] = value;
+        }
+    }
+    g_strfreev(variables);
 }
 
 NativeContainer::~NativeContainer()
@@ -68,14 +77,14 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
     case LifeStatus::LifeStatus_BACKGROUND:
         if (!runningApp.isRegistered()) {
             runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-            LinuxProcess::sendSigTerm(runningApp.getProcessId());
+            runningApp.getLinuxProcess().term();
         } else {
             launchFromRegistered(runningApp, lunaTask);
         }
         break;
 
     case LifeStatus::LifeStatus_CLOSING:
-        LinuxProcess::sendSigKill(runningApp.getProcessId());
+        runningApp.getLinuxProcess().kill();
         break;
 
     default:
@@ -101,7 +110,7 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     }
     lunaTask->setToken(stoi(runningApp.getProcessId()));
     if (!runningApp.isRegistered()) {
-        if (!LinuxProcess::sendSigKill(runningApp.getProcessId())) {
+        if (!runningApp.getLinuxProcess().kill()) {
             lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
             LunaTaskList::getInstance().removeAfterReply(lunaTask);
         }
@@ -114,7 +123,7 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     subscriptionPayload.put("returnValue", true);
     runningApp.sendEvent(subscriptionPayload);
 
-    if (!LinuxProcess::sendSigTerm(runningApp.getProcessId())) {
+    if (!runningApp.getLinuxProcess().term()) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
@@ -128,33 +137,25 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
     if (path.find("file://", 0) != string::npos)
         path = path.substr(7);
 
-    const char* forkParams[10] = { 0, };
-    const char* jailerType = "";
-    bool isNojailApp = SAMConf::getInstance().isNoJailApp(runningApp.getAppId());
-
     string appId = runningApp.getAppId();
     AppType appType = runningApp.getLaunchPoint()->getAppDesc()->getAppType();
     AppLocation appLocation = runningApp.getLaunchPoint()->getAppDesc()->getAppLocation();
     string strParams = runningApp.getLaunchParams(lunaTask);
 
+    bool isNojailApp = SAMConf::getInstance().isNoJailApp(runningApp.getAppId());
     if (AppType::AppType_Native_AppShell == appType) {
-        forkParams[0] = SAMConf::getInstance().getAppShellRunnerPath().c_str();
-        forkParams[1] = "--appid";
-        forkParams[2] = appId.c_str();
-        forkParams[3] = "--folder";
-        forkParams[4] = runningApp.getLaunchPoint()->getAppDesc()->getFolderPath().c_str();
-        forkParams[5] = "--params";
-        forkParams[6] = strParams.c_str();
-        forkParams[7] = NULL;
-
+        runningApp.getLinuxProcess().setCommand(SAMConf::getInstance().getAppShellRunnerPath());
+        runningApp.getLinuxProcess().addArgument("--appid", appId);
+        runningApp.getLinuxProcess().addArgument("--folder", runningApp.getLaunchPoint()->getAppDesc()->getFolderPath());
+        runningApp.getLinuxProcess().addArgument("--params", strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with appshell_runner");
     } else if (AppType::AppType_Native_Qml == appType) {
-        forkParams[0] = SAMConf::getInstance().getQmlRunnerPath().c_str();
-        forkParams[1] = strParams.c_str();
-        forkParams[2] = NULL;
-
+        runningApp.getLinuxProcess().setCommand(SAMConf::getInstance().getQmlRunnerPath());
+        runningApp.getLinuxProcess().addArgument("--appid", appId);
+        runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with qml_runner");
     } else if (SAMConf::getInstance().isJailerDisabled() && !isNojailApp) {
+        const char* jailerType = "";
         if (AppLocation::AppLocation_Devmode == appLocation) {
             jailerType = "native_devmode";
         } else {
@@ -177,45 +178,42 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
             }
         }
 
-        forkParams[0] = SAMConf::getInstance().getJailerPath().c_str();
-        forkParams[1] = "-t";
-        forkParams[2] = jailerType;
-        forkParams[3] = "-i";
-        forkParams[4] = runningApp.getAppId().c_str();
-        forkParams[5] = "-p";
-        forkParams[6] = runningApp.getLaunchPoint()->getAppDesc()->getFolderPath().c_str();
-        forkParams[7] = path.c_str();
-        forkParams[8] = strParams.c_str();
-        forkParams[9] = NULL;
-
+        runningApp.getLinuxProcess().setCommand(SAMConf::getInstance().getJailerPath());
+        runningApp.getLinuxProcess().addArgument("-t", jailerType);
+        runningApp.getLinuxProcess().addArgument("-i", runningApp.getAppId());
+        runningApp.getLinuxProcess().addArgument("-p", runningApp.getLaunchPoint()->getAppDesc()->getFolderPath());
+        runningApp.getLinuxProcess().addArgument(path);
+        runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with jail");
     } else {
         // This log shows whether native app's launched via Jailer or not
         // Do not remove this log, until jailer become stable
-        forkParams[0] = path.c_str();
-        forkParams[1] = strParams.c_str();
-        forkParams[2] = NULL;
-
+        runningApp.getLinuxProcess().setCommand(path);
+        runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with root");
     }
 
-    // TODO Native App Preloading is not supported yet
-    runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
+    runningApp.getLinuxProcess().addEnv(m_environments);
+    runningApp.getLinuxProcess().addEnv("instanceId", runningApp.getInstanceId());
+    runningApp.getLinuxProcess().addEnv("launchPointId", runningApp.getLaunchPointId());
+    runningApp.getLinuxProcess().addEnv("appId", runningApp.getAppId());
+    runningApp.getLinuxProcess().addEnv("busName", Logger::format("%s-%d", runningApp.getAppId().c_str(), s_instanceCounter));
+    runningApp.getLinuxProcess().addEnv("displayId", std::to_string(runningApp.getDisplayId()));
 
-    int pid = LinuxProcess::forkProcess(forkParams, NULL);
-    if (pid <= 0) {
-        Logger::error(getClassName(), __FUNCTION__, runningApp.getAppId(), Logger::format("pid(%d) path(%s)", pid, path.c_str()));
+    runningApp.getLinuxProcess().openLogfile(Logger::format("%s/%s-%d", "/var/log", runningApp.getAppId().c_str(), s_instanceCounter++));
+
+    runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
+    if (!runningApp.getLinuxProcess().run()) {
         runningApp.setLifeStatus(LifeStatus::LifeStatus_STOP);
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch process");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
-    // set watcher for the child's
-    g_child_watch_add(pid, (GChildWatchFunc) NativeContainer::onKillChildProcess, NULL);
+    g_child_watch_add(runningApp.getLinuxProcess().getPid(), onKillChildProcess, nullptr);
     Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
 
-    string pidStr = boost::lexical_cast<string>(pid);
+    string pidStr = std::to_string(runningApp.getLinuxProcess().getPid());
     runningApp.setProcessId(pidStr);
     runningApp.setWebprocid("");
 

@@ -18,7 +18,6 @@
 
 #include "bus/client/WAM.h"
 #include "bus/client/NativeContainer.h"
-#include "util/LinuxProcess.h"
 
 const string RunningApp::CLASS_NAME = "RunningApp";
 
@@ -343,7 +342,9 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
             m_lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
             ApplicationManager::getInstance().postGetAppLifeStatus(*this);
             lifeStatus = LifeStatus::LifeStatus_FOREGROUND;
-        } else {
+        } else if (m_lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
+                   m_lifeStatus == LifeStatus::LifeStatus_PAUSED ||
+                   m_lifeStatus == LifeStatus::LifeStatus_PRELOADED) {
             lifeStatus = LifeStatus::LifeStatus_RELAUNCHING;
         }
         break;
