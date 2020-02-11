@@ -61,20 +61,12 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         lunaTask->setInstanceId(instanceId);
 
         runningApp = RunningAppList::getInstance().createByLunaTask(lunaTask);
-        runningApp->loadRequestPayload(lunaTask->getRequestPayload());
-        runningApp->setInstanceId(instanceId);
-        runningApp->setDisplayId(displayId);
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
 
         if (!checkExecutionLock(runningApp)) {
             lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
             LunaTaskList::getInstance().removeAfterReply(lunaTask);
         }
-
-        lunaTask->setInstanceId(runningApp->getInstanceId());
-        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
-        lunaTask->setAppId(runningApp->getAppId());
-
         RunningAppList::getInstance().add(runningApp);
     }
 

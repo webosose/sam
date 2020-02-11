@@ -222,6 +222,7 @@ public:
             json.put("instanceId", m_instanceId);
             json.put("launchPointId", m_launchPointId);
             json.put("appId", m_appId);
+            json.put("displayId", getDisplayId());
         }
     }
 

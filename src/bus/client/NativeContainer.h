@@ -27,7 +27,7 @@
 #include "base/RunningAppList.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
-#include "util/LinuxProcess.h"
+#include "util/NativeProcess.h"
 
 class NativeContainer : public ISingleton<NativeContainer>,
                         public IClassName {
@@ -35,14 +35,16 @@ friend class ISingleton<NativeContainer>;
 public:
     virtual ~NativeContainer();
 
+    virtual void initialize();
+
     virtual void launch(RunningApp& runningApp, LunaTaskPtr item);
     virtual void close(RunningApp& runningApp, LunaTaskPtr item);
-
-    boost::signals2::signal<void(const string& appId, const string& pid, const string& webprocid)> EventRunningAppAdded;
 
 private:
     static const int TIMEOUT_1_SECOND = 1000;
     static const int TIMEOUT_10_SECONDS = 10000;
+    static const string KEY_NATIVE_RUNNING_APPS;
+
     static int s_instanceCounter;
 
     static void onKillChildProcess(GPid pid, gint status, gpointer data);
@@ -52,8 +54,11 @@ private:
     virtual void launchFromStop(RunningApp& runningApp, LunaTaskPtr item);
     virtual void launchFromRegistered(RunningApp& runningApp, LunaTaskPtr item);
 
-    map<string, string> m_environments;
+    virtual void removeItem(GPid pid);
+    virtual void addItem(const string& instanceId, const string& launchPointId, const int processId, const int displayId);
 
+    map<string, string> m_environments;
+    JValue m_nativeRunninApps;
 };
 
 #endif

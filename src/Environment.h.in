@@ -27,5 +27,7 @@ static const char* const PATH_RO_SAM_CONF            = "@WEBOS_INSTALL_WEBOS_SYS
 static const char* const PATH_RW_SAM_CONF            = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
 static const char* const PATH_SAM_SCHEMAS            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/schemas/sam/";
 static const char* const PATH_LOCALE_INFO            = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/localeInfo";
+static const char* const PATH_RUNTIME_INFO           = "/tmp/sam_runtime";
+static const char* const PATH_NATIVE_LOG             = "/var/log";
 
 #endif  // ENVIRONMENT_H_

@@ -845,7 +845,7 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
     subscriptionPayload.put("returnValue", true);
     subscriptionPayload.put("subscribed", true);
 
-    runningApp.toJson(subscriptionPayload, true);
+    runningApp.toJsonForAPI(subscriptionPayload, true);
     pbnjson::JValue foregroundInfo = pbnjson::JValue();
     switch(runningApp.getLifeStatus()) {
     case LifeStatus::LifeStatus_FOREGROUND:

@@ -34,9 +34,9 @@ public:
     virtual ~RunningAppList();
 
     RunningAppPtr createByLunaTask(LunaTaskPtr lunaTask);
+    RunningAppPtr createByJson(const JValue& json);
     RunningAppPtr createByAppId(const string& appId);
     RunningAppPtr createByLaunchPointId(const string& launchPointId);
-    RunningAppPtr createByLaunchPoint(LaunchPointPtr launchPoint);
 
     RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
     RunningAppPtr getByIds(const string& instanceId, const string& launchPointId, const string& appId, const int displayId = -1);
@@ -50,7 +50,7 @@ public:
 
     bool removeByObject(RunningAppPtr runningApp);
     bool removeByInstanceId(const string& instanceId);
-    bool removeByPid(const string& processId);
+    bool removeByPid(const pid_t pid);
     bool removeAllByType(AppType type);
     bool removeAllByConext(AppType type, const int context);
     bool removeAllByLaunchPoint(LaunchPointPtr launchPoint);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@
 #include "base/AppDescriptionList.h"
 #include "base/RunningAppList.h"
 #include "conf/SAMConf.h"
+#include "conf/RuntimeInfo.h"
 
+const string NativeContainer::KEY_NATIVE_RUNNING_APPS = "nativeRunningApps";
 int NativeContainer::s_instanceCounter = 1;
 
 void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
@@ -29,26 +31,25 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("Process(%d) was killed with status(%d)", pid, status));
     g_spawn_close_pid(pid);
 
-    LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(pid);
-    string pidStr = std::to_string(pid);
-
-    if (RunningAppList::getInstance().removeByPid(pidStr)) {
-        if (lunaTask) {
-            lunaTask->getResponsePayload().put("returnValue", true);
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        }
-    } else {
-        if (lunaTask) {
-            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to remove RunningApp (Internal Error)");
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        }
+    getInstance().removeItem(pid);
+    if (!RunningAppList::getInstance().removeByPid(pid)) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to remove RunningApp (Internal Error)");
     }
 }
 
 NativeContainer::NativeContainer()
 {
     setClassName("NativeContainer");
+}
 
+NativeContainer::~NativeContainer()
+{
+
+}
+
+void NativeContainer::initialize()
+{
+    // Getting global environments
     gchar **variables = g_listenv();
     gsize size = variables ? g_strv_length(variables) : 0;
     for (uint i = 0; i < size; i++) {
@@ -58,10 +59,22 @@ NativeContainer::NativeContainer()
         }
     }
     g_strfreev(variables);
-}
 
-NativeContainer::~NativeContainer()
-{
+    // Load already running native apps
+    if (!RuntimeInfo::getInstance().getValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps)) {
+        m_nativeRunninApps = pbnjson::Array();
+        return;
+    }
+    size = m_nativeRunninApps.arraySize();
+    for (gsize i = 0; i < size; ++i) {
+        RunningAppPtr runningApp = RunningAppList::getInstance().createByJson(m_nativeRunninApps[i]);
+        if (runningApp == nullptr) continue;
+
+        // SAM doesn't know the proper status of already running native applications.
+        // However, 'BACKGROUND' is reasonable status because 'FOREGROUND' event will be received from LSM
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+        RunningAppList::getInstance().add(runningApp);
+    }
 }
 
 void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
@@ -98,22 +111,23 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
 void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
+    runningApp.toJson(lunaTask->getResponsePayload());
+
     if (LifeStatus::LifeStatus_STOP == runningApp.getLifeStatus()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "native app is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid status of runningApp");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
-    if (runningApp.getProcessId().empty()) {
-        Logger::error(getClassName(), __FUNCTION__, runningApp.getInstanceId(), "ProcessId is empty");
+    if (runningApp.getProcessId() <= 0) {
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid processId");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-    lunaTask->setToken(stoi(runningApp.getProcessId()));
     if (!runningApp.isRegistered()) {
         if (!runningApp.getLinuxProcess().kill()) {
-            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot kill native application");
         }
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -125,9 +139,8 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 
     if (!runningApp.getLinuxProcess().term()) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
     }
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
 void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTask)
@@ -199,10 +212,9 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
     runningApp.getLinuxProcess().addEnv("appId", runningApp.getAppId());
     runningApp.getLinuxProcess().addEnv("busName", Logger::format("%s-%d", runningApp.getAppId().c_str(), s_instanceCounter));
     runningApp.getLinuxProcess().addEnv("displayId", std::to_string(runningApp.getDisplayId()));
-
     runningApp.getLinuxProcess().openLogfile(Logger::format("%s/%s-%d", "/var/log", runningApp.getAppId().c_str(), s_instanceCounter++));
-
     runningApp.setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
+
     if (!runningApp.getLinuxProcess().run()) {
         runningApp.setLifeStatus(LifeStatus::LifeStatus_STOP);
         lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch process");
@@ -211,11 +223,8 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
     }
 
     g_child_watch_add(runningApp.getLinuxProcess().getPid(), onKillChildProcess, nullptr);
+    addItem(runningApp.getInstanceId(), runningApp.getLaunchPointId(), runningApp.getProcessId(), runningApp.getDisplayId());
     Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
-
-    string pidStr = std::to_string(runningApp.getLinuxProcess().getPid());
-    runningApp.setProcessId(pidStr);
-    runningApp.setWebprocid("");
 
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
@@ -235,3 +244,27 @@ void NativeContainer::launchFromRegistered(RunningApp& runningApp, LunaTaskPtr l
     lunaTask->getResponsePayload().put("returnValue", true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
+
+void NativeContainer::removeItem(GPid pid)
+{
+    gsize size = getInstance().m_nativeRunninApps.arraySize();
+    for (gsize i = 0; i < size; ++i) {
+        if (m_nativeRunninApps[i]["processId"].asNumber<int>() == pid) {
+            m_nativeRunninApps.remove(i);
+            break;
+        }
+    }
+    RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
+}
+
+void NativeContainer::addItem(const string& instanceId, const string& launchPointId, const int processId, const int displayId)
+{
+    JValue item = pbnjson::Object();
+    item.put("instanceId", instanceId);
+    item.put("launchPointId", launchPointId);
+    item.put("processId", processId);
+    item.put("displayId", displayId);
+    m_nativeRunninApps.append(item);
+    RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
+}
+

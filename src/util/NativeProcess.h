@@ -11,8 +11,8 @@
  * LICENSE@@@
  */
 
-#ifndef UTIL_LINUXPROCESS_H_
-#define UTIL_LINUXPROCESS_H_
+#ifndef UTIL_NATIVEPROCESS_H_
+#define UTIL_NATIVEPROCESS_H_
 
 #include <iostream>
 #include <vector>
@@ -21,10 +21,10 @@
 
 using namespace std;
 
-class LinuxProcess {
+class NativeProcess {
 public:
-    LinuxProcess();
-    virtual ~LinuxProcess();
+    NativeProcess();
+    virtual ~NativeProcess();
 
     void setWorkingDirectory(const string& directory)
     {
@@ -45,9 +45,13 @@ public:
     void addEnv(map<string, string>& environments);
     void addEnv(const string& variable, const string& value);
 
-    const pid_t getPid()
+    const pid_t getPid() const
     {
         return m_pid;
+    }
+    void setPid(pid_t pid)
+    {
+        m_pid = pid;
     }
 
     void openLogfile(const string& logfile);
@@ -76,4 +80,4 @@ private:
 
 };
 
-#endif /* UTIL_LINUXPROCESS_H_ */
+#endif /* UTIL_NATIVEPROCESS_H_ */

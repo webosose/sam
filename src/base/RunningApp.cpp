@@ -123,21 +123,20 @@ int RunningApp::getDisplayId(const string& instanceId)
 RunningApp::RunningApp(LaunchPointPtr launchPoint)
     : m_launchPoint(launchPoint),
       m_instanceId(""),
-      m_processId(""),
-      m_webprocessid(""),
       m_displayId(-1),
+      m_webprocessid(""),
       m_isFullWindow(true),
-      m_interfaceVersion(1),
-      m_isRegistered(false),
       m_lifeStatus(LifeStatus::LifeStatus_STOP),
       m_launchCount(0),
       m_killingTimer(0),
       m_keepAlive(false),
       m_noSplash(true),
       m_spinner(true),
-      m_isLaunchedHidden(false),
+      m_isHidden(false),
       m_token(0),
-      m_context(0)
+      m_context(0),
+      m_interfaceVersion(1),
+      m_isRegistered(false)
 {
 }
 

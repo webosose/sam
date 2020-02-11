@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 #include "conf/SAMConf.h"
 #include "util/Logger.h"
 #include "util/Time.h"
-#include "util/LinuxProcess.h"
+#include "util/NativeProcess.h"
 
 //                  < RunningApp LIFECYCLES >
 //
@@ -139,13 +139,13 @@ public:
         m_isFullWindow = fullWindow;
     }
 
-    const string& getProcessId() const
+    pid_t getProcessId() const
     {
-        return m_processId;
+        return m_nativePocess.getPid();
     }
-    void setProcessId(const string& pid)
+    void setProcessId(pid_t pid)
     {
-        m_processId = pid;
+        m_nativePocess.setPid(pid);
     }
 
     const string& getWebprocessid() const
@@ -187,7 +187,7 @@ public:
             m_spinner = this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
         }
         JValueUtil::getValue(requestPayload, "preload", m_preload);
-        JValueUtil::getValue(requestPayload, "params", "launchedHidden", m_isLaunchedHidden);
+        JValueUtil::getValue(requestPayload, "params", "launchedHidden", m_isHidden);
 
         JValueUtil::getValue(requestPayload, "keepAlive", m_keepAlive);
         if (!m_keepAlive && SAMConf::getInstance().isKeepAliveApp(this->getAppId())) {
@@ -218,7 +218,7 @@ public:
 
     bool isHidden() const
     {
-        return m_isLaunchedHidden;
+        return m_isHidden;
     }
 
     bool isFirstLaunch()
@@ -255,33 +255,40 @@ public:
         m_context = context;
     }
 
-    LinuxProcess& getLinuxProcess()
+    NativeProcess& getLinuxProcess()
     {
-        return m_linuxPocess;
+        return m_nativePocess;
     }
 
-    void toJson(JValue& object, bool status)
+    void toJson(JValue& json)
     {
-        object.put("instanceId", m_instanceId);
-        object.put("launchPointId", m_launchPoint->getLaunchPointId());
+        json.put("instanceId", m_instanceId);
+        json.put("launchPointId", m_launchPoint->getLaunchPointId());
+        json.put("displayId", m_displayId);
+        json.put("processId", m_nativePocess.getPid());
+    }
+
+    void toJsonForAPI(JValue& json, bool isRunningList)
+    {
+        json.put("instanceId", m_instanceId);
+        json.put("launchPointId", m_launchPoint->getLaunchPointId());
 
         if (m_displayId != -1)
-            object.put("displayId", m_displayId);
-        object.put("processid", m_processId);
-        object.put("webprocessid", m_webprocessid);
+            json.put("displayId", m_displayId);
 
-        if (status) {
-            // getAppLifeStatus
-            object.put("appId", m_launchPoint->getAppId());
-            object.put("status", toString(m_lifeStatus));
-            object.put("reason", m_reason);
-            object.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
+        // processId should be 'string' for backward compatibilty
+        json.put("processid", std::to_string(m_nativePocess.getPid()));
+        json.put("webprocessid", m_webprocessid);
 
+        if (isRunningList) {
+            json.put("id", m_launchPoint->getAppId());
+            json.put("defaultWindowType", m_launchPoint->getAppDesc()->getDefaultWindowType());
+            json.put("appType", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
         } else {
-            // runningList
-            object.put("id", m_launchPoint->getAppId());
-            object.put("defaultWindowType", m_launchPoint->getAppDesc()->getDefaultWindowType());
-            object.put("appType", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
+            json.put("appId", m_launchPoint->getAppId());
+            json.put("status", toString(m_lifeStatus));
+            json.put("reason", m_reason);
+            json.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
         }
     }
 
@@ -299,16 +306,11 @@ private:
     LaunchPointPtr m_launchPoint;
 
     string m_instanceId;
-    string m_processId;
+    int m_displayId;
+
     string m_webprocessid;
     string m_windowId;
-    int m_displayId;
     bool m_isFullWindow;
-
-    // for native app
-    int m_interfaceVersion;
-    bool m_isRegistered;
-    LS::Message m_registeredApp;
 
     LifeStatus m_lifeStatus;
     int m_launchCount;
@@ -319,13 +321,17 @@ private:
     bool m_keepAlive;
     bool m_noSplash;
     bool m_spinner;
-    bool m_isLaunchedHidden;
+    bool m_isHidden;
 
     string m_reason;
     LSMessageToken m_token;
     int m_context;
 
-    LinuxProcess m_linuxPocess;
+    // for native app
+    NativeProcess m_nativePocess;
+    int m_interfaceVersion;
+    bool m_isRegistered;
+    LS::Message m_registeredApp;
 
 };
 

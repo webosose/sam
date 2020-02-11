@@ -31,16 +31,50 @@ RunningAppPtr RunningAppList::createByLunaTask(LunaTaskPtr lunaTask)
 {
     if (lunaTask == nullptr)
         return nullptr;
-    string appId = lunaTask->getAppId();
-    string launchPointId = lunaTask->getLaunchPointId();
 
+    RunningAppPtr runningApp = nullptr;
     if (!lunaTask->getLaunchPointId().empty()) {
-        return createByLaunchPointId(lunaTask->getLaunchPointId());
+        runningApp = createByLaunchPointId(lunaTask->getLaunchPointId());
     } else if (!lunaTask->getAppId().empty()) {
-        return createByAppId(lunaTask->getAppId());
-    } else {
+        runningApp = createByAppId(lunaTask->getAppId());
+    }
+
+    if (runningApp) {
+        runningApp->loadRequestPayload(lunaTask->getRequestPayload());
+        runningApp->setInstanceId(lunaTask->getInstanceId());
+        runningApp->setDisplayId(lunaTask->getDisplayId());
+
+        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
+        lunaTask->setAppId(runningApp->getAppId());
+    }
+    return runningApp;
+}
+
+RunningAppPtr RunningAppList::createByJson(const JValue& json)
+{
+    if (json.isNull() || !json.isValid())
+        return nullptr;
+
+    string launchPointId;
+    string instanceId;
+    int processId = -1;
+    int displayId = -1;
+
+    if (!JValueUtil::getValue(json, "launchPointId", launchPointId) ||
+        !JValueUtil::getValue(json, "instanceId", instanceId) ||
+        !JValueUtil::getValue(json, "processId", processId) ||
+        !JValueUtil::getValue(json, "displayId", displayId)) {
         return nullptr;
     }
+
+    RunningAppPtr runningApp = createByLaunchPointId(launchPointId);
+    if (runningApp == nullptr)
+        return nullptr;
+
+    runningApp->setInstanceId(launchPointId);
+    runningApp->setProcessId(processId);
+    runningApp->setDisplayId(displayId);
+    return runningApp;
 }
 
 RunningAppPtr RunningAppList::createByAppId(const string& appId)
@@ -56,14 +90,6 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
         Logger::warning(getClassName(), __FUNCTION__, "Cannot find proper launchPoint");
         return nullptr;
     }
-    return createByLaunchPoint(launchPoint);
-}
-
-RunningAppPtr RunningAppList::createByLaunchPoint(LaunchPointPtr launchPoint)
-{
-    if (launchPoint == nullptr)
-        return nullptr;
-
     RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
     if (runningApp == nullptr) {
         Logger::error(getClassName(), __FUNCTION__, "Failed to create new RunningApp");
@@ -223,10 +249,10 @@ bool RunningAppList::removeByInstanceId(const string& instanceId)
     return false;
 }
 
-bool RunningAppList::removeByPid(const string& processId)
+bool RunningAppList::removeByPid(const pid_t pid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getProcessId() == processId) {
+        if ((*it).second->getProcessId() == pid) {
             RunningAppPtr runningApp = it->second;
             m_map.erase(it);
             onRemove(runningApp);
@@ -312,7 +338,7 @@ void RunningAppList::toJson(JValue& array, bool devmodeOnly)
          }
 
          pbnjson::JValue object = pbnjson::Object();
-         it->second->toJson(object, false);
+         it->second->toJsonForAPI(object, false);
          array.append(object);
     }
 }

@@ -11,25 +11,24 @@
  * LICENSE@@@
  */
 
-#include "LinuxProcess.h"
-
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "util/NativeProcess.h"
 #include "util/Logger.h"
 
-const string LinuxProcess::CLASS_NAME = "NativeProcess2";
+const string NativeProcess::CLASS_NAME = "NativeProcess2";
 
-void LinuxProcess::convertEnvToStr(map<string, string>& src, vector<string>& dest)
+void NativeProcess::convertEnvToStr(map<string, string>& src, vector<string>& dest)
 {
     for (auto it = src.begin(); it != src.end(); ++it) {
         dest.push_back(it->first + "=" + it->second);
     }
 }
 
-void LinuxProcess::prepareSpawn(gpointer user_data)
+void NativeProcess::prepareSpawn(gpointer user_data)
 {
     // This function is called in child context.
     // setpgid is needed to kill all processes which are created by application at once
@@ -39,7 +38,7 @@ void LinuxProcess::prepareSpawn(gpointer user_data)
     }
 }
 
-LinuxProcess::LinuxProcess()
+NativeProcess::NativeProcess()
     : m_workingDirectory("/"),
       m_command(""),
       m_pid(-1),
@@ -48,48 +47,47 @@ LinuxProcess::LinuxProcess()
 
 }
 
-LinuxProcess::~LinuxProcess()
+NativeProcess::~NativeProcess()
 {
 
 }
 
-void LinuxProcess::addArgument(const string& argument)
+void NativeProcess::addArgument(const string& argument)
 {
     m_arguments.push_back(argument);
 }
 
-void LinuxProcess::addArgument(const string& option, const string& value)
+void NativeProcess::addArgument(const string& option, const string& value)
 {
     m_arguments.push_back(option);
     m_arguments.push_back(value);
 }
 
-void LinuxProcess::addEnv(map<string, string>& environments)
+void NativeProcess::addEnv(map<string, string>& environments)
 {
     for (auto it = environments.begin(); it != environments.end(); ++it) {
         m_environments[it->first] = it->second;
     }
 }
 
-void LinuxProcess::addEnv(const string& variable, const string& value)
+void NativeProcess::addEnv(const string& variable, const string& value)
 {
     m_environments[variable] = value;
 }
 
-void LinuxProcess::openLogfile(const string &logfile)
+void NativeProcess::openLogfile(const string &logfile)
 {
     closeLogfile();
-    cout << "logfile - " << logfile << endl;
     m_logfile = ::open(logfile.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
 }
 
-void LinuxProcess::closeLogfile()
+void NativeProcess::closeLogfile()
 {
     if (m_logfile >= 0)
         close(m_logfile);
 }
 
-bool LinuxProcess::run()
+bool NativeProcess::run()
 {
     const char* argv[MAX_ARGS] = { 0, };
     const char* envp[MAX_ENVP] = { 0, };
@@ -135,7 +133,7 @@ bool LinuxProcess::run()
     return true;
 }
 
-bool LinuxProcess::term()
+bool NativeProcess::term()
 {
     if (m_pid <= 0) {
         Logger::error(CLASS_NAME, __FUNCTION__, "Process is not running");
@@ -149,7 +147,7 @@ bool LinuxProcess::term()
     return true;
 }
 
-bool LinuxProcess::kill()
+bool NativeProcess::kill()
 {
     if (m_pid <= 0) {
         Logger::error(CLASS_NAME, __FUNCTION__, "Process is not running");

@@ -32,10 +32,12 @@
 #include "bus/client/DB8.h"
 #include "bus/client/LSM.h"
 #include "bus/client/MemoryManager.h"
+#include "bus/client/NativeContainer.h"
 #include "bus/client/Notification.h"
 #include "bus/client/SettingService.h"
 #include "bus/client/WAM.h"
 #include "bus/service/ApplicationManager.h"
+#include "conf/RuntimeInfo.h"
 #include "conf/SAMConf.h"
 #include "util/File.h"
 #include "util/JValueUtil.h"
@@ -59,6 +61,7 @@ MainDaemon::~MainDaemon()
 void MainDaemon::initialize()
 {
     SAMConf::getInstance().initialize();
+    RuntimeInfo::getInstance().initialize();
     AppDescriptionList::getInstance().scanFull();
 
     ApplicationManager::getInstance().attach(m_mainLoop);
@@ -69,6 +72,7 @@ void MainDaemon::initialize()
     DB8::getInstance().initialize();
     LSM::getInstance().initialize();
     MemoryManager::getInstance().initialize();
+    NativeContainer::getInstance().initialize();
     Notification::getInstance().initialize();
     SettingService::getInstance().initialize();
     WAM::getInstance().initialize();

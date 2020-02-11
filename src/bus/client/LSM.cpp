@@ -129,7 +129,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         // SAM knows its child pid better than LSM.
         // This code is needed specially in container environment.
         if (runningApp->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
-            runningApp->setProcessId(processId);
+            runningApp->setProcessId(atoi(processId.c_str()));
         }
         runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
         newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
