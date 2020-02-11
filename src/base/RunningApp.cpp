@@ -135,7 +135,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_isHidden(false),
       m_token(0),
       m_context(0),
-      m_interfaceVersion(1),
+      m_interfaceVersion(2),
       m_isRegistered(false)
 {
 }

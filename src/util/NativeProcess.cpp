@@ -19,7 +19,7 @@
 #include "util/NativeProcess.h"
 #include "util/Logger.h"
 
-const string NativeProcess::CLASS_NAME = "NativeProcess2";
+const string NativeProcess::CLASS_NAME = "NativeProcess";
 
 void NativeProcess::convertEnvToStr(map<string, string>& src, vector<string>& dest)
 {

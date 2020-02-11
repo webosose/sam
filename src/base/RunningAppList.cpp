@@ -71,7 +71,7 @@ RunningAppPtr RunningAppList::createByJson(const JValue& json)
     if (runningApp == nullptr)
         return nullptr;
 
-    runningApp->setInstanceId(launchPointId);
+    runningApp->setInstanceId(instanceId);
     runningApp->setProcessId(processId);
     runningApp->setDisplayId(displayId);
     return runningApp;

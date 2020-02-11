@@ -31,7 +31,6 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("Process(%d) was killed with status(%d)", pid, status));
     g_spawn_close_pid(pid);
 
-    getInstance().removeItem(pid);
     if (!RunningAppList::getInstance().removeByPid(pid)) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to remove RunningApp (Internal Error)");
     }
@@ -86,14 +85,14 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
         break;
 
     case LifeStatus::LifeStatus_PRELOADED:
-    case LifeStatus::LifeStatus_FOREGROUND:
     case LifeStatus::LifeStatus_BACKGROUND:
-        if (!runningApp.isRegistered()) {
-            runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-            runningApp.getLinuxProcess().term();
-        } else {
+    case LifeStatus::LifeStatus_FOREGROUND:
+        if (runningApp.isRegistered()) {
             launchFromRegistered(runningApp, lunaTask);
+            break;
         }
+        runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+        runningApp.getLinuxProcess().term();
         break;
 
     case LifeStatus::LifeStatus_CLOSING:
@@ -127,6 +126,7 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
         if (!runningApp.getLinuxProcess().kill()) {
             lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot kill native application");
         }
+        getInstance().removeItem(runningApp.getProcessId());
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
@@ -138,8 +138,9 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     runningApp.sendEvent(subscriptionPayload);
 
     if (!runningApp.getLinuxProcess().term()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "not found any pids to kill");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot terminate native application");
     }
+    getInstance().removeItem(runningApp.getProcessId());
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
@@ -251,10 +252,10 @@ void NativeContainer::removeItem(GPid pid)
     for (gsize i = 0; i < size; ++i) {
         if (m_nativeRunninApps[i]["processId"].asNumber<int>() == pid) {
             m_nativeRunninApps.remove(i);
+            RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
             break;
         }
     }
-    RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
 }
 
 void NativeContainer::addItem(const string& instanceId, const string& launchPointId, const int processId, const int displayId)
