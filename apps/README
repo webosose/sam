@@ -1,0 +1,7 @@
+== How to create ipk files ==
+You should install webOS SDK first
+Please refer following link to install it.
+ - https://www.webosose.org/docs/tools/sdk/cli/cli-user-guide/#installing-cli
+
+[com.webos.app.sam-native-shell]
+$ ares-package com.webos.app.sam-native-shell

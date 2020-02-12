@@ -338,7 +338,7 @@ void RunningAppList::toJson(JValue& array, bool devmodeOnly)
          }
 
          pbnjson::JValue object = pbnjson::Object();
-         it->second->toJsonForAPI(object, false);
+         it->second->toJsonForAPI(object, true);
          array.append(object);
     }
 }

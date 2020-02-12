@@ -19,7 +19,7 @@
 SAMConf::SAMConf()
     : m_isRespawned(false),
       m_isDevmodeEnabled(false),
-      m_isJailerDisabled(false)
+      m_isJailerDisabled(true)
 {
     setClassName("Settings");
 }
@@ -33,9 +33,14 @@ void SAMConf::initialize()
     loadReadOnlyConf();
     loadReadWriteConf();
 
-    m_isDevmodeEnabled = File::isFile(this->getDevModePath());
+    // TODO this should be moved in RuntimeInfo
     m_isRespawned = File::isFile(this->getRespawnedPath());
-    m_isJailerDisabled = File::isFile(this->getJailModePath());
+
+    if (File::isFile(this->getDevModePath()))
+        m_isDevmodeEnabled = true;
+
+    if (File::isFile(this->getJailModePath()))
+        m_isJailerDisabled = true;
 
     if (!m_isRespawned) {
         File::createFile(this->getRespawnedPath());

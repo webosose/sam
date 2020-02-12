@@ -6,6 +6,6 @@
     "version": "1.0.1",
     "main": "native-noui",
     "icon": "icon.png",
-    "iconColor":"#E42E28",
+    "iconColor":"#289CE4",
     "uiRevision": 2
 }

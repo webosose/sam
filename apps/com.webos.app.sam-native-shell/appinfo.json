@@ -1,0 +1,11 @@
+{
+    "id": "com.webos.app.sam-native-shell",
+    "title": "sam native shell",
+    "vendor": "LGE",
+    "type": "native",
+    "version": "1.0.0",
+    "main": "main.sh",
+    "icon": "icon.png",
+    "iconColor":"#289CE4",
+    "uiRevision": 2
+}

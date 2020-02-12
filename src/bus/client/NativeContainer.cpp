@@ -168,7 +168,13 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
         runningApp.getLinuxProcess().addArgument("--appid", appId);
         runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with qml_runner");
-    } else if (SAMConf::getInstance().isJailerDisabled() && !isNojailApp) {
+    } else if (SAMConf::getInstance().isJailerDisabled() || isNojailApp) {
+        // TODO I am not sure working directory is needed or not in real word
+        runningApp.getLinuxProcess().setWorkingDirectory(runningApp.getLaunchPoint()->getAppDesc()->getFolderPath());
+        runningApp.getLinuxProcess().setCommand(path);
+        runningApp.getLinuxProcess().addArgument(strParams);
+        Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with root");
+    } else {
         const char* jailerType = "";
         if (AppLocation::AppLocation_Devmode == appLocation) {
             jailerType = "native_devmode";
@@ -199,12 +205,6 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
         runningApp.getLinuxProcess().addArgument(path);
         runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with jail");
-    } else {
-        // This log shows whether native app's launched via Jailer or not
-        // Do not remove this log, until jailer become stable
-        runningApp.getLinuxProcess().setCommand(path);
-        runningApp.getLinuxProcess().addArgument(strParams);
-        Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with root");
     }
 
     runningApp.getLinuxProcess().addEnv(m_environments);
