@@ -836,8 +836,6 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
 {
     if (!m_enableSubscription)
         return;
-    if (runningApp.isTransition()) // Only, status should be sent.
-        return;
 
     pbnjson::JValue subscriptionPayload = pbnjson::Object();
     subscriptionPayload.put("returnValue", true);
@@ -846,6 +844,13 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
     runningApp.toJsonForAPI(subscriptionPayload, false);
     pbnjson::JValue foregroundInfo = pbnjson::JValue();
     switch(runningApp.getLifeStatus()) {
+    case LifeStatus::LifeStatus_LAUNCHING:
+    case LifeStatus::LifeStatus_RELAUNCHING:
+    case LifeStatus::LifeStatus_CLOSING:
+    case LifeStatus::LifeStatus_STOP:
+        // Just send current information
+        break;
+
     case LifeStatus::LifeStatus_FOREGROUND:
         LSM::getInstance().getForegroundInfoById(runningApp.getAppId(), foregroundInfo);
         if (!foregroundInfo.isNull() && foregroundInfo.isObject()) {
