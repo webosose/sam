@@ -35,7 +35,8 @@ const int LunaTask::getDisplayId()
     // TODO currently, only webapp supports multiple display
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(getAppId());
     if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web) {
-        if (!m_requestPayload.hasKey("params")) m_requestPayload.put("params", pbnjson::Object());
+        if (!m_requestPayload.hasKey("params"))
+            m_requestPayload.put("params", pbnjson::Object());
         m_requestPayload["params"].put("displayAffinity", 0);
         return 0;
     }
