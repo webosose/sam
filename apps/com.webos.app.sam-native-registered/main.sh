@@ -12,5 +12,5 @@ sleep 2
 
 echo ''
 echo '== Step 3 : Check Resister Native App =='
-luna-send -a com.webos.app.sam-native-shell -f -n 1 luna://com.webos.service.applicationmanager/registerApp '{}'
-sleep 200
+luna-send -a com.webos.app.sam-native -f -n 1 luna://com.webos.service.applicationmanager/registerApp '{}'
+sleep 100

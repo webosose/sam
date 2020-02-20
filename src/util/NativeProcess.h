@@ -61,6 +61,16 @@ public:
     bool term();
     bool kill();
 
+    void track()
+    {
+        m_isTracked = true;
+    }
+
+    bool isTracked()
+    {
+        return m_isTracked;
+    }
+
 private:
     static const string CLASS_NAME;
     static const int MAX_ARGS = 16;
@@ -77,6 +87,8 @@ private:
 
     pid_t m_pid;
     gint m_logfile;
+
+    bool m_isTracked;
 
 };
 

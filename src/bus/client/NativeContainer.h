@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include <list>
 #include <memory>
 #include <vector>
-#include <boost/signals2.hpp>
 
 #include "base/LaunchPointList.h"
 #include "base/LunaTaskList.h"
@@ -33,21 +32,20 @@ class NativeContainer : public ISingleton<NativeContainer>,
                         public IClassName {
 friend class ISingleton<NativeContainer>;
 public:
+    static void onKillChildProcess(GPid pid, gint status, gpointer data);
+
     virtual ~NativeContainer();
 
     virtual void initialize();
 
     virtual void launch(RunningApp& runningApp, LunaTaskPtr item);
+    virtual void pause(RunningApp& runningApp, LunaTaskPtr item);
     virtual void close(RunningApp& runningApp, LunaTaskPtr item);
 
 private:
-    static const int TIMEOUT_1_SECOND = 1000;
-    static const int TIMEOUT_10_SECONDS = 10000;
     static const string KEY_NATIVE_RUNNING_APPS;
 
     static int s_instanceCounter;
-
-    static void onKillChildProcess(GPid pid, gint status, gpointer data);
 
     NativeContainer();
 
@@ -59,6 +57,7 @@ private:
 
     map<string, string> m_environments;
     JValue m_nativeRunninApps;
+
 };
 
 #endif

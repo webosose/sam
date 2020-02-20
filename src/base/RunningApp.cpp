@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -173,12 +173,7 @@ void RunningApp::pause(LunaTaskPtr lunaTask)
     LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
-        if (isRegistered()) {
-            // TODO Needs to send event to application
-            // How to verify this code block?
-        } else {
-            close(lunaTask);
-        }
+        NativeContainer::getInstance().pause(*this, lunaTask);
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
@@ -194,8 +189,7 @@ void RunningApp::close(LunaTaskPtr lunaTask)
 {
     if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
-        lunaTask->getResponsePayload().put("appId", this->getAppId());
-        lunaTask->getResponsePayload().put("returnValue", true);
+        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
@@ -203,7 +197,6 @@ void RunningApp::close(LunaTaskPtr lunaTask)
     LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
-        setLifeStatus(LifeStatus::LifeStatus_CLOSING);
         NativeContainer::getInstance().close(*this, lunaTask);
         break;
 
@@ -359,25 +352,34 @@ gboolean RunningApp::onKillingTimer(gpointer context)
 {
     RunningApp* runningApp = static_cast<RunningApp*>(context);
     if (runningApp == nullptr) {
-        return FALSE;
+        return G_SOURCE_REMOVE;
     }
     Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
-    runningApp->m_killingTimer = 0;
 
     LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
     switch(type) {
     case LifeHandlerType::LifeHandlerType_Native:
-        // NativeContainer::getInstance().close(*runningApp);
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+        if (!runningApp->m_nativePocess.kill()) {
+            return G_SOURCE_REMOVE;
+        }
+        if (!runningApp->m_nativePocess.isTracked()) {
+            NativeContainer::onKillChildProcess(runningApp->m_nativePocess.getPid(), 0, NULL);
+        }
         break;
 
     case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().killApp(*runningApp);
+        if (!WAM::getInstance().killApp(*runningApp)) {
+            return G_SOURCE_REMOVE;
+        }
         break;
 
     default:
         break;
     }
-    return FALSE;
+
+    // It tries to kill the app continually
+    return G_SOURCE_CONTINUE;
 }
 
 void RunningApp::startKillingTimer(guint timeout)
@@ -388,7 +390,7 @@ void RunningApp::startKillingTimer(guint timeout)
 
 void RunningApp::stopKillingTimer()
 {
-    if (m_killingTimer != 0) {
+    if (m_killingTimer > 0) {
         g_source_remove(m_killingTimer);
         m_killingTimer = 0;
     }

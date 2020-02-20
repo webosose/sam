@@ -1,10 +1,10 @@
 {
-    "id": "native-noui",
-    "title": "native-noui",
+    "id": "com.webos.app.sam-native",
+    "title": "SAM Native",
     "vendor": "LGE",
     "type": "native",
-    "version": "1.0.1",
-    "main": "native-noui",
+    "version": "1.0.0",
+    "main": "main.sh",
     "icon": "icon.png",
     "iconColor":"#289CE4",
     "uiRevision": 2

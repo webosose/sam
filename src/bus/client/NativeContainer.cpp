@@ -31,6 +31,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("Process(%d) was killed with status(%d)", pid, status));
     g_spawn_close_pid(pid);
 
+    getInstance().removeItem(pid);
     if (!RunningAppList::getInstance().removeByPid(pid)) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to remove RunningApp (Internal Error)");
     }
@@ -89,10 +90,12 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
     case LifeStatus::LifeStatus_FOREGROUND:
         if (runningApp.isRegistered()) {
             launchFromRegistered(runningApp, lunaTask);
-            break;
+        } else {
+            runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+            runningApp.getLinuxProcess().term();
+            // 종료 후에 다시 실행을 해야하는데???
+            cout << "1111" << endl;
         }
-        runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-        runningApp.getLinuxProcess().term();
         break;
 
     case LifeStatus::LifeStatus_CLOSING:
@@ -107,37 +110,50 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
     }
 }
 
+void NativeContainer::pause(RunningApp& runningApp, LunaTaskPtr lunaTask)
+{
+    if (!runningApp.isRegistered()) {
+        close(runningApp, lunaTask);
+        return;
+    }
+
+    // TODO
+}
+
 void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     runningApp.toJson(lunaTask->getResponsePayload());
 
     if (LifeStatus::LifeStatus_STOP == runningApp.getLifeStatus()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid status of runningApp");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "RunningApp is already stopped");
         return;
     }
     if (runningApp.getProcessId() <= 0) {
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid processId");
         return;
     }
+
+    runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+    lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
     if (!runningApp.isRegistered()) {
         if (!runningApp.getLinuxProcess().kill()) {
             lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot kill native application");
         }
         getInstance().removeItem(runningApp.getProcessId());
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
+    } else {
+        JValue subscriptionPayload = pbnjson::Object();
+        subscriptionPayload.put("event", "close");
+        subscriptionPayload.put("reason", lunaTask->getReason());
+        subscriptionPayload.put("returnValue", true);
+        runningApp.sendEvent(subscriptionPayload);
+        if (!runningApp.getLinuxProcess().term() && !runningApp.getLinuxProcess().kill()) {
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot kill native application");
+        }
     }
-
-    JValue subscriptionPayload = pbnjson::Object();
-    subscriptionPayload.put("event", "close");
-    subscriptionPayload.put("reason", lunaTask->getReason());
-    subscriptionPayload.put("returnValue", true);
-    runningApp.sendEvent(subscriptionPayload);
-
-    if (!runningApp.getLinuxProcess().term()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot terminate native application");
+    if (!runningApp.getLinuxProcess().isTracked()) {
+        NativeContainer::onKillChildProcess(runningApp.getLinuxProcess().getPid(), 0, NULL);
     }
-    getInstance().removeItem(runningApp.getProcessId());
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
@@ -166,7 +182,6 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
         runningApp.getLinuxProcess().addArgument(strParams);
         Logger::info(getClassName(), __FUNCTION__, runningApp.getAppId(), "launch with qml_runner");
     } else if (SAMConf::getInstance().isJailerDisabled() || isNojailApp) {
-        // TODO I am not sure working directory is needed or not in real word
         runningApp.getLinuxProcess().setWorkingDirectory(runningApp.getLaunchPoint()->getAppDesc()->getFolderPath());
         runningApp.getLinuxProcess().setCommand(path);
         runningApp.getLinuxProcess().addArgument(strParams);
@@ -220,10 +235,12 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
     }
 
     g_child_watch_add(runningApp.getLinuxProcess().getPid(), onKillChildProcess, nullptr);
+    runningApp.getLinuxProcess().track();
+
     addItem(runningApp.getInstanceId(), runningApp.getLaunchPointId(), runningApp.getProcessId(), runningApp.getDisplayId());
     Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %f seconds", lunaTask->getTimeStamp()));
 
-    lunaTask->getResponsePayload().put("returnValue", true);
+    lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
@@ -237,7 +254,7 @@ void NativeContainer::launchFromRegistered(RunningApp& runningApp, LunaTaskPtr l
         return;
     }
 
-    lunaTask->getResponsePayload().put("returnValue", true);
+    lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 

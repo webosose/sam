@@ -1,6 +1,6 @@
 {
-    "id": "com.webos.app.sam-native-shell",
-    "title": "sam native shell",
+    "id": "com.webos.app.sam-native-registered",
+    "title": "SAM Native Registered",
     "vendor": "LGE",
     "type": "native",
     "version": "1.0.0",

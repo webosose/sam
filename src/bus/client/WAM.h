@@ -36,7 +36,6 @@ friend class ISingleton<WAM>;
 public:
     virtual ~WAM();
 
-    void discardCodeCache();
     bool launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
     bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
     bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);

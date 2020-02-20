@@ -1,11 +1,10 @@
 {
-    "id": "native-noui",
-    "title": "native-noui",
+    "id": "com.webos.app.sam-qml",
+    "title": "SAM QML",
     "vendor": "LGE",
-    "type": "native",
-    "version": "1.0.1",
-    "main": "native-noui",
+    "type": "qml",
+    "version": "1.0.0",
+    "main": "main.qml",
     "icon": "icon.png",
-    "iconColor":"#289CE4",
-    "uiRevision": 2
+    "iconColor":"#289CE4"
 }

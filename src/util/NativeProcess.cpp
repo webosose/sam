@@ -42,7 +42,8 @@ NativeProcess::NativeProcess()
     : m_workingDirectory("/"),
       m_command(""),
       m_pid(-1),
-      m_logfile(-1)
+      m_logfile(-1),
+      m_isTracked(false)
 {
 
 }

@@ -110,34 +110,6 @@ void WAM::onServerStatusChanged(bool isConnected)
     }
 }
 
-bool WAM::onDiscardCodeCache(LSHandle* sh, LSMessage* message, void* context)
-{
-    Message response(message);
-    JValue responsePayload = JDomParser::fromString(response.getPayload());
-    Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
-
-    if (responsePayload.isNull())
-        return true;
-
-    WAM::getInstance().m_discardCodeCacheCall.cancel();
-    return true;
-}
-
-void WAM::discardCodeCache()
-{
-    static string method = string("luna://") + getName() + string("/discardCodeCache");
-
-    if (m_discardCodeCacheCall.isActive())
-        return;
-
-    m_discardCodeCacheCall = ApplicationManager::getInstance().callOneReply(
-        method.c_str(),
-        "{\"force\":true}",
-        onDiscardCodeCache,
-        nullptr
-    );
-}
-
 bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
 {
     Message response(message);
@@ -416,13 +388,12 @@ bool WAM::killApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     );
     runningApp.setToken(token);
 
-    if (!lunaTask)
-        return true;
-    if (!result) {
-        lunaTask->setErrCodeAndText(error.error_code, error.message);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return false;
+    if (lunaTask) {
+        if (!result) {
+            LunaTaskList::getInstance().removeAfterReply(lunaTask, error.error_code, error.message);
+        } else {
+            lunaTask->setToken(token);
+        }
     }
-    lunaTask->setToken(token);
     return true;
 }
