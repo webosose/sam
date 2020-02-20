@@ -32,15 +32,6 @@ const int LunaTask::getDisplayId()
         return 1;
     }
 
-    // TODO currently, only webapp supports multiple display
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(getAppId());
-    if (appDesc != nullptr && appDesc->getLifeHandlerType() != LifeHandlerType::LifeHandlerType_Web) {
-        if (!m_requestPayload.hasKey("params"))
-            m_requestPayload.put("params", pbnjson::Object());
-        m_requestPayload["params"].put("displayAffinity", 0);
-        return 0;
-    }
-
     int displayId = -1;
     if (!JValueUtil::getValue(m_requestPayload, "displayId", displayId))
         JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayId);

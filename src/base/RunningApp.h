@@ -157,11 +157,6 @@ public:
         m_webprocessid = webprocid;
     }
 
-    int getInterfaceVersion()
-    {
-        return m_interfaceVersion;
-    }
-
     bool isRegistered()
     {
         return m_isRegistered;
@@ -329,7 +324,6 @@ private:
 
     // for native app
     NativeProcess m_nativePocess;
-    int m_interfaceVersion;
     bool m_isRegistered;
     LS::Message m_registeredApp;
 

@@ -162,7 +162,7 @@ ApplicationManager::ApplicationManager()
     registerApiHandler(CATEGORY_ROOT, METHOD_GET_FOREGROUND_APPINFO, boost::bind(&ApplicationManager::getForegroundAppInfo, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_LOCK_APP, boost::bind(&ApplicationManager::lockApp, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_REGISTER_APP, boost::bind(&ApplicationManager::registerApp, this, _1));
-    registerApiHandler(CATEGORY_ROOT, METHOD_REGISTER_NATIVE_APP, boost::bind(&ApplicationManager::registerNativeApp, this, _1));
+    registerApiHandler(CATEGORY_ROOT, METHOD_REGISTER_NATIVE_APP, boost::bind(&ApplicationManager::registerApp, this, _1));
 
     registerApiHandler(CATEGORY_ROOT, METHOD_LIST_APPS, boost::bind(&ApplicationManager::listApps, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_GET_APP_STATUS, boost::bind(&ApplicationManager::getAppStatus, this, _1));
@@ -419,37 +419,6 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
     RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-
-    if (runningApp->getInterfaceVersion() != 2) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-
-    runningApp->registerApp(lunaTask);
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
-}
-
-void ApplicationManager::registerNativeApp(LunaTaskPtr lunaTask)
-{
-    string appId;
-    if (lunaTask->getRequest().getApplicationID() != nullptr)
-        appId = lunaTask->getRequest().getApplicationID();
-    else
-        appId = lunaTask->getRequest().getSenderServiceName();
-
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
-    if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " is not running");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-
-    if (runningApp->getInterfaceVersion() != 1) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "trying to register via unmatched method with nativeLifeCycleInterface");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }

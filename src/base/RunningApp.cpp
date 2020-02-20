@@ -135,7 +135,6 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_isHidden(false),
       m_token(0),
       m_context(0),
-      m_interfaceVersion(2),
       m_isRegistered(false)
 {
 }
@@ -230,11 +229,8 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
     m_isRegistered = true;
 
     JValue payload = pbnjson::Object();
-    if (m_interfaceVersion == 1) {
-        payload.put("message", "registered");
-    } else if (m_interfaceVersion == 2) {
-        payload.put("event", "registered");
-    }
+    payload.put("event", "registered");
+    payload.put("message", "registered");// TODO this should be removed. Let's use event only.
 
     if (!sendEvent(payload)) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "Failed to register application");
@@ -268,19 +264,16 @@ string RunningApp::getLaunchParams(LunaTaskPtr lunaTask)
     if (!m_preload.empty()) {
         params.put("preload", m_preload);
     }
-    if (m_interfaceVersion == 1) {
-        if (AppType::AppType_Native_Qml == type) {
-            params.put("appId", this->getLaunchPoint()->getAppDesc()->getAppId());
-            params.put("params", lunaTask->getParams());
-        } else {
-            params = lunaTask->getParams().duplicate();
-            params.put("nid", lunaTask->getAppId());
-            params.put("@system_native_app", true);
-        }
+
+
+    if (AppType::AppType_Native_Qml == type) {
+        params.put("appId", this->getLaunchPoint()->getAppDesc()->getAppId());
+        params.put("params", lunaTask->getParams());
     } else {
         params.put("event", "launch");
         params.put("reason", lunaTask->getReason());
         params.put("appId", lunaTask->getAppId());
+        params.put("nid", lunaTask->getAppId());
         params.put("interfaceVersion", 2);
         params.put("interfaceMethod", "registerApp");
         params.put("parameters", lunaTask->getParams());
@@ -293,16 +286,11 @@ JValue RunningApp::getRelaunchParams(LunaTaskPtr lunaTask)
 {
     JValue params = pbnjson::Object();
     params.put("returnValue", true);
-
-    if (m_interfaceVersion == 1) {
-        params.put("message", "relaunch");
-        params.put("parameters", lunaTask->getParams());
-    } else if (m_interfaceVersion == 2) {
-        params.put("event", "relaunch");
-        params.put("parameters", lunaTask->getParams());
-        params.put("reason", lunaTask->getReason());
-        params.put("appId", lunaTask->getAppId());
-    }
+    params.put("event", "relaunch");
+    params.put("message", "relaunch"); // TODO this should be removed. Let's use event only.
+    params.put("parameters", lunaTask->getParams());
+    params.put("reason", lunaTask->getReason());
+    params.put("appId", lunaTask->getAppId());
     return params;
 }
 

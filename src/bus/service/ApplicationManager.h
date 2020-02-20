@@ -90,7 +90,6 @@ public:
     void getForegroundAppInfo(LunaTaskPtr lunaTask);
     void lockApp(LunaTaskPtr lunaTask);
     void registerApp(LunaTaskPtr lunaTask);
-    void registerNativeApp(LunaTaskPtr lunaTask);
 
     void listApps(LunaTaskPtr lunaTask);
     void getAppStatus(LunaTaskPtr lunaTask);
