@@ -102,8 +102,7 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
     default:
         string errorText = string("Invalid LifeStatus:") + RunningApp::toString(runningApp.getLifeStatus());
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), errorText);
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, errorText);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, errorText);
         return;
     }
 }
@@ -113,13 +112,11 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     runningApp.toJson(lunaTask->getResponsePayload());
 
     if (LifeStatus::LifeStatus_STOP == runningApp.getLifeStatus()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid status of runningApp");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid status of runningApp");
         return;
     }
     if (runningApp.getProcessId() <= 0) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid processId");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid processId");
         return;
     }
     if (!runningApp.isRegistered()) {
@@ -218,8 +215,7 @@ void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTas
 
     if (!runningApp.getLinuxProcess().run()) {
         runningApp.setLifeStatus(LifeStatus::LifeStatus_STOP);
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch process");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to launch process");
         return;
     }
 
@@ -237,8 +233,7 @@ void NativeContainer::launchFromRegistered(RunningApp& runningApp, LunaTaskPtr l
     Logger::info(getClassName(), __FUNCTION__, runningApp.getInstanceId());
     JValue payload = runningApp.getRelaunchParams(lunaTask);
     if (!runningApp.sendEvent(payload)) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to send relaunch event");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to send relaunch event");
         return;
     }
 

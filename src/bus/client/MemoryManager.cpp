@@ -63,8 +63,7 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
 
     if (!returnValue) {
         RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
-        lunaTask->setErrCodeAndText(errorCode, errorText);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, errorCode, errorText);
         return true;
     }
 
@@ -104,8 +103,7 @@ void MemoryManager::requireMemory(LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to call memorymanager");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to call memorymanager");
         return;
     }
     lunaTask->setToken(token);

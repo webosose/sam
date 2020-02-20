@@ -60,6 +60,19 @@ bool LunaTaskList::add(LunaTaskPtr lunaTask)
     return true;
 }
 
+bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText)
+{
+    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+        if ((*it) == lunaTask) {
+            (*it)->setErrCodeAndText(errorCode, errorText);
+            (*it)->reply();
+            m_list.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
@@ -69,7 +82,7 @@ bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
             return true;
         }
     }
-    return false; // Cannot find
+    return false;
 }
 
 void LunaTaskList::toJson(JValue& array)

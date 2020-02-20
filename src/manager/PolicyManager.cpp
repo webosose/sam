@@ -38,8 +38,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "The app is not running");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "The app is not running");
         return;
     }
     runningApp->launch(lunaTask);
@@ -64,8 +63,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
         runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
 
         if (!checkExecutionLock(runningApp)) {
-            lunaTask->setErrCodeAndText(ErrCode_APP_LOCKED, "app is locked");
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_APP_LOCKED, "app is locked");
         }
         RunningAppList::getInstance().add(runningApp);
     }
@@ -79,7 +77,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
             runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHED);
         runningApp->launch(lunaTask);
     } else {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_APP_LOCKED, "Failed to launch app (invalid status - internal error)");
     }
 }
 

@@ -161,15 +161,13 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
 
     if (!returnValue) {
         RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch webapp in WAM");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to launch webapp in WAM");
         return true;
     }
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find RunningApp");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Cannot find RunningApp");
         return true;
     }
     if (runningApp->isFirstLaunch()) {
@@ -242,8 +240,7 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        lunaTask->setErrCodeAndText(error.error_code, error.message);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, error.error_code, error.message);
         return false;
     }
     lunaTask->setToken(token);
@@ -291,14 +288,12 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
 
     if (!returnValue) {
         RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to pause webapp in WAM");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to pause webapp in WAM");
         return true;
     }
 
     if (runningApp == nullptr) {
-        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot find RunningApp");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Cannot find RunningApp");
         return true;
     }
     runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
@@ -314,8 +309,7 @@ bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     static string method = string("luna://") + getName() + string("/pauseApp");
 
     if (!isConnected()) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "WAM is not running. The app is not exist");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "WAM is not running. The app is not exist");
         return true;
     }
 
@@ -340,8 +334,7 @@ bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        lunaTask->setErrCodeAndText(error.error_code, error.message);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, error.error_code, error.message);
         return false;
     }
     lunaTask->setToken(token);
@@ -367,8 +360,7 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
 
     if (!returnValue) {
         if (lunaTask) {
-            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
+            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Failed to killApp in WAM");
         }
         return true;
     }

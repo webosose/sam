@@ -220,8 +220,7 @@ void RunningApp::close(LunaTaskPtr lunaTask)
 void RunningApp::registerApp(LunaTaskPtr lunaTask)
 {
     if (m_isRegistered) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The app is already registered");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "The app is already registered");
         return;
     }
 
