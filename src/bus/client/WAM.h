@@ -22,6 +22,7 @@
 #include <pbnjson.hpp>
 
 #include "AbsLunaClient.h"
+#include "AbsLifeHandler.h"
 #include "base/LunaTask.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
@@ -31,14 +32,19 @@ using namespace LS;
 using namespace pbnjson;
 
 class WAM : public ISingleton<WAM>,
-            public AbsLunaClient {
+            public AbsLunaClient,
+            public AbsLifeHandler {
 friend class ISingleton<WAM>;
 public:
     virtual ~WAM();
 
-    bool launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
-    bool close(RunningApp& runningApp, LunaTaskPtr lunaTask);
-    bool pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask);
+    // AbsLifeHandler
+    bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    bool relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    bool term(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    bool kill(RunningApp& runningApp) override;
+
     bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask = nullptr);
 
 protected:

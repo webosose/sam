@@ -267,6 +267,12 @@ public:
         return m_isJailerDisabled;
     }
 
+    bool isAppRelaunchSupported()
+    {
+        // TODO This should be moved in configuration file in the future.
+        return false;
+    }
+
 private:
     SAMConf();
 

@@ -168,7 +168,6 @@ AppDescription::AppDescription(const string& appId)
     : m_appLocation(AppLocation::AppLocation_None),
       m_folderPath(""),
       m_appType(AppType::AppType_None),
-      m_handlerType(LifeHandlerType::LifeHandlerType_None),
       m_appId(appId),
       m_version("1.0.0"),
       m_intVersion(1, 0, 0),
@@ -464,26 +463,6 @@ bool AppDescription::readAppinfo()
 
     if (m_appType == AppType::AppType_Native && privilegedJail)
         m_appType = AppType::AppType_Native_Mvpd;
-
-    // handler_type
-    switch (m_appType) {
-    case AppType::AppType_Web:
-        m_handlerType = LifeHandlerType::LifeHandlerType_Web;
-        break;
-
-    case AppType::AppType_Native:
-    case AppType::AppType_Native_AppShell:
-    case AppType::AppType_Native_Builtin:
-    case AppType::AppType_Native_Mvpd:
-    case AppType::AppType_Native_Qml:
-        m_handlerType = LifeHandlerType::LifeHandlerType_Native;
-        break;
-
-    case AppType::AppType_Stub:
-    default:
-        m_handlerType = LifeHandlerType::LifeHandlerType_None;
-        break;
-    }
 
     if (isSystemApp())
         m_appinfo.put("systemApp", true);

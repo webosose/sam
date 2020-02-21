@@ -158,7 +158,7 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     return true;
 }
 
-bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool WAM::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     static string method = string("luna://") + getName() + string("/launchApp");
     JValue requestPayload = pbnjson::Object();
@@ -220,7 +220,19 @@ bool WAM::launchApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
     return true;
 }
 
-bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool WAM::relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask)
+{
+//    if (LifeStatus::LifeStatus_LAUNCHING == m_lifeStatus) {
+//        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already launching");
+//        lunaTask->getResponsePayload().put("returnValue", true);
+//        LunaTaskList::getInstance().removeAfterReply(lunaTask);
+//        return;
+//    }
+//    WAM::getInstance().launch(*this, lunaTask);
+    return true;
+}
+
+bool WAM::term(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     string sender = lunaTask->getCaller();
     if (sender == "com.webos.service.memorymanager") {
@@ -228,10 +240,18 @@ bool WAM::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
     }
 
     if (runningApp.isKeepAlive()) {
-        return pauseApp(runningApp, lunaTask);
+        return pause(runningApp, lunaTask);
     } else {
         return killApp(runningApp, lunaTask);
     }
+}
+
+bool WAM::kill(RunningApp& runningApp)
+{
+//    if (!WAM::getInstance().killApp(*runningApp)) {
+//        return G_SOURCE_REMOVE;
+//    }
+    return true;
 }
 
 bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
@@ -276,7 +296,7 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
     return true;
 }
 
-bool WAM::pauseApp(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool WAM::pause(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     static string method = string("luna://") + getName() + string("/pauseApp");
 

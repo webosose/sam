@@ -77,7 +77,7 @@ void NativeContainer::initialize()
     }
 }
 
-void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     switch (runningApp.getLifeStatus()) {
     case LifeStatus::LifeStatus_SPLASHED:
@@ -106,31 +106,40 @@ void NativeContainer::launch(RunningApp& runningApp, LunaTaskPtr lunaTask)
         string errorText = string("Invalid LifeStatus:") + RunningApp::toString(runningApp.getLifeStatus());
         Logger::error(getClassName(), __FUNCTION__, lunaTask->getAppId(), errorText);
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, errorText);
-        return;
+        return false;
     }
+    return true;
 }
 
-void NativeContainer::pause(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool NativeContainer::relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask)
+{
+//    NativeContainer::getInstance().term(*this, lunaTask);
+//    NativeContainer::getInstance().launch(*this, lunaTask);
+    return true;
+}
+
+bool NativeContainer::pause(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     if (!runningApp.isRegistered()) {
-        close(runningApp, lunaTask);
-        return;
+        term(runningApp, lunaTask);
+        return true;
     }
 
     // TODO
+    return true;
 }
 
-void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
+bool NativeContainer::term(RunningApp& runningApp, LunaTaskPtr lunaTask)
 {
     runningApp.toJson(lunaTask->getResponsePayload());
 
     if (LifeStatus::LifeStatus_STOP == runningApp.getLifeStatus()) {
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "RunningApp is already stopped");
-        return;
+        return false;
     }
     if (runningApp.getProcessId() <= 0) {
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid processId");
-        return;
+        return false;
     }
 
     runningApp.setLifeStatus(LifeStatus::LifeStatus_CLOSING);
@@ -155,6 +164,20 @@ void NativeContainer::close(RunningApp& runningApp, LunaTaskPtr lunaTask)
         NativeContainer::onKillChildProcess(runningApp.getLinuxProcess().getPid(), 0, NULL);
     }
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    return true;
+}
+
+bool NativeContainer::kill(RunningApp& runningApp)
+{
+//    runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
+//    if (!runningApp->m_nativePocess.kill()) {
+//        return G_SOURCE_REMOVE;
+//    }
+//    if (!runningApp->m_nativePocess.isTracked()) {
+//        NativeContainer::onKillChildProcess(runningApp->m_nativePocess.getPid(), 0, NULL);
+//    }
+//    break;
+    return true;
 }
 
 void NativeContainer::launchFromStop(RunningApp& runningApp, LunaTaskPtr lunaTask)

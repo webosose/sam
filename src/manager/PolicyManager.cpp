@@ -41,7 +41,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "The app is not running");
         return;
     }
-    runningApp->launch(lunaTask);
+    runningApp->relaunch(lunaTask);
 }
 
 void PolicyManager::launch(LunaTaskPtr lunaTask)

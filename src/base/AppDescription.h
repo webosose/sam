@@ -57,12 +57,6 @@ enum class AppLocation : int8_t {
     AppLocation_Devmode,            // /media/developer/apps/usr/palm/applications
 };
 
-enum class LifeHandlerType : int8_t {
-    LifeHandlerType_None = 0,
-    LifeHandlerType_Native,
-    LifeHandlerType_Web
-};
-
 class AppDescription;
 
 typedef shared_ptr<AppDescription> AppDescriptionPtr;
@@ -129,11 +123,6 @@ public:
     void setAppLocation(const AppLocation& location)
     {
         m_appLocation = location;
-    }
-
-    LifeHandlerType getLifeHandlerType() const
-    {
-        return m_handlerType;
     }
 
     // Just getter
@@ -321,7 +310,6 @@ private:
     string m_folderPath;
 
     AppType m_appType;
-    LifeHandlerType m_handlerType;
 
     string m_appId;
     string m_version;

@@ -26,10 +26,12 @@
 #include "base/RunningAppList.h"
 #include "interface/ISingleton.h"
 #include "interface/IClassName.h"
+#include "AbsLifeHandler.h"
 #include "util/NativeProcess.h"
 
 class NativeContainer : public ISingleton<NativeContainer>,
-                        public IClassName {
+                        public IClassName,
+                        public AbsLifeHandler {
 friend class ISingleton<NativeContainer>;
 public:
     static void onKillChildProcess(GPid pid, gint status, gpointer data);
@@ -38,9 +40,12 @@ public:
 
     virtual void initialize();
 
-    virtual void launch(RunningApp& runningApp, LunaTaskPtr item);
-    virtual void pause(RunningApp& runningApp, LunaTaskPtr item);
-    virtual void close(RunningApp& runningApp, LunaTaskPtr item);
+    // AbsLifeHandler
+    virtual bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    virtual bool relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    virtual bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    virtual bool term(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
+    virtual bool kill(RunningApp& runningApp) override;
 
 private:
     static const string KEY_NATIVE_RUNNING_APPS;

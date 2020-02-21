@@ -16,8 +16,9 @@
 
 #include "RunningApp.h"
 
-#include "bus/client/WAM.h"
-#include "bus/client/NativeContainer.h"
+#include "bus/client/AbsLifeHandler.h"
+#include "bus/service/ApplicationManager.h"
+#include "conf/SAMConf.h"
 
 const string RunningApp::CLASS_NAME = "RunningApp";
 
@@ -146,68 +147,41 @@ RunningApp::~RunningApp()
 
 void RunningApp::launch(LunaTaskPtr lunaTask)
 {
-    if (LifeStatus::LifeStatus_LAUNCHING == m_lifeStatus) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already launching");
-        lunaTask->getResponsePayload().put("returnValue", true);
+    AbsLifeHandler::getLifeHandler(*this).launch(*this, lunaTask);
+}
+
+void RunningApp::relaunch(LunaTaskPtr lunaTask)
+{
+    if (isRegistered() && SAMConf::getInstance().isAppRelaunchSupported()) {
+        setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
+        JValue payload = getRelaunchParams(lunaTask);
+        if (!sendEvent(payload)) {
+            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to send relaunch event");
+            return;
+        }
+
+        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
-    switch(type) {
-    case LifeHandlerType::LifeHandlerType_Native:
-        NativeContainer::getInstance().launch(*this, lunaTask);
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().launchApp(*this, lunaTask);
-        break;
-
-    default:
-        break;
-    }
+    AbsLifeHandler::getLifeHandler(*this).relaunch(*this, lunaTask);
 }
 
 void RunningApp::pause(LunaTaskPtr lunaTask)
 {
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
-    switch(type) {
-    case LifeHandlerType::LifeHandlerType_Native:
-        NativeContainer::getInstance().pause(*this, lunaTask);
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().pauseApp(*this, lunaTask);
-        break;
-
-    default:
-        break;
-    }
+    AbsLifeHandler::getLifeHandler(*this).pause(*this, lunaTask);
 }
 
 void RunningApp::close(LunaTaskPtr lunaTask)
 {
+    AbsLifeHandler::getLifeHandler(*this).term(*this, lunaTask);
+
     if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
         lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
-    LifeHandlerType type = getLaunchPoint()->getAppDesc()->getLifeHandlerType();
-    switch(type) {
-    case LifeHandlerType::LifeHandlerType_Native:
-        NativeContainer::getInstance().close(*this, lunaTask);
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Web:
-        WAM::getInstance().close(*this, lunaTask);
-        break;
-
-    default:
-        break;
-    }
-    return;
 }
 
 void RunningApp::registerApp(LunaTaskPtr lunaTask)
@@ -356,27 +330,7 @@ gboolean RunningApp::onKillingTimer(gpointer context)
     }
     Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
 
-    LifeHandlerType type = runningApp->getLaunchPoint()->getAppDesc()->getLifeHandlerType();
-    switch(type) {
-    case LifeHandlerType::LifeHandlerType_Native:
-        runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-        if (!runningApp->m_nativePocess.kill()) {
-            return G_SOURCE_REMOVE;
-        }
-        if (!runningApp->m_nativePocess.isTracked()) {
-            NativeContainer::onKillChildProcess(runningApp->m_nativePocess.getPid(), 0, NULL);
-        }
-        break;
-
-    case LifeHandlerType::LifeHandlerType_Web:
-        if (!WAM::getInstance().killApp(*runningApp)) {
-            return G_SOURCE_REMOVE;
-        }
-        break;
-
-    default:
-        break;
-    }
+    AbsLifeHandler::getLifeHandler(*runningApp).kill(*runningApp);
 
     // It tries to kill the app continually
     return G_SOURCE_CONTINUE;
