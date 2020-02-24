@@ -23,7 +23,7 @@ using namespace std;
 
 class Time {
 public:
-    static double getCurrentTime();
+    static long long getCurrentTime();
     static string generateUid();
 
     Time();

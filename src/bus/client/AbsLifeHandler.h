@@ -22,16 +22,15 @@ using namespace std;
 
 class AbsLifeHandler {
 public:
-    static AbsLifeHandler& getLifeHandler(RunningApp& runningApp);
+    static AbsLifeHandler& getLifeHandler(RunningAppPtr runningApp);
 
     AbsLifeHandler() {};
     virtual ~AbsLifeHandler() {};
 
-    virtual bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask) = 0;
-    virtual bool relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask) = 0;
-    virtual bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask) = 0;
-    virtual bool term(RunningApp& runningApp, LunaTaskPtr lunaTask) = 0;
-    virtual bool kill(RunningApp& runningApp) = 0;
+    virtual void launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask) = 0;
+    virtual void pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask) = 0;
+    virtual void close(RunningAppPtr runningApp, LunaTaskPtr lunaTask) = 0;
+    virtual void kill(RunningAppPtr runningApp) = 0;
 
 protected:
 

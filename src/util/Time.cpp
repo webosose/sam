@@ -29,12 +29,12 @@ Time::~Time()
 {
 }
 
-double Time::getCurrentTime()
+long long Time::getCurrentTime()
 {
     timespec now;
     if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
         return -1;
-    return (double)now.tv_sec + (double)now.tv_nsec / 1000000000.0;
+    return (now.tv_sec * 1000) + (now.tv_nsec / 1000000);
 }
 
 string Time::generateUid()

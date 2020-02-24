@@ -41,11 +41,10 @@ public:
     virtual void initialize();
 
     // AbsLifeHandler
-    virtual bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    virtual bool relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    virtual bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    virtual bool term(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    virtual bool kill(RunningApp& runningApp) override;
+    virtual void launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    virtual void pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    virtual void close(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    virtual void kill(RunningAppPtr runningApp) override;
 
 private:
     static const string KEY_NATIVE_RUNNING_APPS;
@@ -53,9 +52,6 @@ private:
     static int s_instanceCounter;
 
     NativeContainer();
-
-    virtual void launchFromStop(RunningApp& runningApp, LunaTaskPtr item);
-    virtual void launchFromRegistered(RunningApp& runningApp, LunaTaskPtr item);
 
     virtual void removeItem(GPid pid);
     virtual void addItem(const string& instanceId, const string& launchPointId, const int processId, const int displayId);

@@ -48,8 +48,13 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
 
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByToken(token);
     if (lunaTask == nullptr) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask about launch request");
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find lunaTask");
+        return false;
+    }
+    if (runningApp == nullptr) {
+        Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find runningApp");
         return false;
     }
 
@@ -62,27 +67,23 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        RunningAppList::getInstance().removeByInstanceId(lunaTask->getInstanceId());
+        RunningAppList::getInstance().removeByInstanceId(runningApp->getInstanceId());
         LunaTaskList::getInstance().removeAfterReply(lunaTask, errorCode, errorText);
         return true;
     }
 
-    if (!lunaTask->getAPICallback().empty()) {
-        lunaTask->getAPICallback()(lunaTask);
-    }
+    lunaTask->callback(lunaTask);
     return true;
 }
 
-void MemoryManager::requireMemory(LunaTaskPtr lunaTask)
+void MemoryManager::requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 {
     static string method = string("luna://") + getName() + string("/requireMemory");
     JValue requestPayload = pbnjson::Object();
 
     if (!isConnected()) {
         Logger::warning(getClassName(), __FUNCTION__, "MemoryManager is not running. Skip memory reclaiming");
-        if (!lunaTask->getAPICallback().empty()) {
-            lunaTask->getAPICallback()(lunaTask);
-        }
+        lunaTask->callback(lunaTask);
         return;
     }
 
@@ -103,8 +104,10 @@ void MemoryManager::requireMemory(LunaTaskPtr lunaTask)
         &error
     );
     if (!result) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to call memorymanager");
+        // If calling MM is failed, just skip it.
+        lunaTask->callback(lunaTask);
         return;
     }
     lunaTask->setToken(token);
+    runningApp->setToken(token);
 }

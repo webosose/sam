@@ -262,13 +262,7 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
-    if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
-        return;
-    }
-
-    runningApp->pause(lunaTask);
+    PolicyManager::getInstance().pause(lunaTask);
     return;
 }
 
@@ -279,43 +273,23 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
         LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
         return;
     }
-    if (strcmp(lunaTask->getRequest().getCategory(), "/dev") == 0 &&
-        !runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
+    if (lunaTask->isDevmodeRequest() && !runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
         Logger::warning(getClassName(), __FUNCTION__, lunaTask->getAppId(), "Only Dev app should be closed using /dev category_API");
         return;
     }
-
-    bool preloadOnly = false;
-    bool letAppHandle = false;
-    string reason = "";
-
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "preloadOnly", preloadOnly);
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "reason", reason);
-    JValueUtil::getValue(lunaTask->getRequestPayload(), "letAppHandle", letAppHandle);
-
-    if (preloadOnly) {
-        Logger::warning(getClassName(), __FUNCTION__, lunaTask->getAppId(), "app is being launched by user");
-        return;
-    }
-
-    if (reason.empty()) {
-        reason = lunaTask->getCaller();
-    }
-    runningApp->setReason(reason);
-    runningApp->close(lunaTask);
-
+    PolicyManager::getInstance().close(lunaTask);
+    return;
 }
 
 void ApplicationManager::running(LunaTaskPtr lunaTask)
 {
-    bool isDevmode = (strcmp(lunaTask->getRequest().getCategory(), "/dev") == 0);
     bool subscribed = false;
 
-    makeRunning(lunaTask->getResponsePayload(), isDevmode);
+    makeRunning(lunaTask->getResponsePayload(), lunaTask->isDevmodeRequest());
     lunaTask->getResponsePayload().put("returnValue", true);
 
     if (lunaTask->getRequest().isSubscription()) {
-        if (isDevmode) {
+        if (lunaTask->isDevmodeRequest()) {
             subscribed = m_runningDev->subscribe(lunaTask->getRequest());
         } else {
             subscribed = m_running->subscribe(lunaTask->getRequest());
@@ -429,8 +403,7 @@ void ApplicationManager::listApps(LunaTaskPtr lunaTask)
         properties.append("id");
     }
 
-    bool isDevmode = (strcmp(lunaTask->getRequest().getKind(), "/dev/listApps") == 0);
-    AppDescriptionList::getInstance().toJson(apps, properties, isDevmode);
+    AppDescriptionList::getInstance().toJson(apps, properties, lunaTask->isDevmodeRequest());
     lunaTask->getResponsePayload().put("apps", apps);
 
     if (lunaTask->getRequest().isSubscription()) {
@@ -789,7 +762,7 @@ void ApplicationManager::postGetAppLifeStatus(RunningApp& runningApp)
     subscriptionPayload.put("returnValue", true);
     subscriptionPayload.put("subscribed", true);
 
-    runningApp.toJsonForAPI(subscriptionPayload, false);
+    runningApp.toAPIJson(subscriptionPayload, false);
     pbnjson::JValue foregroundInfo = pbnjson::JValue();
     switch(runningApp.getLifeStatus()) {
     case LifeStatus::LifeStatus_LAUNCHING:

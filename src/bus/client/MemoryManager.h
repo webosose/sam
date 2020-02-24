@@ -35,7 +35,7 @@ friend class ISingleton<MemoryManager>;
 public:
     virtual ~MemoryManager();
 
-    void requireMemory(LunaTaskPtr lunaTask);
+    void requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask);
 
 protected:
     // AbsLunaClient

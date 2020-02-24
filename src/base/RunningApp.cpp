@@ -145,45 +145,6 @@ RunningApp::~RunningApp()
     stopKillingTimer();
 }
 
-void RunningApp::launch(LunaTaskPtr lunaTask)
-{
-    AbsLifeHandler::getLifeHandler(*this).launch(*this, lunaTask);
-}
-
-void RunningApp::relaunch(LunaTaskPtr lunaTask)
-{
-    if (isRegistered() && SAMConf::getInstance().isAppRelaunchSupported()) {
-        setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
-        JValue payload = getRelaunchParams(lunaTask);
-        if (!sendEvent(payload)) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to send relaunch event");
-            return;
-        }
-
-        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-    AbsLifeHandler::getLifeHandler(*this).relaunch(*this, lunaTask);
-}
-
-void RunningApp::pause(LunaTaskPtr lunaTask)
-{
-    AbsLifeHandler::getLifeHandler(*this).pause(*this, lunaTask);
-}
-
-void RunningApp::close(LunaTaskPtr lunaTask)
-{
-    AbsLifeHandler::getLifeHandler(*this).term(*this, lunaTask);
-
-    if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "The instance is already closing");
-        lunaTask->toJson(lunaTask->getResponsePayload(), false, true);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        return;
-    }
-}
-
 void RunningApp::registerApp(LunaTaskPtr lunaTask)
 {
     if (m_isRegistered) {
@@ -219,52 +180,9 @@ bool RunningApp::sendEvent(JValue& responsePayload)
     return true;
 }
 
-string RunningApp::getLaunchParams(LunaTaskPtr lunaTask)
-{
-    JValue params = pbnjson::Object();
-    AppType type = this->getLaunchPoint()->getAppDesc()->getAppType();
-
-    if (AppType::AppType_Native_Qml == type) {
-        params.put("main", this->getLaunchPoint()->getAppDesc()->getAbsMain());
-    }
-    if (!m_preload.empty()) {
-        params.put("preload", m_preload);
-    }
-
-
-    if (AppType::AppType_Native_Qml == type) {
-        params.put("appId", this->getLaunchPoint()->getAppDesc()->getAppId());
-        params.put("params", lunaTask->getParams());
-    } else {
-        params.put("event", "launch");
-        params.put("reason", lunaTask->getReason());
-        params.put("appId", lunaTask->getAppId());
-        params.put("nid", lunaTask->getAppId());
-        params.put("interfaceVersion", 2);
-        params.put("interfaceMethod", "registerApp");
-        params.put("parameters", lunaTask->getParams());
-        params.put("@system_native_app", true);
-    }
-    return params.stringify();
-}
-
-JValue RunningApp::getRelaunchParams(LunaTaskPtr lunaTask)
-{
-    JValue params = pbnjson::Object();
-    params.put("returnValue", true);
-    params.put("event", "relaunch");
-    params.put("message", "relaunch"); // TODO this should be removed. Let's use event only.
-    params.put("parameters", lunaTask->getParams());
-    params.put("reason", lunaTask->getReason());
-    params.put("appId", lunaTask->getAppId());
-    return params;
-}
-
 bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 {
     if (m_lifeStatus == lifeStatus) {
-        Logger::debug(CLASS_NAME, __FUNCTION__, m_instanceId,
-                      Logger::format("Ignored: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
         return true;
     }
 
@@ -277,6 +195,7 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 
     switch (lifeStatus) {
     case LifeStatus::LifeStatus_STOP:
+        // LifeStatus_STOP should not be set directly. Only RunningAppList can set this status.
         if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING)
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by SAM");
         else
@@ -324,13 +243,17 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 
 gboolean RunningApp::onKillingTimer(gpointer context)
 {
-    RunningApp* runningApp = static_cast<RunningApp*>(context);
+    RunningApp* raw = static_cast<RunningApp*>(context);
+    if (raw == nullptr) {
+        return G_SOURCE_REMOVE;
+    }
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(raw->getInstanceId());
     if (runningApp == nullptr) {
         return G_SOURCE_REMOVE;
     }
-    Logger::warning(CLASS_NAME, __FUNCTION__, runningApp->m_instanceId, "Transition is timeout");
+    Logger::warning(CLASS_NAME, __FUNCTION__, raw->m_instanceId, "Transition is timeout");
 
-    AbsLifeHandler::getLifeHandler(*runningApp).kill(*runningApp);
+    AbsLifeHandler::getLifeHandler(runningApp).kill(runningApp);
 
     // It tries to kill the app continually
     return G_SOURCE_CONTINUE;

@@ -267,7 +267,7 @@ public:
         return m_isJailerDisabled;
     }
 
-    bool isAppRelaunchSupported()
+    bool isAppHandlingSupported()
     {
         // TODO This should be moved in configuration file in the future.
         return false;

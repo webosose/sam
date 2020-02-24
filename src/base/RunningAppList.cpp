@@ -193,6 +193,16 @@ RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayI
     return nullptr;
 }
 
+RunningAppPtr RunningAppList::getByPid(const pid_t pid)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getProcessId() == pid) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
 RunningAppPtr RunningAppList::getByWebprocessid(const string& webprocessid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -338,7 +348,7 @@ void RunningAppList::toJson(JValue& array, bool devmodeOnly)
          }
 
          pbnjson::JValue object = pbnjson::Object();
-         it->second->toJsonForAPI(object, true);
+         it->second->toAPIJson(object, true);
          array.append(object);
     }
 }

@@ -50,7 +50,7 @@ public:
           m_token(0),
           m_requestPayload(requestPayload),
           m_responsePayload(pbnjson::Object()),
-          m_errorCode(ErrCode_UNKNOWN),
+          m_errorCode(ErrCode_NOERROR),
           m_errorText(""),
           m_reason("")
     {
@@ -158,25 +158,14 @@ public:
         }
     }
 
-    const string getWebprocessId() const
-    {
-        // This API only valid when sender is application
-        string webprocessid = m_request.getSenderServiceName();
-        size_t index = webprocessid.find("-");
-        if (string::npos == index) {
-            return "";
-        }
-        return webprocessid.substr(index + 1);
-    }
-
     const string& getReason()
     {
         if (!m_reason.empty())
             return m_reason;
 
-        JValueUtil::getValue(m_requestPayload, "params", "reason", m_reason);
+        JValueUtil::getValue(m_requestPayload, "reason", m_reason);
         if (m_reason.empty()) {
-            m_reason = "normal";
+            m_reason = getCaller();
         }
         return m_reason;
     }
@@ -185,9 +174,9 @@ public:
         m_reason = reason;
     }
 
-    double getTimeStamp() const
+    long long getTimeStamp() const
     {
-        double now = Time::getCurrentTime();
+        long long now = Time::getCurrentTime();
         return (now - m_startTime);
     }
 
@@ -199,6 +188,12 @@ public:
     {
         m_APICallback = callback;
     }
+    void callback(LunaTaskPtr lunaTask)
+    {
+        if (m_APICallback.empty()) {
+            m_APICallback(lunaTask);
+        }
+    }
 
     const string& getNextStep() const
     {
@@ -209,21 +204,18 @@ public:
         m_nextStep = next;
     }
 
-    void toJson(JValue& json, bool caller = true, bool ids = false)
+    bool isDevmodeRequest()
+    {
+        return (strcmp(m_request.getCategory(), "/dev") == 0);
+    }
+
+    void toJson(JValue& json)
     {
         if (json.isNull())
             json = pbnjson::Object();
 
-        if (caller) {
-            json.put("caller", getCaller());
-            json.put("kind", this->getRequest().getKind());
-        }
-        if (ids) {
-            json.put("instanceId", m_instanceId);
-            json.put("launchPointId", m_launchPointId);
-            json.put("appId", m_appId);
-            json.put("displayId", getDisplayId());
-        }
+        json.put("caller", getCaller());
+        json.put("kind", this->getRequest().getKind());
     }
 
 private:
@@ -260,7 +252,7 @@ private:
 
     string m_reason;
 
-    double m_startTime;
+    long long m_startTime;
 
     LunaTaskCallback m_APICallback;
     string m_nextStep;

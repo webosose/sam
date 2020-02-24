@@ -28,13 +28,15 @@ using namespace LS;
 using namespace pbnjson;
 
 enum ErrCode {
-    ErrCode_NATIVE_SPAWN = -202,
-    ErrCode_APP_LOCKED = -102,
-    ErrCode_LAUNCH = -1,
-    ErrCode_UNKNOWN = 0,
-    ErrCode_NATIVE_IS_LAUNCHING = -203,
-    ErrCode_GENERAL = 1,
-    ErrCode_INVALID_PAYLOAD = 2,
+    ErrCode_NOERROR = 0,
+    ErrCode_UNKNOWN = 1,
+    ErrCode_GENERAL = 2,
+    ErrCode_INVALID_PAYLOAD = 3,
+    ErrCode_LAUNCH = 10,
+    ErrCode_LAUNCH_APP_LOCKED = 11,
+    ErrCode_RELAUNCH = 20,
+    ErrCode_PAUSE = 30,
+    ErrCode_CLOSE = 40,
     ErrCode_DEPRECATED = 999
 };
 

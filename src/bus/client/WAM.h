@@ -39,13 +39,12 @@ public:
     virtual ~WAM();
 
     // AbsLifeHandler
-    bool launch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    bool relaunch(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    bool pause(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    bool term(RunningApp& runningApp, LunaTaskPtr lunaTask) override;
-    bool kill(RunningApp& runningApp) override;
+    void launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    void pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    void close(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
+    void kill(RunningAppPtr runningApp) override;
 
-    bool killApp(RunningApp& runningApp, LunaTaskPtr lunaTask = nullptr);
+    bool killApp(RunningAppPtr runningApp, LunaTaskPtr lunaTask = nullptr);
 
 protected:
     // AbsLunaClient

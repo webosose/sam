@@ -69,15 +69,9 @@ public:
     virtual ~RunningApp();
 
     // APIs
-    void launch(LunaTaskPtr lunaTask);
-    void relaunch(LunaTaskPtr lunaTask);
-    void pause(LunaTaskPtr lunaTask);
-    void close(LunaTaskPtr lunaTask);
     void registerApp(LunaTaskPtr lunaTask);
 
     bool sendEvent(JValue& payload);
-    string getLaunchParams(LunaTaskPtr item);
-    JValue getRelaunchParams(LunaTaskPtr item);
 
     string getAppId() const
     {
@@ -256,15 +250,17 @@ public:
         return m_nativePocess;
     }
 
-    void toJson(JValue& json)
+    void toEventJson(JValue& json, LunaTaskPtr lunaTask, const string& event)
     {
-        json.put("instanceId", m_instanceId);
-        json.put("launchPointId", m_launchPoint->getLaunchPointId());
-        json.put("displayId", m_displayId);
-        json.put("processId", m_nativePocess.getPid());
+        json.put("returnValue", true);
+        json.put("event", event);
+        json.put("message", event); // TODO this should be removed. Let's use event only.
+        json.put("appId", getAppId());
+        json.put("parameters", lunaTask->getParams());
+        json.put("reason", lunaTask->getReason());
     }
 
-    void toJsonForAPI(JValue& json, bool isRunningList)
+    void toAPIJson(JValue& json, bool isRunningList)
     {
         json.put("instanceId", m_instanceId);
         json.put("launchPointId", m_launchPoint->getLaunchPointId());
@@ -286,6 +282,15 @@ public:
             json.put("reason", m_reason);
             json.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
         }
+    }
+
+    void toJson(JValue& json)
+    {
+        json.put("instanceId", m_instanceId);
+        json.put("launchPointId", getLaunchPointId());
+        json.put("appId", getAppId());
+        json.put("displayId", m_displayId);
+        json.put("processId", m_nativePocess.getPid());
     }
 
 private:
