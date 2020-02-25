@@ -41,7 +41,11 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     for (int i = 0; i < size; i++) {
         JValueUtil::getValue(running[i], "id", appId);
         JValueUtil::getValue(running[i], "webprocessid", webprocessid);
+        // TODO fire a bug to WAM.
         if (JValueUtil::getValue(running[i], "instanceid", instanceId)) {
+            displayId = RunningApp::getDisplayId(instanceId);
+        }
+        if (JValueUtil::getValue(running[i], "instanceId", instanceId)) {
             displayId = RunningApp::getDisplayId(instanceId);
         }
 
@@ -150,10 +154,8 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
         }
     }
 
-    if (lunaTask) {
-        lunaTask->callback(lunaTask);
-    }
-    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, Logger::format("Launch Time: %lld seconds", lunaTask->getTimeStamp()));
+    lunaTask->callback(lunaTask);
+    Logger::info(getInstance().getClassName(), __FUNCTION__, runningApp->getAppId(), Logger::format("Launch Time: %lld ms", runningApp->getTimeStamp()));
     return true;
 }
 
@@ -274,9 +276,7 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
         return true;
     }
     runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
-    if (lunaTask) {
-        lunaTask->callback(lunaTask);
-    }
+    lunaTask->callback(lunaTask);
     return true;
 }
 
@@ -311,7 +311,6 @@ void WAM::pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     );
     if (!result) {
         LunaTaskList::getInstance().removeAfterReply(lunaTask, error.error_code, error.message);
-        RunningAppList::getInstance().removeByObject(runningApp);
         return;
     }
     lunaTask->setToken(token);
@@ -335,9 +334,7 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
     if (!returnValue) {
-        if (lunaTask) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Failed to killApp in WAM");
-        }
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Failed to killApp in WAM");
         return true;
     }
 
@@ -348,7 +345,8 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
 
     // Should not access RunningApp. It can be nullptr.
     if (lunaTask) {
-        lunaTask->callback(lunaTask);
+        lunaTask->fillIds(lunaTask->getResponsePayload());
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
     }
     return true;
 }
@@ -360,11 +358,7 @@ bool WAM::killApp(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 
     if (!isConnected()) {
         Logger::warning(getClassName(), __FUNCTION__, "WAM is not running. The app is not exist");
-
-        if (lunaTask) {
-            lunaTask->getResponsePayload().put("returnValue", true);
-            LunaTaskList::getInstance().removeAfterReply(lunaTask);
-        }
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return true;
     }
 
@@ -372,7 +366,7 @@ bool WAM::killApp(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     requestPayload.put("instanceId", runningApp->getInstanceId());
     requestPayload.put("launchPointId", runningApp->getLaunchPointId());
     requestPayload.put("appId", runningApp->getAppId());
-    if (lunaTask && !lunaTask->getReason().empty()) {
+    if (lunaTask) {
         requestPayload.put("reason", lunaTask->getReason());
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,48 +24,80 @@ const string Logger::EMPTY = "";
 
 void Logger::logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload)
 {
-    if (request.getSenderServiceName())
-        getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), requestPayload.stringify("    "));
-    else
-        getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), requestPayload.stringify("    "));
+    if (isVerbose()) {
+        if (request.getSenderServiceName())
+            getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), requestPayload.stringify("    "));
+        else
+            getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), requestPayload.stringify("    "));
+    } else {
+        if (request.getSenderServiceName())
+            getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), EMPTY);
+        else
+            getInstance().write(LogLevel_INFO, className, functionName, "APIRequest", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), EMPTY);
+    }
 }
 
 void Logger::logAPIResponse(const string& className, const string& functionName, Message& request, JValue& responsePayload)
 {
-    if (request.getSenderServiceName())
-        getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), responsePayload.stringify("    "));
-    else
-        getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), responsePayload.stringify("    "));
+    if (isVerbose()) {
+        if (request.getSenderServiceName())
+            getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), responsePayload.stringify("    "));
+        else
+            getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), responsePayload.stringify("    "));
+    } else {
+        if (request.getSenderServiceName())
+            getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getSenderServiceName()), EMPTY);
+        else
+            getInstance().write(LogLevel_INFO, className, functionName, "APIResponse", format("API(%s) Sender(%s)", request.getKind(), request.getApplicationID()), EMPTY);
+    }
 }
 
 void Logger::logCallRequest(const string& className, const string& functionName, const string& method, JValue& requestPayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "CallRequest", method.c_str(), requestPayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "CallRequest", method.c_str(), requestPayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "CallRequest", method.c_str(), EMPTY);
 }
 
 void Logger::logCallResponse(const string& className, const string& functionName, Message& response, JValue& responsePayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "CallResponse", response.getSenderServiceName(), responsePayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "CallResponse", response.getSenderServiceName(), responsePayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "CallResponse", response.getSenderServiceName(), EMPTY);
 }
 
 void Logger::logSubscriptionRequest(const string& className, const string& functionName, const string& method, JValue& requestPayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionRequest", method.c_str(), requestPayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionRequest", method.c_str(), requestPayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionRequest", method.c_str(), EMPTY);
 }
 
 void Logger::logSubscriptionResponse(const string& className, const string& functionName, Message& response, JValue& subscriptionPayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionResponse", response.getSenderServiceName(), subscriptionPayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionResponse", response.getSenderServiceName(), subscriptionPayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionResponse", response.getSenderServiceName(), EMPTY);
 }
 
 void Logger::logSubscriptionPost(const string& className, const string& functionName, const LS::SubscriptionPoint& point, JValue& subscriptionPayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", Logger::format("Count=%d", point.getSubscribersCount()), subscriptionPayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", Logger::format("Count=%d", point.getSubscribersCount()), subscriptionPayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", Logger::format("Count=%d", point.getSubscribersCount()), EMPTY);
 }
 
 void Logger::logSubscriptionPost(const string& className, const string& functionName, const string& key, JValue& subscriptionPayload)
 {
-    getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", key, subscriptionPayload.stringify("    "));
+    if (isVerbose())
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", key, subscriptionPayload.stringify("    "));
+    else
+        getInstance().write(LogLevel_INFO, className, functionName, "SubscriptionPost", key, EMPTY);
 }
 
 void Logger::debug(const string& className, const string& functionName, const string& what)

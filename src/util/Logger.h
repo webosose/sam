@@ -73,6 +73,11 @@ public:
             return FStr;
     }
 
+    static bool isVerbose()
+    {
+        return true;
+    }
+
     static void logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload);
     static void logAPIResponse(const string& className, const string& functionName, Message& request, JValue& responsePayload);
 

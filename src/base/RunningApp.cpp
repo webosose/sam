@@ -138,6 +138,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_context(0),
       m_isRegistered(false)
 {
+    m_startTime = Time::getCurrentTime();
 }
 
 RunningApp::~RunningApp()

@@ -92,12 +92,14 @@ bool NativeProcess::run()
 {
     const char* argv[MAX_ARGS] = { 0, };
     const char* envp[MAX_ENVP] = { 0, };
+    string params = "";
     int index = 0;
 
     GError* gerr = NULL;
     argv[0] = m_command.c_str();
     index = 1;
     for (auto it = m_arguments.begin(); it != m_arguments.end(); ++it) {
+        params += *it + " ";
         argv[index++] = it->c_str();
     }
 
@@ -108,6 +110,7 @@ bool NativeProcess::run()
         envp[index++] = (const char*)it->c_str();
     }
 
+    Logger::info(CLASS_NAME, __FUNCTION__, m_command, params);
     gboolean result = g_spawn_async_with_fds(
         m_workingDirectory.c_str(),
         const_cast<char**>(argv),

@@ -54,7 +54,6 @@ public:
           m_errorText(""),
           m_reason("")
     {
-        m_startTime = Time::getCurrentTime();
         JValueUtil::getValue(m_requestPayload, "instanceId", m_instanceId);
         JValueUtil::getValue(m_requestPayload, "launchPointId", m_launchPointId);
         JValueUtil::getValue(m_requestPayload, "id", m_appId);
@@ -174,12 +173,6 @@ public:
         m_reason = reason;
     }
 
-    long long getTimeStamp() const
-    {
-        long long now = Time::getCurrentTime();
-        return (now - m_startTime);
-    }
-
     LunaTaskCallback getAPICallback()
     {
         return m_APICallback;
@@ -190,7 +183,7 @@ public:
     }
     void callback(LunaTaskPtr lunaTask)
     {
-        if (m_APICallback.empty()) {
+        if (!m_APICallback.empty()) {
             m_APICallback(lunaTask);
         }
     }
@@ -209,13 +202,22 @@ public:
         return (strcmp(m_request.getCategory(), "/dev") == 0);
     }
 
-    void toJson(JValue& json)
+    void toAPIJson(JValue& json)
     {
         if (json.isNull())
             json = pbnjson::Object();
 
         json.put("caller", getCaller());
         json.put("kind", this->getRequest().getKind());
+    }
+
+    void fillIds(JValue& json)
+    {
+        json.put("instanceId", getInstanceId());
+        json.put("launchPointId", getLaunchPointId());
+        json.put("appId", getAppId());
+        if (getDisplayId() != -1)
+            json.put("displayId", getDisplayId());
     }
 
 private:
@@ -251,8 +253,6 @@ private:
     string m_errorText;
 
     string m_reason;
-
-    long long m_startTime;
 
     LunaTaskCallback m_APICallback;
     string m_nextStep;

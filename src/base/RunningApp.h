@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef RUNNING_INFO_H
-#define RUNNING_INFO_H
+#ifndef RUNNING_APP_H
+#define RUNNING_APP_H
 
 #include <map>
 #include <memory>
@@ -218,6 +218,12 @@ public:
         return false;
     }
 
+    long long getTimeStamp() const
+    {
+        long long now = Time::getCurrentTime();
+        return (now - m_startTime);
+    }
+
     const string& getReason() const
     {
         return m_reason;
@@ -284,15 +290,6 @@ public:
         }
     }
 
-    void toJson(JValue& json)
-    {
-        json.put("instanceId", m_instanceId);
-        json.put("launchPointId", getLaunchPointId());
-        json.put("appId", getAppId());
-        json.put("displayId", m_displayId);
-        json.put("processId", m_nativePocess.getPid());
-    }
-
 private:
     static const string CLASS_NAME;
     static const int TIMEOUT_TRANSITION = 10000; // 10 seconds
@@ -315,6 +312,7 @@ private:
 
     LifeStatus m_lifeStatus;
     int m_launchCount;
+    long long m_startTime;
     guint m_killingTimer;
 
     // initial parameter

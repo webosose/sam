@@ -270,7 +270,7 @@ public:
     bool isAppHandlingSupported()
     {
         // TODO This should be moved in configuration file in the future.
-        return false;
+        return true;
     }
 
 private:

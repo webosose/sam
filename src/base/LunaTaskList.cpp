@@ -60,10 +60,15 @@ bool LunaTaskList::add(LunaTaskPtr lunaTask)
     return true;
 }
 
-bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText)
+bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds)
 {
+    if (lunaTask == nullptr) return false;
+
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
+            if (fillIds) {
+                (*it)->fillIds((*it)->getResponsePayload());
+            }
             (*it)->setErrCodeAndText(errorCode, errorText);
             (*it)->reply();
             m_list.erase(it);
@@ -73,10 +78,15 @@ bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, c
     return false;
 }
 
-bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask)
+bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, bool fillIds)
 {
+    if (lunaTask == nullptr) return false;
+
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
+            if (fillIds) {
+                (*it)->fillIds((*it)->getResponsePayload());
+            }
             (*it)->reply();
             m_list.erase(it);
             return true;
@@ -92,7 +102,7 @@ void LunaTaskList::toJson(JValue& array)
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         JValue object = pbnjson::Object();
-        (*it)->toJson(object);
+        (*it)->toAPIJson(object);
         array.append(object);
     }
 }

@@ -946,11 +946,11 @@ void ApplicationManager::postListLaunchPoints(LaunchPointPtr launchPoint, string
         return;
 
     pbnjson::JValue subscriptionPayload = pbnjson::Object();
-
+    pbnjson::JValue json = pbnjson::Object();
 
     if (launchPoint) {
-        launchPoint->toJson(subscriptionPayload);
-        subscriptionPayload.put("launchPoint", subscriptionPayload.duplicate());
+        launchPoint->toJson(json);
+        subscriptionPayload.put("launchPoint", json);
     } else {
         pbnjson::JValue launchPoints = pbnjson::Array();
         LaunchPointList::getInstance().toJson(launchPoints);
