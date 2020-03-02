@@ -31,7 +31,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("Process(%d) was killed with status(%d)", pid, status));
     g_spawn_close_pid(pid);
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByToken(pid);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByPid(pid);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(pid);
     if (runningApp == nullptr) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find RunningApp");

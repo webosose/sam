@@ -133,7 +133,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         }
         runningApp->setLifeStatus(LifeStatus::LifeStatus_FOREGROUND);
         if (runningApp->isFirstLaunch())
-            Logger::info(getInstance().getClassName(), __FUNCTION__, runningApp->getAppId(), Logger::format("Forground Time: %lld ms", runningApp->getTimeStamp()));
+            Logger::info(getInstance().getClassName(), __FUNCTION__, runningApp->getAppId(), Logger::format("Foreground Time: %lld ms", runningApp->getTimeStamp()));
         newForegroundAppInfo.append(orgForegroundAppInfo[i].duplicate());
         newForegroundAppIds.push_back(appId);
     }

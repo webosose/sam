@@ -188,13 +188,9 @@ void WAM::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
         requestPayload.put("keepAlive", true);
     }
 
-    if (runningApp->isFirstLaunch()) {
-        if (!runningApp->getPreload().empty()) {
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
-            requestPayload.put("preload", runningApp->getPreload());
-        } else {
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
-        }
+    if (runningApp->isFirstLaunch() && !runningApp->getPreload().empty()) {
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADING);
+        requestPayload.put("preload", runningApp->getPreload());
     } else {
         runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     }

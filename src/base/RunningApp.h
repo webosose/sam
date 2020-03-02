@@ -213,9 +213,7 @@ public:
 
     bool isFirstLaunch()
     {
-        if (m_launchCount == 1)
-            return true;
-        return false;
+        return m_isFirstLaunch;
     }
 
     long long getTimeStamp() const
@@ -311,7 +309,7 @@ private:
     bool m_isFullWindow;
 
     LifeStatus m_lifeStatus;
-    int m_launchCount;
+    bool m_isFirstLaunch;
     long long m_startTime;
     guint m_killingTimer;
 

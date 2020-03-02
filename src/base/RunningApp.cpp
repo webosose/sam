@@ -128,7 +128,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_webprocessid(""),
       m_isFullWindow(true),
       m_lifeStatus(LifeStatus::LifeStatus_STOP),
-      m_launchCount(0),
+      m_isFirstLaunch(true),
       m_killingTimer(0),
       m_keepAlive(false),
       m_noSplash(true),
@@ -194,6 +194,13 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
         return false;
     }
 
+    // First launching is completed
+    if (lifeStatus == LifeStatus::LifeStatus_FOREGROUND ||
+        lifeStatus == LifeStatus::LifeStatus_BACKGROUND ||
+        lifeStatus == LifeStatus::LifeStatus_PAUSED ||
+        lifeStatus == LifeStatus::LifeStatus_PRELOADED)
+        m_isFirstLaunch = false;
+
     switch (lifeStatus) {
     case LifeStatus::LifeStatus_STOP:
         // LifeStatus_STOP should not be set directly. Only RunningAppList can set this status.
@@ -203,12 +210,7 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Closed by Itself");
         break;
 
-    case LifeStatus::LifeStatus_PRELOADING:
-        m_launchCount++;
-        break;
-
     case LifeStatus::LifeStatus_LAUNCHING:
-        m_launchCount++;
         if (m_lifeStatus == LifeStatus::LifeStatus_FOREGROUND) {
             Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId,
                          Logger::format("Changed: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(LifeStatus::LifeStatus_RELAUNCHING)));
