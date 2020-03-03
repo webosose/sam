@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,27 +32,29 @@ class AppDescriptionList : public ISingleton<AppDescriptionList>,
 friend class ISingleton<AppDescriptionList>;
 public:
     static bool compare(AppDescriptionPtr me, AppDescriptionPtr another);
-    static bool compareVersion(AppDescriptionPtr me, AppDescriptionPtr another);
 
     virtual ~AppDescriptionList();
 
     void changeLocale();
+
+    void scanApp(const string& appId);
     void scanFull();
     void scanDir(const string& path, const AppLocation& appLocation);
-    void scanApp(const string& appId, const string& folderPath, const AppLocation& appLocation);
 
     AppDescriptionPtr create(const string& appId);
     AppDescriptionPtr getByAppId(const string& appId);
 
     bool add(AppDescriptionPtr appDesc);
-    bool remove(AppDescriptionPtr appDesc);
+    bool removeByAppId(const string& appId);
+    bool removeByObject(AppDescriptionPtr appDesc);
 
     bool isExist(const string& appId);
     void toJson(JValue& json, JValue& properties, bool devmode = false);
 
 private:
     AppDescriptionList();
-    string findAppDir(const string& appId);
+
+    void onRemove(AppDescriptionPtr appDesc);
 
     map<string, AppDescriptionPtr> m_map;
 };

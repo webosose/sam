@@ -167,13 +167,13 @@ AppLocation AppDescription::toAppLocation(const string& type)
 AppDescription::AppDescription(const string& appId)
     : m_appLocation(AppLocation::AppLocation_None),
       m_folderPath(""),
-      m_appType(AppType::AppType_None),
       m_appId(appId),
-      m_version("1.0.0"),
+      m_appType(AppType::AppType_None),
       m_intVersion(1, 0, 0),
       m_absMain(""),
       m_absSplashBackground(""),
-      m_isLocked(false)
+      m_isLocked(false),
+      m_isScanned(false)
 {
 }
 
@@ -181,97 +181,40 @@ AppDescription::~AppDescription()
 {
 }
 
-bool AppDescription::rescan()
+bool AppDescription::scan()
 {
-    JValue applicationPaths = SAMConf::getInstance().getApplicationPaths();
-    for (int i = applicationPaths.arraySize() - 1; i >= 0; i--) {
-        string path = "";
-        string typeByDir = "";
-        string folderPath = "";
-        AppLocation appLocation;
-
-        JValueUtil::getValue(applicationPaths[i], "path", path);
-        JValueUtil::getValue(applicationPaths[i], "typeByDir", typeByDir);
-        appLocation = AppDescription::toAppLocation(typeByDir);
-
-        if (path.empty() || typeByDir.empty() || appLocation == AppLocation::AppLocation_None) {
-            continue;
-        }
-
-        folderPath = File::join(path, m_appId);
-        if (!File::isDirectory(folderPath)) {
-            Logger::info(CLASS_NAME, __FUNCTION__,
-                         Logger::format("Directory is not exist: path(%s) typeByDir(%s)", folderPath.c_str(), typeByDir.c_str()));
-            continue;
-        }
-
-        if (appLocation == AppLocation::AppLocation_Devmode && !SAMConf::getInstance().isDevmodeEnabled()) {
-            Logger::info(CLASS_NAME, __FUNCTION__,
-                         Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", folderPath.c_str(), typeByDir.c_str()));
-            continue;
-        }
-        if (scan(folderPath, appLocation) == true)
-            return true;
+    m_isScanned = false;
+    if (m_appId.empty() || m_folderPath.empty() || m_appLocation == AppLocation::AppLocation_None) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "Required members are not set");
+        return false;
     }
-    return false;
 
-//    // rescan file system
-//    AppDescriptionPtr newAppDesc = AppDescriptionList::getInstance().create(appId);
-//    if (!newAppDesc) {
-//        notifyOneAppChange(appDesc, "removed", event);
-//        AppDescriptionList::getInstance().remove(appDesc);
-//        RunningAppList::getInstance().removeByAppId(appId);
-//        return;
-//    }
-//
-//    // compare current app and rescanned app
-//    // if same
-//    if (AppDescriptionList::compare(appDesc, newAppDesc)) {
-//        // (still remains in file system)
-//        return;
-//    }
-//
-//    // if not same
-//    AppDescriptionList::getInstance().add(newAppDesc, true);
-//    notifyOneAppChange(newAppDesc, "updated", event);
-//    Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("clear_memory: event: %d", event));
-//
-//
-//    Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "Failed to install");
-//    AppDescriptionManager::getInstance().reloadApp(appId);
-//
-//    oldAppDesc = AppDescriptionList::getInstance().getById(appId);
-//    if (!oldAppDesc) {
-//        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "reload: no current description, just skip");
-//        break;
-//    }
-//
-//    oldAppDesc->lock();
-//    newAppDesc = AppDescriptionList::getInstance().create(appId);
-//    if (!newAppDesc) {
-//        AppDescriptionManager::getInstance().notifyOneAppChange(oldAppDesc, "removed", AppStatusEvent::AppStatusEvent_Uninstalled);
-//        AppDescriptionList::getInstance().remove(oldAppDesc);
-//        RunningAppList::getInstance().removeByAppId(appId);
-//        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "reload: no app package left, just remove");
-//        break;
-//    }
-//
-//    if (AppDescriptionList::compare(oldAppDesc, newAppDesc)) {
-//        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "reload: no change, just skip");
-//        break;
-//    } else {
-//        AppDescriptionList::getInstance().add(newAppDesc, true);
-//        AppDescriptionManager::getInstance().notifyOneAppChange(newAppDesc, "updated", AppStatusEvent::AppStatusEvent_UpdateCompleted);
-//        Logger::info(getInstance().getClassName(), __FUNCTION__, appId, "reload: different package detected, update info now");
-//    }
+    if (!File::isDirectory(m_folderPath)) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "FolderPath is not exist");
+        return false;
+    }
+
+    if (!isAllowedAppId()) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "AppId is not allowed");
+        return false;
+    }
+
+    if (!loadAppinfo() || !readAppinfo() || !readAsset()) {
+        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "Cannot configure AppDescription");
+        return false;
+    }
+
+    m_isScanned = true;
+    return true;
 }
 
 bool AppDescription::scan(const string& folderPath, const AppLocation& appLocation)
 {
-    Logger::debug(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("folderPath(%s) appLocation(%s)", folderPath.c_str(), toString(appLocation)));
+    Logger::debug(CLASS_NAME, __FUNCTION__, m_appId,
+                  Logger::format("folderPath(%s) appLocation(%s)", folderPath.c_str(), toString(appLocation)));
     m_folderPath = folderPath;
     m_appLocation = appLocation;
-    return loadAppinfo();
+    return scan();
 }
 
 void AppDescription::applyFolderPath(string& path)
@@ -288,13 +231,37 @@ void AppDescription::applyFolderPath(string& path)
     path = File::join(m_folderPath, path);
 }
 
-bool AppDescription::loadAppinfo()
+JValue AppDescription::getJson(JValue& properties)
 {
-    if (!File::isDirectory(m_folderPath)) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "FolderPath is not exist");
-        return false;
+    if (properties.isNull() || !properties.isArray()) {
+        return pbnjson::Object();
     }
 
+    if (properties.arraySize() == 0)
+        return m_appinfo;
+
+    JValue result = pbnjson::Object();
+    JValue notSpecified = pbnjson::Array();
+
+    // get selected props from appinfo
+    for (int i = 0; i < properties.arraySize(); ++i) {
+        string property = "";
+        if (!properties[i].isString() || properties[i].asString(property) != CONV_OK)
+            continue;
+        if (m_appinfo.hasKey(property))
+            result.put(property, m_appinfo[property]);
+        else
+            JValueUtil::addUniqueItemToArray(notSpecified, property);
+    }
+
+    if (notSpecified.arraySize() > 0)
+        result.put("notSpecified", notSpecified);
+
+    return result;
+}
+
+bool AppDescription::loadAppinfo()
+{
     // Specify application description depending on available locale string.
     // This string is in BCP-47 format which can contain a language, language-region,
     // or language-region-script. When SAM loads the appinfo.json file,
@@ -302,16 +269,11 @@ bool AppDescription::loadAppinfo()
     // resources/<language>/<region>/appinfo.json,
     // or resources/<language>/<script>/<region>/appinfo.json respectively.
     // (Note that the script dir goes in between the language and region dirs.)
-
     const string appinfoPath = File::join(m_folderPath, "/appinfo.json");
     m_appinfo = JDomParser::fromFile(appinfoPath.c_str(), JValueUtil::getSchema("ApplicationDescription"));
-    if (m_appinfo.isNull()) {
+    if (!isValidAppInfo(m_appinfo)) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, Logger::format("Failed to parse appinfo.json(%s)", appinfoPath.c_str()));
         m_appinfo = pbnjson::JValue();
-        return false;
-    }
-    if (!m_appinfo.hasKey("id") || m_appinfo["id"].asString() != m_appId) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_appId, "Invalid 'id' in appinfo.json");
         return false;
     }
 
@@ -380,63 +342,13 @@ bool AppDescription::loadAppinfo()
             }
         }
     }
-    readAppinfo();
-    readAsset();
     return true;
-}
-
-JValue AppDescription::getJson(JValue& properties)
-{
-    if (properties.isNull() || !properties.isArray()) {
-        return pbnjson::Object();
-    }
-
-    if (properties.arraySize() == 0)
-        return m_appinfo;
-
-    JValue result = pbnjson::Object();
-    JValue notSpecified = pbnjson::Array();
-
-    // get selected props from appinfo
-    for (int i = 0; i < properties.arraySize(); ++i) {
-        string property = "";
-        if (!properties[i].isString() || properties[i].asString(property) != CONV_OK)
-            continue;
-        if (m_appinfo.hasKey(property))
-            result.put(property, m_appinfo[property]);
-        else
-            JValueUtil::addUniqueItemToArray(notSpecified, property);
-    }
-
-    if (notSpecified.arraySize() > 0)
-        result.put("notSpecified", notSpecified);
-
-    return result;
 }
 
 bool AppDescription::readAppinfo()
 {
-    if (m_appinfo.isNull()) {
+    if (!isValidAppInfo(m_appinfo))
         return false;
-    }
-
-    if ((!m_appinfo.hasKey("folderPath")) ||
-        (!m_appinfo.hasKey("id")) ||
-        (!m_appinfo.hasKey("main")) ||
-        (!m_appinfo.hasKey("title"))) {
-        return false;
-    }
-
-    // appId
-    if (m_appId != m_appinfo["id"].asString()) {
-        return false;
-    }
-    if (AppLocation::AppLocation_System_ReadWrite == m_appLocation && !isPrivilegedAppId()) {
-        return false;
-    }
-    if (AppLocation::AppLocation_Devmode == m_appLocation && isPrivilegedAppId()) {
-        return false;
-    }
 
     // entry_point
     JValueUtil::getValue(m_appinfo, "main", m_absMain);
@@ -449,16 +361,18 @@ bool AppDescription::readAppinfo()
         m_absSplashBackground = string("file://") + m_folderPath + string("/") + m_absSplashBackground;
 
     // version
-    m_version = m_appinfo["version"].asString();
+    string version = "1.0.0";
+    JValueUtil::getValue(m_appinfo, "version", version);
     vector<string> versionInfo;
-    boost::split(versionInfo, m_version, boost::is_any_of("."));
+    boost::split(versionInfo, version, boost::is_any_of("."));
     uint16_t major_ver = versionInfo.size() > 0 ? (uint16_t) stoi(versionInfo[0]) : 0;
     uint16_t minor_ver = versionInfo.size() > 1 ? (uint16_t) stoi(versionInfo[1]) : 0;
     uint16_t micro_ver = versionInfo.size() > 2 ? (uint16_t) stoi(versionInfo[2]) : 0;
     m_intVersion = { major_ver, minor_ver, micro_ver };
 
     // app_type
-    bool privilegedJail = m_appinfo.hasKey("privilegedJail") ? m_appinfo["privilegedJail"].asBool() : false;
+    bool privilegedJail = false;
+    JValueUtil::getValue(m_appinfo, "privilegedJail", privilegedJail);
     m_appType = toAppType(m_appinfo["type"].asString());
 
     if (m_appType == AppType::AppType_Native && privilegedJail)
@@ -469,17 +383,14 @@ bool AppDescription::readAppinfo()
     else
         m_appinfo.put("systemApp", false);
 
-    if (AppLocation::AppLocation_Devmode == m_appLocation) {
+    if (AppLocation::AppLocation_Devmode == m_appLocation)
         m_appinfo.put("inspectable", true);
-    }
-
     return true;
 }
 
-void AppDescription::readAsset()
+bool AppDescription::readAsset()
 {
     string sysAssetsBasePath = "sys-assets";
-
     JValueUtil::getValue(m_appinfo, "sysAssetsBasePath", sysAssetsBasePath);
 
     for (const auto& key : ASSETS_SUPPORTED) {
@@ -521,5 +432,6 @@ void AppDescription::readAsset()
         string defaultAsset = File::join(sysAssetsBasePath, filename);
         m_appinfo.put(key, defaultAsset);
     }
+    return true;
 }
 

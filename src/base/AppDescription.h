@@ -76,11 +76,9 @@ public:
     AppDescription(const string& appId);
     virtual ~AppDescription();
 
+    bool scan();
     bool scan(const string& folderPath, const AppLocation& appLocation);
-    bool rescan();
-
     void applyFolderPath(string& path);
-    bool loadAppinfo();
 
     bool isLocked() const
     {
@@ -218,7 +216,6 @@ public:
     {
         if (m_folderPath.length() <= m_appId.length() ||
             strcmp(m_folderPath.c_str() + m_folderPath.length() - m_appId.length(), m_appId.c_str()) != 0) {
-            //Logger::error(CLASS_NAME, __FUNCTION__, m_appId, "App path does not match app id");
             return false;
         }
         return true;
@@ -227,7 +224,7 @@ public:
     bool isDevmodeApp() const
     {
         if (m_appLocation == AppLocation::AppLocation_Devmode)
-        return true;
+            return true;
         return false;
     }
 
@@ -259,6 +256,11 @@ public:
         }
     }
 
+    bool isScanned() const
+    {
+        return m_isScanned;
+    }
+
     bool isSpinnerOnLaunch() const
     {
         bool spinnerOnLaunch = false;
@@ -271,10 +273,10 @@ public:
         switch(m_appLocation) {
         case AppLocation::AppLocation_System_ReadOnly:
         case AppLocation::AppLocation_System_ReadWrite:
-        return true;
+            return true;
 
         default:
-        return false;
+            return false;
         }
         return false;
     }
@@ -302,25 +304,52 @@ private:
     AppDescription& operator=(const AppDescription& appDesc) = delete;
     AppDescription(const AppDescription& appDesc) = delete;
 
+    bool loadAppinfo();
     bool readAppinfo();
-    void readAsset();
+    bool readAsset();
+
+    bool isValidAppInfo()
+    {
+        return isValidAppInfo(m_appinfo);
+    }
+
+    bool isValidAppInfo(JValue& appinfo)
+    {
+        string appId = "";
+
+        if (appinfo.isNull() || !appinfo.isValid()) {
+            return false;
+        }
+        if (!appinfo.hasKey("main") || !appinfo["main"].isString() || !appinfo.hasKey("title") || !appinfo["title"].isString()) {
+            return false;
+        }
+        if (!JValueUtil::getValue(appinfo, "id", appId) || appId != m_appId) {
+            return false;
+        }
+        if (AppLocation::AppLocation_System_ReadWrite == m_appLocation && !isPrivilegedAppId()) {
+            return false;
+        }
+        if (AppLocation::AppLocation_Devmode == m_appLocation && isPrivilegedAppId()) {
+            return false;
+        }
+        return true;
+    }
 
     // Following values are given by external
     AppLocation m_appLocation;
     string m_folderPath;
-
-    AppType m_appType;
-
     string m_appId;
-    string m_version;
-    AppIntVersion m_intVersion;
 
-    // from appinfo
+    // from appinfo.json
+    AppType m_appType;
+    AppIntVersion m_intVersion;
     string m_absMain;
     string m_absSplashBackground;
 
-    bool m_isLocked;
     JValue m_appinfo;
+    // runtime values
+    bool m_isLocked;
+    bool m_isScanned;
 
 };
 

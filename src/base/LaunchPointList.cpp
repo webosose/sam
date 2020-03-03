@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,6 +150,17 @@ bool LaunchPointList::remove(LaunchPointPtr launchPoint)
     return true;
 }
 
+bool LaunchPointList::update(AppDescriptionPtr oldAppDesc, AppDescriptionPtr newAppDesc)
+{
+    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+        if ((*it)->getAppDesc() == oldAppDesc) {
+            (*it)->setAppDesc(newAppDesc);
+            onUpdate(*it);
+        }
+    }
+    return true;
+}
+
 bool LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
 {
     for (auto it = m_list.begin(); it != m_list.end();) {
@@ -243,6 +254,12 @@ void LaunchPointList::onAdd(LaunchPointPtr launchPoint)
     launchPoint->syncDatabase();
     m_list.push_back(launchPoint);
     ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "added");
+}
+
+void LaunchPointList::onUpdate(LaunchPointPtr launchPoint)
+{
+    Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is updated");
+    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "updated");
 }
 
 void LaunchPointList::onRemove(LaunchPointPtr launchPoint)

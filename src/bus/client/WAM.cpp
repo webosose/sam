@@ -54,6 +54,8 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
             Logger::warning(getInstance().getClassName(), __FUNCTION__,
                             Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%s)", appId.c_str(), instanceId.c_str()));
             runningApp = RunningAppList::getInstance().createByAppId(appId);
+            if (runningApp == nullptr)
+                continue; // Cannot find launchPoint
             runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
             runningApp->setWebprocid(webprocessid);
             runningApp->setInstanceId(instanceId);

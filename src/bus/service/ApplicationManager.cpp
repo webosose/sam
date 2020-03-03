@@ -577,7 +577,7 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
         }
 
         if (!launchPoint->getAppDesc()->isVisible()) {
-            AppDescriptionList::getInstance().remove(launchPoint->getAppDesc());
+            AppDescriptionList::getInstance().removeByObject(launchPoint->getAppDesc());
             // removeApp(appId, false, AppStatusEvent::AppStatusEvent_Uninstalled);
         } else {
             // Call call = SettingService::getInstance().checkParentalLock(onCheckParentalLock, appId);

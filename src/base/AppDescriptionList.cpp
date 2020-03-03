@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "base/AppDescriptionList.h"
+
 #include "base/LaunchPointList.h"
 #include "bus/service/ApplicationManager.h"
 #include "conf/SAMConf.h"
@@ -22,37 +23,27 @@
 
 bool AppDescriptionList::compare(AppDescriptionPtr me, AppDescriptionPtr another)
 {
-    if (me->m_appId != another->m_appId)
-        return false;
-    if (me->m_folderPath != another->m_folderPath)
-        return false;
-    if (me->m_version != another->m_version)
-        return false;
-    return true;
-}
-
-bool AppDescriptionList::compareVersion(AppDescriptionPtr me, AppDescriptionPtr another)
-{
     // Non dev app has always higher priority than dev apps
-    if (AppLocation::AppLocation_Devmode != me->getAppLocation() && AppLocation::AppLocation_Devmode == another->getAppLocation()) {
+    if (AppLocation::AppLocation_Devmode != me->getAppLocation() &&
+        AppLocation::AppLocation_Devmode == another->getAppLocation()) {
         return false;
     }
 
-    const AppIntVersion& me_ver = me->getIntVersion();
-    const AppIntVersion& new_ver = another->getIntVersion();
+    const AppIntVersion& meVersion = me->getIntVersion();
+    const AppIntVersion& anotherVersion = another->getIntVersion();
 
     // compare version
-    if (get<0>(me_ver) < get<0>(new_ver))
+    if (get<0>(meVersion) < get<0>(anotherVersion))
         return true;
-    else if (get<0>(me_ver) > get<0>(new_ver))
+    else if (get<0>(meVersion) > get<0>(anotherVersion))
         return false;
-    if (get<1>(me_ver) < get<1>(new_ver))
+    if (get<1>(meVersion) < get<1>(anotherVersion))
         return true;
-    else if (get<1>(me_ver) > get<1>(new_ver))
+    else if (get<1>(meVersion) > get<1>(anotherVersion))
         return false;
-    if (get<2>(me_ver) < get<2>(new_ver))
+    if (get<2>(meVersion) < get<2>(anotherVersion))
         return true;
-    else if (get<2>(me_ver) > get<2>(new_ver))
+    else if (get<2>(meVersion) > get<2>(anotherVersion))
         return false;
 
     // if same version, check type_by_dir priority
@@ -74,8 +65,52 @@ AppDescriptionList::~AppDescriptionList()
 void AppDescriptionList::changeLocale()
 {
     for (auto appDesc : m_map) {
-        appDesc.second->loadAppinfo();
+        appDesc.second->scan();
     }
+}
+
+void AppDescriptionList::scanApp(const string& appId)
+{
+    AppDescriptionPtr newAppDesc = AppDescriptionList::getInstance().create(appId);
+    if (newAppDesc == nullptr) {
+        Logger::warning(getInstance().getClassName(), __FUNCTION__, appId, "Failed to create new AppDescription");
+        return;
+    }
+
+    JValue applicationPaths = SAMConf::getInstance().getApplicationPaths();
+    for (int i = applicationPaths.arraySize() - 1; i >= 0; i--) {
+        string path = "";
+        string typeByDir = "";
+
+        if (!JValueUtil::getValue(applicationPaths[i], "path", path) ||
+            !JValueUtil::getValue(applicationPaths[i], "typeByDir", typeByDir)) {
+            continue;
+        }
+
+        AppLocation appLocation = AppDescription::toAppLocation(typeByDir);
+        if (path.empty() || typeByDir.empty() || appLocation == AppLocation::AppLocation_None) {
+            continue;
+        }
+        if (appLocation == AppLocation::AppLocation_Devmode && !SAMConf::getInstance().isDevmodeEnabled()) {
+            continue;
+        }
+
+        string folderPath = File::join(path, appId);
+        if (!File::isDirectory(folderPath)) {
+            continue;
+        }
+
+        if (newAppDesc->scan(folderPath, appLocation))
+            break;
+    }
+
+    if (!newAppDesc->isScanned()) {
+        Logger::warning(getClassName(), __FUNCTION__, appId, "Failed to scan AppDescription");
+        AppDescriptionList::getInstance().removeByAppId(appId);
+        return;
+    }
+
+    AppDescriptionList::getInstance().add(newAppDesc);
 }
 
 void AppDescriptionList::scanFull()
@@ -84,25 +119,29 @@ void AppDescriptionList::scanFull()
     for (int i = 0; i < applicationPaths.arraySize(); i++) {
         string path = "";
         string typeByDir = "";
-        AppLocation appLocation;
 
-        JValueUtil::getValue(applicationPaths[i], "path", path);
-        JValueUtil::getValue(applicationPaths[i], "typeByDir", typeByDir);
-        appLocation = AppDescription::toAppLocation(typeByDir);
-
-        if (path.empty() || typeByDir.empty() || appLocation == AppLocation::AppLocation_None) {
+        if (!JValueUtil::getValue(applicationPaths[i], "path", path) ||
+            !JValueUtil::getValue(applicationPaths[i], "typeByDir", typeByDir)) {
             Logger::warning(getClassName(), __FUNCTION__,
-                            Logger::format("Invalid appLocation type: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+                            Logger::format("Invalid Configuration: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
             continue;
         }
-        if (!File::isDirectory(path)) {
+
+        AppLocation appLocation = AppDescription::toAppLocation(typeByDir);
+        if (path.empty() || typeByDir.empty() || appLocation == AppLocation::AppLocation_None) {
             Logger::warning(getClassName(), __FUNCTION__,
-                            Logger::format("Directory is not exist: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+                            Logger::format("Invalid Configuration: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
             continue;
         }
         if (appLocation == AppLocation::AppLocation_Devmode && !SAMConf::getInstance().isDevmodeEnabled()) {
-            Logger::debug(getClassName(), __FUNCTION__,
-                          Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+            Logger::info(getClassName(), __FUNCTION__,
+                         Logger::format("Devmode directory is skipped: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
+            continue;
+        }
+
+        if (!File::isDirectory(path)) {
+            Logger::warning(getClassName(), __FUNCTION__,
+                            Logger::format("Directory is not exist: path(%s) typeByDir(%s)", path.c_str(), typeByDir.c_str()));
             continue;
         }
         scanDir(path, appLocation);
@@ -132,7 +171,22 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
                          Logger::format("forderPath(%s)", folderPath.c_str()));
             continue;
         }
-        scanApp(entries[i]->d_name, folderPath, appLocation);
+        if (!File::isDirectory(folderPath)) {
+            Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "The folderPath is not exist");
+            return;
+        }
+
+        AppDescriptionPtr appDesc = AppDescriptionList::getInstance().create(entries[i]->d_name);
+        if (!appDesc) {
+            Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "Cannot create application description");
+            return;
+        }
+        if (!appDesc->scan(folderPath, appLocation)) {
+            Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "Cannot scan AppDescription");
+            return;
+        }
+        AppDescriptionList::getInstance().add(appDesc);
+
     }
 
 Done:
@@ -143,24 +197,6 @@ Done:
     free(entries);
     entries = NULL;
     return;
-}
-
-void AppDescriptionList::scanApp(const string& appId, const string& folderPath, const AppLocation& appLocation)
-{
-    if (!File::isDirectory(folderPath)) {
-        Logger::warning(getClassName(), __FUNCTION__, appId, "The folderPath is not exist");
-        return;
-    }
-    AppDescriptionPtr appDesc = AppDescriptionList::getInstance().create(appId);
-    if (!appDesc) {
-        Logger::warning(getClassName(), __FUNCTION__, appId, "Cannot create application description");
-        return;
-    }
-    if (!appDesc->scan(folderPath, appLocation)) {
-        Logger::warning(getClassName(), __FUNCTION__, appId, "Cannot scan AppDescription");
-        return;
-    }
-    AppDescriptionList::getInstance().add(appDesc);
 }
 
 AppDescriptionPtr AppDescriptionList::create(const string& appId)
@@ -181,53 +217,59 @@ AppDescriptionPtr AppDescriptionList::getByAppId(const string& appId)
     return m_map[appId];
 }
 
-bool AppDescriptionList::add(AppDescriptionPtr appDesc)
+bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
 {
-    if (appDesc == nullptr) {
+    if (newAppDesc == nullptr) {
         Logger::error(getClassName(), __FUNCTION__, "Invalid AppDescription");
         return false;
     }
-
-    if (!appDesc->isAllowedAppId()) {
-        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Appid is not allowed");
+    if (!newAppDesc->isScanned()) {
+        Logger::warning(getClassName(), __FUNCTION__, newAppDesc->getAppId(), "AppDescription is not scanned");
         return false;
     }
 
-    if (AppLocation::AppLocation_Devmode == appDesc->getAppLocation() && appDesc->isPrivilegedAppId()) {
-        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Reserved AppId is not allowed for 3rd party app");
-        return false;
+    if (m_map.find(newAppDesc->getAppId()) == m_map.end()) {
+        Logger::info(getClassName(), __FUNCTION__, newAppDesc->getAppId() + " is added");
+        m_map[newAppDesc->getAppId()] = newAppDesc;
+        ApplicationManager::getInstance().postListApps(newAppDesc, "added", "");
+        LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(newAppDesc);
+        LaunchPointList::getInstance().add(launchPoint);
+        return true;
     }
 
-    if (appDesc->m_appinfo.isNull() || !appDesc->m_appinfo.isValid()) {
-        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: No valid appinfo.json");
-        return false;
+    if (m_map[newAppDesc->getAppId()]->getFolderPath() == newAppDesc->getFolderPath()) {
+        // Same object, we don't need to update this
+        return true;
     }
 
-    if (m_map.find(appDesc->getAppId()) != m_map.end() && !compareVersion(m_map[appDesc->getAppId()], appDesc)) {
-        Logger::warning(getClassName(), __FUNCTION__, appDesc->getAppId(), "Ignored: Version is low");
-        return false;
+    if (compare(m_map[newAppDesc->getAppId()], newAppDesc) || !m_map[newAppDesc->getAppId()]->scan()) {
+        // Higher version or old one is removed.
+        AppDescriptionPtr oldAppDesc = m_map[newAppDesc->getAppId()];
+        m_map[newAppDesc->getAppId()] = newAppDesc;
+        ApplicationManager::getInstance().postListApps(newAppDesc, "updated", "");
+        LaunchPointList::getInstance().update(oldAppDesc, newAppDesc);
     }
-
-    Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
-    m_map[appDesc->getAppId()] = appDesc;
-    ApplicationManager::getInstance().postListApps(appDesc, "added", "");
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(appDesc);
-    LaunchPointList::getInstance().add(launchPoint);
     return true;
 }
 
-bool AppDescriptionList::remove(AppDescriptionPtr appDesc)
+bool AppDescriptionList::removeByAppId(const string& appId)
 {
-    if (appDesc->isSystemApp()) {
-        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "remove system-app in read-write area");
-        SAMConf::getInstance().appendDeletedSystemApp(appDesc->getAppId());
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getAppId() == appId) {
+            onRemove((*it).second);
+            m_map.erase(it);
+            return true;
+        }
     }
+    return false;
+}
+
+bool AppDescriptionList::removeByObject(AppDescriptionPtr appDesc)
+{
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second == appDesc) {
-            LaunchPointList::getInstance().removeByAppDesc(appDesc);
+            onRemove((*it).second);
             m_map.erase(it);
-            Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
-            ApplicationManager::getInstance().postListApps(appDesc, "removed", "");
             return true;
         }
     }
@@ -256,4 +298,15 @@ void AppDescriptionList::toJson(JValue& json, JValue& properties, bool devmode)
             item = appDesc.second->getJson();
         json.append(item);
     }
+}
+
+void AppDescriptionList::onRemove(AppDescriptionPtr appDesc)
+{
+    if (appDesc->isSystemApp()) {
+        Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId(), "remove system-app in read-write area");
+        SAMConf::getInstance().appendDeletedSystemApp(appDesc->getAppId());
+    }
+    LaunchPointList::getInstance().removeByAppDesc(appDesc);
+    Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
+    ApplicationManager::getInstance().postListApps(appDesc, "removed", "");
 }

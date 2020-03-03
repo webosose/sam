@@ -68,6 +68,10 @@ public:
     {
         return m_appDesc;
     }
+    void setAppDesc(AppDescriptionPtr appDesc)
+    {
+        m_appDesc = appDesc;
+    }
 
     const string getAppId() const
     {

@@ -46,6 +46,7 @@ public:
     LaunchPointPtr getByLaunchPointId(const string& launchPointId);
 
     bool add(LaunchPointPtr launchPoint);
+    bool update(AppDescriptionPtr prevAppDesc, AppDescriptionPtr currAppDesc);
     bool remove(LaunchPointPtr launchPoint);
     bool removeByAppDesc(AppDescriptionPtr appDesc);
     bool removeByAppId(const string& appId);
@@ -60,6 +61,7 @@ private:
     LaunchPointList();
 
     void onAdd(LaunchPointPtr launchPoint);
+    void onUpdate(LaunchPointPtr launchPoint);
     void onRemove(LaunchPointPtr launchPoint);
 
     list<LaunchPointPtr> m_list;

@@ -75,7 +75,7 @@ public:
 
     static bool isVerbose()
     {
-        return false;
+        return true;
     }
 
     static void logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload);

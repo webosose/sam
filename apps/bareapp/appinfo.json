@@ -1,0 +1,12 @@
+{
+  "id": "bareapp",
+  "version": "99.99.99",
+  "vendor": "LG Electronics, Inc.",
+  "type": "web",
+  "main": "index.html",
+  "title": "Bare App",
+  "uiRevision": "2",
+  "miniicon": "icon.png",
+  "largeIcon": "icon.png",
+  "icon": "icon.png"
+}
