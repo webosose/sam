@@ -38,7 +38,6 @@ SchemaChecker::SchemaChecker()
     m_APISchemaFiles[ApplicationManager::METHOD_ADD_LAUNCHPOINT] = "applicationManager.addLaunchPoint";
     m_APISchemaFiles[ApplicationManager::METHOD_UPDATE_LAUNCHPOINT] = "applicationManager.updateLaunchPoint";
     m_APISchemaFiles[ApplicationManager::METHOD_REMOVE_LAUNCHPOINT] = "applicationManager.removeLaunchPoint";
-    m_APISchemaFiles[ApplicationManager::METHOD_MOVE_LAUNCHPOINT] = "applicationManager.moveLaunchPoint";
     m_APISchemaFiles[ApplicationManager::METHOD_LIST_LAUNCHPOINTS] = "applicationManager.listLaunchPoints";
 }
 

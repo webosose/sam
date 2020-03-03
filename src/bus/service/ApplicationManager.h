@@ -70,7 +70,6 @@ public:
     static const char* METHOD_ADD_LAUNCHPOINT;
     static const char* METHOD_UPDATE_LAUNCHPOINT;
     static const char* METHOD_REMOVE_LAUNCHPOINT;
-    static const char* METHOD_MOVE_LAUNCHPOINT;
     static const char* METHOD_LIST_LAUNCHPOINTS;
 
     static const char* METHOD_MANAGER_INFO;
@@ -99,7 +98,6 @@ public:
     void addLaunchPoint(LunaTaskPtr lunaTask);
     void updateLaunchPoint(LunaTaskPtr lunaTask);
     void removeLaunchPoint(LunaTaskPtr lunaTask);
-    void moveLaunchPoint(LunaTaskPtr lunaTask);
     void listLaunchPoints(LunaTaskPtr lunaTask);
 
     void managerInfo(LunaTaskPtr lunaTask);

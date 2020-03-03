@@ -55,7 +55,6 @@ const char* ApplicationManager::METHOD_GET_APP_BASE_PATH = "getAppBasePath";
 const char* ApplicationManager::METHOD_ADD_LAUNCHPOINT = "addLaunchPoint";
 const char* ApplicationManager::METHOD_UPDATE_LAUNCHPOINT = "updateLaunchPoint";
 const char* ApplicationManager::METHOD_REMOVE_LAUNCHPOINT = "removeLaunchPoint";
-const char* ApplicationManager::METHOD_MOVE_LAUNCHPOINT = "moveLaunchPoint";
 const char* ApplicationManager::METHOD_LIST_LAUNCHPOINTS = "listLaunchPoints";
 
 const char* ApplicationManager::METHOD_MANAGER_INFO = "managerInfo";
@@ -83,7 +82,6 @@ LSMethod ApplicationManager::METHODS_ROOT[] = {
     { METHOD_ADD_LAUNCHPOINT,          ApplicationManager::onAPICalled, LUNA_METHOD_FLAGS_NONE },
     { METHOD_UPDATE_LAUNCHPOINT,       ApplicationManager::onAPICalled, LUNA_METHOD_FLAGS_NONE },
     { METHOD_REMOVE_LAUNCHPOINT,       ApplicationManager::onAPICalled, LUNA_METHOD_FLAGS_NONE },
-    { METHOD_MOVE_LAUNCHPOINT,         ApplicationManager::onAPICalled, LUNA_METHOD_FLAGS_NONE },
     { METHOD_LIST_LAUNCHPOINTS,        ApplicationManager::onAPICalled, LUNA_METHOD_FLAGS_NONE },
     { 0,                               0,                               LUNA_METHOD_FLAGS_NONE }
 };
@@ -172,7 +170,6 @@ ApplicationManager::ApplicationManager()
     registerApiHandler(CATEGORY_ROOT, METHOD_ADD_LAUNCHPOINT, boost::bind(&ApplicationManager::addLaunchPoint, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_UPDATE_LAUNCHPOINT, boost::bind(&ApplicationManager::updateLaunchPoint, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_REMOVE_LAUNCHPOINT, boost::bind(&ApplicationManager::removeLaunchPoint, this, _1));
-    registerApiHandler(CATEGORY_ROOT, METHOD_MOVE_LAUNCHPOINT, boost::bind(&ApplicationManager::moveLaunchPoint, this, _1));
     registerApiHandler(CATEGORY_ROOT, METHOD_LIST_LAUNCHPOINTS, boost::bind(&ApplicationManager::listLaunchPoints, this, _1));
 
     registerApiHandler(CATEGORY_DEV, METHOD_CLOSE, boost::bind(&ApplicationManager::close, this, _1));
@@ -598,37 +595,6 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
     }
 
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
-}
-
-void ApplicationManager::moveLaunchPoint(LunaTaskPtr lunaTask)
-{
-    const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
-
-    string launchPointId = "";
-    string errorText = "";
-    int position = -1;
-
-    JValueUtil::getValue(requestPayload, "launchPointId", launchPointId);
-    JValueUtil::getValue(requestPayload, "position", position);
-    if (launchPointId.empty()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "launchPointId is empty");
-        return;
-    }
-    if (position < 0) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "position number should be over 0");
-        return;
-    }
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
-    if (launchPoint == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "cannot find launch point");
-        return;
-    }
-    if (!launchPoint->isVisible()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "this launch point is not visible");
-        return;
-    }
-
-    // TODO position needs to be set
 }
 
 void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
