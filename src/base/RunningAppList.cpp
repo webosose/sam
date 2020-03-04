@@ -119,6 +119,7 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         lunaTask->setInstanceId(runningApp->getInstanceId());
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
         lunaTask->setAppId(runningApp->getAppId());
+        lunaTask->setDisplayId(runningApp->getDisplayId());
     }
     return runningApp;
 }
