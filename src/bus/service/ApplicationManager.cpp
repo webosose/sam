@@ -382,10 +382,13 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
     }
 
     Logger::info(getClassName(), __FUNCTION__, appId, Logger::format("lock(%s)", Logger::toString(lock)));
-    appDesc->lock();
+    if (lock)
+        appDesc->lock();
+    else
+        appDesc->unlock();
 
     lunaTask->getResponsePayload().put("id", appId);
-    lunaTask->getResponsePayload().put("locked", lock);
+    lunaTask->getResponsePayload().put("locked", appDesc->isLocked());
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
     return;
 }
