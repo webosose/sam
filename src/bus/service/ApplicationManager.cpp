@@ -250,10 +250,6 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
         return;
     }
 
-    // If it is launch (not relaunch), assign default displayId
-    if (lunaTask->getDisplayId() == -1) {
-        lunaTask->setDisplayId(0);
-    }
     PolicyManager::getInstance().launch(lunaTask);
 }
 
