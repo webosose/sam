@@ -16,7 +16,11 @@
 
 #include "RuntimeInfo.h"
 
+#include <stdlib.h>
+
 RuntimeInfo::RuntimeInfo()
+    : m_displayId(-1),
+      m_isInContainer(false)
 {
     setClassName("RuntimeInfo");
 }
@@ -27,6 +31,16 @@ RuntimeInfo::~RuntimeInfo()
 
 void RuntimeInfo::initialize()
 {
+    string displayId = getenv("DISPLAY_ID");
+    string container = getenv("container");
+
+    if (!displayId.empty()) {
+        m_displayId = stoi(displayId.c_str());
+    }
+    if (!container.empty()) {
+        m_isInContainer = true;
+    }
+    Logger::info(getClassName(), __FUNCTION__, Logger::format("DisplayId(%d) IsInContainer(%s)", m_displayId, Logger::toString(m_isInContainer)));
     load();
 }
 

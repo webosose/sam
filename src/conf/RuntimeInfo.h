@@ -17,6 +17,8 @@
 #ifndef CONF_RUNTIMEINFO_H_
 #define CONF_RUNTIMEINFO_H_
 
+#include <iostream>
+
 #include <pbnjson.hpp>
 
 #include "Environment.h"
@@ -40,6 +42,17 @@ public:
     bool getValue(const string& key, JValue& value);
     bool setValue(const string& key, JValue& value);
 
+    int getDisplayId()
+    {
+        return m_displayId;
+    }
+
+    bool isInContainer()
+    {
+        return m_isInContainer;
+    }
+
+
 private:
     RuntimeInfo();
 
@@ -47,6 +60,9 @@ private:
     bool load();
 
     JValue m_database;
+
+    int m_displayId;
+    bool m_isInContainer;
 
 };
 
