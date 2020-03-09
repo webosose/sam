@@ -259,6 +259,11 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp == nullptr) {
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        return;
+    }
     PolicyManager::getInstance().pause(lunaTask);
     return;
 }
