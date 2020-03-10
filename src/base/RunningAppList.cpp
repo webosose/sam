@@ -238,9 +238,9 @@ bool RunningAppList::removeByObject(RunningAppPtr runningApp)
 
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second == runningApp) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
             return true;
         }
     }
@@ -251,9 +251,9 @@ bool RunningAppList::removeByInstanceId(const string& instanceId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getInstanceId() == instanceId) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
             return true;
         }
     }
@@ -264,9 +264,9 @@ bool RunningAppList::removeByPid(const pid_t pid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getProcessId() == pid) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
             return true;
         }
     }
@@ -277,9 +277,9 @@ bool RunningAppList::removeAllByType(AppType type)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
         } else {
             ++it;
         }
@@ -291,9 +291,9 @@ bool RunningAppList::removeAllByConext(AppType type, const int context)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type && it->second->getContext() == context) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
         } else {
             ++it;
         }
@@ -305,9 +305,9 @@ bool RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint() == launchPoint) {
-            RunningAppPtr runningApp = it->second;
+            RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(runningApp);
+            onRemove(ptr);
         } else {
             ++it;
         }

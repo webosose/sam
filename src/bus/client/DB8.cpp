@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ bool DB8::onResponse(LSHandle* sh, LSMessage* message, void* context)
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
     if (responsePayload.isNull())
-        return true;
+        return false;
     return true;
 }
 

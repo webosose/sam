@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,9 +81,12 @@ int main(int argc, char **argv)
     sigaction(SIGABRT, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
 
-    MainDaemon::getInstance().initialize();
-    MainDaemon::getInstance().start();
-    MainDaemon::getInstance().finalize();
-
+    try {
+        MainDaemon::getInstance().initialize();
+        MainDaemon::getInstance().start();
+        MainDaemon::getInstance().finalize();
+    } catch(...) {
+        Logger::info(CLASS_NAME, __FUNCTION__, "Failed to start SAM");
+    }
     return EXIT_SUCCESS;
 }
