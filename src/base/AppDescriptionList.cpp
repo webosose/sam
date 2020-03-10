@@ -190,12 +190,14 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
     }
 
 Done:
-    for (int i = 0; i < appCount; ++i) {
-        if (entries[i])
-            free(entries[i]);
+    if (entries != NULL) {
+        for (int i = 0; i < appCount; ++i) {
+            if (entries[i])
+                free(entries[i]);
+        }
+        free(entries);
+        entries = NULL;
     }
-    free(entries);
-    entries = NULL;
     return;
 }
 

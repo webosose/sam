@@ -112,7 +112,7 @@ public:
         m_windowId = windowId;
     }
 
-    const int getDisplayId() const
+    int getDisplayId() const
     {
         return m_displayId;
     }
@@ -125,7 +125,7 @@ public:
             m_displayId = displayId;
     }
 
-    const bool isFullWindow() const
+    bool isFullWindow() const
     {
         return m_isFullWindow;
     }

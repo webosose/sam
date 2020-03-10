@@ -145,7 +145,7 @@ public:
         Logger::warning("LunaTask", __FUNCTION__, Logger::format("errorCode(%d) errorText(%s)", errorCode, errorText.c_str()));
     }
 
-    const int getDisplayId();
+    int getDisplayId();
     void setDisplayId(const int displayId);
 
     const string getCaller() const

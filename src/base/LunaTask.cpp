@@ -20,7 +20,7 @@
 #include "RunningAppList.h"
 #include "util/JValueUtil.h"
 
-const int LunaTask::getDisplayId()
+int LunaTask::getDisplayId()
 {
     // TODO This is temp solution about displayId
     // When home app support peropery. Please detete following code block

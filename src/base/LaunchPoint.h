@@ -138,8 +138,6 @@ public:
 
     const string getImageForRecents() const
     {
-        return m_database["imageForRecents"].asString();
-
         string imageForRecents = "";
         if (JValueUtil::getValue(m_database, "imageForRecents", imageForRecents))
             m_appDesc->applyFolderPath(imageForRecents);

@@ -45,7 +45,7 @@ public:
     void addEnv(map<string, string>& environments);
     void addEnv(const string& variable, const string& value);
 
-    const pid_t getPid() const
+    pid_t getPid() const
     {
         return m_pid;
     }
