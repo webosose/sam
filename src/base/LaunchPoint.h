@@ -25,6 +25,7 @@
 #include <string>
 
 #include "base/AppDescription.h"
+#include "base/LunaTask.h"
 #include "util/JValueUtil.h"
 
 using namespace std;
@@ -153,13 +154,24 @@ public:
         return largeIcon;
     }
 
-    const JValue getParams() const
+    const JValue getParams(LunaTaskPtr lunaTask) const
     {
-        JValue params;
-        if (JValueUtil::getValue(m_database, "params", params)) {
-            return params;
+        JValue paramsInRequest = lunaTask->getParams().duplicate();
+        JValue paramsInDatabase = pbnjson::Object();
+        int displayAffinity = -1;
+
+        JValueUtil::getValue(m_database, "params", paramsInDatabase);
+        paramsInDatabase = paramsInDatabase.duplicate();
+
+        if (paramsInRequest.objectSize() == 0) {
+            return paramsInDatabase;
+        } else if (paramsInRequest.objectSize() == 1 &&
+                   JValueUtil::getValue(paramsInRequest, "displayAffinity", displayAffinity)) {
+            paramsInDatabase.put("displayAffinity", displayAffinity);
+            return paramsInDatabase;
+        } else {
+            return paramsInRequest;
         }
-        return pbnjson::Object();
     }
 
     const string getTitle() const
