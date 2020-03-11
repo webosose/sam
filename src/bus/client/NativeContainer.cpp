@@ -98,7 +98,7 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
         params.put("appId", runningApp->getLaunchPoint()->getAppDesc()->getAppId());
         params.put("params", lunaTask->getParams());
     } else {
-        params = lunaTask->getParams().objectSize() == 0 ? runningApp->getLaunchPoint()->getParams().duplicate() : lunaTask->getParams().duplicate();
+        params = runningApp->getLaunchPoint()->getParams(lunaTask);
         params.put("event", "launch");
         params.put("reason", lunaTask->getReason());
         params.put("appId", lunaTask->getAppId());
