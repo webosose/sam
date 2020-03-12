@@ -152,7 +152,11 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
         if (!runningApp->getPreload().empty()) {
             runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADED);
         } else if (runningApp->isHidden()) {
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+            if (runningApp->isKeepAlive()) {
+                runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
+            } else {
+                runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+            }
         }
     }
 
@@ -179,12 +183,7 @@ void WAM::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     requestPayload.put("reason", lunaTask->getReason());
     requestPayload.put("launchingAppId", lunaTask->getCaller());
     requestPayload.put("launchingProcId", "");
-
-    if (lunaTask->getParams().objectSize() != 0) {
-        requestPayload.put("parameters", lunaTask->getParams());
-    } else {
-        requestPayload.put("parameters", runningApp->getLaunchPoint()->getParams());
-    }
+    requestPayload.put("parameters", runningApp->getLaunchPoint()->getParams(lunaTask));
 
     if (runningApp->isKeepAlive()) {
         requestPayload.put("keepAlive", true);
