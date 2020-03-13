@@ -27,25 +27,39 @@ public:
     virtual ~JValueUtil() {}
 
     static void addUniqueItemToArray(JValue& arr, string& str);
-
-    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, JValue& value);
-    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, string& value);
-    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, int& value);
-    static bool getValue(const JValue& json, const string& firstKey, const string& secondKey, const string& thirdKey, bool& value);
-
-    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, JValue& value);
-    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, string& value);
-    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, int& value);
-    static bool getValue(const JValue& json, const string& mainKey, const string& subKey, bool& value);
-
-    static bool getValue(const JValue& json, const string& key, JValue& value);
-    static bool getValue(const JValue& json, const string& key, string& value);
-    static bool getValue(const JValue& json, const string& key, int& value);
-    static bool getValue(const JValue& json, const string& key, bool& value);
-
     static JSchema getSchema(string name);
 
-    static bool hasKey(const JValue& json, const string& firstKey, const string& secondKey = "", const string& thirdKey = "");
+    template <typename T>
+    static bool getValue(const JValue& json, const string& key, T& value) {
+        if (!json)
+            return false;
+        if (!json.hasKey(key))
+            return false;
+        return convertValue(json[key], value);
+    }
+
+    template <typename... Args>
+    static bool getValue(const JValue& json, const string& key, const string& nextKey, Args& ...rest) {
+        if (!json)
+            return false;
+        if (!json.hasKey(key))
+            return false;
+        if (!json[key].isObject())
+            return false;
+        return getValue(json[key], nextKey, rest...);
+    }
+
+    template <typename... Args>
+    static bool hasKey(const JValue& json, Args ...rest) {
+        JValue value;
+        return getValue(json, rest..., value);
+    }
+
+private:
+    static bool convertValue(const JValue& json, JValue& value);
+    static bool convertValue(const JValue& json, string& value);
+    static bool convertValue(const JValue& json, int& value);
+    static bool convertValue(const JValue& json, bool& value);
 
 private:
     static map<string, JSchema> s_schemas;
