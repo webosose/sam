@@ -109,14 +109,22 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     string instanceId = lunaTask->getInstanceId();
     int displayId = lunaTask->getDisplayId();
 
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+    if (launchPoint && appId.empty()) {
+        appId = launchPoint->getAppId();
+    }
+
     // TODO Currently, only webOS auto supports multiple instances (same appId at once on other displays)
     // Following lines should be modified after WAM supports
-    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0)
-        displayId = -1;
+    RunningAppPtr runningApp = nullptr;
+    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0) {
+        runningApp = getByIds(instanceId, appId, -1);
+    } else {
+        runningApp = getByIds(instanceId, appId, displayId);
+    }
 
-    // Normally, clients doesn't provide all information about running application
+    // Normally, lunaTask doesn't have all information about running application
     // However, SAM needs all information internally during managing application lifecycle.
-    RunningAppPtr runningApp = getByIds(instanceId, launchPointId, appId, displayId);
     if (runningApp) {
         lunaTask->setInstanceId(runningApp->getInstanceId());
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
@@ -133,13 +141,11 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     return runningApp;
 }
 
-RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& launchPointId, const string& appId, const int displayId)
+RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& appId, const int displayId)
 {
     RunningAppPtr runningApp = nullptr;
     if (!instanceId.empty())
         runningApp = getByInstanceId(instanceId);
-    else if (!launchPointId.empty())
-        runningApp = getByLaunchPointId(launchPointId, displayId);
     else if (!appId.empty())
         runningApp = getByAppId(appId, displayId);
 
@@ -147,8 +153,6 @@ RunningAppPtr RunningAppList::getByIds(const string& instanceId, const string& l
         return nullptr;
 
     if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
-        return nullptr;
-    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
         return nullptr;
     if (!appId.empty() && appId != runningApp->getAppId())
         return nullptr;
@@ -172,19 +176,6 @@ RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getToken() == token) {
             return it->second;
-        }
-    }
-    return nullptr;
-}
-
-RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId, const int displayId)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getLaunchPointId() == launchPointId) {
-            if (displayId == -1)
-                return it->second;
-            if ((*it).second->getDisplayId() == displayId)
-                return it->second;
         }
     }
     return nullptr;

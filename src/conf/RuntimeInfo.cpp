@@ -31,13 +31,13 @@ RuntimeInfo::~RuntimeInfo()
 
 void RuntimeInfo::initialize()
 {
-    string displayId = getenv("DISPLAY_ID");
-    string container = getenv("container");
+    char* displayId = getenv("DISPLAY_ID");
+    char* container = getenv("container");
 
-    if (!displayId.empty()) {
-        m_displayId = stoi(displayId.c_str());
+    if (displayId != nullptr) {
+        m_displayId = stoi(displayId);
     }
-    if (!container.empty()) {
+    if (container != nullptr) {
         m_isInContainer = true;
     }
     Logger::info(getClassName(), __FUNCTION__, Logger::format("DisplayId(%d) IsInContainer(%s)", m_displayId, Logger::toString(m_isInContainer)));

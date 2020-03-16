@@ -49,7 +49,7 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
             displayId = RunningApp::getDisplayId(instanceId);
         }
 
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, "", appId);
+        RunningAppPtr runningApp = RunningAppList::getInstance().getByIds(instanceId, appId);
         if (runningApp == nullptr) {
             Logger::warning(getInstance().getClassName(), __FUNCTION__,
                             Logger::format("SAM might be restarted. RunningApp is created by WAM: appId(%s) instanceId(%s)", appId.c_str(), instanceId.c_str()));
@@ -183,7 +183,7 @@ void WAM::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     requestPayload.put("reason", lunaTask->getReason());
     requestPayload.put("launchingAppId", lunaTask->getCaller());
     requestPayload.put("launchingProcId", "");
-    requestPayload.put("parameters", runningApp->getLaunchPoint()->getParams(lunaTask));
+    requestPayload.put("parameters", lunaTask->getParams());
 
     if (runningApp->isKeepAlive()) {
         requestPayload.put("keepAlive", true);
