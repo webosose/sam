@@ -250,15 +250,16 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
         return;
     }
 
-    // If it is launch (not relaunch), assign default displayId
-    if (lunaTask->getDisplayId() == -1) {
-        lunaTask->setDisplayId(0);
-    }
     PolicyManager::getInstance().launch(lunaTask);
 }
 
 void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp == nullptr) {
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        return;
+    }
     PolicyManager::getInstance().pause(lunaTask);
     return;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #include "base/RunningAppList.h"
 
 #include "bus/service/ApplicationManager.h"
+#include "conf/RuntimeInfo.h"
 
 RunningAppList::RunningAppList()
 {
@@ -102,6 +103,7 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
 {
     if (lunaTask == nullptr)
         return nullptr;
+
     string appId = lunaTask->getAppId();
     string launchPointId = lunaTask->getLaunchPointId();
     string instanceId = lunaTask->getInstanceId();
@@ -120,6 +122,13 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
         lunaTask->setAppId(runningApp->getAppId());
         lunaTask->setDisplayId(runningApp->getDisplayId());
+    } else {
+        // default values
+        if (RuntimeInfo::getInstance().isInContainer()) {
+            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
+        } else if (lunaTask->getDisplayId() == -1) {
+            lunaTask->setDisplayId(0);
+        }
     }
     return runningApp;
 }
