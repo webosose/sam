@@ -152,8 +152,10 @@ public:
     {
         if (m_request.getApplicationID() != nullptr) {
             return m_request.getApplicationID();
-        } else {
+        } else if (m_request.getSenderServiceName() != nullptr){
             return m_request.getSenderServiceName();
+        } else {
+            return "unknown";
         }
     }
 
