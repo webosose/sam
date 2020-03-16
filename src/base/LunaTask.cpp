@@ -20,15 +20,17 @@
 #include "RunningAppList.h"
 #include "util/JValueUtil.h"
 
+#define LOG_NAME "LunaTask"
+
 int LunaTask::getDisplayId()
 {
     // TODO This is temp solution about displayId
     // When home app support peropery. Please detete following code block
     if (getAppId().find("home1") != string::npos) {
-        Logger::info("LunaTask", __FUNCTION__, "Reserved AppId. DispalyId is 1");
+        Logger::info(LOG_NAME, __FUNCTION__, "Reserved AppId. DispalyId is 1");
         return 1;
     } else if (getAppId().find("statusbar1") != string::npos) {
-        Logger::info("LunaTask", __FUNCTION__, "Reserved AppId. DispalyId is 1");
+        Logger::info(LOG_NAME, __FUNCTION__, "Reserved AppId. DispalyId is 1");
         return 1;
     }
 
@@ -40,5 +42,13 @@ int LunaTask::getDisplayId()
 
 void LunaTask::setDisplayId(const int displayId)
 {
+    int oldDisplayId = getDisplayId();
+    if (oldDisplayId != -1 && oldDisplayId != displayId) {
+        Logger::warning(LOG_NAME, __FUNCTION__, Logger::format("DisplayId is not empty: Old(%d) New(%d)", oldDisplayId, displayId));
+    }
     m_requestPayload.put("displayId", displayId);
+    if (!m_requestPayload.hasKey("params")) {
+        m_requestPayload.put("params", pbnjson::Object());
+    }
+    m_requestPayload["params"].put("displayAffinity", displayId);
 }
