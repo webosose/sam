@@ -132,9 +132,13 @@ public:
     JValue getParams()
     {
         if (m_requestPayload.hasKey("params"))
-            return m_requestPayload["params"];
+            return m_requestPayload["params"].duplicate();
         else
             return pbnjson::Object();
+    }
+    void setParams(JValue params)
+    {
+        m_requestPayload.put("params", params.duplicate());
     }
 
     void setErrCodeAndText(int errorCode, string errorText)

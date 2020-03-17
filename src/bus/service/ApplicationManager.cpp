@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 LG Electronics, Inc.
+// Copyright (c) 2017-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -239,6 +239,22 @@ void ApplicationManager::detach()
 
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLunaTask(lunaTask);
+
+    // Load params from DB or appinfo.json
+    JValue params = lunaTask->getParams();
+    int displayAffinity = -1;
+    // launchPoint can be nullptr because there is only 'instanceId' in requestPayload
+    if (launchPoint) {
+        if (launchPoint && params.objectSize() == 0) {
+            lunaTask->setParams(launchPoint->getParams());
+        } else if (params.objectSize() == 1 && JValueUtil::getValue(params, "displayAffinity", displayAffinity)) {
+            params = launchPoint->getParams();
+            params.put("displayAffinity", displayAffinity);
+            lunaTask->setParams(params);
+        }
+    }
+
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
         PolicyManager::getInstance().relaunch(lunaTask);

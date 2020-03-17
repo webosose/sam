@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include <string>
 
 #include "base/AppDescription.h"
-#include "base/LunaTask.h"
 #include "util/JValueUtil.h"
 
 using namespace std;
@@ -154,23 +153,13 @@ public:
         return largeIcon;
     }
 
-    const JValue getParams(LunaTaskPtr lunaTask) const
+    JValue getParams() const
     {
-        JValue paramsInRequest = lunaTask->getParams().duplicate();
-        JValue paramsInDatabase = pbnjson::Object();
-        int displayAffinity = -1;
-
-        JValueUtil::getValue(m_database, "params", paramsInDatabase);
-        paramsInDatabase = paramsInDatabase.duplicate();
-
-        if (paramsInRequest.objectSize() == 0) {
-            return paramsInDatabase;
-        } else if (paramsInRequest.objectSize() == 1 &&
-                   JValueUtil::getValue(paramsInRequest, "displayAffinity", displayAffinity)) {
-            paramsInDatabase.put("displayAffinity", displayAffinity);
-            return paramsInDatabase;
+        JValue params;
+        if (JValueUtil::getValue(m_database, "params", params)) {
+            return params.duplicate();
         } else {
-            return paramsInRequest;
+            return pbnjson::Object();
         }
     }
 

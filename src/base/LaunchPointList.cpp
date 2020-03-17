@@ -79,12 +79,10 @@ LaunchPointPtr LaunchPointList::getByLunaTask(LunaTaskPtr lunaTask)
     if (lunaTask == nullptr)
         return nullptr;
 
-    return getByIds(lunaTask->getLaunchPointId(), lunaTask->getAppId());
-}
-
-LaunchPointPtr LaunchPointList::getByIds(const string& launchPointId, const string& appId)
-{
     LaunchPointPtr launchPoint = nullptr;
+    const string& launchPointId = lunaTask->getLaunchPointId();
+    const string& appId = lunaTask->getAppId();
+
     if (!launchPointId.empty())
         launchPoint = getByLaunchPointId(launchPointId);
     else if (!appId.empty())
