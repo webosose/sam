@@ -176,7 +176,12 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
 
     if (lunaTask->getNextStep().empty() && AppType::AppType_Web == runningApp->getLaunchPoint()->getAppDesc()->getAppType()) {
         lunaTask->setNextStep("Complete");
-        // SAM just calls WAM in case of webapp
+
+        if (lunaTask->isLaunchedHidden()) {
+            // We don't need to launch again if it requires 'LaunchedHidden'
+            LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+            return;
+        }
         WAM::getInstance().launch(runningApp, lunaTask);
     } else if (lunaTask->getNextStep().empty()) {
         lunaTask->setNextStep("Launching Native App Again");

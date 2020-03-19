@@ -151,7 +151,7 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     if (runningApp->isFirstLaunch()) {
         if (!runningApp->getPreload().empty()) {
             runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADED);
-        } else if (runningApp->isHidden()) {
+        } else if (runningApp->isLaunchedHidden()) {
             if (runningApp->isKeepAlive()) {
                 runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
             } else {
