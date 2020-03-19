@@ -133,7 +133,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_keepAlive(false),
       m_noSplash(true),
       m_spinner(true),
-      m_isHidden(false),
+      m_launchedHidden(false),
       m_token(0),
       m_context(0),
       m_isRegistered(false)
@@ -161,7 +161,7 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
     payload.put("message", "registered");// TODO this should be removed. Let's use event only.
 
     if (!sendEvent(payload)) {
-        Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId, "Failed to register application");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Failed to register application");
         m_isRegistered = false;
         return;
     }

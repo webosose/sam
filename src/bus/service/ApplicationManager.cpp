@@ -405,7 +405,7 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
     }
 
     runningApp->registerApp(lunaTask);
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    // You don't need to reply here
 }
 
 void ApplicationManager::listApps(LunaTaskPtr lunaTask)

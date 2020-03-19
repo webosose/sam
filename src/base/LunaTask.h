@@ -163,6 +163,13 @@ public:
         }
     }
 
+    bool isLaunchedHidden()
+    {
+        bool launchedHidden = false;
+        JValueUtil::getValue(m_requestPayload, "params", "launchedHidden", launchedHidden);
+        return launchedHidden;
+    }
+
     const string& getReason()
     {
         if (!m_reason.empty())

@@ -177,10 +177,10 @@ public:
             m_spinner = this->getLaunchPoint()->getAppDesc()->isSpinnerOnLaunch();
         }
         JValueUtil::getValue(requestPayload, "preload", m_preload);
-        JValueUtil::getValue(requestPayload, "params", "launchedHidden", m_isHidden);
+        JValueUtil::getValue(requestPayload, "params", "launchedHidden", m_launchedHidden);
 
         JValueUtil::getValue(requestPayload, "keepAlive", m_keepAlive);
-        if (!m_keepAlive && SAMConf::getInstance().isKeepAliveApp(this->getAppId())) {
+        if (m_keepAlive || SAMConf::getInstance().isKeepAliveApp(this->getAppId())) {
             m_keepAlive = true;
         }
     }
@@ -206,9 +206,9 @@ public:
         return m_spinner;
     }
 
-    bool isHidden() const
+    bool isLaunchedHidden() const
     {
-        return m_isHidden;
+        return m_launchedHidden;
     }
 
     bool isFirstLaunch()
@@ -318,7 +318,7 @@ private:
     bool m_keepAlive;
     bool m_noSplash;
     bool m_spinner;
-    bool m_isHidden;
+    bool m_launchedHidden;
 
     string m_reason;
     LSMessageToken m_token;

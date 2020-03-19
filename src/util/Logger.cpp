@@ -167,6 +167,7 @@ Logger::Logger()
     : m_level(LogLevel_DEBUG),
       m_type(LogType_CONSOLE)
 {
+    setbuf(stdout, NULL);
 }
 
 Logger::~Logger()
