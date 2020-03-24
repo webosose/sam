@@ -178,6 +178,7 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     runningApp->getLinuxProcess().addEnv("APP_ID", runningApp->getAppId());
     runningApp->getLinuxProcess().addEnv("DISPLAY_ID", std::to_string(runningApp->getDisplayId()));
     runningApp->getLinuxProcess().addEnv("LS2_NAME", Logger::format("%s-%d", runningApp->getAppId().c_str(), s_instanceCounter));
+    runningApp->setLS2Name(Logger::format("%s-%d", runningApp->getAppId().c_str(), s_instanceCounter));
     runningApp->getLinuxProcess().openLogfile(Logger::format("%s/%s-%d", "/var/log", runningApp->getAppId().c_str(), s_instanceCounter++));
     runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
 

@@ -136,6 +136,7 @@ RunningApp::RunningApp(LaunchPointPtr launchPoint)
       m_launchedHidden(false),
       m_token(0),
       m_context(0),
+      m_ls2name(""),
       m_isRegistered(false)
 {
     m_startTime = Time::getCurrentTime();

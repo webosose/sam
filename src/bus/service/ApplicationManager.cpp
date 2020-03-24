@@ -392,15 +392,15 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 
 void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
 {
-    string appId;
-    if (lunaTask->getRequest().getApplicationID() != nullptr)
-        appId = lunaTask->getRequest().getApplicationID();
-    else
-        appId = lunaTask->getRequest().getSenderServiceName();
+    string ls2name = lunaTask->getCaller();
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
+    // Native app registers its name as *APP_ID-INTGETER* which is given by SAM
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLS2Name(ls2name);
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, appId + " is not running");
+        runningApp = RunningAppList::getInstance().getByAppId(ls2name);
+    }
+    if (runningApp == nullptr) {
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, ls2name + " is not running");
         return;
     }
 

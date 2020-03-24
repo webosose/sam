@@ -194,6 +194,16 @@ RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayI
     return nullptr;
 }
 
+RunningAppPtr RunningAppList::getByLS2Name(const string& ls2name)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getLS2Name() == ls2name) {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
 RunningAppPtr RunningAppList::getByPid(const pid_t pid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
@@ -290,7 +300,11 @@ bool RunningAppList::removeAllByType(AppType type)
 bool RunningAppList::removeAllByConext(AppType type, const int context)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
-        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type && it->second->getContext() == context) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type &&
+            it->second->getContext() == context &&
+            it->second->getLifeStatus() != LifeStatus::LifeStatus_LAUNCHING &&
+            it->second->getLifeStatus() != LifeStatus::LifeStatus_SPLASHING) {
+            // Apps which is in LifeStatus_LAUNCHING & LifeStatus_SPLASHING should not be removed
             RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
             onRemove(ptr);

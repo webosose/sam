@@ -98,6 +98,7 @@ void WAM::onFinalized()
 void WAM::onServerStatusChanged(bool isConnected)
 {
     static string method = string("luna://") + getName() + string("/listRunningApps");
+
     if (isConnected) {
         JValue requestPayload = pbnjson::Object();
         requestPayload.put("includeSysApps", true);
@@ -112,7 +113,11 @@ void WAM::onServerStatusChanged(bool isConnected)
     } else {
         m_listRunningAppsCall.cancel();
 
-        RunningAppList::getInstance().removeAllByType(AppType::AppType_Web);
+        // SAM is running before WAM
+        // Sometimes, app launching request is already in LS2 queue before WAM running
+        if (m_serverStatusCount > 1) {
+            RunningAppList::getInstance().removeAllByType(AppType::AppType_Web);
+        }
     }
 }
 

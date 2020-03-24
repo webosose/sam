@@ -71,6 +71,8 @@ protected:
     virtual void onFinalized() = 0;
     virtual void onServerStatusChanged(bool isConnected) = 0;
 
+    int m_serverStatusCount;
+
 private:
     static bool _onServerStatus(LSHandle* sh, LSMessage* message, void* context);
 
