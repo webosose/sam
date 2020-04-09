@@ -107,7 +107,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     string appId = lunaTask->getAppId();
     string launchPointId = lunaTask->getLaunchPointId();
     string instanceId = lunaTask->getInstanceId();
-    int displayId = lunaTask->getDisplayId();
 
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint && appId.empty()) {
@@ -120,7 +119,12 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0) {
         runningApp = getByIds(instanceId, appId, -1);
     } else {
-        runningApp = getByIds(instanceId, appId, displayId);
+        if (RuntimeInfo::getInstance().isInContainer()) {
+            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
+        } else if (lunaTask->getDisplayId() == -1) {
+            lunaTask->setDisplayId(0);
+        }
+        runningApp = getByIds(instanceId, appId, lunaTask->getDisplayId());
     }
 
     // Normally, lunaTask doesn't have all information about running application
@@ -130,13 +134,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
         lunaTask->setAppId(runningApp->getAppId());
         lunaTask->setDisplayId(runningApp->getDisplayId());
-    } else {
-        // default values
-        if (RuntimeInfo::getInstance().isInContainer()) {
-            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
-        } else if (lunaTask->getDisplayId() == -1) {
-            lunaTask->setDisplayId(0);
-        }
     }
     return runningApp;
 }
