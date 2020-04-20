@@ -107,7 +107,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     string appId = lunaTask->getAppId();
     string launchPointId = lunaTask->getLaunchPointId();
     string instanceId = lunaTask->getInstanceId();
-    int displayId = lunaTask->getDisplayId();
 
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint && appId.empty()) {
@@ -120,7 +119,12 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0) {
         runningApp = getByIds(instanceId, appId, -1);
     } else {
-        runningApp = getByIds(instanceId, appId, displayId);
+        if (RuntimeInfo::getInstance().isInContainer()) {
+            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
+        } else if (lunaTask->getDisplayId() == -1) {
+            lunaTask->setDisplayId(0);
+        }
+        runningApp = getByIds(instanceId, appId, lunaTask->getDisplayId());
     }
 
     // Normally, lunaTask doesn't have all information about running application
@@ -130,13 +134,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
         lunaTask->setAppId(runningApp->getAppId());
         lunaTask->setDisplayId(runningApp->getDisplayId());
-    } else {
-        // default values
-        if (RuntimeInfo::getInstance().isInContainer()) {
-            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
-        } else if (lunaTask->getDisplayId() == -1) {
-            lunaTask->setDisplayId(0);
-        }
     }
     return runningApp;
 }
@@ -189,6 +186,16 @@ RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayI
                 return it->second;
             if ((*it).second->getDisplayId() == displayId)
                 return it->second;
+        }
+    }
+    return nullptr;
+}
+
+RunningAppPtr RunningAppList::getByLS2Name(const string& ls2name)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getLS2Name() == ls2name) {
+            return it->second;
         }
     }
     return nullptr;
@@ -290,7 +297,11 @@ bool RunningAppList::removeAllByType(AppType type)
 bool RunningAppList::removeAllByConext(AppType type, const int context)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
-        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type && it->second->getContext() == context) {
+        if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type &&
+            it->second->getContext() == context &&
+            it->second->getLifeStatus() != LifeStatus::LifeStatus_LAUNCHING &&
+            it->second->getLifeStatus() != LifeStatus::LifeStatus_SPLASHING) {
+            // Apps which is in LifeStatus_LAUNCHING & LifeStatus_SPLASHING should not be removed
             RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
             onRemove(ptr);

@@ -51,21 +51,6 @@ bool AppInstallService::onStatus(LSHandle* sh, LSMessage* message, void* context
     case 30: // All install operations are complete successfully
     case 31: // uninstalled
         AppDescriptionList::getInstance().scanApp(appId);
-        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
-        if (appDesc) {
-            appDesc->unlock();
-        }
-        break;
-
-    case 32: // Need to close app
-        // TODO should we need to close runningApps?
-        break;
-
-    case 41: // Prepare to remove app
-        appDesc = AppDescriptionList::getInstance().getByAppId(appId);
-        if (appDesc) {
-            appDesc->lock();
-        }
         break;
 
     default:

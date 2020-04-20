@@ -56,6 +56,7 @@ bool AbsLunaClient::_onServerStatus(LSHandle* sh, LSMessage* message, void* cont
     else
         Logger::info(client->getClassName(), __FUNCTION__, "Service is down");
 
+    client->m_serverStatusCount++;
     client->m_isConnected = connected;
     client->EventServiceStatusChanged(connected);
     client->onServerStatusChanged(connected);
@@ -63,7 +64,8 @@ bool AbsLunaClient::_onServerStatus(LSHandle* sh, LSMessage* message, void* cont
 }
 
 AbsLunaClient::AbsLunaClient(const string& name)
-    : m_name(name),
+    : m_serverStatusCount(0),
+      m_name(name),
       m_isConnected(false)
 {
     setClassName("AbsLunaClient");

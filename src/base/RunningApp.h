@@ -98,6 +98,15 @@ public:
         }
     }
 
+    const string& getLS2Name() const
+    {
+        return m_ls2name;
+    }
+    void setLS2Name(const string& name)
+    {
+        m_ls2name = name;
+    }
+
     LaunchPointPtr getLaunchPoint() const
     {
         return m_launchPoint;
@@ -326,6 +335,7 @@ private:
 
     // for native app
     NativeProcess m_nativePocess;
+    string m_ls2name;
     bool m_isRegistered;
     LS::Message m_registeredApp;
 

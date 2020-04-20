@@ -43,6 +43,7 @@ public:
     RunningAppPtr getByInstanceId(const string& instanceId);
     RunningAppPtr getByToken(const LSMessageToken& token);
     RunningAppPtr getByAppId(const string& appId, const int displayId = -1);
+    RunningAppPtr getByLS2Name(const string& ls2name);
     RunningAppPtr getByPid(const pid_t pid);
     RunningAppPtr getByWebprocessid(const string& webprocessid);
 

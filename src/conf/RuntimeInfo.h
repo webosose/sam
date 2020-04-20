@@ -49,9 +49,7 @@ public:
 
     bool isInContainer()
     {
-        return false;
-        // TODO this should be enabled to support multiple profiles
-        // return m_isInContainer;
+        return m_isInContainer;
     }
 
 private:
