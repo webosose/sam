@@ -47,9 +47,9 @@ public:
     bool add(LaunchPointPtr launchPoint);
     bool update(AppDescriptionPtr prevAppDesc, AppDescriptionPtr currAppDesc);
     bool remove(LaunchPointPtr launchPoint);
-    bool removeByAppDesc(AppDescriptionPtr appDesc);
-    bool removeByAppId(const string& appId);
-    bool removeByLaunchPointId(const string& launchPointId);
+    void removeByAppDesc(AppDescriptionPtr appDesc);
+    void removeByAppId(const string& appId);
+    void removeByLaunchPointId(const string& launchPointId);
 
     bool isExist(const string& launchPointId);
     void toJson(JValue& json);

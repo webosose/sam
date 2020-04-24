@@ -182,17 +182,17 @@ bool RunningApp::sendEvent(JValue& responsePayload)
     return true;
 }
 
-bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
+void RunningApp::setLifeStatus(LifeStatus lifeStatus)
 {
     if (m_lifeStatus == lifeStatus) {
-        return true;
+        return;
     }
 
     // CLOSING is special transition. It should be allowed all cases
     if (isTransition(m_lifeStatus) && isTransition(lifeStatus) && lifeStatus != LifeStatus::LifeStatus_CLOSING) {
         Logger::warning(CLASS_NAME, __FUNCTION__, m_instanceId,
                         Logger::format("Warning: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
-        return false;
+        return;
     }
 
     // First launching is completed
@@ -242,7 +242,6 @@ bool RunningApp::setLifeStatus(LifeStatus lifeStatus)
 
     ApplicationManager::getInstance().postGetAppLifeStatus(*this);
     ApplicationManager::getInstance().postGetAppLifeEvents(*this);
-    return true;
 }
 
 gboolean RunningApp::onKillingTimer(gpointer context)

@@ -60,7 +60,7 @@ bool DB8::insertLaunchPoint(JValue& json)
     requestPayload["objects"].append(json);
 
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -68,7 +68,9 @@ bool DB8::insertLaunchPoint(JValue& json)
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return false;
+    }
     return true;
 }
 
@@ -93,7 +95,7 @@ bool DB8::updateLaunchPoint(const JValue& props)
     requestPayload.put("query", query);
 
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -101,7 +103,9 @@ bool DB8::updateLaunchPoint(const JValue& props)
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return false;
+    }
     return true;
 }
 
@@ -121,7 +125,7 @@ void DB8::deleteLaunchPoint(const string& launchPointId)
     requestPayload["query"]["where"].append(where);
 
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -129,7 +133,9 @@ void DB8::deleteLaunchPoint(const string& launchPointId)
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return;
+    }
 }
 
 void DB8::onInitialzed()
@@ -229,7 +235,7 @@ void DB8::find()
     requestPayload["query"].put("orderBy", "_rev");
 
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -237,7 +243,9 @@ void DB8::find()
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return;
+    }
 }
 
 bool DB8::onPutKind(LSHandle* sh, LSMessage* message, void* context)
@@ -270,7 +278,7 @@ void DB8::putKind()
 
     JValue requestPayload = SAMConf::getInstance().getDBSchema();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -278,7 +286,9 @@ void DB8::putKind()
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return;
+    }
 }
 
 bool DB8::onPutPermissions(LSHandle* sh, LSMessage* message, void* context)
@@ -308,7 +318,7 @@ void DB8::putPermissions()
 
     JValue requestPayload = SAMConf::getInstance().getDBPermission();
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -316,5 +326,7 @@ void DB8::putPermissions()
         nullptr,
         nullptr,
         nullptr
-    );
+    )) {
+        return;
+    }
 }

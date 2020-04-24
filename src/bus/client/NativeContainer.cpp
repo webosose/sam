@@ -39,9 +39,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     }
 
     getInstance().removeItem(pid);
-    if (!RunningAppList::getInstance().removeByObject(runningApp)) {
-        Logger::error(getInstance().getClassName(), __FUNCTION__, "Failed to remove RunningApp (Internal Error)");
-    }
+    RunningAppList::getInstance().removeByObject(runningApp);
     if (lunaTask) {
         lunaTask->callback(lunaTask);
     }

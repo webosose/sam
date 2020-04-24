@@ -64,7 +64,8 @@ void MainDaemon::initialize()
     RuntimeInfo::getInstance().initialize();
     AppDescriptionList::getInstance().scanFull();
 
-    ApplicationManager::getInstance().attach(m_mainLoop);
+    if (!ApplicationManager::getInstance().attach(m_mainLoop))
+        return;
 
     AppInstallService::getInstance().initialize();
     Bootd::getInstance().initialize();

@@ -44,7 +44,7 @@ public:
     void close(RunningAppPtr runningApp, LunaTaskPtr lunaTask) override;
     void kill(RunningAppPtr runningApp) override;
 
-    bool killApp(RunningAppPtr runningApp, LunaTaskPtr lunaTask = nullptr);
+    void killApp(RunningAppPtr runningApp, LunaTaskPtr lunaTask = nullptr);
 
 protected:
     // AbsLunaClient
