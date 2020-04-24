@@ -60,9 +60,9 @@ bool LunaTaskList::add(LunaTaskPtr lunaTask)
     return true;
 }
 
-bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds)
+void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds)
 {
-    if (lunaTask == nullptr) return false;
+    if (lunaTask == nullptr) return;
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
@@ -72,15 +72,15 @@ bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, c
             (*it)->setErrCodeAndText(errorCode, errorText);
             (*it)->reply();
             m_list.erase(it);
-            return true;
+            return;
         }
     }
-    return false;
+    return;
 }
 
-bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, bool fillIds)
+void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, bool fillIds)
 {
-    if (lunaTask == nullptr) return false;
+    if (lunaTask == nullptr) return;
 
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it) == lunaTask) {
@@ -89,10 +89,10 @@ bool LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, bool fillIds)
             }
             (*it)->reply();
             m_list.erase(it);
-            return true;
+            return;
         }
     }
-    return false;
+    return;
 }
 
 void LunaTaskList::toJson(JValue& array)

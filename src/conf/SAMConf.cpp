@@ -43,7 +43,9 @@ void SAMConf::initialize()
         m_isJailerDisabled = true;
 
     if (!m_isRespawned) {
-        File::createFile(this->getRespawnedPath());
+        if (!File::createFile(this->getRespawnedPath())) {
+            Logger::info(getClassName(), __FUNCTION__, "Failed to create respawned file");
+        }
     }
 
     Logger::info(getClassName(), __FUNCTION__,

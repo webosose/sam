@@ -238,49 +238,46 @@ bool RunningAppList::add(RunningAppPtr runningApp)
     return true;
 }
 
-bool RunningAppList::removeByObject(RunningAppPtr runningApp)
+void RunningAppList::removeByObject(RunningAppPtr runningApp)
 {
     if (runningApp == nullptr)
-        return false;
+        return;
 
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second == runningApp) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
             onRemove(ptr);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
-bool RunningAppList::removeByInstanceId(const string& instanceId)
+void RunningAppList::removeByInstanceId(const string& instanceId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getInstanceId() == instanceId) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
             onRemove(ptr);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
-bool RunningAppList::removeByPid(const pid_t pid)
+void RunningAppList::removeByPid(const pid_t pid)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getProcessId() == pid) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
             onRemove(ptr);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
-bool RunningAppList::removeAllByType(AppType type)
+void RunningAppList::removeAllByType(AppType type)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type) {
@@ -291,10 +288,9 @@ bool RunningAppList::removeAllByType(AppType type)
             ++it;
         }
     }
-    return true;
 }
 
-bool RunningAppList::removeAllByConext(AppType type, const int context)
+void RunningAppList::removeAllByConext(AppType type, const int context)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type &&
@@ -309,10 +305,9 @@ bool RunningAppList::removeAllByConext(AppType type, const int context)
             ++it;
         }
     }
-    return true;
 }
 
-bool RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
+void RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
 {
     for (auto it = m_map.cbegin(); it != m_map.cend() ;) {
         if (it->second->getLaunchPoint() == launchPoint) {
@@ -323,7 +318,6 @@ bool RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
             ++it;
         }
     }
-    return true;
 }
 
 bool RunningAppList::setConext(AppType type, const int context)

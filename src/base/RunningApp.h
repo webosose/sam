@@ -170,7 +170,7 @@ public:
     {
         return m_lifeStatus;
     }
-    bool setLifeStatus(LifeStatus lifeStatus);
+    void setLifeStatus(LifeStatus lifeStatus);
 
     bool isTransition()
     {

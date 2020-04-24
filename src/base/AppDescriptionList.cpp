@@ -254,28 +254,26 @@ bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
     return true;
 }
 
-bool AppDescriptionList::removeByAppId(const string& appId)
+void AppDescriptionList::removeByAppId(const string& appId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second->getAppId() == appId) {
             onRemove((*it).second);
             m_map.erase(it);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
-bool AppDescriptionList::removeByObject(AppDescriptionPtr appDesc)
+void AppDescriptionList::removeByObject(AppDescriptionPtr appDesc)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
         if ((*it).second == appDesc) {
             onRemove((*it).second);
             m_map.erase(it);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
 bool AppDescriptionList::isExist(const string& appId)

@@ -45,8 +45,8 @@ public:
     AppDescriptionPtr getByAppId(const string& appId);
 
     bool add(AppDescriptionPtr appDesc);
-    bool removeByAppId(const string& appId);
-    bool removeByObject(AppDescriptionPtr appDesc);
+    void removeByAppId(const string& appId);
+    void removeByObject(AppDescriptionPtr appDesc);
 
     bool isExist(const string& appId);
     void toJson(JValue& json, JValue& properties, bool devmode = false);

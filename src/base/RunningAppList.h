@@ -49,12 +49,12 @@ public:
 
     bool add(RunningAppPtr runningApp);
 
-    bool removeByObject(RunningAppPtr runningApp);
-    bool removeByInstanceId(const string& instanceId);
-    bool removeByPid(const pid_t pid);
-    bool removeAllByType(AppType type);
-    bool removeAllByConext(AppType type, const int context);
-    bool removeAllByLaunchPoint(LaunchPointPtr launchPoint);
+    void removeByObject(RunningAppPtr runningApp);
+    void removeByInstanceId(const string& instanceId);
+    void removeByPid(const pid_t pid);
+    void removeAllByType(AppType type);
+    void removeAllByConext(AppType type, const int context);
+    void removeAllByLaunchPoint(LaunchPointPtr launchPoint);
 
     bool setConext(AppType type, const int context);
     bool isTransition(bool devmodeOnly);

@@ -159,7 +159,7 @@ bool LaunchPointList::update(AppDescriptionPtr oldAppDesc, AppDescriptionPtr new
     return true;
 }
 
-bool LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
+void LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
 {
     for (auto it = m_list.begin(); it != m_list.end();) {
         if ((*it)->getAppDesc() == appDesc) {
@@ -170,10 +170,9 @@ bool LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
             ++it;
         }
     }
-    return true;
 }
 
-bool LaunchPointList::removeByAppId(const string& appId)
+void LaunchPointList::removeByAppId(const string& appId)
 {
     for (auto it = m_list.begin(); it != m_list.end();) {
         if ((*it)->getAppDesc()->getAppId() == appId) {
@@ -184,20 +183,18 @@ bool LaunchPointList::removeByAppId(const string& appId)
             ++it;
         }
     }
-    return true;
 }
 
-bool LaunchPointList::removeByLaunchPointId(const string& launchPointId)
+void LaunchPointList::removeByLaunchPointId(const string& launchPointId)
 {
     for (auto it = m_list.begin(); it != m_list.end(); ++it) {
         if ((*it)->getLaunchPointId() == launchPointId) {
             LaunchPointPtr launchPoint = *it;
             it = m_list.erase(it);
             onRemove(launchPoint);
-            return true;
+            return;
         }
     }
-    return false;
 }
 
 bool LaunchPointList::isExist(const string& launchPointId)

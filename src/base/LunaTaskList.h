@@ -38,8 +38,8 @@ public:
 
     bool add(LunaTaskPtr lunaTask);
 
-    bool removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds = false);
-    bool removeAfterReply(LunaTaskPtr lunaTask, bool fillIds = false);
+    void removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds = false);
+    void removeAfterReply(LunaTaskPtr lunaTask, bool fillIds = false);
 
     void toJson(JValue& array);
 

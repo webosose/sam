@@ -91,10 +91,9 @@ void MemoryManager::requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask
     requestPayload.put("requiredMemory", 150);
 
     LSErrorSafe error;
-    bool result = true;
     LSMessageToken token = 0;
     Logger::logCallRequest(getClassName(), __FUNCTION__, method, requestPayload);
-    result = LSCallOneReply(
+    if (!LSCallOneReply(
         ApplicationManager::getInstance().get(),
         method.c_str(),
         requestPayload.stringify().c_str(),
@@ -102,8 +101,7 @@ void MemoryManager::requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask
         nullptr,
         &token,
         &error
-    );
-    if (!result) {
+    )) {
         // If calling MM is failed, just skip it.
         lunaTask->callback(lunaTask);
         return;
