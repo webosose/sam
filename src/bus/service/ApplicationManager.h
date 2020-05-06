@@ -117,7 +117,14 @@ public:
 
     void enablePosting()
     {
+        if (m_enableSubscription)
+            return;
+
         m_enableSubscription = true;
+        postGetForegroundAppInfo(false);
+        postRunning(nullptr);
+        postListApps(nullptr, "", "");
+        postListLaunchPoints(nullptr, "");
     }
 
     void disablePosting()

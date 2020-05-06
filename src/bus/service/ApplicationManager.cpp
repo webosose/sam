@@ -848,16 +848,6 @@ void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
     if (!m_enableSubscription) return;
 
     pbnjson::JValue subscriptionPayload;
-    if (!extraInfoOnly) {
-        subscriptionPayload = pbnjson::Object();
-        makeGetForegroundAppInfo(subscriptionPayload, false);
-        subscriptionPayload.put("returnValue", true);
-        subscriptionPayload.put("subscribed", true);
-
-        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfo, subscriptionPayload);
-        m_getForgroundAppInfo->post(subscriptionPayload.stringify().c_str());
-    }
-
     subscriptionPayload = pbnjson::Object();
     makeGetForegroundAppInfo(subscriptionPayload, true);
     subscriptionPayload.put("returnValue", true);
@@ -865,6 +855,17 @@ void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
 
     Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfoExtraInfo, subscriptionPayload);
     m_getForgroundAppInfoExtraInfo->post(subscriptionPayload.stringify().c_str());
+
+    if (extraInfoOnly)
+        return;
+
+    subscriptionPayload = pbnjson::Object();
+    makeGetForegroundAppInfo(subscriptionPayload, false);
+    subscriptionPayload.put("returnValue", true);
+    subscriptionPayload.put("subscribed", true);
+
+    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfo, subscriptionPayload);
+    m_getForgroundAppInfo->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& change, const string& changeReason)
@@ -976,6 +977,7 @@ void ApplicationManager::postRunning(RunningAppPtr runningApp)
 
     if (RunningAppList::getInstance().isTransition(false))
         return;
+
     subscriptionPayload = pbnjson::Object();
     makeRunning(subscriptionPayload, false);
     subscriptionPayload.put("subscribed", true);
