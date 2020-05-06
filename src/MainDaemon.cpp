@@ -153,8 +153,5 @@ void MainDaemon::checkPreconditions()
     isFired = true;
 
     ApplicationManager::getInstance().enablePosting();
-    ApplicationManager::getInstance().postGetForegroundAppInfo(false);
-    ApplicationManager::getInstance().postListApps(nullptr, "", "");
-    ApplicationManager::getInstance().postListLaunchPoints(nullptr, "");
 }
 

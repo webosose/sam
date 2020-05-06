@@ -977,6 +977,7 @@ void ApplicationManager::postRunning(RunningAppPtr runningApp)
 
     if (RunningAppList::getInstance().isTransition(false))
         return;
+
     subscriptionPayload = pbnjson::Object();
     makeRunning(subscriptionPayload, false);
     subscriptionPayload.put("subscribed", true);
