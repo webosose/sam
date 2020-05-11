@@ -26,8 +26,9 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     JValue subscriptionPayload = JDomParser::fromString(response.getPayload());
     Logger::logSubscriptionResponse(getInstance().getClassName(), __FUNCTION__, response, subscriptionPayload);
 
-    if (subscriptionPayload.isNull())
-        return true;
+    if (response.isHubError()) {
+        return false;
+    }
 
     JValue running = pbnjson::Array();
     string appId = "";

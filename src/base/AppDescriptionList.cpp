@@ -97,11 +97,13 @@ void AppDescriptionList::scanApp(const string& appId)
 
         string folderPath = File::join(path, appId);
         if (!File::isDirectory(folderPath)) {
+            Logger::warning(getClassName(), __FUNCTION__, appId, folderPath + " is not exist");
             continue;
         }
 
-        if (newAppDesc->scan(folderPath, appLocation))
+        if (newAppDesc->scan(folderPath, appLocation)) {
             break;
+        }
     }
 
     if (!newAppDesc->isScanned()) {
@@ -152,18 +154,17 @@ void AppDescriptionList::scanFull()
 void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocation)
 {
     dirent** entries = NULL;
-    int appCount = ::scandir(path.c_str(), &entries, 0, alphasort);
-    if (entries == NULL || appCount == 0) {
+    int entryCount = ::scandir(path.c_str(), &entries, 0, alphasort);
+    if (entries == NULL || entryCount == 0) {
         Logger::warning(getClassName(), __FUNCTION__, "Failed to call scandir",
                         Logger::format("path(%s) appLocation(%s)", path.c_str(), AppDescription::toString(appLocation)));
         goto Done;
     }
 
-    for (int i = 0; i < appCount; ++i) {
+    for (int i = 0; i < entryCount; ++i) {
         if (!entries[i] || entries[i]->d_name[0] == '.') {
             continue;
         }
-
         string folderPath = File::join(path, entries[i]->d_name);
         if (appLocation == AppLocation::AppLocation_System_ReadOnly &&
             SAMConf::getInstance().isDeletedSystemApp(entries[i]->d_name)) {
@@ -172,18 +173,18 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
             continue;
         }
         if (!File::isDirectory(folderPath)) {
-            Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "The folderPath is not exist");
-            return;
+            Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, folderPath + " is not exist");
+            continue;
         }
 
         AppDescriptionPtr appDesc = AppDescriptionList::getInstance().create(entries[i]->d_name);
         if (!appDesc) {
             Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "Cannot create application description");
-            return;
+            continue;
         }
         if (!appDesc->scan(folderPath, appLocation)) {
             Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "Cannot scan AppDescription");
-            return;
+            continue;
         }
         AppDescriptionList::getInstance().add(appDesc);
 
@@ -191,7 +192,7 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
 
 Done:
     if (entries != NULL) {
-        for (int i = 0; i < appCount; ++i) {
+        for (int i = 0; i < entryCount; ++i) {
             if (entries[i])
                 free(entries[i]);
         }
