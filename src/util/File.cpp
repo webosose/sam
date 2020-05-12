@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,7 +91,10 @@ bool File::concatToFilename(const string originPath, string& returnPath, const s
 bool File::isDirectory(const string& path)
 {
     struct stat dirStat;
-    if (stat(path.c_str(), &dirStat) != 0 || (dirStat.st_mode & S_IFDIR) == 0) {
+    if (stat(path.c_str(), &dirStat) != 0) {
+        return false;
+    }
+    if ((dirStat.st_mode & S_IFDIR) == 0) {
         return false;
     }
     return true;
