@@ -233,8 +233,11 @@ void RunningApp::setLifeStatus(LifeStatus lifeStatus)
                  Logger::format("Changed: %s (%s ==> %s)", getAppId().c_str(), toString(m_lifeStatus), toString(lifeStatus)));
     m_lifeStatus = lifeStatus;
 
-    if (isTransition(m_lifeStatus)) {
-        // Transition should be completed within timeout
+    // Normally, transition should be completed within timeout sec
+    // However, sometimes, it takes more than 10 seconds to launch the target app.
+    // For example, youtube app can be foreground after 30 seconds at boottime
+    // See more info here PLAT-101882.
+    if (isTransition(m_lifeStatus) && m_lifeStatus != LifeStatus::LifeStatus_LAUNCHING) {
         startKillingTimer(TIMEOUT_TRANSITION);
     } else {
         stopKillingTimer();
