@@ -288,7 +288,7 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
         return;
     }
     if (lunaTask->isDevmodeRequest() && !runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
-        Logger::warning(getClassName(), __FUNCTION__, lunaTask->getAppId(), "Only Dev app should be closed using /dev category_API");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Only Dev app should be closed using /dev category_API");
         return;
     }
     PolicyManager::getInstance().close(lunaTask);
