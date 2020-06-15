@@ -87,15 +87,6 @@ public:
     void setDatabase(const JValue& database);
     void updateDatabase(const JValue& json);
 
-    const string getAppDescription() const
-    {
-        string appDescription = "";
-        if (JValueUtil::getValue(m_database, "appDescription", appDescription)) {
-            return appDescription;
-        }
-        return m_appDesc->getAppDescription();
-    }
-
     const string getBgColor() const
     {
         string bgColor = "";

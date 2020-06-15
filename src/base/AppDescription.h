@@ -124,13 +124,6 @@ public:
     }
 
     // Just getter
-    const string getAppDescription() const
-    {
-        string appDescription = "";
-        JValueUtil::getValue(m_appinfo, "appDescription", appDescription);
-        return appDescription;
-    }
-
     const string& getAppId() const
     {
         return m_appId;
@@ -246,14 +239,9 @@ public:
 
     bool isRemovable() const
     {
-        if (AppLocation::AppLocation_System_ReadOnly == m_appLocation ||
-            AppLocation::AppLocation_System_ReadWrite == m_appLocation) {
-            return false;
-        } else {
-            bool removable = true;
-            JValueUtil::getValue(m_appinfo, "removable", removable);
-            return removable;
-        }
+        bool removable = true;
+        JValueUtil::getValue(m_appinfo, "removable", removable);
+        return removable;
     }
 
     bool isScanned() const
