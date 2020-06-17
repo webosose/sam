@@ -378,13 +378,16 @@ bool AppDescription::readAppinfo()
     if (m_appType == AppType::AppType_Native && privilegedJail)
         m_appType = AppType::AppType_Native_Mvpd;
 
-    if (isSystemApp())
+    if (isSystemApp()) {
         m_appinfo.put("systemApp", true);
-    else
+        m_appinfo.put("removable", false);
+    } else {
         m_appinfo.put("systemApp", false);
+    }
 
-    if (AppLocation::AppLocation_Devmode == m_appLocation)
+    if (AppLocation::AppLocation_Devmode == m_appLocation) {
         m_appinfo.put("inspectable", true);
+    }
     return true;
 }
 
