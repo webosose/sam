@@ -46,7 +46,11 @@ void LaunchPointList::sort()
 
 LaunchPointPtr LaunchPointList::createBootmarkByAPI(AppDescriptionPtr appDesc, const JValue& database)
 {
-    string launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_BOOKMARK, appDesc->getAppId());
+    string launchPointId = "";
+
+    if (!JValueUtil::getValue(database, "launchPointId", launchPointId))
+        launchPointId = generateLaunchPointId(LaunchPointType::LaunchPoint_BOOKMARK, appDesc->getAppId());
+
     LaunchPointPtr launchPoint = make_shared<LaunchPoint>(appDesc, launchPointId);
     launchPoint->setType(LaunchPointType::LaunchPoint_BOOKMARK);
     launchPoint->updateDatabase(database);
