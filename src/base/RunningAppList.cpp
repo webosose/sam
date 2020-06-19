@@ -113,10 +113,8 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         appId = launchPoint->getAppId();
     }
 
-    // TODO Currently, only webOS auto supports multiple instances (same appId at once on other displays)
-    // Following lines should be modified after WAM supports
     RunningAppPtr runningApp = nullptr;
-    if (strcmp(WEBOS_TARGET_DISTRO, "webos-auto") != 0) {
+    if (!SAMConf::getInstance().isMultipleInstanceSupported()) {
         runningApp = getByIds(instanceId, appId, -1);
     } else {
         if (RuntimeInfo::getInstance().isInContainer()) {

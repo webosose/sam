@@ -273,6 +273,12 @@ public:
         return true;
     }
 
+    bool isMultipleInstanceSupported()
+    {
+        // TODO This should be moved in configuration file in the future.
+        return true;
+    }
+
 private:
     SAMConf();
 
