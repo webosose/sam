@@ -124,6 +124,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         // TODO following *instanceId* should be passed by LSM
         if (!runningApp->getInstanceId().empty()) {
             orgForegroundAppInfo[i].put("instanceId", runningApp->getInstanceId());
+            orgForegroundAppInfo[i].put("launchPointId", runningApp->getLaunchPointId());
         }
 
         // SAM knows its child pid better than LSM.

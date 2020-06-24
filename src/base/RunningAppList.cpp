@@ -113,17 +113,12 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         appId = launchPoint->getAppId();
     }
 
-    RunningAppPtr runningApp = nullptr;
-    if (!SAMConf::getInstance().isMultipleInstanceSupported()) {
-        runningApp = getByIds(instanceId, appId, -1);
-    } else {
-        if (RuntimeInfo::getInstance().isInContainer()) {
-            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
-        } else if (lunaTask->getDisplayId() == -1) {
-            lunaTask->setDisplayId(0);
-        }
-        runningApp = getByIds(instanceId, appId, lunaTask->getDisplayId());
+    // TODO currently, SAM only supports a single display per container.
+    if (RuntimeInfo::getInstance().isInContainer()) {
+        lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
     }
+
+    RunningAppPtr runningApp = getByIds(instanceId, appId, lunaTask->getDisplayId());
 
     // Normally, lunaTask doesn't have all information about running application
     // However, SAM needs all information internally during managing application lifecycle.
