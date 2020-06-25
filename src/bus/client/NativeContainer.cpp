@@ -41,7 +41,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     getInstance().removeItem(pid);
     RunningAppList::getInstance().removeByObject(runningApp);
     if (lunaTask) {
-        lunaTask->callback(lunaTask);
+        lunaTask->success(lunaTask);
     }
 }
 
@@ -182,7 +182,8 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 
     if (!runningApp->getLinuxProcess().run()) {
         RunningAppList::getInstance().removeByObject(runningApp);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Failed to launch process");
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Failed to launch process");
+        lunaTask->error(lunaTask);
         return;
     }
 
@@ -191,7 +192,7 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 
     addItem(runningApp->getInstanceId(), runningApp->getLaunchPointId(), runningApp->getProcessId(), runningApp->getDisplayId());
     Logger::info(getClassName(), __FUNCTION__, runningApp->getAppId(), Logger::format("Launch Time: %lld ms", runningApp->getTimeStamp()));
-    lunaTask->callback(lunaTask);
+    lunaTask->success(lunaTask);
 }
 
 void NativeContainer::pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
@@ -204,7 +205,7 @@ void NativeContainer::close(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
     if (!runningApp->getLinuxProcess().term()) {
         kill(runningApp);
-        lunaTask->callback(lunaTask);
+        lunaTask->success(lunaTask);
         return;
     }
     runningApp->setToken(runningApp->getProcessId());
@@ -212,7 +213,7 @@ void NativeContainer::close(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 
     if (!runningApp->getLinuxProcess().isTracked()) {
         NativeContainer::onKillChildProcess(runningApp->getProcessId(), 0, NULL);
-        lunaTask->callback(lunaTask);
+        lunaTask->success(lunaTask);
     }
 }
 

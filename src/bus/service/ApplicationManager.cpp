@@ -262,7 +262,8 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
     }
 
     if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Cannot find proper launchPoint");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -273,7 +274,8 @@ void ApplicationManager::pause(LunaTaskPtr lunaTask)
 {
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     PolicyManager::getInstance().pause(lunaTask);
@@ -284,11 +286,13 @@ void ApplicationManager::close(LunaTaskPtr lunaTask)
 {
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, lunaTask->getId() + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (lunaTask->isDevmodeRequest() && !runningApp->getLaunchPoint()->getAppDesc()->isDevmodeApp()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Only Dev app should be closed using /dev category_API");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Only Dev app should be closed using /dev category_API");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     PolicyManager::getInstance().close(lunaTask);
@@ -317,7 +321,8 @@ void ApplicationManager::getAppLifeEvents(LunaTaskPtr lunaTask)
 {
     if (!lunaTask->getRequest().isSubscription()) {
         lunaTask->getResponsePayload().put("subscribed", false);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "subscription is required");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "subscription is required");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -334,7 +339,8 @@ void ApplicationManager::getAppLifeStatus(LunaTaskPtr lunaTask)
 {
     if (!lunaTask->getRequest().isSubscription()) {
         lunaTask->getResponsePayload().put("subscribed", false);
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "subscription is required");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "subscription is required");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -377,7 +383,8 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(appId);
     if (!appDesc) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, appId + " was not found OR Unsupported Application Type");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, appId + " was not found OR Unsupported Application Type");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -403,7 +410,8 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
         runningApp = RunningAppList::getInstance().getByAppId(ls2name);
     }
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, ls2name + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, ls2name + " is not running");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -439,7 +447,8 @@ void ApplicationManager::getAppStatus(LunaTaskPtr lunaTask)
     JValueUtil::getValue(lunaTask->getRequestPayload(), "appInfo", appInfo);
 
     if (appId.empty()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (lunaTask->getRequest().isSubscription()) {
@@ -479,13 +488,15 @@ void ApplicationManager::getAppInfo(LunaTaskPtr lunaTask)
 
     string appId = requestPayload["id"].asString();
     if (appId.empty()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(appId);
     if (!appDesc) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + appId);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -509,16 +520,19 @@ void ApplicationManager::getAppBasePath(LunaTaskPtr lunaTask)
     string appId = requestPayload["appId"].asString();
 
     if (appId.empty()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid appId specified");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(appId);
     if (!appDesc) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Invalid appId specified: " + appId);
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified: " + appId);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (lunaTask->getCaller() != appId) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Not allowed. Allow only for the info of calling app itself.");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -533,21 +547,22 @@ void ApplicationManager::addLaunchPoint(LunaTaskPtr lunaTask)
     const pbnjson::JValue& requestPayload = lunaTask->getRequestPayload();
 
     if (lunaTask->getAppId().empty()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "missing required 'id' parameter");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "missing required 'id' parameter");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     AppDescriptionPtr appDesc = AppDescriptionList::getInstance().getByAppId(lunaTask->getAppId());
     if (!appDesc) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask,
-                                                     ErrCode_GENERAL,
-                                                     "Invalid appId specified OR Unsupported Application Type: " + lunaTask->getAppId());
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid appId specified OR Unsupported Application Type: " + lunaTask->getAppId());
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().createBootmarkByAPI(appDesc, requestPayload);
     if (!launchPoint) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Cannot create bookmark");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot create bookmark");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -562,12 +577,14 @@ void ApplicationManager::updateLaunchPoint(LunaTaskPtr lunaTask)
 
     string launchPointId = "";
     if (!JValueUtil::getValue(requestPayload, "launchPointId", launchPointId)) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "launchPointId is empty");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "launchPointId is empty");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "cannot find launch point");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -581,40 +598,16 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
     if (launchPoint == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find launch point");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
     if (!launchPoint->isRemovable()) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "This launchPoint cannot be removable");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "This launchPoint cannot be removable");
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
-
-    switch(launchPoint->getType()) {
-    case LaunchPointType::LaunchPoint_DEFAULT:
-        if (AppLocation::AppLocation_System_ReadOnly != launchPoint->getAppDesc()->getAppLocation()) {
-            Call call = AppInstallService::getInstance().remove(launchPoint->getAppDesc()->getAppId());
-            Logger::info(getClassName(), __FUNCTION__, launchPoint->getAppDesc()->getAppId(), "requested_to_appinstalld");
-        }
-
-        if (!launchPoint->getAppDesc()->isVisible()) {
-            AppDescriptionList::getInstance().removeByObject(launchPoint->getAppDesc());
-            // removeApp(appId, false, AppStatusEvent::AppStatusEvent_Uninstalled);
-        } else {
-            // Call call = SettingService::getInstance().checkParentalLock(onCheckParentalLock, appId);
-        }
-        break;
-
-    case LaunchPointType::LaunchPoint_BOOKMARK:
-        LaunchPointList::getInstance().remove(launchPoint);
-        break;
-
-    default:
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid launch point type");
-        return;
-
-    }
-
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    PolicyManager::getInstance().removeLaunchPoint(lunaTask);
 }
 
 void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)

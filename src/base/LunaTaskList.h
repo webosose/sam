@@ -37,8 +37,6 @@ public:
     LunaTaskPtr getByToken(const LSMessageToken& token);
 
     bool add(LunaTaskPtr lunaTask);
-
-    void removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds = false);
     void removeAfterReply(LunaTaskPtr lunaTask, bool fillIds = false);
 
     void toJson(JValue& array);

@@ -64,7 +64,7 @@ public:
 
     }
 
-    const string& getInstanceId()  const
+    const string& getInstanceId() const
     {
         return m_instanceId;
     }
@@ -73,7 +73,7 @@ public:
         m_instanceId = instanceId;
     }
 
-    const string& getLaunchPointId()  const
+    const string& getLaunchPointId() const
     {
         return m_launchPointId;
     }
@@ -186,18 +186,33 @@ public:
         m_reason = reason;
     }
 
-    LunaTaskCallback getAPICallback()
+    void setSuccessCallback(LunaTaskCallback callback)
     {
-        return m_APICallback;
+        m_successCallback = callback;
     }
-    void setAPICallback(LunaTaskCallback callback)
+    bool hasSuccessCallback()
     {
-        m_APICallback = callback;
+        return !m_successCallback.empty();
     }
-    void callback(LunaTaskPtr lunaTask)
+    void success(LunaTaskPtr lunaTask)
     {
-        if (!m_APICallback.empty()) {
-            m_APICallback(lunaTask);
+        if (!m_successCallback.empty()) {
+            m_successCallback(lunaTask);
+        }
+    }
+
+    void setErrorCallback(LunaTaskCallback callback)
+    {
+        m_errorCallback = callback;
+    }
+    bool hasErrorCallback()
+    {
+        return !m_successCallback.empty();
+    }
+    void error(LunaTaskPtr lunaTask)
+    {
+        if (!m_errorCallback.empty()) {
+            m_errorCallback(lunaTask);
         }
     }
 
@@ -267,7 +282,9 @@ private:
 
     string m_reason;
 
-    LunaTaskCallback m_APICallback;
+    LunaTaskCallback m_successCallback;
+    LunaTaskCallback m_errorCallback;
+
     string m_nextStep;
 };
 

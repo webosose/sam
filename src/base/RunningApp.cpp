@@ -150,7 +150,8 @@ RunningApp::~RunningApp()
 void RunningApp::registerApp(LunaTaskPtr lunaTask)
 {
     if (m_isRegistered) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "The app is already registered");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "The app is already registered");
+        lunaTask->error(lunaTask);
         return;
     }
 
@@ -162,7 +163,8 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
     payload.put("message", "registered");// TODO this should be removed. Let's use event only.
 
     if (!sendEvent(payload)) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_GENERAL, "Failed to register application");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to register application");
+        lunaTask->error(lunaTask);
         m_isRegistered = false;
         return;
     }

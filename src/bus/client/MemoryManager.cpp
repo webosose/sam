@@ -68,11 +68,12 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
 
     if (!returnValue) {
         RunningAppList::getInstance().removeByInstanceId(runningApp->getInstanceId());
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, errorCode, errorText);
+        lunaTask->setErrCodeAndText(errorCode, errorText);
+        lunaTask->error(lunaTask);
         return true;
     }
 
-    lunaTask->callback(lunaTask);
+    lunaTask->success(lunaTask);
     return true;
 }
 
@@ -83,7 +84,7 @@ void MemoryManager::requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask
 
     if (!isConnected()) {
         Logger::warning(getClassName(), __FUNCTION__, "MemoryManager is not running. Skip memory reclaiming");
-        lunaTask->callback(lunaTask);
+        lunaTask->success(lunaTask);
         return;
     }
 
@@ -103,7 +104,7 @@ void MemoryManager::requireMemory(RunningAppPtr runningApp, LunaTaskPtr lunaTask
         &error
     )) {
         // If calling MM is failed, just skip it.
-        lunaTask->callback(lunaTask);
+        lunaTask->success(lunaTask);
         return;
     }
     lunaTask->setToken(token);
