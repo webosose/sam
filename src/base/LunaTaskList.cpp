@@ -60,24 +60,6 @@ bool LunaTaskList::add(LunaTaskPtr lunaTask)
     return true;
 }
 
-void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, const int errorCode, const string& errorText, bool fillIds)
-{
-    if (lunaTask == nullptr) return;
-
-    for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-        if ((*it) == lunaTask) {
-            if (fillIds) {
-                (*it)->fillIds((*it)->getResponsePayload());
-            }
-            (*it)->setErrCodeAndText(errorCode, errorText);
-            (*it)->reply();
-            m_list.erase(it);
-            return;
-        }
-    }
-    return;
-}
-
 void LunaTaskList::removeAfterReply(LunaTaskPtr lunaTask, bool fillIds)
 {
     if (lunaTask == nullptr) return;

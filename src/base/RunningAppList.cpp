@@ -88,7 +88,7 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
     if (launchPoint == nullptr) {
-        Logger::warning(getClassName(), __FUNCTION__, "Cannot find proper launchPoint");
+        Logger::warning(getClassName(), __FUNCTION__, "Cannot find launchPoint");
         return nullptr;
     }
     RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
@@ -104,27 +104,36 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     if (lunaTask == nullptr)
         return nullptr;
 
-    string appId = lunaTask->getAppId();
-    string launchPointId = lunaTask->getLaunchPointId();
-    string instanceId = lunaTask->getInstanceId();
-
-    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
-    if (launchPoint && appId.empty()) {
-        appId = launchPoint->getAppId();
+    // TODO currently, SAM only supports a single display per container.
+    if (RuntimeInfo::getInstance().isInContainer()) {
+        lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
     }
+
+    const string& appId = lunaTask->getAppId();
+    const string& launchPointId = lunaTask->getLaunchPointId();
+    const string& instanceId = lunaTask->getInstanceId();
+    const int displayId = lunaTask->getDisplayId();
 
     RunningAppPtr runningApp = nullptr;
-    if (!SAMConf::getInstance().isMultipleInstanceSupported()) {
-        runningApp = getByIds(instanceId, appId, -1);
-    } else {
-        if (RuntimeInfo::getInstance().isInContainer()) {
-            lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
-        } else if (lunaTask->getDisplayId() == -1) {
-            lunaTask->setDisplayId(0);
-        }
-        runningApp = getByIds(instanceId, appId, lunaTask->getDisplayId());
-    }
+    if (!instanceId.empty())
+        runningApp = getByInstanceId(instanceId);
+    else if (!launchPointId.empty())
+        runningApp = getByLaunchPointId(launchPointId, displayId);
+    else if (!appId.empty())
+        runningApp = getByAppId(appId, displayId);
 
+    if (runningApp == nullptr)
+        return nullptr;
+
+    // Check validation
+    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
+        return nullptr;
+    if (!appId.empty() && appId != runningApp->getAppId())
+        return nullptr;
+    if (displayId != -1 && displayId != runningApp->getDisplayId())
+        return nullptr;
+
+    // Sync!
     // Normally, lunaTask doesn't have all information about running application
     // However, SAM needs all information internally during managing application lifecycle.
     if (runningApp) {
@@ -166,11 +175,14 @@ RunningAppPtr RunningAppList::getByInstanceId(const string& instanceId)
     return m_map[instanceId];
 }
 
-RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
+RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId, const int displayId)
 {
     for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getToken() == token) {
-            return it->second;
+        if ((*it).second->getLaunchPointId() == launchPointId) {
+            if (displayId == -1)
+                return it->second;
+            if ((*it).second->getDisplayId() == displayId)
+                return it->second;
         }
     }
     return nullptr;
@@ -184,6 +196,16 @@ RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayI
                 return it->second;
             if ((*it).second->getDisplayId() == displayId)
                 return it->second;
+        }
+    }
+    return nullptr;
+}
+
+RunningAppPtr RunningAppList::getByToken(const LSMessageToken& token)
+{
+    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
+        if ((*it).second->getToken() == token) {
+            return it->second;
         }
     }
     return nullptr;

@@ -32,55 +32,36 @@ PolicyManager::~PolicyManager()
 
 void PolicyManager::launch(LunaTaskPtr lunaTask)
 {
-    lunaTask->setAPICallback(boost::bind(&PolicyManager::launch, this, _1));
-    if (!lunaTask->getNextStep().empty()) {
-        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
-    }
+    pre(lunaTask);
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
+    string instanceId = RunningApp::generateInstanceId(lunaTask->getDisplayId());
+    lunaTask->setInstanceId(instanceId);
+    RunningAppPtr runningApp = RunningAppList::getInstance().createByLunaTask(lunaTask);
     if (runningApp == nullptr) {
-        string instanceId = RunningApp::generateInstanceId(lunaTask->getDisplayId());
-
-        lunaTask->setInstanceId(instanceId);
-        runningApp = RunningAppList::getInstance().createByLunaTask(lunaTask);
-        if (runningApp == nullptr) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Cannot create RunningApp");
-            return;
-        }
-        if (runningApp->getLaunchPoint()->getAppDesc()->isLocked()) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH_APP_LOCKED, "app is locked");
-            return;
-        }
-        runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
-        RunningAppList::getInstance().add(runningApp);
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH, "Cannot create RunningApp");
+        lunaTask->error(lunaTask);
+        return;
     }
-
-    if (lunaTask->getNextStep().empty()) {
-        lunaTask->setNextStep("Launch App");
-        MemoryManager::getInstance().requireMemory(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep() == "Launch App") {
-        lunaTask->setNextStep("Complete");
-        runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHED);
-        AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep() == "Complete") {
-        lunaTask->setNextStep("Invalid");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
-    } else {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Unknown Error");
-        RunningAppList::getInstance().removeByObject(runningApp);
+    if (runningApp->getLaunchPoint()->getAppDesc()->isLocked()) {
+        lunaTask->setErrCodeAndText(ErrCode_LAUNCH_APP_LOCKED, "app is locked");
+        lunaTask->error(lunaTask);
+        return;
     }
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
+    RunningAppList::getInstance().add(runningApp);
+
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onRequireMemory, this, _1));
+    MemoryManager::getInstance().requireMemory(runningApp, lunaTask);
 }
 
 void PolicyManager::pause(LunaTaskPtr lunaTask)
 {
-    lunaTask->setAPICallback(boost::bind(&PolicyManager::pause, this, _1));
-    if (!lunaTask->getNextStep().empty()) {
-        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
-    }
+    pre(lunaTask);
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_PAUSE, lunaTask->getId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_CLOSE, lunaTask->getId() + " is not running");
+        lunaTask->error(lunaTask);
         return;
     }
 
@@ -88,38 +69,22 @@ void PolicyManager::pause(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "pause");
         if (runningApp->sendEvent(payload)) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+            lunaTask->success(lunaTask);
             return;
         }
     }
 
-    if (lunaTask->getNextStep().empty()) {
-        lunaTask->setNextStep("Complete");
-        AbsLifeHandler::getLifeHandler(runningApp).pause(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep() == "Complete") {
-        lunaTask->setNextStep("Invalid");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
-    } else {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Unknown Error");
-    }
+    AbsLifeHandler::getLifeHandler(runningApp).pause(runningApp, lunaTask);
 }
 
 void PolicyManager::close(LunaTaskPtr lunaTask)
 {
-    lunaTask->setAPICallback(boost::bind(&PolicyManager::close, this, _1));
-    if (!lunaTask->getNextStep().empty()) {
-        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
-    }
-
-    if (lunaTask->getNextStep() == "Complete") {
-        lunaTask->setNextStep("Invalid");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
-        return;
-    }
+    pre(lunaTask);
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_CLOSE, lunaTask->getId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_CLOSE, lunaTask->getId() + " is not running");
+        lunaTask->error(lunaTask);
         return;
     }
 
@@ -127,41 +92,25 @@ void PolicyManager::close(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "close");
         if (runningApp->sendEvent(payload)) {
-            // The application should be closed during transition timeout
+            // The application should be closed within transition timeout
             // If it isn't, SAM kills the application directly.
             runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+            lunaTask->success(lunaTask);
             return;
         }
     }
 
-    if (lunaTask->getNextStep().empty()) {
-        lunaTask->setNextStep("Complete");
-        AbsLifeHandler::getLifeHandler(runningApp).close(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep() == "Complete") {
-        lunaTask->setNextStep("Invalid");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
-    } else {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Unknown Error");
-        RunningAppList::getInstance().removeByObject(runningApp);
-    }
+    AbsLifeHandler::getLifeHandler(runningApp).close(runningApp, lunaTask);
 }
 
 void PolicyManager::relaunch(LunaTaskPtr lunaTask)
 {
-    lunaTask->setAPICallback(boost::bind(&PolicyManager::relaunch, this, _1));
-    if (!lunaTask->getNextStep().empty()) {
-        Logger::info(getClassName(), __FUNCTION__, lunaTask->getNextStep());
-    }
+    pre(lunaTask);
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
-        if (lunaTask->getNextStep() == "Launching Native App Again") {
-            lunaTask->setNextStep("");
-            launch(lunaTask);
-            return;
-        }
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_PAUSE, lunaTask->getId() + " is not running");
+        lunaTask->setErrCodeAndText(ErrCode_PAUSE, lunaTask->getId() + " is not running");
+        lunaTask->error(lunaTask);
         return;
     }
 
@@ -169,29 +118,92 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "relaunch");
         if (runningApp->sendEvent(payload)) {
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+            lunaTask->success(lunaTask);
             return;
         }
     }
 
-    if (lunaTask->getNextStep().empty() && AppType::AppType_Web == runningApp->getLaunchPoint()->getAppDesc()->getAppType()) {
-        lunaTask->setNextStep("Complete");
-
-        if (lunaTask->isLaunchedHidden()) {
-            // We don't need to launch again if it requires 'LaunchedHidden'
-            LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
-            return;
-        }
-        WAM::getInstance().launch(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep().empty()) {
-        lunaTask->setNextStep("Launching Native App Again");
-        // In case of native app, it should be closed first.
-        NativeContainer::getInstance().close(runningApp, lunaTask);
-    } else if (lunaTask->getNextStep() == "Complete") {
-        lunaTask->setNextStep("Invalid");
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+    if (runningApp->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
+        launch(lunaTask);
     } else {
-        LunaTaskList::getInstance().removeAfterReply(lunaTask, ErrCode_LAUNCH, "Unknown Error");
-        RunningAppList::getInstance().removeByObject(runningApp);
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::launch, this, _1));
+        close(lunaTask);
     }
+}
+
+void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
+{
+    pre(lunaTask);
+    if (RunningAppList::getInstance().getByLunaTask(lunaTask) != nullptr) {
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onCloseForRemove, this, _1));
+        close(lunaTask);
+        return;
+    }
+    onCloseForRemove(lunaTask);
+}
+
+void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
+{
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+    LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
+    switch(launchPoint->getType()) {
+    case LaunchPointType::LaunchPoint_DEFAULT:
+        // TODO launchPoint
+//        if (AppLocation::AppLocation_System_ReadOnly != launchPoint->getAppDesc()->getAppLocation()) {
+//            Call call = AppInstallService::getInstance().remove(launchPoint->getAppDesc()->getAppId());
+//            Logger::info(getClassName(), __FUNCTION__, launchPoint->getAppDesc()->getAppId(), "requested_to_appinstalld");
+//        }
+//
+//        if (!launchPoint->getAppDesc()->isVisible()) {
+//            AppDescriptionList::getInstance().removeByObject(launchPoint->getAppDesc());
+//            // removeApp(appId, false, AppStatusEvent::AppStatusEvent_Uninstalled);
+//        } else {
+//            // Call call = SettingService::getInstance().checkParentalLock(onCheckParentalLock, appId);
+//        }
+        break;
+
+    case LaunchPointType::LaunchPoint_BOOKMARK:
+        LaunchPointList::getInstance().remove(launchPoint);
+        break;
+
+    default:
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid launch point type");
+        lunaTask->error(lunaTask);
+        return;
+    }
+    lunaTask->success(lunaTask);
+}
+
+void PolicyManager::pre(LunaTaskPtr lunaTask)
+{
+    if (!lunaTask->hasSuccessCallback()) {
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+    }
+    if (!lunaTask->hasErrorCallback()) {
+        lunaTask->setErrorCallback(boost::bind(&PolicyManager::onError, this, _1));
+    }
+}
+
+void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
+{
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
+    if (runningApp == nullptr) {
+        lunaTask->setErrCodeAndText(ErrCode_PAUSE, lunaTask->getId() + " is not running");
+        lunaTask->error(lunaTask);
+        return;
+    }
+
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHED);
+    AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
+}
+
+void PolicyManager::onError(LunaTaskPtr lunaTask)
+{
+    LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+}
+
+void PolicyManager::onSuccess(LunaTaskPtr lunaTask)
+{
+    LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
 }

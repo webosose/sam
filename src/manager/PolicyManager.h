@@ -44,8 +44,17 @@ public:
     void close(LunaTaskPtr lunaTask);
     void relaunch(LunaTaskPtr lunaTask);
 
+    void removeLaunchPoint(LunaTaskPtr lunaTask);
+
 private:
     PolicyManager();
+
+    void onRequireMemory(LunaTaskPtr lunaTask);
+    void onCloseForRemove(LunaTaskPtr lunaTask);
+
+    void pre(LunaTaskPtr lunaTask);
+    void onError(LunaTaskPtr lunaTask);
+    void onSuccess(LunaTaskPtr lunaTask);
 };
 
 #endif /* MANAGER_POLICYMANAGER_H_ */

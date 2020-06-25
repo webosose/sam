@@ -41,8 +41,9 @@ public:
     RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
     RunningAppPtr getByIds(const string& instanceId, const string& appId, const int displayId = -1);
     RunningAppPtr getByInstanceId(const string& instanceId);
-    RunningAppPtr getByToken(const LSMessageToken& token);
+    RunningAppPtr getByLaunchPointId(const string& launchPointId, const int displayId = -1);
     RunningAppPtr getByAppId(const string& appId, const int displayId = -1);
+    RunningAppPtr getByToken(const LSMessageToken& token);
     RunningAppPtr getByLS2Name(const string& ls2name);
     RunningAppPtr getByPid(const pid_t pid);
     RunningAppPtr getByWebprocessid(const string& webprocessid);
