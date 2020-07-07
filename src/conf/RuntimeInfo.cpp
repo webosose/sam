@@ -32,15 +32,21 @@ RuntimeInfo::~RuntimeInfo()
 void RuntimeInfo::initialize()
 {
     char* displayId = getenv("DISPLAY_ID");
+    char* deviceType = getenv("DEVICE_TYPE");
     char* container = getenv("container");
 
     if (displayId != nullptr) {
         m_displayId = stoi(displayId);
     }
+    if (deviceType != nullptr) {
+        m_deviceType = deviceType;
+    }
     if (container != nullptr) {
         m_isInContainer = true;
     }
-    Logger::info(getClassName(), __FUNCTION__, Logger::format("DisplayId(%d) IsInContainer(%s)", m_displayId, Logger::toString(m_isInContainer)));
+    Logger::info(getClassName(), __FUNCTION__,
+                 Logger::format("DisplayId(%d) DeviceType(%s) IsInContainer(%s)",
+                                 m_displayId, m_deviceType.c_str(), Logger::toString(m_isInContainer)));
     load();
 }
 

@@ -24,6 +24,7 @@
 #include <string>
 #include <tuple>
 
+#include "conf/RuntimeInfo.h"
 #include "interface/IClassName.h"
 #include "util/JValueUtil.h"
 #include "util/Logger.h"
@@ -296,22 +297,22 @@ private:
     bool readAppinfo();
     bool readAsset();
 
-    bool isValidAppInfo()
-    {
-        return isValidAppInfo(m_appinfo);
-    }
-
     bool isValidAppInfo(JValue& appinfo)
     {
         string appId = "";
+        string deviceType = "";
 
         if (appinfo.isNull() || !appinfo.isValid()) {
             return false;
         }
-        if (!appinfo.hasKey("main") || !appinfo["main"].isString() || !appinfo.hasKey("title") || !appinfo["title"].isString()) {
+        if (!appinfo.hasKey("main") || !appinfo["main"].isString() ||
+            !appinfo.hasKey("title") || !appinfo["title"].isString()) {
             return false;
         }
         if (!JValueUtil::getValue(appinfo, "id", appId) || appId != m_appId) {
+            return false;
+        }
+        if (JValueUtil::getValue(appinfo, "deviceType", deviceType) && deviceType != RuntimeInfo::getInstance().getDeviceType()) {
             return false;
         }
         if (AppLocation::AppLocation_System_ReadWrite == m_appLocation && !isPrivilegedAppId()) {
