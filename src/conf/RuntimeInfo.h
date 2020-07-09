@@ -47,6 +47,11 @@ public:
         return m_displayId;
     }
 
+    const string& getDeviceType()
+    {
+        return m_deviceType;
+    }
+
     bool isInContainer()
     {
         return m_isInContainer;
@@ -61,6 +66,7 @@ private:
     JValue m_database;
 
     int m_displayId;
+    string m_deviceType;
     bool m_isInContainer;
 
 };

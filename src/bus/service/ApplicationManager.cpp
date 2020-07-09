@@ -127,6 +127,11 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
         goto Done;
     }
 
+    // TODO currently, SAM only supports a single display per container.
+    if (RuntimeInfo::getInstance().isInContainer()) {
+        lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
+    }
+
     LunaTaskList::getInstance().add(lunaTask);
     handler(lunaTask);
 
