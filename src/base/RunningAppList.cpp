@@ -104,11 +104,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     if (lunaTask == nullptr)
         return nullptr;
 
-    // TODO currently, SAM only supports a single display per container.
-    if (RuntimeInfo::getInstance().isInContainer()) {
-        lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
-    }
-
     const string& appId = lunaTask->getAppId();
     const string& launchPointId = lunaTask->getLaunchPointId();
     const string& instanceId = lunaTask->getInstanceId();
@@ -128,6 +123,7 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     // Check validation
     if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
         return nullptr;
+
     if (!appId.empty() && appId != runningApp->getAppId())
         return nullptr;
     if (displayId != -1 && displayId != runningApp->getDisplayId())

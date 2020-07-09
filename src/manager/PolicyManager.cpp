@@ -124,7 +124,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
     }
 
     if (runningApp->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
-        launch(lunaTask);
+        AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
     } else {
         lunaTask->setSuccessCallback(boost::bind(&PolicyManager::launch, this, _1));
         close(lunaTask);
