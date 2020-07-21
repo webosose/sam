@@ -183,7 +183,7 @@ void WAM::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     }
 
     // We don't need to launch again if it requires 'LaunchedHidden'
-    if (lunaTask->isLaunchedHidden()) {
+    if (!runningApp->isFirstLaunch() && lunaTask->isLaunchedHidden()) {
         lunaTask->success(lunaTask);
         return;
     }

@@ -114,6 +114,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         return;
     }
 
+    runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     if (runningApp->isRegistered() && SAMConf::getInstance().isAppHandlingSupported()) {
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "relaunch");
