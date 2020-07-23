@@ -78,8 +78,8 @@ void MainDaemon::initialize()
     SettingService::getInstance().initialize();
     WAM::getInstance().initialize();
 
-    Bootd::getInstance().EventGetBootStatus.connect(boost::bind(&MainDaemon::onGetBootStatus, this, _1));
-    Configd::getInstance().EventGetConfigs.connect(boost::bind(&MainDaemon::onGetConfigs, this, _1));
+    Bootd::getInstance().EventGetBootStatus.connect(boost::bind(&MainDaemon::onGetBootStatus, this, boost::placeholders::_1));
+    Configd::getInstance().EventGetConfigs.connect(boost::bind(&MainDaemon::onGetConfigs, this, boost::placeholders::_1));
 }
 
 void MainDaemon::finalize()

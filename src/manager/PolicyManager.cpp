@@ -50,7 +50,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
     runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHING);
     RunningAppList::getInstance().add(runningApp);
 
-    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onRequireMemory, this, _1));
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onRequireMemory, this, boost::placeholders::_1));
     MemoryManager::getInstance().requireMemory(runningApp, lunaTask);
 }
 
@@ -127,7 +127,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
     if (runningApp->getLaunchPoint()->getAppDesc()->getAppType() == AppType::AppType_Web) {
         AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
     } else {
-        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::launch, this, _1));
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::launch, this, boost::placeholders::_1));
         close(lunaTask);
     }
 }
@@ -136,7 +136,7 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 {
     pre(lunaTask);
     if (RunningAppList::getInstance().getByLunaTask(lunaTask) != nullptr) {
-        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onCloseForRemove, this, _1));
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onCloseForRemove, this, boost::placeholders::_1));
         close(lunaTask);
         return;
     }
@@ -145,7 +145,7 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 
 void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 {
-    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, _1));
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, boost::placeholders::_1));
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
     switch(launchPoint->getType()) {
     case LaunchPointType::LaunchPoint_DEFAULT:
@@ -178,16 +178,16 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 void PolicyManager::pre(LunaTaskPtr lunaTask)
 {
     if (!lunaTask->hasSuccessCallback()) {
-        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, boost::placeholders::_1));
     }
     if (!lunaTask->hasErrorCallback()) {
-        lunaTask->setErrorCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
+        lunaTask->setErrorCallback(boost::bind(&PolicyManager::onReplyWithIds, this, boost::placeholders::_1));
     }
 }
 
 void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
 {
-    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, boost::placeholders::_1));
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_PAUSE, lunaTask->getId() + " is not running");
