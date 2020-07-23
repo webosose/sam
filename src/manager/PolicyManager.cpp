@@ -145,7 +145,7 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 
 void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 {
-    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, _1));
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
     switch(launchPoint->getType()) {
     case LaunchPointType::LaunchPoint_DEFAULT:
@@ -178,16 +178,16 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 void PolicyManager::pre(LunaTaskPtr lunaTask)
 {
     if (!lunaTask->hasSuccessCallback()) {
-        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
     }
     if (!lunaTask->hasErrorCallback()) {
-        lunaTask->setErrorCallback(boost::bind(&PolicyManager::onError, this, _1));
+        lunaTask->setErrorCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
     }
 }
 
 void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
 {
-    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onSuccess, this, _1));
+    lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithIds, this, _1));
     RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(lunaTask->getInstanceId());
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_PAUSE, lunaTask->getId() + " is not running");
@@ -199,12 +199,12 @@ void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
     AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
 }
 
-void PolicyManager::onError(LunaTaskPtr lunaTask)
+void PolicyManager::onReplyWithIds(LunaTaskPtr lunaTask)
 {
     LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
 }
 
-void PolicyManager::onSuccess(LunaTaskPtr lunaTask)
+void PolicyManager::onReplyWithoutIds(LunaTaskPtr lunaTask)
 {
-    LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+    LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
