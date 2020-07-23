@@ -53,8 +53,8 @@ private:
     void onCloseForRemove(LunaTaskPtr lunaTask);
 
     void pre(LunaTaskPtr lunaTask);
-    void onError(LunaTaskPtr lunaTask);
-    void onSuccess(LunaTaskPtr lunaTask);
+    void onReplyWithIds(LunaTaskPtr lunaTask);
+    void onReplyWithoutIds(LunaTaskPtr lunaTask);
 };
 
 #endif /* MANAGER_POLICYMANAGER_H_ */

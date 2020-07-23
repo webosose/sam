@@ -241,12 +241,14 @@ bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
     }
 
     if (m_map[newAppDesc->getAppId()]->getFolderPath() == newAppDesc->getFolderPath()) {
-        // Same object, we don't need to update this
-        return true;
-    }
-
-    if (compare(m_map[newAppDesc->getAppId()], newAppDesc) || !m_map[newAppDesc->getAppId()]->scan()) {
-        // Higher version or old one is removed.
+        // same directory means *update*
+        AppDescriptionPtr oldAppDesc = m_map[newAppDesc->getAppId()];
+        m_map[newAppDesc->getAppId()] = newAppDesc;
+        ApplicationManager::getInstance().postListApps(newAppDesc, "updated", "");
+        LaunchPointList::getInstance().update(oldAppDesc, newAppDesc);
+    } else if (compare(m_map[newAppDesc->getAppId()], newAppDesc) || !m_map[newAppDesc->getAppId()]->scan()) {
+        // TODO why second condition is needed?
+        // check version of new app description.
         AppDescriptionPtr oldAppDesc = m_map[newAppDesc->getAppId()];
         m_map[newAppDesc->getAppId()] = newAppDesc;
         ApplicationManager::getInstance().postListApps(newAppDesc, "updated", "");
