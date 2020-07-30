@@ -32,15 +32,15 @@
 
 //                  < RunningApp LIFECYCLES >
 //
-//   |--------------(PRELOADING)------------->PRELOADED
-//   |                                            |
-//   |                                      (RELAUNCHING)
-//   |                                            |
-// STOP--(SPLASHING)-->SPLASHED--(LAUNCHING)-->FORGROUND--(PAUSING)-->PAUSED
-//   |                                            |
-//   |                                      (RELAUNCHING)
-//   |                                            |
-//   |-----------(LAUNCHING:Hidden)---------->BACKGROUND
+//                   (PRELOADING)------------->PRELOADED
+//                      |                         |
+//                      |                   (RELAUNCHING)   -----(PAUSING)------
+//                      |                         |         |                  |
+// STOP--(SPLASHING)-->SPLASHED--(LAUNCHING)-->FORGROUND----|                PAUSED
+//                      |                         |         |                  |
+//                      |                   (RELAUNCHING)   ----(RELAUNCHING)---
+//                      |                         |
+//                 (LAUNCHING:Hidden)---------->BACKGROUND
 
 enum class LifeStatus : int8_t {
     LifeStatus_STOP,

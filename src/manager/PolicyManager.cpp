@@ -69,6 +69,7 @@ void PolicyManager::pause(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "pause");
         if (runningApp->sendEvent(payload)) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSING);
             lunaTask->success(lunaTask);
             return;
         }
@@ -92,6 +93,7 @@ void PolicyManager::close(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "close");
         if (runningApp->sendEvent(payload)) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
             // The application should be closed within transition timeout
             // If it isn't, SAM kills the application directly.
             runningApp->setLifeStatus(LifeStatus::LifeStatus_CLOSING);
@@ -114,11 +116,11 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         return;
     }
 
-    runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
     if (runningApp->isRegistered() && SAMConf::getInstance().isAppHandlingSupported()) {
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "relaunch");
         if (runningApp->sendEvent(payload)) {
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_RELAUNCHING);
             lunaTask->success(lunaTask);
             return;
         }

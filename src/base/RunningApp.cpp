@@ -251,15 +251,15 @@ void RunningApp::setLifeStatus(LifeStatus lifeStatus)
 
 gboolean RunningApp::onKillingTimer(gpointer context)
 {
-    RunningApp* raw = static_cast<RunningApp*>(context);
-    if (raw == nullptr) {
+    RunningApp* self = static_cast<RunningApp*>(context);
+    if (self == nullptr) {
         return G_SOURCE_REMOVE;
     }
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(raw->getInstanceId());
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByInstanceId(self->getInstanceId());
     if (runningApp == nullptr) {
         return G_SOURCE_REMOVE;
     }
-    Logger::warning(CLASS_NAME, __FUNCTION__, raw->m_instanceId, "Transition is timeout");
+    Logger::warning(CLASS_NAME, __FUNCTION__, self->m_instanceId, "Transition is timeout");
 
     AbsLifeHandler::getLifeHandler(runningApp).kill(runningApp);
 
