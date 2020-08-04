@@ -42,7 +42,7 @@ NativeProcess::NativeProcess()
     : m_workingDirectory("/"),
       m_command(""),
       m_pid(-1),
-      m_logfile(-1),
+      m_stdFd(-1),
       m_isTracked(false)
 {
 
@@ -76,16 +76,17 @@ void NativeProcess::addEnv(const string& variable, const string& value)
     m_environments[variable] = value;
 }
 
-void NativeProcess::openLogfile(const string &logfile)
+void NativeProcess::openStdFile(const string& stdFile)
 {
-    closeLogfile();
-    m_logfile = ::open(logfile.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
+    closeStdFd();
+    m_stdFile = stdFile;
+    m_stdFd = ::open(stdFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
 }
 
-void NativeProcess::closeLogfile()
+void NativeProcess::closeStdFd()
 {
-    if (m_logfile >= 0)
-        close(m_logfile);
+    if (m_stdFd >= 0)
+        close(m_stdFd);
 }
 
 bool NativeProcess::run()
@@ -120,8 +121,8 @@ bool NativeProcess::run()
         this,
         &m_pid,
         -1,
-        m_logfile,
-        m_logfile,
+        m_stdFd,
+        m_stdFd,
         &gerr
     );
     if (gerr) {

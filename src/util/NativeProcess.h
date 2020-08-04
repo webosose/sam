@@ -54,8 +54,13 @@ public:
         m_pid = pid;
     }
 
-    void openLogfile(const string& logfile);
-    void closeLogfile();
+    void openStdFile(const string& stdFile);
+    const string& getStdFile()
+    {
+        return m_stdFile;
+    }
+
+    void closeStdFd();
 
     bool run();
     bool term();
@@ -86,7 +91,8 @@ private:
     map<string, string> m_environments;
 
     pid_t m_pid;
-    gint m_logfile;
+    string m_stdFile;
+    gint m_stdFd;
 
     bool m_isTracked;
 

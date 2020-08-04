@@ -28,10 +28,18 @@ int NativeContainer::s_instanceCounter = 1;
 
 void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
 {
+    static string lastLogFile = "";
+
     Logger::info(getInstance().getClassName(), __FUNCTION__, Logger::format("Process(%d) was killed with status(%d)", pid, status));
     g_spawn_close_pid(pid);
 
     RunningAppPtr runningApp = RunningAppList::getInstance().getByPid(pid);
+    if (runningApp && !runningApp->getLinuxProcess().getStdFile().empty()) {
+        if (!lastLogFile.empty()) {
+            File::deleteFile(lastLogFile);
+        }
+        lastLogFile = runningApp->getLinuxProcess().getStdFile();
+    }
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(pid);
     if (runningApp == nullptr) {
         Logger::error(getInstance().getClassName(), __FUNCTION__, "Cannot find RunningApp");
@@ -176,8 +184,13 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     runningApp->getLinuxProcess().addEnv("APP_ID", runningApp->getAppId());
     runningApp->getLinuxProcess().addEnv("DISPLAY_ID", std::to_string(runningApp->getDisplayId()));
     runningApp->getLinuxProcess().addEnv("LS2_NAME", Logger::format("%s-%d", runningApp->getAppId().c_str(), s_instanceCounter));
+
     runningApp->setLS2Name(Logger::format("%s-%d", runningApp->getAppId().c_str(), s_instanceCounter));
-    runningApp->getLinuxProcess().openLogfile(Logger::format("%s/%s-%d", "/var/log", runningApp->getAppId().c_str(), s_instanceCounter++));
+    if (RuntimeInfo::getInstance().getUser().empty())
+        runningApp->getLinuxProcess().openStdFile(Logger::format("/var/log/%s-%d", runningApp->getAppId().c_str(), s_instanceCounter++));
+    else
+        runningApp->getLinuxProcess().openStdFile(Logger::format("/var/log/%s-%s-%d", runningApp->getAppId().c_str(), RuntimeInfo::getInstance().getUser().c_str(), s_instanceCounter++));
+
     runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
 
     if (!runningApp->getLinuxProcess().run()) {

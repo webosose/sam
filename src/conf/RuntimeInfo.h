@@ -52,6 +52,16 @@ public:
         return m_deviceType;
     }
 
+    const string& getUser()
+    {
+        return m_user;
+    }
+
+    const string& getHome()
+    {
+        return m_home;
+    }
+
     bool isInContainer()
     {
         return m_isInContainer;
@@ -67,6 +77,8 @@ private:
 
     int m_displayId;
     string m_deviceType;
+    string m_user;
+    string m_home;
     bool m_isInContainer;
 
 };

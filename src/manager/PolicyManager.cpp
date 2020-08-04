@@ -120,7 +120,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "relaunch");
         if (runningApp->sendEvent(payload)) {
-            runningApp->setLifeStatus(LifeStatus::LifeStatus_RELAUNCHING);
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_LAUNCHING);
             lunaTask->success(lunaTask);
             return;
         }
