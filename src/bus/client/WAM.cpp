@@ -129,6 +129,10 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
+    if (response.isHubError()) {
+        return false;
+    }
+
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
     if (lunaTask == nullptr) {
@@ -254,6 +258,10 @@ bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
 
+    if (response.isHubError()) {
+        return false;
+    }
+
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
     RunningAppPtr runningApp = RunningAppList::getInstance().getByToken(token);
@@ -331,6 +339,10 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     Message response(message);
     JValue responsePayload = pbnjson::JDomParser::fromString(response.getPayload());
     Logger::logCallResponse(getInstance().getClassName(), __FUNCTION__, response, responsePayload);
+
+    if (response.isHubError()) {
+        return false;
+    }
 
     LSMessageToken token = LSMessageGetResponseToken(message);
     LunaTaskPtr lunaTask = LunaTaskList::getInstance().getByToken(token);
