@@ -245,22 +245,30 @@ void ApplicationManager::detach()
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLunaTask(lunaTask);
+    RunningAppPtr runningApp = nullptr;
 
-    // Load params from DB or appinfo.json
-    JValue params = lunaTask->getParams();
-    int displayAffinity = -1;
     // launchPoint can be nullptr because there is only 'instanceId' in requestPayload
     if (launchPoint) {
-        if (launchPoint && params.objectSize() == 0) {
+        JValue params = lunaTask->getParams();
+        int displayAffinity = -1;
+
+        // Load params from DB or appinfo.json
+        if (params.objectSize() == 0) {
             lunaTask->setParams(launchPoint->getParams());
         } else if (params.objectSize() == 1 && JValueUtil::getValue(params, "displayAffinity", displayAffinity)) {
             params = launchPoint->getParams();
             params.put("displayAffinity", displayAffinity);
             lunaTask->setParams(params);
         }
+
+        // If the app is registered, *relaunch* should be handled in app-side
+        runningApp = RunningAppList::getInstance().getByAppId(launchPoint->getAppId());
+        if (runningApp && runningApp->isRegistered()) {
+            runningApp->restoreIds(lunaTask);
+        }
     }
 
-    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
         PolicyManager::getInstance().relaunch(lunaTask);
         return;

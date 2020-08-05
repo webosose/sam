@@ -171,6 +171,14 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
     Logger::info(CLASS_NAME, __FUNCTION__, m_instanceId, "Application is registered");
 }
 
+void RunningApp::restoreIds(LunaTaskPtr lunaTask)
+{
+    lunaTask->setInstanceId(getInstanceId());
+    lunaTask->setLaunchPointId(getLaunchPointId());
+    lunaTask->setAppId(getAppId());
+    lunaTask->setDisplayId(getDisplayId());
+}
+
 bool RunningApp::sendEvent(JValue& responsePayload)
 {
     if (!m_isRegistered) {

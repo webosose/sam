@@ -65,7 +65,7 @@ void PolicyManager::pause(LunaTaskPtr lunaTask)
         return;
     }
 
-    if (runningApp->isRegistered() && SAMConf::getInstance().isAppHandlingSupported()) {
+    if (runningApp->isRegistered()) {
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "pause");
         if (runningApp->sendEvent(payload)) {
@@ -89,7 +89,7 @@ void PolicyManager::close(LunaTaskPtr lunaTask)
         return;
     }
 
-    if (runningApp->isRegistered() && SAMConf::getInstance().isAppHandlingSupported()) {
+    if (runningApp->isRegistered()) {
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "close");
         if (runningApp->sendEvent(payload)) {
@@ -116,7 +116,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         return;
     }
 
-    if (runningApp->isRegistered() && SAMConf::getInstance().isAppHandlingSupported()) {
+    if (runningApp->isRegistered()) {
         JValue payload = pbnjson::Object();
         runningApp->toEventJson(payload, lunaTask, "relaunch");
         if (runningApp->sendEvent(payload)) {
