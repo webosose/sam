@@ -133,10 +133,7 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     // Normally, lunaTask doesn't have all information about running application
     // However, SAM needs all information internally during managing application lifecycle.
     if (runningApp) {
-        lunaTask->setInstanceId(runningApp->getInstanceId());
-        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
-        lunaTask->setAppId(runningApp->getAppId());
-        lunaTask->setDisplayId(runningApp->getDisplayId());
+        runningApp->restoreIds(lunaTask);
     }
     return runningApp;
 }

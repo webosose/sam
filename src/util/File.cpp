@@ -115,6 +115,14 @@ bool File::createFile(const string& path)
     return File::writeFile(path, "");
 }
 
+bool File::deleteFile(const string& path)
+{
+    if(unlink(path.c_str()) == -1) {
+        return false;
+    }
+    return true;
+}
+
 string File::join(const string& a, const string& b)
 {
     string path = "";

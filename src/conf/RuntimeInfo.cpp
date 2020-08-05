@@ -33,6 +33,8 @@ void RuntimeInfo::initialize()
 {
     char* displayId = getenv("DISPLAY_ID");
     char* deviceType = getenv("DEVICE_TYPE");
+    char* user = getenv("USER");
+    char* home = getenv("HOME");
     char* container = getenv("container");
 
     if (displayId != nullptr) {
@@ -40,6 +42,12 @@ void RuntimeInfo::initialize()
     }
     if (deviceType != nullptr) {
         m_deviceType = deviceType;
+    }
+    if (user != nullptr) {
+        m_user = user;
+    }
+    if (home != nullptr) {
+        m_home = home;
     }
     if (container != nullptr) {
         m_isInContainer = true;

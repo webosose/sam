@@ -36,6 +36,7 @@ public:
     static bool isDirectory(const string& path);
     static bool isFile(const string& path);
     static bool createFile(const string& path);
+    static bool deleteFile(const string& path);
 
     static string join(const string& a, const string& b);
 

@@ -42,6 +42,7 @@ bool WAM::onListRunningApps(LSHandle* sh, LSMessage* message, void* context)
     for (int i = 0; i < size; i++) {
         JValueUtil::getValue(running[i], "id", appId);
         JValueUtil::getValue(running[i], "webprocessid", webprocessid);
+
         // TODO fire a bug to WAM.
         if (JValueUtil::getValue(running[i], "instanceid", instanceId)) {
             displayId = RunningApp::getDisplayId(instanceId);
@@ -160,11 +161,7 @@ bool WAM::onLaunchApp(LSHandle* sh, LSMessage* message, void* context)
         if (!runningApp->getPreload().empty()) {
             runningApp->setLifeStatus(LifeStatus::LifeStatus_PRELOADED);
         } else if (runningApp->isLaunchedHidden()) {
-            if (runningApp->isKeepAlive()) {
-                runningApp->setLifeStatus(LifeStatus::LifeStatus_PAUSED);
-            } else {
-                runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
-            }
+            runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
         }
     }
 

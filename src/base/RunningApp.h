@@ -32,15 +32,15 @@
 
 //                  < RunningApp LIFECYCLES >
 //
-//   |--------------(PRELOADING)------------->PRELOADED
-//   |                                            |
-//   |                                      (RELAUNCHING)
-//   |                                            |
-// STOP--(SPLASHING)-->SPLASHED--(LAUNCHING)-->FORGROUND--(PAUSING)-->PAUSED
-//   |                                            |
-//   |                                      (RELAUNCHING)
-//   |                                            |
-//   |-----------(LAUNCHING:Hidden)---------->BACKGROUND
+//                   (PRELOADING)------------->PRELOADED
+//                      |                         |
+//                      |                   (RELAUNCHING)   -----(PAUSING)------
+//                      |                         |         |                  |
+// STOP--(SPLASHING)-->SPLASHED--(LAUNCHING)-->FORGROUND----|                PAUSED
+//                      |                         |         |                  |
+//                      |                   (RELAUNCHING)   ----(RELAUNCHING)---
+//                      |                         |
+//                 (LAUNCHING:Hidden)---------->BACKGROUND
 
 enum class LifeStatus : int8_t {
     LifeStatus_STOP,
@@ -71,6 +71,7 @@ public:
     // APIs
     void registerApp(LunaTaskPtr lunaTask);
 
+    void restoreIds(LunaTaskPtr lunaTask);
     bool sendEvent(JValue& payload);
 
     string getAppId() const
@@ -163,6 +164,8 @@ public:
 
     bool isRegistered()
     {
+        if (!SAMConf::getInstance().isAppHandlingSupported())
+            return false;
         return m_isRegistered;
     }
 
@@ -296,6 +299,8 @@ public:
             json.put("type", AppDescription::toString(m_launchPoint->getAppDesc()->getAppType()));
         }
     }
+
+
 
 private:
     static const string CLASS_NAME;
