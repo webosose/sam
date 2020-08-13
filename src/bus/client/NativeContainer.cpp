@@ -206,6 +206,11 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     addItem(runningApp->getInstanceId(), runningApp->getLaunchPointId(), runningApp->getProcessId(), runningApp->getDisplayId());
     Logger::info(getClassName(), __FUNCTION__, runningApp->getAppId(), Logger::format("Launch Time: %lld ms", runningApp->getTimeStamp()));
     lunaTask->success(lunaTask);
+
+    // This is just guessing of app status. We need to find better way
+    if (runningApp->isFirstLaunch() && runningApp->isLaunchedHidden()) {
+        runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
+    }
 }
 
 void NativeContainer::pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
