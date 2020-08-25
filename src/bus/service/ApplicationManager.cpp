@@ -263,16 +263,11 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
             params.put("displayAffinity", displayAffinity);
             lunaTask->setParams(params);
         }
-
-        // If the app is registered, *relaunch* should be handled in app-side
-        runningApp = RunningAppList::getInstance().getByAppId(launchPoint->getAppId());
-        if (runningApp && runningApp->isRegistered()) {
-            runningApp->restoreIds(lunaTask);
-        }
     }
 
     runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
+        runningApp->restoreIds(lunaTask);
         PolicyManager::getInstance().relaunch(lunaTask);
         return;
     }

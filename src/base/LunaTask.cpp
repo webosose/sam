@@ -24,16 +24,6 @@
 
 int LunaTask::getDisplayId()
 {
-    // TODO This is temp solution about displayId
-    // When home app support peropery. Please detete following code block
-    if (getAppId().find("home1") != string::npos) {
-        Logger::info(LOG_NAME, __FUNCTION__, "Reserved AppId. DispalyId is 1");
-        return 1;
-    } else if (getAppId().find("statusbar1") != string::npos) {
-        Logger::info(LOG_NAME, __FUNCTION__, "Reserved AppId. DispalyId is 1");
-        return 1;
-    }
-
     int displayId = -1;
     if (!JValueUtil::getValue(m_requestPayload, "displayId", displayId))
         JValueUtil::getValue(m_requestPayload, "params", "displayAffinity", displayId);
