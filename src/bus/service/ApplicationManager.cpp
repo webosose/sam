@@ -131,6 +131,9 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
     if (RuntimeInfo::getInstance().isInContainer()) {
         lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
     }
+    if (lunaTask->getDisplayId() == -1) {
+        lunaTask->setDisplayId(0);
+    }
 
     LunaTaskList::getInstance().add(lunaTask);
     handler(lunaTask);
