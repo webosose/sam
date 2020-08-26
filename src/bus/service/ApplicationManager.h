@@ -106,13 +106,13 @@ public:
     void postGetAppLifeEvents(RunningApp& runningApp);
     void postGetAppLifeStatus(RunningApp& runningApp);
     void postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEvent event);
-    void postGetForegroundAppInfo(bool extraInfoOnly);
+    void postGetForegroundAppInfo(bool isOverlayEvent);
     void postListApps(AppDescriptionPtr appDesc, const string& change, const string& changeReason);
     void postListLaunchPoints(LaunchPointPtr launchPoint, string change);
     void postRunning(RunningAppPtr runningApp);
 
     // make
-    void makeGetForegroundAppInfo(JValue& payload, bool extraInfo);
+    void makeGetForegroundAppInfo(JValue& payload);
     void makeRunning(JValue& payload, bool isDevmode);
 
     void enablePosting()

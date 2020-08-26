@@ -82,15 +82,23 @@ void NativeContainer::initialize()
         return;
     }
     size = m_nativeRunninApps.arraySize();
-    for (gsize i = 0; i < size; ++i) {
+    for (int i = size - 1; i >= 0; --i) {
         RunningAppPtr runningApp = RunningAppList::getInstance().createByJson(m_nativeRunninApps[i]);
-        if (runningApp == nullptr) continue;
+        if (runningApp == nullptr) {
+            continue;
+        }
+
+        if (runningApp->getLinuxProcess().isRunning() == false) {
+            m_nativeRunninApps.remove(i);
+            continue;
+        }
 
         // SAM doesn't know the proper status of already running native applications.
         // However, 'BACKGROUND' is reasonable status because 'FOREGROUND' event will be received from LSM
         runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
         RunningAppList::getInstance().add(runningApp);
     }
+    RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
 }
 
 void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)

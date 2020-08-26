@@ -75,7 +75,7 @@ public:
 
     static bool isVerbose()
     {
-        return true;
+        return s_isVerbose;
     }
 
     static void logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload);
@@ -112,6 +112,7 @@ public:
 
 private:
     static const string EMPTY;
+    static bool s_isVerbose;
 
     static const string& toString(const enum LogLevel& level);
 
