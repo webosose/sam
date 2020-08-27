@@ -131,6 +131,9 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
     if (RuntimeInfo::getInstance().isInContainer()) {
         lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
     }
+    if (lunaTask->getDisplayId() == -1) {
+        lunaTask->setDisplayId(0);
+    }
 
     LunaTaskList::getInstance().add(lunaTask);
     handler(lunaTask);
@@ -260,16 +263,11 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
             params.put("displayAffinity", displayAffinity);
             lunaTask->setParams(params);
         }
-
-        // If the app is registered, *relaunch* should be handled in app-side
-        runningApp = RunningAppList::getInstance().getByAppId(launchPoint->getAppId());
-        if (runningApp && runningApp->isRegistered()) {
-            runningApp->restoreIds(lunaTask);
-        }
     }
 
     runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
+        runningApp->restoreIds(lunaTask);
         PolicyManager::getInstance().relaunch(lunaTask);
         return;
     }
@@ -372,7 +370,10 @@ void ApplicationManager::getForegroundAppInfo(LunaTaskPtr lunaTask)
     bool subscribed = false;
 
     JValueUtil::getValue(lunaTask->getRequestPayload(), "extraInfo", extraInfo);
-    makeGetForegroundAppInfo(lunaTask->getResponsePayload(), extraInfo);
+    makeGetForegroundAppInfo(lunaTask->getResponsePayload());
+    if (extraInfo) {
+        lunaTask->getResponsePayload().put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
+    }
 
     if (lunaTask->getRequest().isSubscription()) {
         if (extraInfo) {
@@ -849,29 +850,23 @@ void ApplicationManager::postGetAppStatus(AppDescriptionPtr appDesc, AppStatusEv
     }
 }
 
-void ApplicationManager::postGetForegroundAppInfo(bool extraInfoOnly)
+void ApplicationManager::postGetForegroundAppInfo(bool isOverlayEvent)
 {
     if (!m_enableSubscription) return;
 
     pbnjson::JValue subscriptionPayload;
     subscriptionPayload = pbnjson::Object();
-    makeGetForegroundAppInfo(subscriptionPayload, true);
+    makeGetForegroundAppInfo(subscriptionPayload);
     subscriptionPayload.put("returnValue", true);
     subscriptionPayload.put("subscribed", true);
 
+    if (!isOverlayEvent) {
+        Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfo, subscriptionPayload);
+        m_getForgroundAppInfo->post(subscriptionPayload.stringify().c_str());
+    }
+    subscriptionPayload.put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
     Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfoExtraInfo, subscriptionPayload);
     m_getForgroundAppInfoExtraInfo->post(subscriptionPayload.stringify().c_str());
-
-    if (extraInfoOnly)
-        return;
-
-    subscriptionPayload = pbnjson::Object();
-    makeGetForegroundAppInfo(subscriptionPayload, false);
-    subscriptionPayload.put("returnValue", true);
-    subscriptionPayload.put("subscribed", true);
-
-    Logger::logSubscriptionPost(getClassName(), __FUNCTION__, *m_getForgroundAppInfo, subscriptionPayload);
-    m_getForgroundAppInfo->post(subscriptionPayload.stringify().c_str());
 }
 
 void ApplicationManager::postListApps(AppDescriptionPtr appDesc, const string& change, const string& changeReason)
@@ -995,25 +990,21 @@ void ApplicationManager::postRunning(RunningAppPtr runningApp)
     m_running->post(subscriptionPayload.stringify().c_str());
 }
 
-void ApplicationManager::makeGetForegroundAppInfo(JValue& payload, bool extraInfo)
+void ApplicationManager::makeGetForegroundAppInfo(JValue& payload)
 {
-    if (extraInfo) {
-        payload.put("foregroundAppInfo", LSM::getInstance().getForegroundInfo());
+    string appId = LSM::getInstance().getFullWindowAppId();
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
+    if (runningApp == nullptr) {
+        payload.put("appId", "");
+        payload.put("instanceId", "");
+        payload.put("launchPointId", "");
     } else {
-        string appId = LSM::getInstance().getFullWindowAppId();
-        RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId);
-        if (runningApp == nullptr) {
-            payload.put("appId", "");
-            payload.put("instanceId", "");
-            payload.put("launchPointId", "");
-        } else {
-            payload.put("appId", runningApp->getAppId());
-            payload.put("instanceId", runningApp->getInstanceId());
-            payload.put("launchPointId", runningApp->getLaunchPointId());
+        payload.put("appId", runningApp->getAppId());
+        payload.put("instanceId", runningApp->getInstanceId());
+        payload.put("launchPointId", runningApp->getLaunchPointId());
 
-            payload.put("windowId", runningApp->getWindowId());
-            payload.put("processId", runningApp->getProcessId());
-        }
+        payload.put("windowId", runningApp->getWindowId());
+        payload.put("processId", std::to_string(runningApp->getProcessId()));
     }
 }
 

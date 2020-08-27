@@ -19,6 +19,8 @@
 #include <map>
 #include <glib.h>
 
+#include "File.h"
+
 using namespace std;
 
 class NativeProcess {
@@ -74,6 +76,11 @@ public:
     bool isTracked()
     {
         return m_isTracked;
+    }
+
+    bool isRunning()
+    {
+        return File::isDirectory("/proc/" + std::to_string(m_pid));
     }
 
 private:

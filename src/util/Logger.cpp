@@ -21,6 +21,7 @@
 #include <string.h>
 
 const string Logger::EMPTY = "";
+bool Logger::s_isVerbose = false;
 
 void Logger::logAPIRequest(const string& className, const string& functionName, Message& request, JValue& requestPayload)
 {
@@ -168,6 +169,10 @@ Logger::Logger()
       m_type(LogType_CONSOLE)
 {
     setbuf(stdout, NULL);
+    char* LOG_VERBOSE = getenv("LOG_VERBOSE");
+    if (LOG_VERBOSE != nullptr) {
+        s_isVerbose = true;
+    }
 }
 
 Logger::~Logger()
