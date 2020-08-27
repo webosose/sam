@@ -107,7 +107,7 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     const string& appId = lunaTask->getAppId();
     const string& launchPointId = lunaTask->getLaunchPointId();
     const string& instanceId = lunaTask->getInstanceId();
-    const int displayId = lunaTask->getDisplayId();
+    const int& displayId = lunaTask->getDisplayId();
 
     RunningAppPtr runningApp = nullptr;
     if (!instanceId.empty())
@@ -123,7 +123,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     // Check validation
     if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
         return nullptr;
-
     if (!appId.empty() && appId != runningApp->getAppId())
         return nullptr;
     if (displayId != -1 && displayId != runningApp->getDisplayId())
@@ -133,7 +132,10 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     // Normally, lunaTask doesn't have all information about running application
     // However, SAM needs all information internally during managing application lifecycle.
     if (runningApp) {
-        runningApp->restoreIds(lunaTask);
+        lunaTask->setInstanceId(runningApp->getInstanceId());
+        lunaTask->setLaunchPointId(runningApp->getLaunchPointId());
+        lunaTask->setAppId(runningApp->getAppId());
+        lunaTask->setDisplayId(runningApp->getDisplayId());
     }
     return runningApp;
 }
