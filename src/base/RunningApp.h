@@ -71,7 +71,6 @@ public:
     // APIs
     void registerApp(LunaTaskPtr lunaTask);
 
-    void restoreIds(LunaTaskPtr lunaTask);
     bool sendEvent(JValue& payload);
 
     string getAppId() const

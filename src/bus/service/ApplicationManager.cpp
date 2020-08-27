@@ -131,9 +131,6 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
     if (RuntimeInfo::getInstance().isInContainer()) {
         lunaTask->setDisplayId(RuntimeInfo::getInstance().getDisplayId());
     }
-    if (lunaTask->getDisplayId() == -1) {
-        lunaTask->setDisplayId(0);
-    }
 
     LunaTaskList::getInstance().add(lunaTask);
     handler(lunaTask);
@@ -267,17 +264,19 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
 
     runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
     if (runningApp != nullptr) {
-        runningApp->restoreIds(lunaTask);
         PolicyManager::getInstance().relaunch(lunaTask);
         return;
     }
-
     if (LaunchPointList::getInstance().getByLunaTask(lunaTask) == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find proper launchPoint");
         LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
+    // default displayId is zero
+    if (lunaTask->getDisplayId() == -1) {
+        lunaTask->setDisplayId(0);
+    }
     PolicyManager::getInstance().launch(lunaTask);
 }
 
