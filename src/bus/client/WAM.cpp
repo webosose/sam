@@ -354,9 +354,12 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
     JValueUtil::getValue(responsePayload, "processId", procId);
     JValueUtil::getValue(responsePayload, "returnValue", returnValue);
 
-    if (!returnValue) {
-        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
-        lunaTask->error(lunaTask);
+    if (!returnValue && lunaTask) {
+        Logger::warning(getInstance().getClassName(), __FUNCTION__, "Failed to kill app. WAM might be restarted");
+        if (lunaTask) {
+            lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to killApp in WAM");
+            lunaTask->error(lunaTask);
+        }
         return true;
     }
 
@@ -370,6 +373,7 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
         lunaTask->fillIds(lunaTask->getResponsePayload());
         lunaTask->success(lunaTask);
     }
+
     return true;
 }
 
