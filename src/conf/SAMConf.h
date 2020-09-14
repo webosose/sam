@@ -252,6 +252,22 @@ public:
         saveReadWriteConf();
     }
 
+    bool isBlockedApp(const string& appId) const
+    {
+        JValue blockedAppList;
+        if (!JValueUtil::getValue(m_blockedListDatabase, "system.blockedAppList", blockedAppList) || !blockedAppList.isArray()) {
+            return false;
+        }
+
+        int size = blockedAppList.arraySize();
+        for (int i = 0; i < size; ++i) {
+            if (blockedAppList[i].asString() == appId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool isRespawned()
     {
         return m_isRespawned;
@@ -285,9 +301,11 @@ private:
     void loadReadOnlyConf();
     void loadReadWriteConf();
     void saveReadWriteConf();
+    void loadBlockedList();
 
     JValue m_readOnlyDatabase;
     JValue m_readWriteDatabase;
+    JValue m_blockedListDatabase;
 
     bool m_isRespawned;
     bool m_isDevmodeEnabled;

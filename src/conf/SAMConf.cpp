@@ -34,6 +34,7 @@ void SAMConf::initialize()
 {
     loadReadOnlyConf();
     loadReadWriteConf();
+    loadBlockedList();
 
     // TODO this should be moved in RuntimeInfo
     m_isRespawned = File::isFile(this->getRespawnedPath());
@@ -93,5 +94,13 @@ void SAMConf::saveReadWriteConf()
 
     if (!File::writeFile(path, m_readWriteDatabase.stringify("    ").c_str())) {
         Logger::warning(getClassName(), __FUNCTION__, PATH_RO_SAM_CONF, "Failed to save read-write sam-conf");
+    }
+}
+
+void SAMConf::loadBlockedList()
+{
+    m_blockedListDatabase = JDomParser::fromFile(PATH_BLOCKED_LIST);
+    if (m_blockedListDatabase.isNull()) {
+        Logger::warning(getClassName(), __FUNCTION__, PATH_RO_SAM_CONF, "Failed to parse blocked-file sam-conf");
     }
 }

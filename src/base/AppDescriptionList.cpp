@@ -166,9 +166,14 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
             continue;
         }
         string folderPath = File::join(path, entries[i]->d_name);
+        if (SAMConf::getInstance().isBlockedApp(entries[i]->d_name)) {
+            Logger::info(getClassName(), __FUNCTION__, "BLOCKED",
+                         Logger::format("forderPath(%s)", folderPath.c_str()));
+            continue;
+        }
         if (appLocation == AppLocation::AppLocation_System_ReadOnly &&
             SAMConf::getInstance().isDeletedSystemApp(entries[i]->d_name)) {
-            Logger::info(getClassName(), __FUNCTION__, "The app is deleted. Skipped",
+            Logger::info(getClassName(), __FUNCTION__, "DELETED",
                          Logger::format("forderPath(%s)", folderPath.c_str()));
             continue;
         }
