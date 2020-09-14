@@ -16,6 +16,8 @@
 
 #include "SAMConf.h"
 
+#include "RuntimeInfo.h"
+
 SAMConf::SAMConf()
     : m_isRespawned(false),
       m_isDevmodeEnabled(false),
@@ -63,7 +65,16 @@ void SAMConf::loadReadOnlyConf()
 
 void SAMConf::loadReadWriteConf()
 {
-    m_readWriteDatabase = JDomParser::fromFile(PATH_RW_SAM_CONF);
+    string path = "";
+
+    if (!RuntimeInfo::getInstance().getHome().empty()) {
+        path = RuntimeInfo::getInstance().getHome() + "/.config";
+        File::makeDirectory(path);
+        path += "/sam-conf.json";
+    } else {
+        path = PATH_RW_SAM_CONF;
+    }
+    m_readWriteDatabase = JDomParser::fromFile(path.c_str());
     if (m_readWriteDatabase.isNull()) {
         m_readWriteDatabase = pbnjson::Object();
         saveReadWriteConf();
@@ -72,7 +83,15 @@ void SAMConf::loadReadWriteConf()
 
 void SAMConf::saveReadWriteConf()
 {
-    if (!File::writeFile(PATH_RW_SAM_CONF, m_readWriteDatabase.stringify("    ").c_str())) {
+    string path = "";
+
+    if (!RuntimeInfo::getInstance().getHome().empty()) {
+        path = RuntimeInfo::getInstance().getHome() + "/.config/sam-conf.json";
+    } else {
+        path = PATH_RW_SAM_CONF;
+    }
+
+    if (!File::writeFile(path, m_readWriteDatabase.stringify("    ").c_str())) {
         Logger::warning(getClassName(), __FUNCTION__, PATH_RO_SAM_CONF, "Failed to save read-write sam-conf");
     }
 }

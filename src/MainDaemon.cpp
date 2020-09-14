@@ -60,8 +60,8 @@ MainDaemon::~MainDaemon()
 
 void MainDaemon::initialize()
 {
-    SAMConf::getInstance().initialize();
     RuntimeInfo::getInstance().initialize();
+    SAMConf::getInstance().initialize();
     AppDescriptionList::getInstance().scanFull();
 
     if (!ApplicationManager::getInstance().attach(m_mainLoop))
