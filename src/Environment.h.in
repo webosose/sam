@@ -26,6 +26,7 @@ static const char* const WEBOS_TARGET_SOC_FAMILY     = "@WEBOS_TARGET_SOC_FAMILY
 static const char* const PATH_RO_SAM_CONF            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/sam-conf.json";
 static const char* const PATH_RW_SAM_CONF            = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
 static const char* const PATH_SAM_SCHEMAS            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/schemas/sam/";
+static const char* const PATH_BLOCKED_LIST           = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/blockedList.json";
 static const char* const PATH_LOCALE_INFO            = "@WEBOS_INSTALL_SYSMGR_LOCALSTATEDIR@/preferences/localeInfo";
 static const char* const PATH_RUNTIME_INFO           = "/tmp/sam_runtime";
 static const char* const PATH_NATIVE_LOG             = "/var/log";

@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <glib.h>
 
 void File::set_slash_to_base_path(string& path)
 {
@@ -108,6 +109,13 @@ bool File::isFile(const string& path)
         return false;
     }
     return true;
+}
+
+bool File::makeDirectory(const string& path)
+{
+    if (g_mkdir_with_parents(path.c_str(), 0700) == 0)
+        return true;
+    return false;
 }
 
 bool File::createFile(const string& path)

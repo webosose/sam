@@ -35,6 +35,7 @@ public:
 
     static bool isDirectory(const string& path);
     static bool isFile(const string& path);
+    static bool makeDirectory(const string& path);
     static bool createFile(const string& path);
     static bool deleteFile(const string& path);
 
