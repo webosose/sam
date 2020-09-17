@@ -104,16 +104,23 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
     if (lunaTask == nullptr)
         return nullptr;
 
-    const string& appId = lunaTask->getAppId();
-    const string& launchPointId = lunaTask->getLaunchPointId();
+    // key of runningApp are {instanceId} or {appId, displayId}
     const string& instanceId = lunaTask->getInstanceId();
     const int& displayId = lunaTask->getDisplayId();
+    string appId = "";
+
+    if (!lunaTask->getAppId().empty()) {
+        appId = lunaTask->getAppId();
+    } else if (!lunaTask->getLaunchPointId().empty()) {
+        LaunchPointPtr launchpoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
+        if (launchpoint) {
+            appId = launchpoint->getAppId();
+        }
+    }
 
     RunningAppPtr runningApp = nullptr;
     if (!instanceId.empty())
         runningApp = getByInstanceId(instanceId);
-    else if (!launchPointId.empty())
-        runningApp = getByLaunchPointId(launchPointId, displayId);
     else if (!appId.empty())
         runningApp = getByAppId(appId, displayId);
 
@@ -121,8 +128,6 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         return nullptr;
 
     // Check validation
-    if (!launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
-        return nullptr;
     if (!appId.empty() && appId != runningApp->getAppId())
         return nullptr;
     if (displayId != -1 && displayId != runningApp->getDisplayId())
@@ -168,19 +173,6 @@ RunningAppPtr RunningAppList::getByInstanceId(const string& instanceId)
         return nullptr;
     }
     return m_map[instanceId];
-}
-
-RunningAppPtr RunningAppList::getByLaunchPointId(const string& launchPointId, const int displayId)
-{
-    for (auto it = m_map.begin(); it != m_map.end(); ++it) {
-        if ((*it).second->getLaunchPointId() == launchPointId) {
-            if (displayId == -1)
-                return it->second;
-            if ((*it).second->getDisplayId() == displayId)
-                return it->second;
-        }
-    }
-    return nullptr;
 }
 
 RunningAppPtr RunningAppList::getByAppId(const string& appId, const int displayId)
