@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2019 LG Electronics, Inc.
+# Copyright (c) 2012-2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,14 +42,6 @@ pkg_check_modules(GIO2 REQUIRED gio-2.0)
 include_directories(${GIO2_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${GIO2_CFLAGS_OTHER})
 
-pkg_check_modules(LUNASERVICE2 REQUIRED luna-service2)
-include_directories(${LUNASERVICE2_INCLUDE_DIRS})
-webos_add_compiler_flags(ALL ${LUNASERVICE2_CFLAGS_OTHER})
-
-pkg_check_modules(LUNASERVICE2CPP REQUIRED luna-service2++)
-include_directories(${LUNASERVICE2CPP_INCLUDE_DIRS})
-webos_add_compiler_flags(ALL ${LUNASERVICE2CPP_CFLAGS_OTHER})
-
 pkg_check_modules(PBNJSON_C REQUIRED pbnjson_c)
 include_directories(${PBNJSON_C_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${PBNJSON_C_CFLAGS_OTHER})
@@ -61,6 +53,14 @@ webos_add_compiler_flags(ALL ${PBNJSON_CPP_CFLAGS_OTHER})
 pkg_check_modules(PMLOG REQUIRED PmLogLib)
 include_directories(${PMLOG_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${PMLOG_CFLAGS_OTHER})
+
+pkg_check_modules(LUNASERVICE2 REQUIRED luna-service2)
+include_directories(${LUNASERVICE2_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${LUNASERVICE2_CFLAGS_OTHER})
+
+pkg_check_modules(LUNASERVICE2CPP REQUIRED luna-service2++)
+include_directories(${LUNASERVICE2CPP_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${LUNASERVICE2CPP_CFLAGS_OTHER})
 
 find_package(Boost REQUIRED COMPONENTS regex system filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
@@ -106,11 +106,11 @@ set(LIBS
     ${PROCPS_LDFLAGS})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})
 
-webos_build_daemon(RESTRICTED_PERMISSIONS)
 webos_build_system_bus_files()
 
 file(GLOB_RECURSE SCHEMAS files/schema/*.schema)
 install(FILES ${SCHEMAS} DESTINATION ${WEBOS_INSTALL_WEBOS_SYSCONFDIR}/schemas/sam)
+install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION ${WEBOS_INSTALL_SBINDIR})
 
 # sam conf files
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files/conf/sam-conf.json.in ${CMAKE_CURRENT_BINARY_DIR}/files/conf/sam-conf.json)
