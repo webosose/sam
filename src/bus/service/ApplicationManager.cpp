@@ -245,9 +245,8 @@ void ApplicationManager::detach()
 void ApplicationManager::launch(LunaTaskPtr lunaTask)
 {
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLunaTask(lunaTask);
-    RunningAppPtr runningApp = nullptr;
 
-    // launchPoint can be nullptr because there is only 'instanceId' in requestPayload
+    // launchPoint can be nullptr because there can be only 'instanceId' in requestPayload
     if (launchPoint) {
         JValue params = lunaTask->getParams();
         int displayAffinity = -1;
@@ -262,7 +261,7 @@ void ApplicationManager::launch(LunaTaskPtr lunaTask)
         }
     }
 
-    runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask, false);
     if (runningApp != nullptr) {
         PolicyManager::getInstance().relaunch(lunaTask);
         return;

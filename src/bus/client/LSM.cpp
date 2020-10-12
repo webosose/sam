@@ -111,7 +111,7 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
 
         RunningAppPtr runningApp = RunningAppList::getInstance().getByAppId(appId, displayId);
         if (runningApp == nullptr) {
-            Logger::warning(getInstance().getClassName(), __FUNCTION__, "Cannot find RunningApp. SAM is restarted or other session");
+            Logger::info(getInstance().getClassName(), __FUNCTION__, "Cannot find RunningApp. Respawned or Skipped for other sessions");
             continue;
         }
 

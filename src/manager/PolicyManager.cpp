@@ -137,10 +137,26 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
 void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 {
     pre(lunaTask);
-    if (RunningAppList::getInstance().getByLunaTask(lunaTask) != nullptr) {
-        lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onCloseForRemove, this, boost::placeholders::_1));
-        close(lunaTask);
-        return;
+    RunningAppPtr runningApp = RunningAppList::getInstance().getByLunaTask(lunaTask);
+    if (runningApp) {
+        LaunchPointPtr launchPoint = nullptr;
+        switch (runningApp->getLaunchPoint()->getType()) {
+        case LaunchPointType::LaunchPoint_DEFAULT:
+            // We are not sure we have to allow remove of default launch point.
+            lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onCloseForRemove, this, boost::placeholders::_1));
+            close(lunaTask);
+            return;
+
+        case LaunchPointType::LaunchPoint_BOOKMARK:
+            // If it is bookmark type, change launchPoint to *default* launch point.
+            launchPoint = LaunchPointList::getInstance().getByAppId(runningApp->getAppId());
+            runningApp->setLaunchPoint(launchPoint);
+            break;
+
+        default:
+            // Unknown Error
+            return;
+        }
     }
     onCloseForRemove(lunaTask);
 }
@@ -149,20 +165,21 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 {
     lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, boost::placeholders::_1));
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
+
     switch(launchPoint->getType()) {
     case LaunchPointType::LaunchPoint_DEFAULT:
         // TODO launchPoint
-//        if (AppLocation::AppLocation_System_ReadOnly != launchPoint->getAppDesc()->getAppLocation()) {
-//            Call call = AppInstallService::getInstance().remove(launchPoint->getAppDesc()->getAppId());
-//            Logger::info(getClassName(), __FUNCTION__, launchPoint->getAppDesc()->getAppId(), "requested_to_appinstalld");
-//        }
-//
-//        if (!launchPoint->getAppDesc()->isVisible()) {
-//            AppDescriptionList::getInstance().removeByObject(launchPoint->getAppDesc());
-//            // removeApp(appId, false, AppStatusEvent::AppStatusEvent_Uninstalled);
-//        } else {
-//            // Call call = SettingService::getInstance().checkParentalLock(onCheckParentalLock, appId);
-//        }
+    //    if (AppLocation::AppLocation_System_ReadOnly != launchPoint->getAppDesc()->getAppLocation()) {
+    //        Call call = AppInstallService::getInstance().remove(launchPoint->getAppDesc()->getAppId());
+    //        Logger::info(getClassName(), __FUNCTION__, launchPoint->getAppDesc()->getAppId(), "requested_to_appinstalld");
+    //    }
+
+    //    if (!launchPoint->getAppDesc()->isVisible()) {
+    //        AppDescriptionList::getInstance().removeByObject(launchPoint->getAppDesc());
+    //        // removeApp(appId, false, AppStatusEvent::AppStatusEvent_Uninstalled);
+    //    } else {
+    //        // Call call = SettingService::getInstance().checkParentalLock(onCheckParentalLock, appId);
+    //    }
         break;
 
     case LaunchPointType::LaunchPoint_BOOKMARK:

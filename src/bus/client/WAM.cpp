@@ -370,7 +370,6 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
 
     // Should not access RunningApp. It can be nullptr.
     if (lunaTask) {
-        lunaTask->fillIds(lunaTask->getResponsePayload());
         lunaTask->success(lunaTask);
     }
 
