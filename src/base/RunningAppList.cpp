@@ -99,22 +99,21 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
     return runningApp;
 }
 
-RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
+RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask, bool verifyLaunchPointId)
 {
     if (lunaTask == nullptr)
         return nullptr;
 
     // key of runningApp are {instanceId} or {appId, displayId}
     const string& instanceId = lunaTask->getInstanceId();
+    const string& launchPointId = lunaTask->getLaunchPointId();
     const int& displayId = lunaTask->getDisplayId();
-    string appId = "";
+    string appId = lunaTask->getAppId();
 
-    if (!lunaTask->getAppId().empty()) {
-        appId = lunaTask->getAppId();
-    } else if (!lunaTask->getLaunchPointId().empty()) {
-        LaunchPointPtr launchpoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
-        if (launchpoint) {
-            appId = launchpoint->getAppId();
+    if (appId.empty() && !launchPointId.empty()) {
+        LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+        if (launchPoint) {
+            appId = launchPoint->getAppId();
         }
     }
 
@@ -128,7 +127,13 @@ RunningAppPtr RunningAppList::getByLunaTask(LunaTaskPtr lunaTask)
         return nullptr;
 
     // Check validation
+    if (!instanceId.empty() && instanceId != runningApp->getInstanceId())
+        return nullptr;
     if (!appId.empty() && appId != runningApp->getAppId())
+        return nullptr;
+    // launch ==> LaunchPointId should be ignored because webOS doesn't allow multiple apps based on launchPointId
+    // close, pause ==> LaunchPointId should be checked because those APIs are for runningApp.
+    if (verifyLaunchPointId && !launchPointId.empty() && launchPointId != runningApp->getLaunchPointId())
         return nullptr;
     if (displayId != -1 && displayId != runningApp->getDisplayId())
         return nullptr;

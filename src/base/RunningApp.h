@@ -111,6 +111,10 @@ public:
     {
         return m_launchPoint;
     }
+    void setLaunchPoint(LaunchPointPtr launchPoint)
+    {
+        m_launchPoint = launchPoint;
+    }
 
     const string& getWindowId() const
     {

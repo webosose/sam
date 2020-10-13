@@ -38,7 +38,7 @@ public:
     RunningAppPtr createByAppId(const string& appId);
     RunningAppPtr createByLaunchPointId(const string& launchPointId);
 
-    RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask);
+    RunningAppPtr getByLunaTask(LunaTaskPtr lunaTask, bool verifyLaunchPointId = true);
     RunningAppPtr getByIds(const string& instanceId, const string& appId, const int displayId = -1);
     RunningAppPtr getByInstanceId(const string& instanceId);
     RunningAppPtr getByAppId(const string& appId, const int displayId = -1);

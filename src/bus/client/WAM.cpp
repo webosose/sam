@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 LG Electronics, Inc.
+// Copyright (c) 2012-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -370,7 +370,6 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
 
     // Should not access RunningApp. It can be nullptr.
     if (lunaTask) {
-        lunaTask->fillIds(lunaTask->getResponsePayload());
         lunaTask->success(lunaTask);
     }
 
