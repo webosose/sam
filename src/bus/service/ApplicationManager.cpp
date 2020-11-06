@@ -440,8 +440,11 @@ void ApplicationManager::listApps(LunaTaskPtr lunaTask)
         properties.append("id");
     }
 
-    AppDescriptionList::getInstance().toJson(apps, properties, lunaTask->isDevmodeRequest());
-    lunaTask->getResponsePayload().put("apps", apps);
+    // Don't reply 'apps' in listApps during initializaion
+    if (m_enableSubscription) {
+        AppDescriptionList::getInstance().toJson(apps, properties, lunaTask->isDevmodeRequest());
+        lunaTask->getResponsePayload().put("apps", apps);
+    }
 
     if (lunaTask->getRequest().isSubscription()) {
         lunaTask->getResponsePayload().put("subscribed", LSSubscriptionAdd(this->get(), METHOD_LIST_APPS, lunaTask->getMessage(), nullptr));
@@ -624,17 +627,17 @@ void ApplicationManager::removeLaunchPoint(LunaTaskPtr lunaTask)
 
 void ApplicationManager::listLaunchPoints(LunaTaskPtr lunaTask)
 {
-    pbnjson::JValue launchPoints = pbnjson::Array();
-    bool subscribed = false;
-
-    LaunchPointList::getInstance().toJson(launchPoints);
+    // Don't reply 'apps' in listApps during initializaion
+    if (m_enableSubscription) {
+        JValue launchPoints = pbnjson::Array();
+        LaunchPointList::getInstance().toJson(launchPoints);
+        lunaTask->getResponsePayload().put("launchPoints", launchPoints);
+    }
 
     if (lunaTask->getRequest().isSubscription())
-        subscribed = ApplicationManager::getInstance().m_listLaunchPointsPoint->subscribe(lunaTask->getRequest());
-
-    lunaTask->getResponsePayload().put("subscribed", subscribed);
-    lunaTask->getResponsePayload().put("launchPoints", launchPoints);
-
+        lunaTask->getResponsePayload().put("subscribed", ApplicationManager::getInstance().m_listLaunchPointsPoint->subscribe(lunaTask->getRequest()));
+    else
+        lunaTask->getResponsePayload().put("subscribed", false);
     LunaTaskList::getInstance().removeAfterReply(lunaTask);
 }
 
