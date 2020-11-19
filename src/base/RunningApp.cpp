@@ -239,8 +239,16 @@ void RunningApp::setLifeStatus(LifeStatus lifeStatus)
     // However, sometimes, it takes more than 10 seconds to launch the target app.
     // For example, youtube app can be foreground after 30 seconds at boottime
     // See more info here PLAT-101882.
-    if (isTransition(m_lifeStatus) && m_lifeStatus != LifeStatus::LifeStatus_LAUNCHING) {
-        startKillingTimer(TIMEOUT_TRANSITION);
+    if (isTransition(m_lifeStatus)) {
+        if (m_lifeStatus == LifeStatus::LifeStatus_LAUNCHING) {
+            // Donot start killing timer in case of launching
+        } else if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
+            // App should be closed within 1 second
+            // TODO: Change this to constant variable
+            startKillingTimer(1);
+        } else {
+            startKillingTimer(TIMEOUT_TRANSITION);
+        }
     } else {
         stopKillingTimer();
     }
