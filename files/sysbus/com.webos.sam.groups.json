@@ -1,0 +1,6 @@
+{
+        "allowedNames" : ["com.webos.service.applicationmanager"],
+        "application.operation": ["dev"],
+	"application.launcher": ["oem"],
+        "application.devmode": ["dev"]
+}

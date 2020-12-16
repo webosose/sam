@@ -1,6 +1,7 @@
 {
     "exeName":"@WEBOS_INSTALL_SBINDIR@/sam",
     "type": "regular",
+    "trustLevel" : "oem",
     "allowedNames": [
         "com.webos.service.applicationmanager",
         "com.webos.applicationManager",
