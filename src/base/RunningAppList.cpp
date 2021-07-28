@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,10 +92,6 @@ RunningAppPtr RunningAppList::createByLaunchPointId(const string& launchPointId)
         return nullptr;
     }
     RunningAppPtr runningApp = make_shared<RunningApp>(launchPoint);
-    if (runningApp == nullptr) {
-        Logger::error(getClassName(), __FUNCTION__, "Failed to create new RunningApp");
-        return nullptr;
-    }
     return runningApp;
 }
 
