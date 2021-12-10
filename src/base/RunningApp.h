@@ -307,6 +307,7 @@ public:
 
 private:
     static const string CLASS_NAME;
+    static const int TIMEOUT_CLOSE = 1000; // 1 second
     static const int TIMEOUT_TRANSITION = 10000; // 10 seconds
 
     RunningApp(const RunningApp&);

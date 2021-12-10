@@ -245,8 +245,7 @@ void RunningApp::setLifeStatus(LifeStatus lifeStatus)
             // Donot start killing timer in case of launching
         } else if (m_lifeStatus == LifeStatus::LifeStatus_CLOSING) {
             // App should be closed within 1 second
-            // TODO: Change this to constant variable
-            startKillingTimer(1);
+            startKillingTimer(TIMEOUT_CLOSE);
         } else {
             startKillingTimer(TIMEOUT_TRANSITION);
         }
