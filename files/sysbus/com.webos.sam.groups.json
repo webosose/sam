@@ -1,5 +1,5 @@
 {
-        "allowedNames" : ["com.webos.service.applicationmanager"],
+        "allowedNames" : ["com.webos.service.applicationmanager","com.webos.applicationManager"],
         "application.operation": ["dev"],
 	"application.launcher": ["oem"],
         "application.devmode": ["dev"]
