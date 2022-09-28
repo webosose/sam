@@ -43,7 +43,10 @@
     "com.webos.service.applicationmanager/dev/running",
     "com.webos.applicationManager/dev/close",
     "com.webos.service.applicationManager/dev/close",
-    "com.webos.service.applicationmanager/dev/close"
+    "com.webos.service.applicationmanager/dev/close",
+    "com.webos.applicationManager/dev/managerInfo",
+    "com.webos.service.applicationmanager/dev/managerInfo",
+    "com.webos.service.applicationManager/dev/managerInfo"
   ],
 "application.launcher": [
     "com.webos.applicationManager/launch",
