@@ -40,7 +40,10 @@
     "com.webos.service.applicationmanager/dev/listApps",
     "com.webos.applicationManager/dev/running",
     "com.webos.service.applicationManager/dev/running",
-    "com.webos.service.applicationmanager/dev/running"
+    "com.webos.service.applicationmanager/dev/running",
+    "com.webos.applicationManager/dev/close",
+    "com.webos.service.applicationManager/dev/close",
+    "com.webos.service.applicationmanager/dev/close"
   ],
 "application.launcher": [
     "com.webos.applicationManager/launch",
