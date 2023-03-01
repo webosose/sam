@@ -1,6 +1,6 @@
 /* @@@LICENSE
  *
- * Copyright (c) 2020 LG Electronics, Inc.
+ * Copyright (c) 2020-2023 LG Electronics, Inc.
  *
  * Confidential computer software. Valid license from LG required for
  * possession, use or copying. Consistent with FAR 12.211 and 12.212,
@@ -94,12 +94,12 @@ bool NativeProcess::run()
     const char* argv[MAX_ARGS] = { 0, };
     const char* envp[MAX_ENVP] = { 0, };
     string params = "";
-    int index = 0;
+    unsigned int index = 0;
 
     GError* gerr = NULL;
     argv[0] = m_command.c_str();
     index = 1;
-    for (auto it = m_arguments.begin(); it != m_arguments.end(); ++it) {
+    for (auto it = m_arguments.begin(); it != m_arguments.end() && index < MAX_ARGS; ++it) {
         params += *it + " ";
         argv[index++] = it->c_str();
     }
@@ -107,7 +107,7 @@ bool NativeProcess::run()
     vector<string> finalEnvironments;
     convertEnvToStr(m_environments, finalEnvironments);
     index = 0;
-    for (auto it = finalEnvironments.begin(); it != finalEnvironments.end(); ++it) {
+    for (auto it = finalEnvironments.begin(); it != finalEnvironments.end() && index < MAX_ENVP; ++it) {
         envp[index++] = (const char*)it->c_str();
     }
 

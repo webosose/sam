@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2023 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -166,6 +166,8 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
     lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, boost::placeholders::_1));
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
 
+    if (launchPoint != nullptr) {
+
     switch(launchPoint->getType()) {
     case LaunchPointType::LaunchPoint_DEFAULT:
         // TODO launchPoint
@@ -189,6 +191,11 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
     default:
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Invalid launch point type");
         lunaTask->error(lunaTask);
+        return;
+    }
+    }
+    else {
+        Logger::info(getClassName(), __FUNCTION__, "", "Invalid launch point type");
         return;
     }
     lunaTask->success(lunaTask);
