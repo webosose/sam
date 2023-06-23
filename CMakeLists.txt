@@ -66,10 +66,6 @@ find_package(Boost REQUIRED COMPONENTS regex system filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${Boost_CFLAGS_OTHER})
 
-pkg_check_modules(PROCPS REQUIRED libprocps)
-include_directories(PROCPS_INCLUDE_DIRS)
-webos_add_compiler_flags(ALL ${PROCPS_CFLAGS})
-
 find_library(ICU NAMES icuuc)
 if(ICU STREQUAL "ICU-NOTFOUND")
    message(FATAL_ERROR "Failed to find ICU4C libraries. Please install.")
@@ -103,7 +99,7 @@ set(LIBS
     ${Boost_LIBRARIES}
     ${ICU}
     ${RT}
-    ${PROCPS_LDFLAGS})
+)
 target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})
 
 webos_build_system_bus_files()
