@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2024 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,6 @@
 
 #ifndef ENVIRONMENT_H_
 #define ENVIRONMENT_H_
-
-static const char* const WEBOS_TARGET_DISTRO         = "@WEBOS_TARGET_DISTRO@";
-static const char* const WEBOS_TARGET_DISTRO_VARIANT = "@WEBOS_TARGET_DISTRO_VARIANT@";
-static const char* const WEBOS_TARGET_MACHINE        = "@WEBOS_TARGET_MACHINE@";
-static const char* const WEBOS_TARGET_MACHINE_IMPL   = "@WEBOS_TARGET_MACHINE_IMPL@";
-static const char* const WEBOS_TARGET_SOC_FAMILY     = "@WEBOS_TARGET_SOC_FAMILY@";
 
 static const char* const PATH_RO_SAM_CONF            = "@WEBOS_INSTALL_WEBOS_SYSCONFDIR@/sam-conf.json";
 static const char* const PATH_RW_SAM_CONF            = "@WEBOS_INSTALL_PREFERENCESDIR@/sam-conf.json";
