@@ -234,17 +234,18 @@ string LaunchPointList::generateLaunchPointId(LaunchPointType type, const string
         return appId + "_default";
     }
 
+    string launchPointId;
     while (true) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
         double verifier = tv.tv_usec;
 
-        string launchPointId = appId + "_" + boost::lexical_cast<string>(verifier);
+        launchPointId = appId + "_" + boost::lexical_cast<string>(verifier);
         if (LaunchPointList::getInstance().getByLaunchPointId(launchPointId) == nullptr)
-            return launchPointId;
+            break;
     }
 
-    return string("");
+    return launchPointId;
 }
 
 void LaunchPointList::onAdd(LaunchPointPtr launchPoint)
