@@ -138,7 +138,13 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
         runningApp->getLinuxProcess().addArgument("--params", params.stringify());
         Logger::info(getClassName(), __FUNCTION__, runningApp->getAppId(), "launch with appshell_runner");
         break;
-
+    case AppType::AppType_Native_BrowserShell:
+        runningApp->getLinuxProcess().setCommand(SAMConf::getInstance().getBrowserShellRunnerPath());
+        runningApp->getLinuxProcess().addArgument("--appid", runningApp->getAppId());
+        runningApp->getLinuxProcess().addArgument("--apppath", runningApp->getLaunchPoint()->getAppDesc()->getAbsMain());
+        runningApp->getLinuxProcess().addArgument("--params", params.stringify());
+        Logger::info(getClassName(), __FUNCTION__, runningApp->getAppId(), "launch with browsershell_runner");
+        break;
     case AppType::AppType_Native_Qml:
         runningApp->getLinuxProcess().setCommand(SAMConf::getInstance().getQmlRunnerPath());
         runningApp->getLinuxProcess().addArgument("--appid", runningApp->getAppId());

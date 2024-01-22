@@ -25,6 +25,7 @@ AbsLifeHandler& AbsLifeHandler::getLifeHandler(RunningAppPtr runningApp)
 
     case AppType::AppType_Native:
     case AppType::AppType_Native_AppShell:
+    case AppType::AppType_Native_BrowserShell:
     case AppType::AppType_Native_Builtin:
     case AppType::AppType_Native_Mvpd:
     case AppType::AppType_Native_Qml:

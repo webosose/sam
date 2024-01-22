@@ -46,7 +46,8 @@ enum class AppType : int8_t {
     AppType_Native_Builtin,  // Native app (more special than general native app: e.g. Isis2, Chrome,...)
     AppType_Native_Mvpd,     // Native app (more special than general native app: e.g. Netflix, vudu,...)
     AppType_Native_Qml,      // Native app (stand alone qml apps, forked with qml runner)
-    AppType_Native_AppShell // for Native app (stand alone appshell apps, forked with appshell runner)
+    AppType_Native_AppShell, // for Native app (stand alone appshell apps, forked with appshell runner)
+    AppType_Native_BrowserShell // for Native app (stand alone browsershell apps, forked with browsershell runner)
 };
 
 enum class AppLocation : int8_t {

@@ -51,6 +51,13 @@ public:
         return AppShellRunnerPath;
     }
 
+    const string& getBrowserShellRunnerPath()
+    {
+        static string BrowserShellRunnerPath = "/usr/bin/browser-shell/run_browser_shell";
+        JValueUtil::getValue(m_readOnlyDatabase, "BrowserShellRunnerPath", BrowserShellRunnerPath);
+        return BrowserShellRunnerPath;
+    }
+
     JValue getDBPermission() const
     {
         JValue LaunchPointDBPermissions = pbnjson::Object();
