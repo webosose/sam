@@ -188,7 +188,7 @@ public:
 
     void setSuccessCallback(LunaTaskCallback callback)
     {
-        m_successCallback = callback;
+        m_successCallback = std::move(callback);
     }
     bool hasSuccessCallback()
     {
@@ -197,13 +197,13 @@ public:
     void success(LunaTaskPtr lunaTask)
     {
         if (!m_successCallback.empty()) {
-            m_successCallback(lunaTask);
+            m_successCallback(std::move(lunaTask));
         }
     }
 
     void setErrorCallback(LunaTaskCallback callback)
     {
-        m_errorCallback = callback;
+        m_errorCallback = std::move(callback);
     }
     bool hasErrorCallback()
     {
@@ -212,7 +212,7 @@ public:
     void error(LunaTaskPtr lunaTask)
     {
         if (!m_errorCallback.empty()) {
-            m_errorCallback(lunaTask);
+            m_errorCallback(std::move(lunaTask));
         }
     }
 

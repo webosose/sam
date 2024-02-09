@@ -64,7 +64,7 @@ AppDescriptionList::~AppDescriptionList()
 
 void AppDescriptionList::changeLocale()
 {
-    for (auto appDesc : m_map) {
+    for (const auto& appDesc : m_map) {
         appDesc.second->scan();
     }
 }
@@ -112,7 +112,7 @@ void AppDescriptionList::scanApp(const string& appId)
         return;
     }
 
-    AppDescriptionList::getInstance().add(newAppDesc);
+    AppDescriptionList::getInstance().add(std::move(newAppDesc));
 }
 
 void AppDescriptionList::scanFull()
@@ -191,7 +191,7 @@ void AppDescriptionList::scanDir(const string& path, const AppLocation& appLocat
             Logger::warning(getClassName(), __FUNCTION__, entries[i]->d_name, "Cannot scan AppDescription");
             continue;
         }
-        AppDescriptionList::getInstance().add(appDesc);
+        AppDescriptionList::getInstance().add(std::move(appDesc));
 
     }
 
@@ -241,7 +241,7 @@ bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
         m_map[newAppDesc->getAppId()] = newAppDesc;
         ApplicationManager::getInstance().postListApps(newAppDesc, "added", "");
         LaunchPointPtr launchPoint = LaunchPointList::getInstance().createDefault(newAppDesc);
-        LaunchPointList::getInstance().add(launchPoint);
+        LaunchPointList::getInstance().add(std::move(launchPoint));
         return true;
     }
 
@@ -257,7 +257,7 @@ bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
         AppDescriptionPtr oldAppDesc = m_map[newAppDesc->getAppId()];
         m_map[newAppDesc->getAppId()] = newAppDesc;
         ApplicationManager::getInstance().postListApps(newAppDesc, "updated", "");
-        LaunchPointList::getInstance().update(oldAppDesc, newAppDesc);
+        LaunchPointList::getInstance().update(std::move(oldAppDesc), newAppDesc);
     }
     return true;
 }
@@ -296,7 +296,7 @@ void AppDescriptionList::toJson(JValue& json, JValue& properties, bool devmode)
     if (!json.isArray())
         return;
 
-    for (auto appDesc : m_map) {
+    for (const auto& appDesc : m_map) {
         if (devmode && appDesc.second->getAppLocation() != AppLocation::AppLocation_Devmode) continue;
 
         JValue item;
@@ -316,5 +316,5 @@ void AppDescriptionList::onRemove(AppDescriptionPtr appDesc)
     }
     LaunchPointList::getInstance().removeByAppDesc(appDesc);
     Logger::info(getClassName(), __FUNCTION__, appDesc->getAppId());
-    ApplicationManager::getInstance().postListApps(appDesc, "removed", "");
+    ApplicationManager::getInstance().postListApps(std::move(appDesc), "removed", "");
 }

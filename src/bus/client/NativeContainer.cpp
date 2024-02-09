@@ -47,7 +47,7 @@ void NativeContainer::onKillChildProcess(GPid pid, gint status, gpointer data)
     }
 
     getInstance().removeItem(pid);
-    RunningAppList::getInstance().removeByObject(runningApp);
+    RunningAppList::getInstance().removeByObject(std::move(runningApp));
     if (lunaTask) {
         lunaTask->success(lunaTask);
     }
@@ -96,7 +96,7 @@ void NativeContainer::initialize()
         // SAM doesn't know the proper status of already running native applications.
         // However, 'BACKGROUND' is reasonable status because 'FOREGROUND' event will be received from LSM
         runningApp->setLifeStatus(LifeStatus::LifeStatus_BACKGROUND);
-        RunningAppList::getInstance().add(runningApp);
+        RunningAppList::getInstance().add(std::move(runningApp));
     }
     RuntimeInfo::getInstance().setValue(KEY_NATIVE_RUNNING_APPS, m_nativeRunninApps);
 }
@@ -223,7 +223,7 @@ void NativeContainer::launch(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 
 void NativeContainer::pause(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
 {
-    close(runningApp, lunaTask);
+    close(std::move(runningApp), std::move(lunaTask));
 }
 
 void NativeContainer::close(RunningAppPtr runningApp, LunaTaskPtr lunaTask)

@@ -242,7 +242,7 @@ bool RunningAppList::add(RunningAppPtr runningApp)
         return false;
     }
     m_map[runningApp->getInstanceId()] = runningApp;
-    onAdd(runningApp);
+    onAdd(std::move(runningApp));
     return true;
 }
 
@@ -255,7 +255,7 @@ void RunningAppList::removeByObject(RunningAppPtr runningApp)
         if ((*it).second == runningApp) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
             return;
         }
     }
@@ -267,7 +267,7 @@ void RunningAppList::removeByInstanceId(const string& instanceId)
         if ((*it).second->getInstanceId() == instanceId) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
             return;
         }
     }
@@ -279,7 +279,7 @@ void RunningAppList::removeByPid(const pid_t pid)
         if ((*it).second->getProcessId() == pid) {
             RunningAppPtr ptr = it->second;
             m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
             return;
         }
     }
@@ -291,7 +291,7 @@ void RunningAppList::removeAllByType(AppType type)
         if (it->second->getLaunchPoint()->getAppDesc()->getAppType() == type) {
             RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
         } else {
             ++it;
         }
@@ -308,7 +308,7 @@ void RunningAppList::removeAllByConext(AppType type, const int context)
             // Apps which is in LifeStatus_LAUNCHING & LifeStatus_SPLASHING should not be removed
             RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
         } else {
             ++it;
         }
@@ -321,7 +321,7 @@ void RunningAppList::removeAllByLaunchPoint(LaunchPointPtr launchPoint)
         if (it->second->getLaunchPoint() == launchPoint) {
             RunningAppPtr ptr = it->second;
             it = m_map.erase(it);
-            onRemove(ptr);
+            onRemove(std::move(ptr));
         } else {
             ++it;
         }
@@ -371,12 +371,12 @@ void RunningAppList::onAdd(RunningAppPtr runningApp)
 {
     // Status should be defined before calling this method
     Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId() + " is added");
-    ApplicationManager::getInstance().postRunning(runningApp);
+    ApplicationManager::getInstance().postRunning(std::move(runningApp));
 }
 
 void RunningAppList::onRemove(RunningAppPtr runningApp)
 {
     Logger::info(getClassName(), __FUNCTION__, runningApp->getInstanceId() + " is removed");
     runningApp->setLifeStatus(LifeStatus::LifeStatus_STOP);
-    ApplicationManager::getInstance().postRunning(runningApp);
+    ApplicationManager::getInstance().postRunning(std::move(runningApp));
 }
