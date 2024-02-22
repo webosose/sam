@@ -39,7 +39,7 @@ bool LSM::isFullscreenWindowType(const JValue& foregroundInfo)
     if (!windowGroupOwner)
         return false;
 
-    return SAMConf::getInstance().isFullscreenWindowTypes(windowType);
+    return SAMConf::getInstance().isFullscreenWindowTypes(std::move(windowType));
 }
 
 LSM::LSM()
@@ -161,9 +161,9 @@ bool LSM::onGetForegroundAppInfo(LSHandle* sh, LSMessage* message, void* context
         extraInfoOnly = true;
     }
 
-    getInstance().m_fullWindowAppId = newFullWindowAppId;
-    getInstance().m_foregroundAppIds = newForegroundAppIds;
-    getInstance().m_foregroundInfo = newForegroundAppInfo;
+    getInstance().m_fullWindowAppId = std::move(newFullWindowAppId);
+    getInstance().m_foregroundAppIds = std::move(newForegroundAppIds);
+    getInstance().m_foregroundInfo = std::move(newForegroundAppInfo);
 
     ApplicationManager::getInstance().postRunning(nullptr);
     ApplicationManager::getInstance().postGetForegroundAppInfo(extraInfoOnly);

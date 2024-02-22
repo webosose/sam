@@ -136,7 +136,7 @@ bool LaunchPointList::add(LaunchPointPtr launchPoint)
         return false;
     }
 
-    onAdd(launchPoint);
+    onAdd(std::move(launchPoint));
     return true;
 }
 
@@ -169,7 +169,7 @@ void LaunchPointList::removeByAppDesc(AppDescriptionPtr appDesc)
         if ((*it)->getAppDesc() == appDesc) {
             LaunchPointPtr launchPoint = *it;
             it = m_list.erase(it);
-            onRemove(launchPoint);
+            onRemove(std::move(launchPoint));
         } else {
             ++it;
         }
@@ -182,7 +182,7 @@ void LaunchPointList::removeByAppId(const string& appId)
         if ((*it)->getAppDesc()->getAppId() == appId) {
             LaunchPointPtr launchPoint = *it;
             it = m_list.erase(it);
-            onRemove(launchPoint);
+            onRemove(std::move(launchPoint));
         } else {
             ++it;
         }
@@ -195,7 +195,7 @@ void LaunchPointList::removeByLaunchPointId(const string& launchPointId)
         if ((*it)->getLaunchPointId() == launchPointId) {
             LaunchPointPtr launchPoint = *it;
             it = m_list.erase(it);
-            onRemove(launchPoint);
+            onRemove(std::move(launchPoint));
             return;
         }
     }
@@ -253,13 +253,13 @@ void LaunchPointList::onAdd(LaunchPointPtr launchPoint)
     Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is added");
     launchPoint->syncDatabase();
     m_list.push_back(launchPoint);
-    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "added");
+    ApplicationManager::getInstance().postListLaunchPoints(std::move(launchPoint), "added");
 }
 
 void LaunchPointList::onUpdate(LaunchPointPtr launchPoint)
 {
     Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is updated");
-    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "updated");
+    ApplicationManager::getInstance().postListLaunchPoints(std::move(launchPoint), "updated");
 }
 
 void LaunchPointList::onRemove(LaunchPointPtr launchPoint)
@@ -267,5 +267,5 @@ void LaunchPointList::onRemove(LaunchPointPtr launchPoint)
     Logger::info(getClassName(), __FUNCTION__, launchPoint->getLaunchPointId() + " is removed");
     RunningAppList::getInstance().removeAllByLaunchPoint(launchPoint);
     DB8::getInstance().deleteLaunchPoint(launchPoint->getLaunchPointId());
-    ApplicationManager::getInstance().postListLaunchPoints(launchPoint, "removed");
+    ApplicationManager::getInstance().postListLaunchPoints(std::move(launchPoint), "removed");
 }

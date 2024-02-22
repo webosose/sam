@@ -243,13 +243,13 @@ void WAM::close(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     if (runningApp->isKeepAlive()) {
         pause(runningApp, lunaTask);
     } else {
-        killApp(runningApp, lunaTask);
+        killApp(runningApp, std::move(lunaTask));
     }
 }
 
 void WAM::kill(RunningAppPtr runningApp)
 {
-    killApp(runningApp, nullptr);
+    killApp(std::move(runningApp), nullptr);
 }
 
 bool WAM::onPauseApp(LSHandle* sh, LSMessage* message, void* context)
@@ -365,7 +365,7 @@ bool WAM::onKillApp(LSHandle* sh, LSMessage* message, void* context)
 
     // RunningApp was already removed in onListRunningApp subscription
     if (runningApp) {
-        RunningAppList::getInstance().removeByObject(runningApp);
+        RunningAppList::getInstance().removeByObject(std::move(runningApp));
     }
 
     // Should not access RunningApp. It can be nullptr.

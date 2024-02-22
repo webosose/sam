@@ -189,7 +189,7 @@ void SettingService::updateLocaleInfo(const JValue& settings)
         return;
     }
 
-    m_localeInfo = localeInfo;
+    m_localeInfo = std::move(localeInfo);
     string language;
     string script;
     string region;

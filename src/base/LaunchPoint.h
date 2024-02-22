@@ -70,7 +70,7 @@ public:
     }
     void setAppDesc(AppDescriptionPtr appDesc)
     {
-        m_appDesc = appDesc;
+        m_appDesc = std::move(appDesc);
     }
 
     const string getAppId() const

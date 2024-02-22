@@ -113,7 +113,7 @@ public:
     }
     void setLaunchPoint(LaunchPointPtr launchPoint)
     {
-        m_launchPoint = launchPoint;
+        m_launchPoint = std::move(launchPoint);
     }
 
     const string& getWindowId() const

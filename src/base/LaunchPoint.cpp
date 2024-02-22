@@ -45,7 +45,7 @@ LaunchPointType LaunchPoint::toEnum(const string& type)
 
 LaunchPoint::LaunchPoint(AppDescriptionPtr appDesc, const string& launchPointId)
     : m_type(LaunchPointType::LaunchPoint_UNKNOWN),
-      m_appDesc(appDesc),
+      m_appDesc(std::move(appDesc)),
       m_launchPointId(launchPointId),
       m_isDirty(false)
 {

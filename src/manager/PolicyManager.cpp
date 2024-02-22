@@ -51,7 +51,7 @@ void PolicyManager::launch(LunaTaskPtr lunaTask)
     RunningAppList::getInstance().add(runningApp);
 
     lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onRequireMemory, this, boost::placeholders::_1));
-    MemoryManager::getInstance().requireMemory(runningApp, lunaTask);
+    MemoryManager::getInstance().requireMemory(std::move(runningApp), std::move(lunaTask));
 }
 
 void PolicyManager::pause(LunaTaskPtr lunaTask)
@@ -75,7 +75,7 @@ void PolicyManager::pause(LunaTaskPtr lunaTask)
         }
     }
 
-    AbsLifeHandler::getLifeHandler(runningApp).pause(runningApp, lunaTask);
+    AbsLifeHandler::getLifeHandler(runningApp).pause(runningApp, std::move(lunaTask));
 }
 
 void PolicyManager::close(LunaTaskPtr lunaTask)
@@ -102,7 +102,7 @@ void PolicyManager::close(LunaTaskPtr lunaTask)
         }
     }
 
-    AbsLifeHandler::getLifeHandler(runningApp).close(runningApp, lunaTask);
+    AbsLifeHandler::getLifeHandler(runningApp).close(runningApp, std::move(lunaTask));
 }
 
 void PolicyManager::relaunch(LunaTaskPtr lunaTask)
@@ -150,7 +150,7 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
         case LaunchPointType::LaunchPoint_BOOKMARK:
             // If it is bookmark type, change launchPoint to *default* launch point.
             launchPoint = LaunchPointList::getInstance().getByAppId(runningApp->getAppId());
-            runningApp->setLaunchPoint(launchPoint);
+            runningApp->setLaunchPoint(std::move(launchPoint));
             break;
 
         default:
@@ -158,7 +158,7 @@ void PolicyManager::removeLaunchPoint(LunaTaskPtr lunaTask)
             return;
         }
     }
-    onCloseForRemove(lunaTask);
+    onCloseForRemove(std::move(lunaTask));
 }
 
 void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
@@ -222,7 +222,7 @@ void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
     }
 
     runningApp->setLifeStatus(LifeStatus::LifeStatus_SPLASHED);
-    AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
+    AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, std::move(lunaTask));
 }
 
 void PolicyManager::onReplyWithIds(LunaTaskPtr lunaTask)
@@ -232,5 +232,5 @@ void PolicyManager::onReplyWithIds(LunaTaskPtr lunaTask)
 
 void PolicyManager::onReplyWithoutIds(LunaTaskPtr lunaTask)
 {
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    LunaTaskList::getInstance().removeAfterReply(std::move(lunaTask));
 }

@@ -68,7 +68,7 @@ bool MemoryManager::onRequireMemory(LSHandle* sh, LSMessage* message, void* cont
 
     if (!returnValue) {
         RunningAppList::getInstance().removeByInstanceId(runningApp->getInstanceId());
-        lunaTask->setErrCodeAndText(errorCode, errorText);
+        lunaTask->setErrCodeAndText(errorCode, std::move(errorText));
         lunaTask->error(lunaTask);
         return true;
     }

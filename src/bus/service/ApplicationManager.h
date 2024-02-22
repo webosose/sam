@@ -140,7 +140,7 @@ private:
     void registerApiHandler(const string& category, const string& method, LunaApiHandler handler)
     {
         string api = File::join(category, method);
-        m_APIHandlers[api] = handler;
+        m_APIHandlers[api] = std::move(handler);
     }
 
     static LSMethod METHODS_ROOT[];
