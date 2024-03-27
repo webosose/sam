@@ -32,9 +32,9 @@
     "com.webos.service.applicationmanager/listLaunchPoints"
   ],
 "application.devmode": [
-    "com.webos.applicationManager/dev/closeByAppID",
-    "com.webos.service.applicationManager/dev/closeByAppID",
-    "com.webos.service.applicationmanager/dev/closeByAppID",
+    "com.webos.applicationManager/dev/closeByAppId",
+    "com.webos.service.applicationManager/dev/closeByAppId",
+    "com.webos.service.applicationmanager/dev/closeByAppId",
     "com.webos.applicationManager/dev/listApps",
     "com.webos.service.applicationManager/dev/listApps",
     "com.webos.service.applicationmanager/dev/listApps",

@@ -415,6 +415,11 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
 {
     string ls2name = lunaTask->getCaller();
+    const pbnjson::JValue& jmsg = lunaTask->getRequestPayload();;
+
+    bool subscribed = true;
+    if (jmsg.hasKey("subscribe"))
+        subscribed = jmsg["subscribe"].asBool();
 
     // Native app registers its name as *APP_ID-INTGETER* which is given by SAM
     RunningAppPtr runningApp = RunningAppList::getInstance().getByLS2Name(ls2name);
@@ -424,6 +429,14 @@ void ApplicationManager::registerApp(LunaTaskPtr lunaTask)
     if (runningApp == nullptr) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, ls2name + " is not running");
         LunaTaskList::getInstance().removeAfterReply(std::move(lunaTask));
+        return;
+    }
+
+    if (!subscribed)
+    {
+        lunaTask->getResponsePayload().put("returnValue", true);
+        lunaTask->getResponsePayload().put("subscribed", false);
+        LunaTaskList::getInstance().removeAfterReply(lunaTask);
         return;
     }
 
@@ -1004,7 +1017,6 @@ void ApplicationManager::makeGetForegroundAppInfo(JValue& payload)
         payload.put("instanceId", runningApp->getInstanceId());
         payload.put("launchPointId", runningApp->getLaunchPointId());
 
-        payload.put("windowId", runningApp->getWindowId());
         payload.put("processId", std::to_string(runningApp->getProcessId()));
     }
 }

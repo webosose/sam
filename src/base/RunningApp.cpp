@@ -161,7 +161,7 @@ void RunningApp::registerApp(LunaTaskPtr lunaTask)
 
     JValue payload = pbnjson::Object();
     payload.put("event", "registered");
-    payload.put("message", "registered");// TODO this should be removed. Let's use event only.
+    payload.put("subscribed", true);
 
     if (!sendEvent(payload)) {
         lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Failed to register application");

@@ -6,10 +6,6 @@
                 "type": "string",
                 "description": "Application ID of application in foreground."
             },
-            "windowId": {
-                "type": "string",
-                "description": "Window ID of application in foreground."
-            },
             "processId": {
                 "type": "string",
                 "description": "Process ID of application in foreground."
@@ -21,7 +17,6 @@
         },
         "required": [
             "appId",
-            "windowId",
             "processId"
         ]
 }

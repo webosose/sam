@@ -272,8 +272,8 @@ public:
     void toEventJson(JValue& json, LunaTaskPtr lunaTask, const string& event)
     {
         json.put("returnValue", true);
+        json.put("subscribed", true);
         json.put("event", event);
-        json.put("message", event); // TODO this should be removed. Let's use event only.
         json.put("appId", getAppId());
         json.put("parameters", lunaTask->getParams());
         json.put("reason", lunaTask->getReason());

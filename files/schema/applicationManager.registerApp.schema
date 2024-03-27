@@ -1,0 +1,9 @@
+{
+    "id": "applicationManager.registerApp",
+    "type": "object",
+    "properties": {
+        "subscribe": {
+            "type": "boolean"
+        }
+    }
+}
