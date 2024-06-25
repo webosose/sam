@@ -97,6 +97,10 @@ string AppDescription::toString(AppType type)
         str = "native_appshell";
         break;
 
+    case AppType::AppType_Native_BrowserShell:
+        str = "native_browsershell";
+        break;
+
     default:
         str = "unknown";
         break;
@@ -120,6 +124,8 @@ AppType AppDescription::toAppType(const string& type)
         return AppType::AppType_Native_Qml;
     } else if (type == "native_appshell") {
         return AppType::AppType_Native_AppShell;
+    } else if (type == "native_browsershell") {
+        return AppType::AppType_Native_BrowserShell;
     }
     return AppType::AppType_None;
 }

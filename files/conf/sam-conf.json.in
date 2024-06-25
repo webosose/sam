@@ -31,6 +31,7 @@
     "JailerPath": "@WEBOS_INSTALL_BINDIR@/jailer",
     "QmlRunnerPath": "@WEBOS_INSTALL_BINDIR@/qml-runner",
     "AppShellRunnerPath": "@WEBOS_INSTALL_BINDIR@/app-shell/run_app_shell",
+    "BrowserShellRunnerPath" :"@WEBOS_INSTALL_BINDIR@/browser-shell/run_browser_shell",
 
     "FullscreenWindowType": [
         "_WEBOS_WINDOW_TYPE_CARD",

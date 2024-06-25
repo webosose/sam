@@ -72,6 +72,7 @@
                 "native",
                 "native_builtin",
                 "native_appshell",
+                "native_browsershell",
                 "qml"
             ],
             "description": "Identifies the application type"

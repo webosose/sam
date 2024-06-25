@@ -48,6 +48,10 @@
             "type": "string",
             "description": "Location of AppShell Runner binary"
         },
+        "BrowserShellRunnerPath": {
+            "type": "string",
+            "description": "Location of BrowserShell Runner binary"
+        },
         "RespawnedPath": {
             "type": "string",
             "description": "If this file exists, it means sam already starts"
