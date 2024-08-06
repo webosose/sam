@@ -250,7 +250,7 @@ bool AppDescriptionList::add(AppDescriptionPtr newAppDesc)
         AppDescriptionPtr oldAppDesc = m_map[newAppDesc->getAppId()];
         m_map[newAppDesc->getAppId()] = newAppDesc;
         ApplicationManager::getInstance().postListApps(newAppDesc, "updated", "");
-        LaunchPointList::getInstance().update(oldAppDesc, newAppDesc);
+        LaunchPointList::getInstance().update(std::move(oldAppDesc), newAppDesc);
     } else if (compare(m_map[newAppDesc->getAppId()], newAppDesc) || !m_map[newAppDesc->getAppId()]->scan()) {
         // TODO why second condition is needed?
         // check version of new app description.

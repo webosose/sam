@@ -130,7 +130,7 @@ void PolicyManager::relaunch(LunaTaskPtr lunaTask)
         AbsLifeHandler::getLifeHandler(runningApp).launch(runningApp, lunaTask);
     } else {
         lunaTask->setSuccessCallback(boost::bind(&PolicyManager::launch, this, boost::placeholders::_1));
-        close(lunaTask);
+        close(std::move(lunaTask));
     }
 }
 
@@ -227,7 +227,7 @@ void PolicyManager::onRequireMemory(LunaTaskPtr lunaTask)
 
 void PolicyManager::onReplyWithIds(LunaTaskPtr lunaTask)
 {
-    LunaTaskList::getInstance().removeAfterReply(lunaTask, true);
+    LunaTaskList::getInstance().removeAfterReply(std::move(lunaTask), true);
 }
 
 void PolicyManager::onReplyWithoutIds(LunaTaskPtr lunaTask)
