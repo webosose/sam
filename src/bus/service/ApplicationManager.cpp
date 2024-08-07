@@ -408,7 +408,7 @@ void ApplicationManager::lockApp(LunaTaskPtr lunaTask)
 
     lunaTask->getResponsePayload().put("id", appId);
     lunaTask->getResponsePayload().put("locked", appDesc->isLocked());
-    LunaTaskList::getInstance().removeAfterReply(lunaTask);
+    LunaTaskList::getInstance().removeAfterReply(std::move(lunaTask));
     return;
 }
 

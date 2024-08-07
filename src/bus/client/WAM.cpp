@@ -241,7 +241,7 @@ void WAM::close(RunningAppPtr runningApp, LunaTaskPtr lunaTask)
     }
 
     if (runningApp->isKeepAlive()) {
-        pause(runningApp, lunaTask);
+        pause(runningApp, std::move(lunaTask));
     } else {
         killApp(runningApp, std::move(lunaTask));
     }
