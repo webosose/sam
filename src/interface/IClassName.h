@@ -1,6 +1,6 @@
 /* @@@LICENSE
  *
- * Copyright (c) 2019 LG Electronics, Inc.
+ * Copyright (c) 2024 LG Electronics, Inc.
  *
  * Confidential computer software. Valid license from LG required for
  * possession, use or copying. Consistent with FAR 12.211 and 12.212,
@@ -15,6 +15,7 @@
 #define INTERFACE_ICLASSNAME_H_
 
 #include <iostream>
+#include <utility>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ public:
 
     void setClassName(string name)
     {
-        m_name = name;
+        m_name = std::move(name);
     }
 
 private:
