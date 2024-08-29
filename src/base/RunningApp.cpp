@@ -115,6 +115,10 @@ string RunningApp::generateInstanceId(int displayId)
 
 int RunningApp::getDisplayId(const string& instanceId)
 {
+    if (instanceId.empty()) {
+        return 0;
+    }
+
     int displayId = instanceId.back() - '0';
     if (displayId < 0 || displayId > 10)
         displayId = 0;
