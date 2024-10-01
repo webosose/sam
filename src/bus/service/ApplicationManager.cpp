@@ -112,11 +112,8 @@ bool ApplicationManager::onAPICalled(LSHandle* sh, LSMessage* message, void* ctx
     }
 
     lunaTask = make_shared<LunaTask>(request, requestPayload, message);
-    if (!lunaTask) {
-        errorCode = ErrCode_GENERAL;
-        errorText = "memory alloc fail";
-        goto Done;
-    }
+
+    // Removed dead code: lunaTask is guaranteed to be non-null after make_shared.
 
     if (getInstance().m_APIHandlers.find(request.getKind()) != getInstance().m_APIHandlers.end())
         handler = getInstance().m_APIHandlers[request.getKind()];
