@@ -162,6 +162,12 @@ void PolicyManager::onCloseForRemove(LunaTaskPtr lunaTask)
 {
     lunaTask->setSuccessCallback(boost::bind(&PolicyManager::onReplyWithoutIds, this, boost::placeholders::_1));
     LaunchPointPtr launchPoint = LaunchPointList::getInstance().getByLaunchPointId(lunaTask->getLaunchPointId());
+    if (launchPoint == nullptr) {
+        Logger::warning(getClassName(), __FUNCTION__, "Cannot find launch point");
+        lunaTask->setErrCodeAndText(ErrCode_GENERAL, "Cannot find launch point");
+        lunaTask->error(lunaTask);
+        return;
+    }
 
     if (launchPoint != nullptr) {
 
