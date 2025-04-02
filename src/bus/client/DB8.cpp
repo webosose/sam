@@ -210,13 +210,16 @@ bool DB8::onFind(LSHandle* sh, LSMessage* message, void* context)
         }
 
         launchPoint = LaunchPointList::getInstance().getByLaunchPointId(launchPointId);
+        if (launchPoint == nullptr) {
+            Logger::warning(getClassName(), __FUNCTION__, "Cannot find launch point");
+            DB8::getInstance().deleteLaunchPoint(launchPointId);
+            continue;
+        }
         if (type == "default") {
             launchPoint->setDatabase(results[i]);
         } else if (type == "bookmark") {
-            if (launchPoint == nullptr) {
-                launchPoint = LaunchPointList::getInstance().createBootmarkByDB(appDesc, results[i]);
-                LaunchPointList::getInstance().add(launchPoint);
-            }
+            launchPoint = LaunchPointList::getInstance().createBootmarkByDB(appDesc, results[i]);
+            LaunchPointList::getInstance().add(launchPoint);
         }
     }
     Logger::info(getInstance().getClassName(), __FUNCTION__, "Complete to sync DB8");
